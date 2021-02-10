@@ -3,6 +3,7 @@
   <ItemGroup>
     <Library Include="python36.lib" />
     <Library Include="chakra.lib" />
+    <Library Include="Tag.lib" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mod.cpp" />

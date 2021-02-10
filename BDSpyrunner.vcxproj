@@ -21,6 +21,7 @@
   <ItemGroup>
     <Library Include="chakra.lib" />
     <Library Include="python36.lib" />
+    <Library Include="Tag.lib" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="jsoncpp.cpp">
