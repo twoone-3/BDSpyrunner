@@ -2,11 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Library Include="python36.lib" />
-    <Library Include="Tag.lib" />
     <Library Include="Detours\lib.X64\detours.lib" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mod.cpp" />
-    <ClCompile Include="Loader.cpp" />
+    <ClCompile Include="jsoncpp.cpp" />
   </ItemGroup>
 </Project>
