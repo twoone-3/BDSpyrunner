@@ -1089,13 +1089,13 @@ Hook(√¸¡Ó∑ΩøÈ÷¥––, bool, "?performCommand@CommandBlockActor@@QEAA_NAEAVBlockSour
 	string cmd = f(string, _this + 264);
 	string rawname = f(string, _this + 296);
 	BlockPos bp = f(BlockPos, _this + 44);
-	bool res = callpy(u8"√¸¡Ó∑ΩøÈ÷¥––", Py_BuildValue("{s:s,s:s,s:[i,i,i],s:i,s:i}",
-		"cmd", cmd.c_str(),
-		"rawname", rawname.c_str(),
-		"position", bp.x, bp.y, bp.z,
-		"mode", mode,
-		"condition", condition
-	));
+	Tag* t = newTag(Compound);
+	SYMCALL<bool>("?save@CommandBlockActor@@UEBA_NAEAVCompoundTag@@@Z",
+		_this, t);
+	string data = toJson(t).toStyledString();
+	t->deCompound();
+	delete t;
+	bool res = callpy(u8"√¸¡Ó∑ΩøÈ÷¥––", PyUnicode_FromString(data.c_str()));
 	check_ret(_this, a2);
 }
 Hook(ÕÊº“¥©¥˜, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
@@ -1183,8 +1183,11 @@ int DllMain(VA, int dwReason, VA) {
 		//	t->deCompound();
 		//	delete t;
 		//}
+		//StructureTemplate st("test");
+		//StructureSettings ss;
+		//cout << toJson(st.save()) << endl;
 		init();
-		puts("[BDSpyrunner] v0.2.7 loaded.");
+		puts("[BDSpyrunner] v0.2.8 loaded.");
 	}
 	return 1;
 }

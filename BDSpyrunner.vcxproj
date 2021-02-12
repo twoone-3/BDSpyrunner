@@ -19,14 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="chakra.lib" />
+    <Library Include="Detours\lib.X64\detours.lib" />
     <Library Include="python36.lib" />
     <Library Include="Tag.lib" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="jsoncpp.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="Loader.cpp" />
     <ClCompile Include="mod.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

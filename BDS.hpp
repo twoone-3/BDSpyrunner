@@ -39,7 +39,42 @@ struct BlockSource {
 		return f(int, (f(VA, this + 32) + 208));
 	}
 };
+struct string_span {
+	size_t len;
+	const char* str;
+	string_span(const char* s) : len(strlen(s)), str(s) {}
+	string_span(const string& s) : len(s.length()), str(s.c_str()) {}
+};
+struct StructureManager {
+
+};
+struct StructureSettings {
+	char fill[96];
+	StructureSettings() {
+		SYMCALL("??0StructureSettings@@QEAA@XZ", this);
+	}
+};
+struct StructureTemplate {
+	char fill[216];
+	StructureTemplate(const string_span& s) {
+		SYMCALL("??0StructureTemplate@@QEAA@V?$basic_string_span@$$CBD$0?0@gsl@@@Z",
+			this, s);
+	}
+	Tag* save() {
+		Tag* t = 0;
+		SYMCALL<Tag*>("?save@StructureTemplateData@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
+			fill + 32, &t);
+		return t;
+	}
+	void fillFromWorld(BlockSource* a2, BlockPos* a3, StructureSettings* a4) {
+		SYMCALL("?fillFromWorld@StructureTemplate@@QEAAXAEAVBlockSource@@AEBVBlockPos@@AEBVStructureSettings@@@Z",
+			this, a2, a3, a4);
+	}
+};
 struct Level {
+	StructureManager* getStructureManager() {
+		return f(StructureManager*, this + 8160);
+	}
 	VA getScoreBoard() {// IDA Level::removeEntityReferences
 		return f(VA, this + 8376);
 	}

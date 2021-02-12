@@ -15,24 +15,16 @@
 #define SYMAS(ret, fn, ...) ((ret(*)(__VA_ARGS__))SYM(fn))
 #define SYM GetServerSymbol
 using VA = unsigned long long;
-extern "C" {
-	_declspec(dllimport) int HookFunction(void*, void*, void*);
-	_declspec(dllimport) void* GetServerSymbol(const char*);
-}
+void* HookFunction(void*, void*);
+void* GetServerSymbol(const char*);
 template<typename ret = void, typename... Args>
 inline ret SYMCALL(const char* sym, Args... args) {
 	return ((ret(*)(Args...))SYM(sym))(args...);
-}
-void* HookRegister(const char* sym, void* hook, void* org) {
-	void* found = SYM(sym);
-	if (!found)printf("Failed to hook %s\n", sym);
-	HookFunction(found, org, hook);
-	return org;
 }
 #define Hook(name, ret, sym, ...)		\
 struct name {							\
 	static ret(*original)(__VA_ARGS__);	\
 	static ret _hook(__VA_ARGS__);		\
 };										\
-ret(*name::original)(__VA_ARGS__)=*(ret(**)(__VA_ARGS__))HookRegister(sym, &name::_hook,&name::original);\
+ret(*name::original)(__VA_ARGS__)=(ret(*)(__VA_ARGS__))HookFunction(SYM(sym), &name::_hook);\
 ret name::_hook(__VA_ARGS__)

@@ -1,24 +1,14 @@
 #pragma once
 #include "pch.h"
-#include "BDS.hpp"
 using namespace std;
 enum TagType {
 	End, Byte, Short, Int, Int64, Float,
 	Double, ByteArray, String, List, Compound,
 };
-using cm = map<string, struct CompoundTagVariant>;
 struct Tag {
 	VA vftable;
 	VA value[3];
 
-	cm& asCom() {
-		return *(cm*)(value);
-	}
-	Tag() {
-		SYMCALL("??0CompoundTag@@QEAA@XZ", this);
-	}
-	~Tag() {
-	}
 	void put(const string& key, const Tag* value) {
 		return SYMCALL("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
 			this, key, value);
@@ -52,7 +42,6 @@ struct Tag {
 			this, key, value);
 	}
 	void putCompound(const string& key, const Tag* value) {
-		//return SYMCALL("?putCompound@CompoundTag@@QEAAAEAV1@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V1@@Z",
 		return SYMCALL("?putCompound@CompoundTag@@QEAAPEAV1@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@3@@Z",
 			this, key, &value);
 	}
@@ -67,9 +56,8 @@ struct Tag {
 	void deList() {
 		SYMCALL("??1ListTag@@UEAA@XZ", this);
 	}
-};
-struct CompoundTagVariant {
-	int type() {
+
+	char type() {
 		return *((char*)this + 40);
 	}
 	auto& asByte() { return *(unsigned char*)((VA)this + 8); }
@@ -81,7 +69,7 @@ struct CompoundTagVariant {
 	auto& asString() { return *(string*)((VA)this + 8); }
 	auto asListTag() { return (Tag*)this; }
 	auto& asList() { return *(vector<Tag*>*)((VA)this + 8); }
-	auto& asCompound() { return *(map<string, CompoundTagVariant>*)((VA)this + 8); }
+	auto& asCompound() { return *(map<string, Tag>*)((VA)this + 8); }
 };
 Tag* newTag(TagType t);
 Json::Value ListtoJson(Tag* t);
