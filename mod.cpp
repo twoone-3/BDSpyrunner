@@ -460,7 +460,7 @@ api_function(tellrawEx) {
 	const char* msg;
 	Player* p;
 	int mode;
-	if (PyArg_ParseTuple(args, "Ks:tellraw", &p, &msg, &mode)) {
+	if (PyArg_ParseTuple(args, "Ksi:tellrawEx", &p, &msg, &mode)) {
 		if (TextPacket(p, mode, msg))
 			return Py_True;
 	}
@@ -1187,7 +1187,7 @@ int DllMain(VA, int dwReason, VA) {
 		//StructureSettings ss;
 		//cout << toJson(st.save()) << endl;
 		init();
-		puts("[BDSpyrunner] v0.2.8 loaded.");
+		puts("[BDSpyrunner] v0.2.9 loaded.");
 	}
 	return 1;
 }

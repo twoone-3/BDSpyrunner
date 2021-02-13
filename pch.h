@@ -17,7 +17,7 @@
 #define SYM(rva) (void*)(_handle + rva)
 using VA = unsigned long long;
 using RVA = unsigned int;
-#include "RVA.h"
+#include "../RVA.h"
 void* HookFunction(void* oldfunc, void* newfunc) {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
