@@ -219,6 +219,10 @@ struct Actor {
 	VA getAttribute() {
 		return f(VA, this + 1144);
 	}
+	ItemStack* getArmor(unsigned slot) {
+		return SYMCALL<ItemStack*>(MSSYM_B1QA8getArmorB1AA5ActorB2AAE17UEBAAEBVItemStackB2AAE11W4ArmorSlotB3AAAA1Z,
+			this, slot);
+	}
 	// 添加一个状态
 	VA addEffect(VA ef) {
 		return SYMCALL<VA>(MSSYM_B1QA9addEffectB1AA5ActorB2AAE26QEAAXAEBVMobEffectInstanceB3AAAA1Z, this, ef);
@@ -248,20 +252,6 @@ struct Mob : Actor {
 	auto getEffects() {	// IDA Mob::addAdditionalSaveData 84
 		return (vector<MobEffectInstance>*)((VA*)this + 190);
 	}
-	// 获取装备容器
-	VA getArmor() {		// IDA Mob::addAdditionalSaveData
-		return VA(this) + 1400;
-	}
-	// 获取手头容器
-	VA getHands() {
-		return VA(this) + 1408;		// IDA Mob::readAdditionalSaveData
-	}
-	// 保存当前副手至容器
-	VA saveOffhand(VA hlist) {
-		return SYMCALL<VA>(MSSYM_B1QE11saveOffhandB1AA3MobB2AAA4IEBAB1QA2AVB2QDA6uniqueB1UA3ptrB1AA8VListTagB2AAA1UB2QDA7defaultB1UA6deleteB1AA8VListTagB3AAAA3stdB3AAAA3stdB2AAA2XZ,
-			this, hlist);
-	}
-	// 获取地图信息
 	VA getLevel() {// IDA Mob::die 143
 		return f(VA, this + 856);
 	}
@@ -304,12 +294,14 @@ struct Player : Mob {
 		return SYMCALL<Container*>(MSSYM_B1QE22getEnderChestContainerB1AA6PlayerB2AAE27QEAAPEAVEnderChestContainerB2AAA2XZ, this);
 	}
 	// 设置一个装备
-	VA setArmor(int i, ItemStack* item) {
-		return SYMCALL<VA>(MSSYM_B1QA8setArmorB1AE12ServerPlayerB2AAE16UEAAXW4ArmorSlotB2AAE13AEBVItemStackB3AAAA1Z, this, i, item);
+	void setArmor(unsigned i, ItemStack* item) {
+		 SYMCALL(MSSYM_B1QA8setArmorB1AE12ServerPlayerB2AAE16UEAAXW4ArmorSlotB2AAE13AEBVItemStackB3AAAA1Z,
+			 this, i, item);
 	}
 	// 设置副手
-	VA setOffhandSlot(ItemStack* item) {
-		return SYMCALL<VA>(MSSYM_B1QE14setOffhandSlotB1AA6PlayerB2AAE18UEAAXAEBVItemStackB3AAAA1Z, this, item);
+	void setOffhandSlot(ItemStack* item) {
+		return SYMCALL(MSSYM_B1QE14setOffhandSlotB1AA6PlayerB2AAE18UEAAXAEBVItemStackB3AAAA1Z,
+			this, item);
 	}
 	// 添加一个物品
 	void addItem(ItemStackBase* item) {

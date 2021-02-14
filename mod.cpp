@@ -75,23 +75,19 @@ static bool callpy(const char* type, PyObject* val) {
 	bool result = true;
 	int nHold = PyGILState_Check();   //检测当前线程是否拥有GIL
 	PyGILState_STATE gstate;
-	if (!nHold)
-	{
+	if (!nHold) {
 		gstate = PyGILState_Ensure();   //如果没有GIL，则申请获取GIL
 	}
 	Py_BEGIN_ALLOW_THREADS;
 	Py_BLOCK_THREADS;
-	/**************************以下加入需要调用的python脚本代码  Begin***********************/
 	for (PyObject* fn : PyFuncs[stoe(type)]) {
 		if (PyObject_CallFunction(fn, "O", val) == Py_False)
 			result = false;
 	}
 	PyErr_Print();
-	/**************************以下加入需要调用的python脚本代码  End***********************/
 	Py_UNBLOCK_THREADS;
 	Py_END_ALLOW_THREADS;
-	if (!nHold)
-	{
+	if (!nHold) {
 		PyGILState_Release(gstate);    //释放当前线程的GIL
 	}
 	return result;
@@ -538,21 +534,57 @@ api_function(getPlayerItems) {
 	}
 	return Py_False;
 }
-api_function(getPlayerHand) {
+api_function(setPlayerItems) {
 	Player* p;
-	if (PyArg_ParseTuple(args, "K:getPlayerHand", &p)) {
+	const char* x;
+	if (PyArg_ParseTuple(args, "Ks:setPlayerItems", &p, &x)) {
 		if (PlayerCheck(p)) {
-			ItemStack* item = p->getSelectedItem();
+			Json::Value j = toJson(x);
+			if (j.isArray()) {
+				vector<ItemStack*> is = p->getContainer()->getSlots();
+				for (unsigned i = 0; i < j.size(); i++) {
+					Tag* t = toTag(j[i]);
+					is[i]->fromTag(t);
+					t->deCompound();
+					delete t;
+				}
+				p->sendInventroy();
+			}
+		}
+		return Py_True;
+	}
+	return Py_False;
+}
+api_function(getPlayerArmor) {
+	Player* p; int slot;
+	if (PyArg_ParseTuple(args, "Ki:getPlayerArmor", &p, &slot)) {
+		if (PlayerCheck(p)) {
+			ItemStack* item = p->getArmor(slot);
 			return PyUnicode_FromString(toJson(item->save()).toStyledString().c_str());
 		}
 	}
 	return Py_False;
 }
-api_function(getPlayerItem) {
-	Player* p; int slot;
-	if (PyArg_ParseTuple(args, "Ki:getPlayerItem", &p, &slot)) {
+api_function(setPlayerArmor) {
+	Player* p; int slot; const char* x;
+	if (PyArg_ParseTuple(args, "Kis:setPlayerArmor", &p, &slot, &x)) {
 		if (PlayerCheck(p)) {
-			ItemStack* item = p->getInventoryItem(slot);
+			Json::Value j = toJson(x);
+			Tag* t = toTag(j);
+			p->getArmor(slot)->fromTag(t);
+			t->deCompound();
+			p->sendInventroy();
+			delete t;
+			return Py_True;
+		}
+	}
+	return Py_False;
+}
+api_function(getPlayerHand) {
+	Player* p;
+	if (PyArg_ParseTuple(args, "K:getPlayerHand", &p)) {
+		if (PlayerCheck(p)) {
+			ItemStack* item = p->getSelectedItem();
 			return PyUnicode_FromString(toJson(item->save()).toStyledString().c_str());
 		}
 	}
@@ -574,24 +606,41 @@ api_function(setPlayerHand) {
 	}
 	return Py_False;
 }
-api_function(setPlayerItems) {
-	Player* p;
-	const char* x;
-	if (PyArg_ParseTuple(args, "Ks:setPlayerItems", &p, &x)) {
+api_function(getPlayerItem) {
+	Player* p; int slot;
+	if (PyArg_ParseTuple(args, "Ki:getPlayerItem", &p, &slot)) {
 		if (PlayerCheck(p)) {
-			Json::Value j = toJson(x);
-			if (j.isArray()) {
-				vector<ItemStack*> is = p->getContainer()->getSlots();
-				for (unsigned i = 0; i < j.size(); i++) {
-					Tag* t = toTag(j[i]);
-					is[i]->fromTag(t);
-					t->deCompound();
-					delete t;
-				}
-				p->sendInventroy();
-			}
+			ItemStack* item = p->getInventoryItem(slot);
+			return PyUnicode_FromString(toJson(item->save()).toStyledString().c_str());
 		}
-		return Py_True;
+	}
+	return Py_False;
+}
+api_function(setPlayerItem) {
+	Player* p; int slot; const char* x;
+	if (PyArg_ParseTuple(args, "Kis:setPlayerItem", &p, &slot, &x)) {
+		if (PlayerCheck(p)) {
+			Tag* t = toTag(toJson(x));
+			p->getInventoryItem(slot)->fromTag(t);
+			p->sendInventroy();
+			t->deCompound();
+			delete t;
+			return Py_True;
+		}
+	}
+	return Py_False;
+}
+api_function(getPlayerEnderChests) {
+	Player* p;
+	if (PyArg_ParseTuple(args, "K:getPlayerEnderChests", &p)) {
+		if (PlayerCheck(p)) {
+			Json::Value j;
+			vector<ItemStack*> is = p->getEnderChestContainer()->getSlots();
+			for (auto i : is) {
+				j.append(toJson(i->save()));
+			}
+			return Py_True;
+		}
 	}
 	return Py_False;
 }
@@ -711,10 +760,14 @@ api_method(createScoreBoardId),
 api_method(setDamage),
 api_method(setServerMotd),
 api_method(getPlayerItems),
-api_method(getPlayerHand),
-api_method(getPlayerItem),
-api_method(setPlayerHand),
 api_method(setPlayerItems),
+api_method(getPlayerArmor),
+api_method(setPlayerArmor),
+api_method(getPlayerHand),
+api_method(setPlayerHand),
+api_method(getPlayerItem),
+api_method(setPlayerItem),
+api_method(getPlayerEnderChests),
 api_method(setPlayerEnderChests),
 api_method(addItemEx),
 api_method(removeItem),
@@ -1080,7 +1133,7 @@ Hook(世界爆炸, bool, MSSYM_B1QA7explodeB1AA5LevelB2AAE20QEAAXAEAVBlockSourceB2AA
 }
 Hook(命令方块执行, bool, MSSYM_B1QE14performCommandB1AE17CommandBlockActorB2AAA4QEAAB1UE16NAEAVBlockSourceB3AAAA1Z,
 	VA _this, BlockSource* a2) {
-	//脉冲:0,重复:1,链:2
+	/*//脉冲:0,重复:1,链:2
 	int mode = SYMCALL<int>(MSSYM_B1QA7getModeB1AE17CommandBlockActorB2AAA4QEBAB1QE19AW4CommandBlockModeB2AAE15AEAVBlockSourceB3AAAA1Z,
 		_this, a2);
 	//无条件:0,有条件:1
@@ -1088,7 +1141,7 @@ Hook(命令方块执行, bool, MSSYM_B1QE14performCommandB1AE17CommandBlockActorB2AAA4
 		_this, a2);
 	string cmd = f(string, _this + 264);
 	string rawname = f(string, _this + 296);
-	BlockPos bp = f(BlockPos, _this + 44);
+	BlockPos bp = f(BlockPos, _this + 44);*/
 	Tag* t = newTag(Compound);
 	SYMCALL<bool>(MSSYM_B1QA4saveB1AE17CommandBlockActorB2AAA4UEBAB1UE16NAEAVCompoundTagB3AAAA1Z,
 		_this, t);
@@ -1187,7 +1240,9 @@ int DllMain(VA, int dwReason, VA) {
 		//StructureSettings ss;
 		//cout << toJson(st.save()) << endl;
 		init();
-		puts("[BDSpyrunner] v0.2.9 loaded.");
+		puts(u8"[BDSpyrunner] v0.2.10 loaded.\n"
+			"感谢小枫云(ipyvps.com)对此项目的大力支持\n"
+			"Thanks for ipyvps.com strong support for this project");
 	}
 	return 1;
 }
