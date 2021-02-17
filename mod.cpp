@@ -4,12 +4,13 @@
 #pragma region 宏定义
 #define api_method(name) {#name, api_##name, 1, 0}
 #define api_function(name) static PyObject* api_##name(PyObject*, PyObject*args)
+//#define PlayerCheck(ptr)  PlayerList[(Player*)ptr]
 #define check_ret(...) if (!res) return 0;return original(__VA_ARGS__)
-#define PlayerCheck(ptr)  PlayerList[(Player*)ptr]
 #pragma endregion
 #pragma region 全局变量
 static VA _cmdqueue = 0, _ServerNetworkHandle = 0;
 static Level* _level = 0;
+static MinecraftCommands* commands = 0;
 static const VA STD_COUT_HANDLE = f(VA, SYM(MSSYM_B2UUA3impB2UQA4coutB1AA3stdB2AAA23VB2QDA5basicB1UA7ostreamB1AA2DUB2QDA4charB1UA6traitsB1AA1DB1AA3stdB3AAAA11B1AA1A));
 static Scoreboard* _scoreboard;//储存计分板名称
 static unsigned _formid = 1;//表单ID
@@ -92,6 +93,23 @@ static bool callpy(const char* type, PyObject* val) {
 	}
 	return result;
 }
+static bool PlayerCheck(void* ptr) {
+	bool r = false;
+	_level->forEachPlayer([&r, ptr](Player* p)->bool {
+		if (ptr == p)
+			r = true;
+		return 0;
+		});
+	return r;
+}
+static bool runcmdEx(const string& cmd) {
+	MinecraftCommands org(_level);
+	MinecraftCommands* org_p = &org;
+	unsigned rv;
+	SYMCALL(MSSYM_MD5_2f44106d21f04bf0ef021570ea279df0,
+		commands, &rv, &org_p, &cmd, 4, 1);
+	return *(bool*)&rv;
+}
 static unsigned ModalFormRequestPacket(Player* p, string str) {
 	unsigned fid = _formid++;
 	if (PlayerCheck(p)) {
@@ -107,7 +125,6 @@ static bool TransferPacket(Player* p, const string& address, short port) {
 		VA pkt = createPacket(85);
 		f(string, pkt + 40) = address;
 		f(short, pkt + 72) = port;
-		//Sleep(10);
 		p->sendPacket(pkt);
 		return true;
 	}
@@ -782,6 +799,11 @@ extern "C" PyObject * mc_init() {
 }
 #pragma endregion
 #pragma region Hook
+Hook(命令, void, MSSYM_MD5_86fcb78ba16efd5b85d4ad6bd816aa85,
+	MinecraftCommands* a0, void* a1, void* a2, void* a3, void* a4) {
+	commands = a0;
+	original(a0, a1, a2, a3, a4);
+}
 Hook(世界Tick, void, MSSYM_B1QA4tickB1AA5LevelB2AAA7UEAAXXZ,
 	VA a1, VA a2, VA a3, VA a4) {
 	original(a1, a2, a3, a4);
@@ -848,23 +870,40 @@ Hook(计分板, Scoreboard*, MSSYM_B2QQE170ServerScoreboardB2AAA4QEAAB1AE24VCommand
 }
 Hook(后台输出, VA, MSSYM_MD5_b5f2f0a753fc527db19ac8199ae8f740,
 	VA handle, const char* str, VA size) {
-	if (handle == STD_COUT_HANDLE) {
-		bool res = callpy(u8"后台输出", PyUnicode_FromString(str));
-		if (!res)return 0;
-	}
+	//if (handle == STD_COUT_HANDLE) {
+	bool res = callpy(u8"后台输出", PyUnicode_FromString(str));
+	if (!res)return 0;
+	//}
 	return original(handle, str, size);
 }
 Hook(后台输入, bool, MSSYM_MD5_b5c9e566146b3136e6fb37f0c080d91e,
 	VA _this, string& cmd) {
-	bool res = true;
-	/*if (cmd == "pyreload") {
+	if (cmd == "pyreload") {
 		PyFuncs.clear();
-		Py_Finalize();
+		cout << Py_FinalizeEx() << endl;
 		void init();
 		init();
 		return 0;
-	}*/
-	res = callpy(u8"后台输入", PyUnicode_FromString(cmd.c_str()));
+	}
+	static bool debug = false;
+	if (cmd == "pydebug") {
+		if (debug) {
+			debug = false;
+			puts("Debug off");
+		}
+		else {
+			debug = true;
+			puts("Debug on");
+			printf(">>>");
+		}
+		return 0;
+	}
+	if (debug) {
+		PyRun_SimpleString(cmd.c_str());
+		printf(">>>");
+		return 0;
+	}
+	bool res = callpy(u8"后台输入", PyUnicode_FromString(cmd.c_str()));
 	check_ret(_this, cmd);
 }
 Hook(加入游戏, void, MSSYM_B1QA6handleB1AE20ServerNetworkHandlerB2AAE26UEAAXAEBVNetworkIdentifierB2AAE37AEBVSetLocalPlayerAsInitializedPacketB3AAAA1Z,
@@ -885,6 +924,13 @@ Hook(离开游戏, void, MSSYM_B2QUE12onPlayerLeftB1AE20ServerNetworkHandlerB2AAE21A
 Hook(使用物品, bool, MSSYM_B1QA9useItemOnB1AA8GameModeB2AAA4UEAAB1UE14NAEAVItemStackB2AAE12AEBVBlockPosB2AAA9EAEBVVec3B2AAA9PEBVBlockB3AAAA1Z,
 	VA _this, ItemStack* item, BlockPos* bp, unsigned __int8 a4, VA a5, Block* b) {
 	Player* p = f(Player*, _this + 8);
+	for (auto& x : _level->getPlayers()) {
+		cout << _level->getPlayers().size() << endl;
+		cout << x << endl;
+	}
+	cout << runcmdEx("clear @a apple") << endl;
+	//cout << p << endl;
+	//_level->forEachPlayer([&](Actor* p) {cout << p << endl; });
 	short iid = item->getId();
 	short iaux = item->mAuxValue;
 	string iname = item->getName();
@@ -926,8 +972,7 @@ Hook(破坏方块, bool, MSSYM_B2QUE20destroyBlockInternalB1AA8GameModeB2AAA4AEAAB1U
 	BlockLegacy* bl = b->getBlockLegacy();
 	short bid = bl->getBlockItemID();
 	string bn = bl->getBlockName();
-	bool res = true;
-	res = callpy(u8"破坏方块", Py_BuildValue("{s:K,s:s,s:i,s:[i,i,i]}",
+	bool res = callpy(u8"破坏方块", Py_BuildValue("{s:K,s:s,s:i,s:[i,i,i]}",
 		"player", p,
 		"blockname", bn.c_str(),
 		"blockid", bid,
@@ -1213,7 +1258,6 @@ void init() {
 	//Py_PreInitialize(&cfg);
 	PyImport_AppendInittab("mc", mc_init); //增加一个模块
 	Py_Initialize();
-	PyEval_InitThreads();
 	if (!filesystem::exists("py"))
 		filesystem::create_directory("py");
 	filesystem::directory_iterator files("py");
@@ -1226,7 +1270,6 @@ void init() {
 			PyErr_Print();
 		}
 	}
-	PyEval_SaveThread();
 }
 int DllMain(VA, int dwReason, VA) {
 	if (dwReason == 1) {
@@ -1240,7 +1283,9 @@ int DllMain(VA, int dwReason, VA) {
 		//StructureSettings ss;
 		//cout << toJson(st.save()) << endl;
 		init();
-		puts(u8"[BDSpyrunner] v0.2.10 loaded.\n"
+		//PyEval_InitThreads();
+		//PyEval_SaveThread();
+		puts(u8"[BDSpyrunner] v0.2.11 loaded.\n"
 			"感谢小枫云(ipyvps.com)对此项目的大力支持\n"
 			"Thanks for ipyvps.com strong support for this project");
 	}

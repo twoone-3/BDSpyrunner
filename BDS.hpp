@@ -82,6 +82,22 @@ struct Level {
 		return SYMCALL<struct Actor*>(MSSYM_B1QE11fetchEntityB1AA5LevelB2AAE13QEBAPEAVActorB2AAE14UActorUniqueIDB3AAUA1NB1AA1Z,
 			this, id, false);
 	}
+	auto getPlayers() {
+		return f(vector<struct Player*>, this + 104);
+	}
+	void forEachPlayer(const function<bool(struct Player*)>& todo) {
+		SYMCALL(MSSYM_B1QE13forEachPlayerB1AA5LevelB2AAA6QEBAXVB2QDA8functionB3ADDA3A6AB1UE11NAEBVPlayerB3AAAA1ZB1AA3stdB3AAAA1Z,
+			this, &todo);
+	}
+	void forEachPlayer(const function<void(Actor*)>& todo) {
+		auto begin = (uint64_t*)*((uint64_t*)this + 13);
+		auto end = (uint64_t*)*((uint64_t*)this + 14);
+		while (begin != end) {
+			auto* player = (Actor*)(*begin);
+			if (player)todo(player);
+			++begin;
+		}
+	}
 };
 struct Vec3 { float x = 0.0f, y = 0.0f, z = 0.0f; };
 struct Vec2 { float x = 0.0f, y = 0.0f; };
@@ -295,8 +311,8 @@ struct Player : Mob {
 	}
 	// 设置一个装备
 	void setArmor(unsigned i, ItemStack* item) {
-		 SYMCALL(MSSYM_B1QA8setArmorB1AE12ServerPlayerB2AAE16UEAAXW4ArmorSlotB2AAE13AEBVItemStackB3AAAA1Z,
-			 this, i, item);
+		SYMCALL(MSSYM_B1QA8setArmorB1AE12ServerPlayerB2AAE16UEAAXW4ArmorSlotB2AAE13AEBVItemStackB3AAAA1Z,
+			this, i, item);
 	}
 	// 设置副手
 	void setOffhandSlot(ItemStack* item) {
@@ -433,3 +449,24 @@ struct Scoreboard {
 		return SYMCALL<ScoreboardId*>(MSSYM_B1QE18createScoreboardIdB1AE16ServerScoreboardB2AAE20UEAAAEBUScoreboardIdB2AAE10AEBVPlayerB3AAAA1Z, this, player);
 	}
 };
+struct MinecraftCommands {
+	void* myVTBL;
+	void* UUID[2];
+	Level* lvl;
+	string Name;
+	char Perm;
+	static void* fake_vtbl[26];
+	static void dummy() {
+	};
+	MinecraftCommands(Level* l) {
+		if (fake_vtbl[1] == nullptr) {
+			memcpy(fake_vtbl, (void**)(SYM(MSSYM_B3QQUE207ServerCommandOriginB2AAA26BB1A)) - 1, sizeof(fake_vtbl));
+			fake_vtbl[1] = (void*)dummy;
+		}
+		myVTBL = fake_vtbl + 1;
+		Name = "Server";
+		Perm = 5;
+		lvl = l;
+	}
+};
+void* MinecraftCommands::fake_vtbl[26];
