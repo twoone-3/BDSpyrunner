@@ -10,51 +10,51 @@ struct Tag {
 	VA value[3];
 
 	void put(const string& key, const Tag* value) {
-		return SYMCALL(MSSYM_MD5_9185d61c497a96e9aa3e623cf3538e67,
+		return SYMCALL("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
 			this, key, value);
 	}
 	void putByte(const string& key, const unsigned char value) {
-		return SYMCALL(MSSYM_MD5_63cca7b57ad5118628b227fccd59a565,
+		return SYMCALL("?putByte@CompoundTag@@QEAAAEAEV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@E@Z",
 			this, key, value);
 	}
 	void putShort(const string& key, const short value) {
-		return SYMCALL(MSSYM_MD5_bac65ee588cb8573315172fb38b08236,
+		return SYMCALL("?putShort@CompoundTag@@QEAAAEAFV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@F@Z",
 			this, key, value);
 	}
 	void putString(const string& key, const string& value) {
-		return SYMCALL(MSSYM_MD5_5ca6e1c0087e756cb8fcbe37e98c5803,
+		return SYMCALL("?putString@CompoundTag@@QEAAAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V23@0@Z",
 			this, key, value);
 	}
 	void putInt(const string& key, const int& value) {
-		return SYMCALL(MSSYM_MD5_644cc4dc2599f254165ee0e19c8054bd,
+		return SYMCALL("?putInt@CompoundTag@@QEAAAEAHV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@H@Z",
 			this, key, value);
 	}
 	void putInt64(const string& key, const int64_t& value) {
-		return SYMCALL(MSSYM_MD5_f69ea9befa2d8e1552b0e095dda6aa81,
+		return SYMCALL("?putInt64@CompoundTag@@QEAAAEA_JV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_J@Z",
 			this, key, value);
 	}
 	void putFloat(const string& key, const float& value) {
-		return SYMCALL(MSSYM_MD5_9659be8cc21e43b24ed3ca14ef7ad990,
+		return SYMCALL("?putFloat@CompoundTag@@QEAAAEAMV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@M@Z",
 			this, key, value);
 	}
 	void putBoolean(const string& key, const bool& value) {
-		return SYMCALL(MSSYM_MD5_6e2786a1395292da975f5a53150e04dc,
+		return SYMCALL("?putBoolean@CompoundTag@@QEAAXV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
 			this, key, value);
 	}
 	void putCompound(const string& key, const Tag* value) {
-		return SYMCALL(MSSYM_MD5_38ac198002a6675928bd29ecb9022e72,
+		return SYMCALL("?putCompound@CompoundTag@@QEAAPEAV1@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@3@@Z",
 			this, key, &value);
 	}
 
 	void add(Tag* t) {
-		SYMCALL(MSSYM_B1QA3addB1AA7ListTagB2AAA6QEAAXVB2QDA6uniqueB1UA3ptrB1AA4VTagB2AAA1UB2QDA7defaultB1UA6deleteB1AA4VTagB3AAAA3stdB3AAAA3stdB3AAAA1Z,
+		SYMCALL("?add@ListTag@@QEAAXV?$unique_ptr@VTag@@U?$default_delete@VTag@@@std@@@std@@@Z",
 			this, &t);
 	}
 	void deCompound() {
-		SYMCALL(MSSYM_B2QQE121CompoundTagB2AAA4UEAAB1AA2XZ, this);
+		SYMCALL("??1CompoundTag@@UEAA@XZ", this);
 	}
 	void deList() {
-		SYMCALL(MSSYM_B2QQA81ListTagB2AAA4UEAAB1AA2XZ, this);
+		SYMCALL("??1ListTag@@UEAA@XZ", this);
 	}
 
 	char type() {
@@ -78,7 +78,7 @@ Tag* toTag(const Json::Value& j);
 Tag* ArraytoTag(const Json::Value& j);
 Tag* newTag(TagType t) {
 	Tag* tag = 0;
-	SYMCALL(MSSYM_B1QA6newTagB1AA3TagB2AAA2SAB1QA2AVB2QDA6uniqueB1UA3ptrB1AA4VTagB2AAA1UB2QDA7defaultB1UA6deleteB1AA4VTagB3AAAA3stdB3AAAA3stdB2AAA6W4TypeB1AA11B2AAA1Z,
+	SYMCALL("?newTag@Tag@@SA?AV?$unique_ptr@VTag@@U?$default_delete@VTag@@@std@@@std@@W4Type@1@@Z",
 		&tag, t);
 	return tag;
 }
