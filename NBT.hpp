@@ -7,7 +7,7 @@ enum TagType {
 };
 struct Tag {
 	VA vftable;
-	VA value[3];
+	VA val[3];
 
 	void put(const string& key, const Tag* value) {
 		return SYMCALL("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
@@ -35,10 +35,6 @@ struct Tag {
 	}
 	void putFloat(const string& key, const float& value) {
 		return SYMCALL("?putFloat@CompoundTag@@QEAAAEAMV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@M@Z",
-			this, key, value);
-	}
-	void putBoolean(const string& key, const bool& value) {
-		return SYMCALL("?putBoolean@CompoundTag@@QEAAXV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
 			this, key, value);
 	}
 	void putCompound(const string& key, const Tag* value) {
@@ -71,11 +67,12 @@ struct Tag {
 	auto& asList() { return *(vector<Tag*>*)((VA)this + 8); }
 	auto& asCompound() { return *(map<string, Tag>*)((VA)this + 8); }
 };
-Tag* newTag(TagType t);
+
 Json::Value ListtoJson(Tag* t);
 Json::Value toJson(Tag* t);
 Tag* toTag(const Json::Value& j);
 Tag* ArraytoTag(const Json::Value& j);
+
 Tag* newTag(TagType t) {
 	Tag* tag = 0;
 	SYMCALL("?newTag@Tag@@SA?AV?$unique_ptr@VTag@@U?$default_delete@VTag@@@std@@@std@@W4Type@1@@Z",
@@ -149,10 +146,10 @@ Json::Value toJson(Tag* t) {
 			j[x.first + to_string(String)] = x.second.asString();
 			break;
 		case List:
-			j[x.first + to_string(List)] = ListtoJson((Tag*)&x.second);
+			j[x.first + to_string(List)] = ListtoJson(&x.second);
 			break;
 		case Compound:
-			j[x.first + to_string(Compound)] = toJson((Tag*)&x.second);
+			j[x.first + to_string(Compound)] = toJson(&x.second);
 			break;
 		}
 	}
@@ -197,20 +194,19 @@ Tag* toTag(const Json::Value& j) {
 		case String:
 			c->putString(key, j[x].asString());
 			break;
-		case List:
-		{
+		case List: {
 			Tag* lt = ArraytoTag(j[x]);
 			c->put(key, lt);
 			lt->deList();
 			delete lt;
+			break;
 		}
-		break;
-		case Compound:
-		{
-			Tag* ccc = toTag(j[x]);
-			c->putCompound(key, ccc);
+		case Compound: {
+			Tag* t = toTag(j[x]);
+			c->putCompound(key, t);
+			delete t;
+			break;
 		}
-		break;
 		}
 	}
 	return c;
@@ -225,21 +221,21 @@ Tag* ArraytoTag(const Json::Value& j) {
 		case Json::uintValue:
 		{
 			Tag* t = newTag(Int);
-			*(int*)t->value = x.asInt();
+			*(int*)t->val = x.asInt();
 			l->add(t);
 			break;
 		}
 		case Json::realValue:
 		{
 			Tag* t = newTag(Double);
-			*(double*)t->value = x.asDouble();
+			*(double*)t->val = x.asDouble();
 			l->add(t);
 			break;
 		}
 		case Json::stringValue:
 		{
 			Tag* t = newTag(String);
-			*(string*)t->value = x.asString();
+			*(string*)t->val = x.asString();
 			l->add(t);
 			break;
 		}
@@ -251,8 +247,8 @@ Tag* ArraytoTag(const Json::Value& j) {
 		}
 		case Json::objectValue:
 		{
-			Tag* ccc = toTag(x);
-			l->add(ccc);
+			Tag* t = toTag(x);
+			l->add(t);
 			break;
 		}
 		}

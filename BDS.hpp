@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "pch.h"
 #include "NBT.hpp"
 using namespace std;
@@ -24,7 +24,6 @@ struct BlockActor {
 	Block* getBlock() {
 		return f(Block*, this + 16);
 	}
-	// È¡·½¿éÎ»ÖÃ
 	BlockPos* getPosition() {// IDA BlockActor::BlockActor 18~20
 		return f(BlockPos*, this + 44);
 	}
@@ -36,17 +35,23 @@ struct BlockSource {
 	}
 	bool setBlock(const string& name, const BlockPos& bp) {
 		return SYMCALL<bool>("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z",
-			this, &bp, *(Block**)GetServerSymbol(("?m" + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()), 3, 0i64);
+			this, &bp, *(Block**)GetServerSymbol(("?m" + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()), 3, nullptr);
+	}
+	void updateNeighborsAt(const BlockPos* pos) {
+		SYMCALL("?updateNeighborsAt@BlockSource@@QEAAXAEBVBlockPos@@@Z",
+			this, pos);
 	}
 	int getDimensionId() {	// IDA Dimension::onBlockChanged 42
 		return f(int, (f(VA, this + 32) + 208));
 	}
 };
 struct Level {
+	// è·å–æ–¹å—æº æ²¡è¿™ä¸ªç»´åº¦è¿”å›ç©ºæŒ‡é’ˆ
 	BlockSource* getBlockSource(int did) {
 		VA d = SYMCALL<VA>("?getDimension@Level@@QEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
 			this, did);
-		return f(BlockSource*, d + 80);
+		if (!d)return 0;
+		return f(BlockSource*, d + 88);// IDA Level::tickEntities 120
 	}
 	VA getScoreBoard() {// IDA Level::removeEntityReferences
 		return f(VA, this + 8376);
@@ -80,25 +85,25 @@ struct ItemStackBase {
 	ItemStackBase* mChargedItem;
 	VA uk;
 
-	// È¡ÎïÆ·ID,ÌØÊâÖµ,ËğºÄ
+	// å–ç‰©å“ID,ç‰¹æ®Šå€¼,æŸè€—
 	short getId() {
 		return SYMCALL<short>("?getId@ItemStackBase@@QEBAFXZ", this);
 	}
 	short getDamageValue() {
 		return SYMCALL<short>("?getDamageValue@ItemStackBase@@QEBAFXZ", this);
 	}
-	// È¡ÎïÆ·Ãû³Æ
+	// å–ç‰©å“åç§°
 	string getName() {
 		string str;
 		SYMCALL<string*>("?getRawNameId@ItemStackBase@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 			this, &str);
 		return str;
 	}
-	// È¡ÈİÆ÷ÄÚÊıÁ¿
+	// å–å®¹å™¨å†…æ•°é‡
 	int getStackCount() {// IDA ContainerModel::networkUpdateItem
 		return f(int, this + 34);
 	}
-	// ÅĞ¶ÏÊÇ·ñ¿ÕÈİÆ÷
+	// åˆ¤æ–­æ˜¯å¦ç©ºå®¹å™¨
 	bool isNull() {
 		return SYMCALL<bool>("?isNull@ItemStackBase@@QEBA_NXZ", this);
 	}
@@ -135,7 +140,7 @@ struct ItemStackBase {
 };
 struct ItemStack : ItemStackBase {};
 struct Container {
-	// »ñÈ¡ÈİÆ÷ÄÚËùÓĞÎïÆ·
+	// è·å–å®¹å™¨å†…æ‰€æœ‰ç‰©å“
 	auto getSlots() {
 		vector<ItemStack*> s;
 		SYMCALL<VA>("?getSlots@Container@@UEBA?BV?$vector@PEBVItemStack@@V?$allocator@PEBVItemStack@@@std@@@std@@XZ",
@@ -147,56 +152,56 @@ struct Container {
 	}
 };
 struct Actor {
-	// »ñÈ¡ÉúÎïÃû³ÆĞÅÏ¢
+	// è·å–ç”Ÿç‰©åç§°ä¿¡æ¯
 	string getNameTag() {
 		return SYMCALL<string&>("?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ", this);
 	}
-	// »ñÈ¡ÉúÎïµ±Ç°Ëù´¦Î¬¶ÈID
+	// è·å–ç”Ÿç‰©å½“å‰æ‰€å¤„ç»´åº¦ID
 	int getDimensionId() {
 		int did;
 		SYMCALL<int&>("?getDimensionId@Actor@@UEBA?AV?$AutomaticID@VDimension@@H@@XZ",
 			this, &did);
 		return did;
 	}
-	// »ñÈ¡ÉúÎïµ±Ç°ËùÔÚ×ø±ê
+	// è·å–ç”Ÿç‰©å½“å‰æ‰€åœ¨åæ ‡
 	Vec3* getPos() {
 		return SYMCALL<Vec3*>("?getPos@Actor@@UEBAAEBVVec3@@XZ", this);
 	}
-	// ÊÇ·ñĞü¿Õ
+	// æ˜¯å¦æ‚¬ç©º
 	bool isStand() {// IDA MovePlayerPacket::MovePlayerPacket 30
 		return f(bool, this + 448);
 	}
-	// È¡·½¿éÔ´
+	// å–æ–¹å—æº
 	BlockSource* getBlockSource() {
 		return f(BlockSource*, this + 840);
 	}
-	// »ñÈ¡ÊµÌåÀàĞÍ
+	// è·å–å®ä½“ç±»å‹
 	unsigned getEntityTypeId() {
 		return f(unsigned, this + 964);
 	}
-	// »ñÈ¡²éÑ¯ÓÃID
+	// è·å–æŸ¥è¯¢ç”¨ID
 	VA getUniqueID() {
 		return SYMCALL<VA>("?getUniqueID@Actor@@QEBAAEBUActorUniqueID@@XZ", this);
 	}
-	// »ñÈ¡ÊµÌåÀàĞÍ
+	// è·å–å®ä½“ç±»å‹
 	string getEntityTypeName() {
 		string en_name;
 		SYMCALL<string&>("?EntityTypeToLocString@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4ActorType@@W4ActorTypeNamespaceRules@@@Z",
 			&en_name, getEntityTypeId());
 		return en_name;
 	}
-	// ¸üĞÂÊôĞÔ
+	// æ›´æ–°å±æ€§
 	VA updateAttrs() {
 		return SYMCALL<VA>("?_sendDirtyActorData@Actor@@QEAAXXZ", this);
 	}
 	VA getAttribute() {
 		return f(VA, this + 1144);
 	}
-	// Ìí¼ÓÒ»¸ö×´Ì¬
+	// æ·»åŠ ä¸€ä¸ªçŠ¶æ€
 	VA addEffect(VA ef) {
 		return SYMCALL<VA>("?addEffect@Actor@@QEAAXAEBVMobEffectInstance@@@Z", this, ef);
 	}
-	// »ñÈ¡ÉúÃüÖµ
+	// è·å–ç”Ÿå‘½å€¼
 	int getHealth() {
 		return SYMCALL<int>("?getHealth@Actor@@QEBAHXZ", this);
 	}
@@ -217,24 +222,24 @@ struct Actor {
 	}
 };
 struct Mob : Actor {
-	// »ñÈ¡×´Ì¬ÁĞ±í
+	// è·å–çŠ¶æ€åˆ—è¡¨
 	auto getEffects() {	// IDA Mob::addAdditionalSaveData 84
 		return (vector<MobEffectInstance>*)((VA*)this + 190);
 	}
-	// »ñÈ¡×°±¸ÈİÆ÷
+	// è·å–è£…å¤‡å®¹å™¨
 	VA getArmor() {		// IDA Mob::addAdditionalSaveData
 		return VA(this) + 1400;
 	}
-	// »ñÈ¡ÊÖÍ·ÈİÆ÷
+	// è·å–æ‰‹å¤´å®¹å™¨
 	VA getHands() {
 		return VA(this) + 1408;		// IDA Mob::readAdditionalSaveData
 	}
-	// ±£´æµ±Ç°¸±ÊÖÖÁÈİÆ÷
+	// ä¿å­˜å½“å‰å‰¯æ‰‹è‡³å®¹å™¨
 	VA saveOffhand(VA hlist) {
 		return SYMCALL<VA>("?saveOffhand@Mob@@IEBA?AV?$unique_ptr@VListTag@@U?$default_delete@VListTag@@@std@@@std@@XZ",
 			this, hlist);
 	}
-	// »ñÈ¡µØÍ¼ĞÅÏ¢
+	// è·å–åœ°å›¾ä¿¡æ¯
 	VA getLevel() {// IDA Mob::die 143
 		return f(VA, this + 856);
 	}
@@ -246,74 +251,74 @@ struct Player : Mob {
 			this + 2824, &p);
 		return p;
 	}
-	// ·¢ËÍÊı¾İ°ü
+	// å‘é€æ•°æ®åŒ…
 	void sendPacket(VA pkt) {
 		return SYMCALL<void>("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z",
 			this, pkt);
 	}
-	// ¸ù¾İµØÍ¼ĞÅÏ¢»ñÈ¡Íæ¼Òxuid
+	// æ ¹æ®åœ°å›¾ä¿¡æ¯è·å–ç©å®¶xuid
 	string& getXuid() {
 		return SYMCALL<string&>("?getPlayerXUID@Level@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
 			getLevel(), this + 2824);
 	}
-	// ÖØÉè·şÎñÆ÷Íæ¼ÒÃû
+	// é‡è®¾æœåŠ¡å™¨ç©å®¶å
 	void setName(string name) {
 		SYMCALL("?setName@Player@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 			this, name);
 	}
-	// »ñÈ¡ÍøÂç±êÊ¶·û
+	// è·å–ç½‘ç»œæ ‡è¯†ç¬¦
 	VA getNetId() {
 		return (VA)this + 2536;// IDA ServerPlayer::setPermissions 34
 	}
-	// »ñÈ¡±³°ü
+	// è·å–èƒŒåŒ…
 	Container* getContainer() {
 		return (Container*)f(VA, f(VA, this + 3048) + 176);
 	}
 	VA getContainerManager() {
 		return (VA)this + 3040;		// IDA Player::setContainerManager 18
 	}
-	// »ñÈ¡Ä©Ó°Ïä
+	// è·å–æœ«å½±ç®±
 	Container* getEnderChestContainer() {
 		return SYMCALL<Container*>("?getEnderChestContainer@Player@@QEAAPEAVEnderChestContainer@@XZ", this);
 	}
-	// ÉèÖÃÒ»¸ö×°±¸
+	// è®¾ç½®ä¸€ä¸ªè£…å¤‡
 	VA setArmor(int i, ItemStack* item) {
 		return SYMCALL<VA>("?setArmor@ServerPlayer@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z", this, i, item);
 	}
-	// ÉèÖÃ¸±ÊÖ
+	// è®¾ç½®å‰¯æ‰‹
 	VA setOffhandSlot(ItemStack* item) {
 		return SYMCALL<VA>("?setOffhandSlot@Player@@UEAAXAEBVItemStack@@@Z", this, item);
 	}
-	// Ìí¼ÓÒ»¸öÎïÆ·
+	// æ·»åŠ ä¸€ä¸ªç‰©å“
 	void addItem(ItemStackBase* item) {
 		SYMCALL<VA>("?addItem@@YAXAEAVPlayer@@AEAVItemStack@@@Z", this, item);
 	}
-	// »ñÈ¡µ±Ç°Ñ¡ÖĞµÄ¿òÎ»ÖÃ
+	// è·å–å½“å‰é€‰ä¸­çš„æ¡†ä½ç½®
 	int getSelectdItemSlot() {// IDA Player::getSelectedItem 12
 		return f(unsigned, f(VA, this + 3048) + 16);
 	}
-	// »ñÈ¡µ±Ç°ÎïÆ·
+	// è·å–å½“å‰ç‰©å“
 	ItemStack* getSelectedItem() {
 		return SYMCALL<ItemStack*>("?getSelectedItem@Player@@QEBAAEBVItemStack@@XZ", this);
 	}
-	// »ñÈ¡±³°üÎïÆ·
+	// è·å–èƒŒåŒ…ç‰©å“
 	ItemStack* getInventoryItem(int slot) {
 		return SYMCALL<ItemStack*>("?getItem@FillingContainer@@UEBAAEBVItemStack@@H@Z", *(__int64**)(*((__int64*)this + 0x17D) + 0xB0), slot);
 	}
-	// »ñÈ¡ÓÎÏ·Ê±ÃüÁîÈ¨ÏŞ
+	// è·å–æ¸¸æˆæ—¶å‘½ä»¤æƒé™
 	char getPermission() {// IDA ServerPlayer::setPermissions 17
 		return *f(char*, this + 2216);
 	}
-	// ÉèÖÃÓÎÏ·Ê±ÃüÁîÈ¨ÏŞ
+	// è®¾ç½®æ¸¸æˆæ—¶å‘½ä»¤æƒé™
 	void setPermission(char m) {
 		SYMCALL("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z",
 			this, m);
 	}
-	// »ñÈ¡ÓÎÏ·Ê±ÓÎÍæÈ¨ÏŞ
+	// è·å–æ¸¸æˆæ—¶æ¸¸ç©æƒé™
 	char getPermissionLevel() {// IDA Abilities::setPlayerPermissions ?
 		return f(char, f(char*, this + 2192) + 1);
 	}
-	// ÉèÖÃÓÎÏ·Ê±ÓÎÍæÈ¨ÏŞ
+	// è®¾ç½®æ¸¸æˆæ—¶æ¸¸ç©æƒé™
 	void setPermissionLevel(char m) {
 		SYMCALL("?setPlayerPermissions@Abilities@@QEAAXW4PlayerPermissionLevel@@@Z",
 			this + 2192, m);
@@ -360,11 +365,11 @@ struct ScorePacketInfo {
 
 };
 struct Objective {
-	//»ñÈ¡¼Æ·Ö°åÃû³Æ
+	//è·å–è®¡åˆ†æ¿åç§°
 	auto getScoreName() {
 		return f(string, this + 64);
 	}
-	//»ñÈ¡¼Æ·Ö°åÕ¹Ê¾Ãû³Æ
+	//è·å–è®¡åˆ†æ¿å±•ç¤ºåç§°
 	auto getScoreDisplayName() {
 		return f(string, this + 96);
 	}
@@ -400,7 +405,7 @@ struct Scoreboard {
 	auto getScoreboardId(Player* a2) {
 		return SYMCALL<ScoreboardId*>("?getScoreboardId@Scoreboard@@QEBAAEBUScoreboardId@@AEBVActor@@@Z", this, a2);
 	}
-	//¸ü¸ÄÍæ¼Ò·ÖÊı
+	//æ›´æ”¹ç©å®¶åˆ†æ•°
 	int modifyPlayerScore(ScoreboardId* a3, Objective* a4, int count, int mode) {
 		bool a2 = true;
 		return SYMCALL<int>("?modifyPlayerScore@Scoreboard@@QEAAHAEA_NAEBUScoreboardId@@AEAVObjective@@HW4PlayerScoreSetFunction@@@Z",
