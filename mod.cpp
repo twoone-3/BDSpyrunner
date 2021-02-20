@@ -1,7 +1,6 @@
 ﻿#include "pch.h"
 #include "BDS.hpp"
 #pragma warning(disable:4996)
-#define VERSION "1.0.1"
 #define api_method(name) {#name, api_##name, 1, 0}
 #define api_function(name) static PyObject* api_##name(PyObject*, PyObject*args)
 #define check_ret(...) if (!res) return 0;return original(__VA_ARGS__)
@@ -626,7 +625,7 @@ Hook(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPl
 // 获取版本
 api_function(getVersion) {
 	if (PyArg_ParseTuple(args, ":getVersion")) {
-		return PyUnicode_FromString(VERSION);
+		return PyLong_FromLong(102);
 	}
 	return Py_False;
 }
@@ -1161,7 +1160,7 @@ api_function(setBlock) {
 	return Py_None;
 }
 #pragma endregion
-PyMethodDef api_list[] = {
+static PyMethodDef api_list[]{
 api_method(getVersion),
 api_method(logout),
 api_method(runcmd),
@@ -1210,16 +1209,14 @@ api_method(getBlock),
 api_method(setBlock),
 {}
 };
-// 模块声明
-PyModuleDef api_module = { PyModuleDef_HEAD_INIT, "mc", 0, -1, api_list, 0, 0, 0, 0 };
-PyObject* mc_init() { return PyModule_Create(&api_module); }
-void init() {
+static PyModuleDef api_module{ PyModuleDef_HEAD_INIT, "mc", 0, -1, api_list, 0, 0, 0, 0 };
+static void init() {
 	//PyPreConfig cfg;
 	//PyPreConfig_InitPythonConfig(&cfg);
 	//cfg.utf8_mode = 1;
 	//cfg.configure_locale = 0;
 	//Py_PreInitialize(&cfg);
-	PyImport_AppendInittab("mc", mc_init); //增加一个模块
+	PyImport_AppendInittab("mc", []{ return PyModule_Create(&api_module); }); //增加一个模块
 	Py_Initialize();
 	PyEval_InitThreads();
 	if (!filesystem::exists("py"))
@@ -1245,7 +1242,7 @@ int DllMain(VA, int dwReason, VA) {
 		//	delete t;
 		//}
 		init();
-		puts(u8"[BDSpyrunner] " VERSION " loaded.");
+		puts(u8"[BDSpyrunner] 1.0.2 loaded.");
 		puts(u8"[BDSpyrunner] 感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return 1;

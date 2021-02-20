@@ -204,7 +204,7 @@ Tag* toTag(const Json::Value& j) {
 		case Compound: {
 			Tag* t = toTag(j[x]);
 			c->putCompound(key, t);
-			delete t;
+			//delete t;
 			break;
 		}
 		}
