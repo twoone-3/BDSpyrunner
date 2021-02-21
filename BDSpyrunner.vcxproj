@@ -28,6 +28,9 @@
     </ClCompile>
     <ClCompile Include="mod.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Event.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

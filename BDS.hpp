@@ -61,7 +61,14 @@ struct Level {
 			this, id, false);
 	}
 };
-struct Vec3 { float x = 0.0f, y = 0.0f, z = 0.0f; };
+struct Vec3 {
+	float x = 0.0f, y = 0.0f, z = 0.0f;
+	string toString() {
+		char str[64];
+		sprintf_s(str, "(%f,%f,%f)", x, y, z);
+		return str;
+	}
+};
 struct Vec2 { float x = 0.0f, y = 0.0f; };
 struct MobEffectInstance { char fill[0x1C]; };
 struct Item;
