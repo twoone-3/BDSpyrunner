@@ -2,12 +2,15 @@
 #include "BDS.hpp"
 #include "Event.h"
 #pragma warning(disable:4996)
-#define api_method(name) {#name, api_##name, 1, 0}
-#define api_function(name) static PyObject* api_##name(PyObject*, PyObject*args)
-#define check_ret(...) if (!res) return 0;return original(__VA_ARGS__)
-#define PlayerCheck(ptr)  PlayerList[(Player*)ptr]
-#pragma region 全局变量
-static VA _cmdqueue = 0, _ServerNetworkHandle = 0;
+#pragma region Macro
+#define API_METHOD(name) {#name, api_##name, 1, 0}
+#define PYAPI(name) static PyObject* api_##name(PyObject* , PyObject* args)
+#define CHECK_RETURN(...) if (!res) return 0; return original(__VA_ARGS__)
+#define CHECK_PLAYER(ptr)  PlayerList[(Player*)ptr]
+#pragma endregion
+#pragma region Global variable
+static VA _cmdqueue = 0;
+static ServerNetworkHandler* _Handle = 0;
 static Level* _level = 0;
 static Scoreboard* _scoreboard;//储存计分板名称
 static unsigned _formid = 1;//表单ID
@@ -19,19 +22,7 @@ static int _Damage;//伤害值
 static unordered_map<PyObject*, pair<unsigned, unsigned>> tick;//执行队列
 static queue<function<void()>> todos;
 #pragma endregion
-#pragma region 函数定义
-static Json::Value toJson(const string& s) {
-	Json::Value j;
-	Json::CharReaderBuilder rb;
-	string errs;
-	Json::CharReader* r(rb.newCharReader());
-	bool res = r->parse(s.c_str(), s.c_str() + s.length(), &j, &errs);
-	if (!res || !errs.empty()) {
-		cerr << u8"[Jsoncpp]" << errs << endl;
-	}
-	delete r;
-	return move(j);
-}
+#pragma region Function Define
 static inline VA createPacket(int type) {
 	VA pkt;
 	SYMCALL("?createPacket@MinecraftPackets@@SA?AV?$shared_ptr@VPacket@@@std@@W4MinecraftPacketIds@@@Z",
@@ -39,11 +30,13 @@ static inline VA createPacket(int type) {
 	return pkt;
 }
 static bool EventCall(Event e, PyObject* val) {
-	if (PyFuncs[e].empty())
+	if (PyFuncs[e].empty()) {
+		Py_XDECREF(val);
 		return true;
+	}
 	bool result = true;
 	int nHold = PyGILState_Check();   //检测当前线程是否拥有GIL
-	PyGILState_STATE gstate;
+	PyGILState_STATE gstate = PyGILState_UNLOCKED;
 	if (!nHold)
 		gstate = PyGILState_Ensure();   //如果没有GIL，则申请获取GIL
 	Py_BEGIN_ALLOW_THREADS;
@@ -51,8 +44,9 @@ static bool EventCall(Event e, PyObject* val) {
 	for (PyObject* fn : PyFuncs[e]) {
 		if (PyObject_CallFunction(fn, "O", val) == Py_False)
 			result = false;
+		PyErr_Print();
 	}
-	PyErr_Print();
+	Py_XDECREF(val);
 	Py_UNBLOCK_THREADS;
 	Py_END_ALLOW_THREADS;
 	if (!nHold)
@@ -61,7 +55,7 @@ static bool EventCall(Event e, PyObject* val) {
 }
 static unsigned ModalFormRequestPacket(Player* p, string str) {
 	unsigned fid = _formid++;
-	if (PlayerCheck(p)) {
+	if (CHECK_PLAYER(p)) {
 		VA pkt = createPacket(100);
 		f(unsigned, pkt + 40) = fid;
 		f(string, pkt + 48) = str;
@@ -70,7 +64,7 @@ static unsigned ModalFormRequestPacket(Player* p, string str) {
 	return fid;
 }
 static bool TransferPacket(Player* p, const string& address, short port) {
-	if (PlayerCheck(p)) {
+	if (CHECK_PLAYER(p)) {
 		VA pkt = createPacket(85);
 		f(string, pkt + 40) = address;
 		f(short, pkt + 72) = port;
@@ -81,7 +75,7 @@ static bool TransferPacket(Player* p, const string& address, short port) {
 	return false;
 }
 static bool TextPacket(Player* p, char mode, const string& msg) {
-	if (PlayerCheck(p)) {
+	if (CHECK_PLAYER(p)) {
 		VA pkt = createPacket(9);
 		f(char, pkt + 40) = mode;
 		f(string, pkt + 48) = p->getNameTag();
@@ -92,18 +86,18 @@ static bool TextPacket(Player* p, char mode, const string& msg) {
 	return false;
 }
 static bool CommandRequestPacket(Player* p, const string& cmd) {
-	if (PlayerCheck(p)) {
+	if (CHECK_PLAYER(p)) {
 		VA pkt = createPacket(77);
 		f(string, pkt + 40) = cmd;
 		SYMCALL<VA>("?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
-			_ServerNetworkHandle, p->getNetId(), pkt);
+			_Handle, p->getNetId(), pkt);
 		//p->sendPacket(pkt);
 		return true;
 	}
 	return false;
 }
 static bool BossEventPacket(Player* p, string name, float per, int eventtype) {
-	if (PlayerCheck(p)) {
+	if (CHECK_PLAYER(p)) {
 		VA pkt = createPacket(74);
 		f(VA, pkt + 48) = f(VA, pkt + 56) = f(VA, p->getUniqueID());
 		f(int, pkt + 64) = eventtype;//0显示,1更新,2隐藏,
@@ -115,7 +109,7 @@ static bool BossEventPacket(Player* p, string name, float per, int eventtype) {
 	return false;
 }
 static bool setDisplayObjectivePacket(Player* p, const string& title, const string& name = "name") {
-	if (PlayerCheck(p)) {
+	if (CHECK_PLAYER(p)) {
 		VA pkt = createPacket(107);
 		f(string, pkt + 40) = "sidebar";
 		f(string, pkt + 72) = name;
@@ -128,7 +122,7 @@ static bool setDisplayObjectivePacket(Player* p, const string& title, const stri
 	return false;
 }
 static bool SetScorePacket(Player* p, char type, const vector<ScorePacketInfo>& slot) {
-	if (PlayerCheck(p)) {
+	if (CHECK_PLAYER(p)) {
 		VA pkt = createPacket(108);
 		f(char, pkt + 40) = type;//{set,remove}
 		f(vector<ScorePacketInfo>, pkt + 48) = slot;
@@ -138,41 +132,35 @@ static bool SetScorePacket(Player* p, char type, const vector<ScorePacketInfo>& 
 	return false;
 }
 #pragma endregion
-#pragma region Hook
+#pragma region Hook List
 Hook(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	VA a1, VA a2, VA a3, VA a4) {
 	original(a1, a2, a3, a4);
-	size_t l = todos.size();
-	if (l > 0) {
-		for (int i = 0; i < l; i++) {
+	// 执行todos函数
+	if (!todos.empty()) {
+		for (int i = 0; i < todos.size(); i++) {
 			todos.front()();
 			todos.pop();
 		}
 	}
-	int nHold = PyGILState_Check();   //检测当前线程是否拥有GIL
-	PyGILState_STATE gstate;
-	if (!nHold)
-	{
-		gstate = PyGILState_Ensure();   //如果没有GIL，则申请获取GIL
-	}
-	Py_BEGIN_ALLOW_THREADS;
-	Py_BLOCK_THREADS;
-	/**************************以下加入需要调用的python脚本代码  Begin***********************/
-	if (tick.empty())
-		return;
-	for (auto& i : tick) {
-		if (!i.second.first) {
-			i.second.first = i.second.second;
-			PyObject_CallFunction(i.first, 0);
+	if (!tick.empty()) {
+		int nHold = PyGILState_Check();   //检测当前线程是否拥有GIL
+		PyGILState_STATE gstate = PyGILState_UNLOCKED;
+		if (!nHold)
+			gstate = PyGILState_Ensure();   //如果没有GIL，则申请获取GIL
+		Py_BEGIN_ALLOW_THREADS;
+		Py_BLOCK_THREADS;
+		for (auto& i : tick) {
+			if (!i.second.first) {
+				i.second.first = i.second.second;
+				PyObject_CallFunction(i.first, 0);
+			}
+			else i.second.first--;
 		}
-		else i.second.first--;
-	}
-	/**************************以下加入需要调用的python脚本代码  End***********************/
-	Py_UNBLOCK_THREADS;
-	Py_END_ALLOW_THREADS;
-	if (!nHold)
-	{
-		PyGILState_Release(gstate);    //释放当前线程的GIL
+		Py_UNBLOCK_THREADS;
+		Py_END_ALLOW_THREADS;
+		if (!nHold)
+			PyGILState_Release(gstate);    //释放当前线程的GIL
 	}
 }
 Hook(SPSCQueue, VA, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@QEAA@_K@Z",
@@ -187,7 +175,7 @@ Hook(Level_Level, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSou
 }
 Hook(GameSession_, VA, "??0GameSession@@QEAA@AEAVNetworkHandler@@V?$unique_ptr@VServerNetworkHandler@@U?$default_delete@VServerNetworkHandler@@@std@@@std@@AEAVLoopbackPacketSender@@V?$unique_ptr@VNetEventCallback@@U?$default_delete@VNetEventCallback@@@std@@@3@V?$unique_ptr@VLevel@@U?$default_delete@VLevel@@@std@@@3@E@Z",
 	VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7) {
-	_ServerNetworkHandle = f(VA, a3);
+	_Handle = f(ServerNetworkHandler*, a3);
 	return original(a1, a2, a3, a4, a5, a6, a7);
 }
 Hook(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",//"?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",?setup@KillCommand@@SAXAEAVCommandRegistry@@@Z
@@ -205,14 +193,14 @@ Hook(ServerScoreboard_, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnum
 }
 Hook(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, VA size) {
-	bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromString(str));
+	bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromStringAndSize(str, size));
 	if (!res)return _this;
 	return original(_this, str, size);
 }
 Hook(onConsoleOutput2, int, "printf",
 	const char* format, const char* str) {
 	bool res = EventCall(Event::onConsoleInput, PyUnicode_FromString(str));
-	check_ret(format, str);
+	CHECK_RETURN(format, str);
 }
 Hook(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 	VA _this, const string& cmd) {
@@ -232,16 +220,17 @@ Hook(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 		cout << '>';
 		return 0;
 	}
-	bool res = EventCall(Event::onConsoleInput, PyUnicode_FromString(cmd.c_str()));
-	check_ret(_this, cmd);
+	bool res = EventCall(Event::onConsoleInput, PyUnicode_FromStringAndSize(cmd.c_str(), cmd.length()));
+	CHECK_RETURN(_this, cmd);
 }
 Hook(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVSetLocalPlayerAsInitializedPacket@@@Z",
-	VA _this, VA a2, VA a3) {
-	Player* p = SYMCALL<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
-		_this, a2, *(VA*)(a3 + 16));
-	PlayerList[p] = true;
-	EventCall(Event::onPlyaerJoin, PyLong_FromUnsignedLongLong((VA)p));
-	original(_this, a2, a3);
+	ServerNetworkHandler* _this, VA id,/*SetLocalPlayerAsInitializedPacket*/ VA pkt) {
+	Player* p = _this->_getServerPlayer(id, pkt);
+	if (p) {
+		PlayerList[p] = true;
+		EventCall(Event::onPlyaerJoin, PyLong_FromUnsignedLongLong((VA)p));
+	}
+	original(_this, id, pkt);
 }
 Hook(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
 	VA _this, Player* p, char v3) {
@@ -268,12 +257,12 @@ Hook(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@E
 		"blockid", bid,
 		"position", bp->x, bp->y, bp->z
 	));
-	check_ret(_this, item, bp, a4, a5, b);
+	CHECK_RETURN(_this, item, bp, a4, a5, b);
 }
 Hook(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@EPEAVActor@@_N@Z",
 	BlockSource* _this, Block* b, BlockPos* bp, unsigned __int8 a4, Actor* p, bool _bool) {
 	bool res = true;
-	if (PlayerCheck(p)) {
+	if (CHECK_PLAYER(p)) {
 		BlockLegacy* bl = b->getBlockLegacy();
 		short bid = bl->getBlockItemID();
 		string bn = bl->getBlockName();
@@ -284,7 +273,7 @@ Hook(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 			"position", bp->x, bp->y, bp->z
 		));
 	}
-	check_ret(_this, b, bp, a4, p, _bool);
+	CHECK_RETURN(_this, b, bp, a4, p, _bool);
 }
 Hook(onDestroyBlock, bool, "?_destroyBlockInternal@GameMode@@AEAA_NAEBVBlockPos@@E@Z",
 	VA _this, BlockPos* bp) {
@@ -301,7 +290,7 @@ Hook(onDestroyBlock, bool, "?_destroyBlockInternal@GameMode@@AEAA_NAEBVBlockPos@
 		"blockid", bid,
 		"position", bp->x, bp->y, bp->z
 	));
-	check_ret(_this, bp);
+	CHECK_RETURN(_this, bp);
 }
 Hook(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
@@ -309,7 +298,7 @@ Hook(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 		"player", p,
 		"position", bp->x, bp->y, bp->z
 	));
-	check_ret(_this, p, bp);
+	CHECK_RETURN(_this, p, bp);
 }
 Hook(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
@@ -317,7 +306,7 @@ Hook(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z"
 		"player", p,
 		"position", bp->x, bp->y, bp->z
 	));
-	check_ret(_this, p, bp);
+	CHECK_RETURN(_this, p, bp);
 }
 Hook(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	VA _this, Player* p) {
@@ -369,7 +358,7 @@ Hook(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@@Z",
 		"player", p,
 		"actor", a
 	));
-	check_ret(p, a);
+	CHECK_RETURN(p, a);
 }
 Hook(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@AEAVChangeDimensionRequest@@@Z",
 	VA _this, Player* p, VA req) {
@@ -401,7 +390,7 @@ Hook(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 		"actor2", sa,//可能为0
 		"damage", a3
 	));
-	check_ret(_this, dmsg, _Damage, a4, a5);
+	CHECK_RETURN(_this, dmsg, _Damage, a4, a5);
 }
 Hook(onRespawn, void, "?respawn@Player@@UEAAXXZ",
 	Player* p) {
@@ -419,9 +408,8 @@ Hook(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_
 	original(_this, sender, target, msg, style);
 }
 Hook(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVTextPacket@@@Z",
-	VA _this, VA id, /*(TextPacket*)*/VA pkt) {
-	Player* p = SYMCALL<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
-		_this, id, f(char, pkt + 16));
+	ServerNetworkHandler* _this, VA id, /*TextPacket*/VA pkt) {
+	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
 		string msg = f(string, pkt + 80);
 		bool res = EventCall(Event::onInputText, Py_BuildValue("{s:K,s:s}",
@@ -432,9 +420,8 @@ Hook(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifie
 	}
 }
 Hook(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
-	VA _this, VA id, /*(CommandRequestPacket*)*/VA pkt) {
-	Player* p = SYMCALL<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
-		_this, id, f(char, pkt + 16));
+	ServerNetworkHandler* _this, VA id, /*CommandRequestPacket*/VA pkt) {
+	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
 		string cmd = f(string, pkt + 40);
 		bool res = EventCall(Event::onInputCommand, Py_BuildValue("{s:K,s:s}",
@@ -445,11 +432,10 @@ Hook(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdenti
 	}
 }
 Hook(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormResponsePacket@@$0A@@@UEBAXAEBVNetworkIdentifier@@AEAVNetEventCallback@@AEAV?$shared_ptr@VPacket@@@std@@@Z",
-	VA _this, VA id, VA handle,/*(ModalFormResponsePacket**)*/VA* ppkt) {
+	VA _this, VA id, ServerNetworkHandler* handle,/*ModalFormResponsePacket*/VA* ppkt) {
 	VA pkt = *ppkt;
-	Player* p = SYMCALL<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
-		handle, id, f(char, pkt + 16));
-	if (PlayerCheck(p)) {
+	Player* p = handle->_getServerPlayer(id, pkt);
+	if (p) {
 		unsigned fid = f(unsigned, pkt + 40);
 		string data = f(string, pkt + 48);
 		if (data.back() == '\n')data.pop_back();
@@ -462,11 +448,10 @@ Hook(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormRe
 	original(_this, id, handle, ppkt);
 }
 Hook(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandBlockUpdatePacket@@@Z",
-	VA _this, VA id, /*(CommandBlockUpdatePacket*)*/VA pkt) {
+	ServerNetworkHandler* _this, VA id, /*CommandBlockUpdatePacket*/VA pkt) {
 	bool res = true;
-	Player* p = SYMCALL<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
-		_this, id, f(char, pkt + 16));
-	if (PlayerCheck(p)) {
+	Player* p = _this->_getServerPlayer(id, pkt);
+	if (p) {
 		auto bp = f(BlockPos, pkt + 40);
 		auto mode = f(unsigned short, pkt + 52);
 		auto condition = f(bool, pkt + 54);
@@ -497,27 +482,26 @@ Hook(onLevelExplode, bool, "?explode@Level@@QEAAXAEAVBlockSource@@PEAVActor@@AEB
 		"dimensionid", bs->getDimensionId(),
 		"power", a5
 	));
-	check_ret(_this, bs, a3, pos, a5, a6, a7, a8, a9);
+	CHECK_RETURN(_this, bs, a3, pos, a5, a6, a7, a8, a9);
 }
 Hook(onCommandBlockPerform, bool, "?performCommand@CommandBlockActor@@QEAA_NAEAVBlockSource@@@Z",
 	VA _this, BlockSource* a2) {
 	//脉冲:0,重复:1,链:2
-	int mode = SYMCALL<int>("?getMode@CommandBlockActor@@QEBA?AW4CommandBlockMode@@AEAVBlockSource@@@Z",
-		_this, a2);
+	int mode = SYMCALL<int>("?getMode@CommandBlockActor@@QEBA?AW4CommandBlockMode@@AEAVBlockSource@@@Z", _this, a2);
 	//无条件:0,有条件:1
-	bool condition = SYMCALL<bool>("?getConditionalMode@CommandBlockActor@@QEBA_NAEAVBlockSource@@@Z",
-		_this, a2);
+	bool condition = SYMCALL<bool>("?getConditionalMode@CommandBlockActor@@QEBA_NAEAVBlockSource@@@Z", _this, a2);
 	string cmd = f(string, _this + 264);
 	string rawname = f(string, _this + 296);
 	BlockPos bp = f(BlockPos, _this + 44);
-	bool res = EventCall(Event::onCommandBlockPerform, Py_BuildValue("{s:s,s:s,s:[i,i,i],s:i,s:i}",
-		"cmd", cmd.c_str(),
-		"rawname", rawname.c_str(),
-		"position", bp.x, bp.y, bp.z,
-		"mode", mode,
-		"condition", condition
-	));
-	check_ret(_this, a2);
+	bool res = EventCall(Event::onCommandBlockPerform,
+		Py_BuildValue("{s:i,s:i,s:s,s:s,s:[i,i,i]}",
+			"mode", mode,
+			"condition", (int)condition,
+			"cmd", cmd.c_str(),
+			"rawname", rawname.c_str(),
+			"position", bp.x, bp.y, bp.z
+		));
+	CHECK_RETURN(_this, a2);
 }
 Hook(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
 	VA _this, Player* p, char a3, int a4, int a5) {
@@ -556,7 +540,7 @@ Hook(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboar
 Hook(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@M@Z",
 	VA _this, BlockSource* a1, BlockPos* a2, Player* p, VA a4) {
 	bool res = true;
-	if (PlayerCheck(p)) {
+	if (CHECK_PLAYER(p)) {
 		res = EventCall(Event::onFallBlockTransform, Py_BuildValue("{s:K,s:[i,i,i],s:i}",
 			"player", p,
 			"position", a2->x, a2->y, a2->z,
@@ -568,26 +552,24 @@ Hook(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSour
 Hook(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPlayer@@AEBVBlockPos@@AEAVBlockSource@@AEAVLevel@@@Z",
 	Player* p, BlockPos* a2, BlockSource* a3, void* a4) {
 	bool res = true;
-	if (PlayerCheck(p)) {
+	if (CHECK_PLAYER(p)) {
 		res = EventCall(Event::onUseRespawnAnchorBlock, Py_BuildValue("{s:K,s:[i,i,i],s:i}",
 			"player", p,
 			"position", a2->x, a2->y, a2->z,
 			"dimensionid", a3->getDimensionId()
 		));
 	}
-	check_ret(p, a2, a3, a4);
+	CHECK_RETURN(p, a2, a3, a4);
 }
 #pragma endregion
-#pragma region API函数
+#pragma region API Function
 // 获取版本
-api_function(getVersion) {
-	if (PyArg_ParseTuple(args, ":getVersion")) {
-		return PyLong_FromLong(103);
-	}
-	return Py_False;
+PYAPI(getVersion) {
+	PyArg_ParseTuple(args, ":getVersion");
+	return PyLong_FromLong(105);
 }
 // 指令输出
-api_function(logout) {
+PYAPI(logout) {
 	const char* msg;
 	if (PyArg_ParseTuple(args, "s:logout", &msg)) {
 		SYMCALL<ostream&>("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
@@ -597,7 +579,7 @@ api_function(logout) {
 	return Py_False;
 }
 // 执行指令
-api_function(runcmd) {
+PYAPI(runcmd) {
 	const char* cmd;
 	if (PyArg_ParseTuple(args, "s:runcmd", &cmd)) {
 		onConsoleInput::original(_cmdqueue, cmd);
@@ -606,7 +588,7 @@ api_function(runcmd) {
 	return Py_False;
 }
 // 计时器
-api_function(setTimer) {
+PYAPI(setTimer) {
 	unsigned time; PyObject* func;
 	if (PyArg_ParseTuple(args, "OI:setTimer", &func, &time)) {
 		if (!PyCallable_Check(func))
@@ -615,7 +597,7 @@ api_function(setTimer) {
 	}
 	return Py_True;
 }
-api_function(removeTimer) {
+PYAPI(removeTimer) {
 	PyObject* func;
 	if (PyArg_ParseTuple(args, "O:removeTimer", &func, &time)) {
 		tick.erase(func);
@@ -623,7 +605,7 @@ api_function(removeTimer) {
 	return Py_True;
 }
 // 设置监听
-api_function(setListener) {
+PYAPI(setListener) {
 	const char* name; PyObject* fn;
 	if (PyArg_ParseTuple(args, "sO:setListener", &name, &fn)) {
 		char e = toEvent(name);
@@ -631,12 +613,12 @@ api_function(setListener) {
 			PyFuncs[(Event)e].push_back(fn);
 			return Py_True;
 		}
-		else fprintf(stderr,u8"无效的监听:%d", e );
+		else fprintf(stderr, u8"无效的监听:%d\n", e);
 	}
 	return Py_False;
 }
 // 共享数据
-api_function(setShareData) {
+PYAPI(setShareData) {
 	const char* index; PyObject* data;
 	if (PyArg_ParseTuple(args, "sO:setShareData", &index, &data)) {
 		ShareData[index] = data;
@@ -644,7 +626,7 @@ api_function(setShareData) {
 	}
 	return Py_False;
 }
-api_function(getShareData) {
+PYAPI(getShareData) {
 	const char* index;
 	if (PyArg_ParseTuple(args, "s:getShareData", &index)) {
 		return ShareData[index];
@@ -652,7 +634,7 @@ api_function(getShareData) {
 	return Py_False;
 }
 // 设置指令说明
-api_function(setCommandDescription) {
+PYAPI(setCommandDescription) {
 	const char* cmd, * des;
 	if (PyArg_ParseTuple(args, "ss:setCommandDescribe", &cmd, &des)) {
 		Command.push_back({ cmd,des });
@@ -660,7 +642,7 @@ api_function(setCommandDescription) {
 	}
 	return Py_False;
 }
-api_function(getPlayerList) {
+PYAPI(getPlayerList) {
 	auto list = PyList_New(0);
 	PyArg_ParseTuple(args, ":getPlayerList");
 	for (auto& p : PlayerList) {
@@ -670,14 +652,14 @@ api_function(getPlayerList) {
 	return list;
 }
 // 发送表单
-api_function(sendCustomForm) {
+PYAPI(sendCustomForm) {
 	Player* p; const char* str;
 	if (PyArg_ParseTuple(args, "Ks:sendCustomForm", &p, &str)) {
 		return PyLong_FromLong(ModalFormRequestPacket(p, str));
 	}
 	return PyLong_FromLong(0);
 }
-api_function(sendSimpleForm) {
+PYAPI(sendSimpleForm) {
 	Player* p; const char* title, * content, * buttons;
 	if (PyArg_ParseTuple(args, "Ksss:sendSimpleForm", &p, &title, &content, &buttons)) {
 		char str[0x400];
@@ -686,7 +668,7 @@ api_function(sendSimpleForm) {
 	}
 	return Py_False;
 }
-api_function(sendModalForm) {
+PYAPI(sendModalForm) {
 	Player* p; const char* title, * content, * button1, * button2;
 	if (PyArg_ParseTuple(args, "Kssss:sendModalForm", &p, &title, &content, &button1, &button2)) {
 		char str[0x400];
@@ -696,19 +678,19 @@ api_function(sendModalForm) {
 	return Py_False;
 }
 // 跨服传送
-api_function(transferServer) {
-	Player* p; const char* address; int port;
-	if (PyArg_ParseTuple(args, "Ksi:transferServer", &p, &address, &port)) {
+PYAPI(transferServer) {
+	Player* p; const char* address; short port;
+	if (PyArg_ParseTuple(args, "Ksh:transferServer", &p, &address, &port)) {
 		if (TransferPacket(p, address, port))
 			return Py_True;
 	}
 	return Py_False;
 }
 // 获取玩家信息
-api_function(getPlayerInfo) {
+PYAPI(getPlayerInfo) {
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:getPlayerInfo", &p)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			Vec3* pp = p->getPos();
 			return Py_BuildValue("{s:s,s:[f,f,f],s:i,s:b,s:i,s:i,s:s,s:s}",
 				"playername", p->getNameTag().c_str(),
@@ -724,7 +706,7 @@ api_function(getPlayerInfo) {
 	}
 	return PyDict_New();
 }
-api_function(getActorInfo) {
+PYAPI(getActorInfo) {
 	Actor* a;
 	if (PyArg_ParseTuple(args, "K:getActorInfo", &a)) {
 		if (!a)
@@ -742,7 +724,7 @@ api_function(getActorInfo) {
 	}
 	return Py_False;
 }
-api_function(getActorInfoEx) {
+PYAPI(getActorInfoEx) {
 	Actor* a;
 	if (PyArg_ParseTuple(args, "K:getActorInfoEx", &a)) {
 		if (!a)
@@ -751,24 +733,24 @@ api_function(getActorInfoEx) {
 		string info = toJson(t).toStyledString();
 		t->deCompound();
 		delete t;
-		return PyUnicode_FromString(info.c_str());
+		return PyUnicode_FromStringAndSize(info.c_str(), info.length());
 	}
 	return Py_False;
 }
 // 玩家权限
-api_function(getPlayerPerm) {
+PYAPI(getPlayerPerm) {
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:getPlayerPerm", &p)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			return PyLong_FromLong(p->getPermission());
 		}
 	}
 	return Py_False;
 }
-api_function(setPlayerPerm) {
+PYAPI(setPlayerPerm) {
 	Player* p; unsigned char lv;
 	if (PyArg_ParseTuple(args, "Kb:setPlayerPerm", &p, &lv)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			p->setPermissionLevel(lv);
 			return Py_True;
 		}
@@ -776,10 +758,10 @@ api_function(setPlayerPerm) {
 	return Py_False;
 }
 // 增加玩家等级
-api_function(addLevel) {
+PYAPI(addLevel) {
 	Player* p; int lv;
 	if (PyArg_ParseTuple(args, "Ki::addLevel", &p, &lv)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			SYMCALL("?addLevels@Player@@UEAAXH@Z", p, lv);
 			return Py_True;
 		}
@@ -787,10 +769,10 @@ api_function(addLevel) {
 	return Py_False;
 }
 // 设置玩家名字
-api_function(setName) {
+PYAPI(setName) {
 	Player* p; const char* name;
 	if (PyArg_ParseTuple(args, "Ks:setName", &p, &name)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			p->setName(name);
 			return Py_True;
 		}
@@ -798,10 +780,10 @@ api_function(setName) {
 	return Py_False;
 }
 // 玩家分数
-api_function(getPlayerScore) {
+PYAPI(getPlayerScore) {
 	Player* p; const char* obj;
 	if (PyArg_ParseTuple(args, "Ks:getPlayerScore", &p, &obj)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			Objective* testobj = _scoreboard->getObjective(obj);
 			if (testobj) {
 				auto id = _scoreboard->getScoreboardId(p);
@@ -813,10 +795,10 @@ api_function(getPlayerScore) {
 	}
 	return Py_False;
 }
-api_function(modifyPlayerScore) {
+PYAPI(modifyPlayerScore) {
 	Player* p; const char* obj; int count; int mode;
 	if (PyArg_ParseTuple(args, "Ksii:modifyPlayerScore", &p, &obj, &count, &mode)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			Objective* testobj = _scoreboard->getObjective(obj);
 			if (testobj) {
 				//mode:{set,add,remove}
@@ -829,7 +811,7 @@ api_function(modifyPlayerScore) {
 	return Py_False;
 }
 // 模拟玩家发送文本
-api_function(talkAs) {
+PYAPI(talkAs) {
 	Player* p; const char* msg;
 	if (PyArg_ParseTuple(args, "Ks:talkAs", &p, &msg)) {
 		if (TextPacket(p, 1, msg))
@@ -838,7 +820,7 @@ api_function(talkAs) {
 	return Py_False;
 }
 // 模拟玩家执行指令
-api_function(runcmdAs) {
+PYAPI(runcmdAs) {
 	Player* p; const char* cmd;
 	if (PyArg_ParseTuple(args, "Ks:runcmdAs", &p, &cmd)) {
 		if (CommandRequestPacket(p, cmd))
@@ -847,7 +829,7 @@ api_function(runcmdAs) {
 	return Py_False;
 }
 // 传送玩家
-api_function(teleport) {
+PYAPI(teleport) {
 	Player* p; float x, y, z; int did;
 	if (PyArg_ParseTuple(args, "Kfffi:teleport", &p, &x, &y, &z, &did)) {
 		p->teleport({ x,y,z }, did);
@@ -856,7 +838,7 @@ api_function(teleport) {
 	return Py_False;
 }
 // 原始输出
-api_function(tellraw) {
+PYAPI(tellraw) {
 	const char* msg;
 	Player* p;
 	if (PyArg_ParseTuple(args, "Ks:tellraw", &p, &msg)) {
@@ -865,17 +847,17 @@ api_function(tellraw) {
 	}
 	return Py_False;
 }
-api_function(tellrawEx) {
+PYAPI(tellrawEx) {
 	const char* msg;
-	Player* p; int mode;
-	if (PyArg_ParseTuple(args, "Ksi:tellraw", &p, &msg, &mode)) {
+	Player* p; char mode;
+	if (PyArg_ParseTuple(args, "Ksb:tellraw", &p, &msg, &mode)) {
 		if (TextPacket(p, mode, msg))
 			return Py_True;
 	}
 	return Py_False;
 }
 // boss栏
-api_function(setBossBar) {
+PYAPI(setBossBar) {
 	Player* p; const char* name; float per;
 	if (PyArg_ParseTuple(args, "Ksf:", &p, &name, &per)) {
 		if (BossEventPacket(p, name, per, 0))
@@ -883,7 +865,7 @@ api_function(setBossBar) {
 	}
 	return Py_False;
 }
-api_function(removeBossBar) {
+PYAPI(removeBossBar) {
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:removeBossBar", &p)) {
 		if (BossEventPacket(p, "", 0.0, 2))
@@ -892,10 +874,10 @@ api_function(removeBossBar) {
 	return Py_False;
 }
 // 通过玩家指针获取计分板id
-api_function(getScoreBoardId) {
+PYAPI(getScoreBoardId) {
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:getScoreBoardId", &p)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			return Py_BuildValue("{s:i}",
 				"scoreboardid", _scoreboard->getScoreboardId(p)
 			);
@@ -903,10 +885,10 @@ api_function(getScoreBoardId) {
 	}
 	return Py_False;
 }
-api_function(createScoreBoardId) {
+PYAPI(createScoreBoardId) {
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:createScoreBoardId", &p)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			_scoreboard->createScoreBoardId(p);
 			return Py_True;
 		}
@@ -914,7 +896,7 @@ api_function(createScoreBoardId) {
 	return Py_False;
 }
 // 修改生物受伤的伤害值!
-api_function(setDamage) {
+PYAPI(setDamage) {
 	int a;
 	if (PyArg_ParseTuple(args, "i:setDamage", &a)) {
 		_Damage = a;
@@ -922,100 +904,118 @@ api_function(setDamage) {
 	}
 	return Py_False;
 }
-api_function(setServerMotd) {
+PYAPI(setServerMotd) {
 	const char* n;
-	if (PyArg_ParseTuple(args, "s:setServerMotd", &n) && _ServerNetworkHandle) {
+	if (PyArg_ParseTuple(args, "s:setServerMotd", &n) && _Handle) {
 		string name = n;
 		SYMCALL<VA>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
-			_ServerNetworkHandle, &name, true);
+			_Handle, &name, true);
 		return Py_True;
 	}
 	return Py_False;
 }
 // 玩家背包相关操作
-api_function(getPlayerItems) {
+PYAPI(getPlayerItems) {
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:getPlayerItems", &p)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			Json::Value j;
 			for (auto& i : p->getContainer()->getSlots()) {
 				j.append(toJson(i->save()));
 			}
-			return PyUnicode_FromString(j.toStyledString().c_str());
+			string str = j.toStyledString();
+			return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 		}
 	}
 	return Py_False;
 }
-api_function(getPlayerHand) {
+PYAPI(setPlayerItems) {
+	Player* p;
+	const char* x;
+	if (PyArg_ParseTuple(args, "Ks:setPlayerItems", &p, &x)) {
+		if (CHECK_PLAYER(p)) {
+			Json::Value j = toJson(x);
+			if (j.isArray()) {
+				vector<ItemStack*> is = p->getContainer()->getSlots();
+				for (unsigned i = 0; i < j.size(); i++) {
+					is[i]->fromJson(j[i]);
+				}
+				p->sendInventroy();
+				return Py_True;
+			}
+		}
+	}
+	return Py_False;
+}
+PYAPI(getPlayerHand) {
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:getPlayerHand", &p)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			ItemStack* item = p->getSelectedItem();
-			return PyUnicode_FromString(toJson(item->save()).toStyledString().c_str());
+			string str = toJson(item->save()).toStyledString();
+			return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 		}
 	}
 	return Py_False;
 }
-api_function(getPlayerItem) {
-	Player* p; int slot;
-	if (PyArg_ParseTuple(args, "Ki:getPlayerItem", &p, &slot)) {
-		if (PlayerCheck(p)) {
-			ItemStack* item = p->getInventoryItem(slot);
-			return PyUnicode_FromString(toJson(item->save()).toStyledString().c_str());
-		}
-	}
-	return Py_False;
-}
-api_function(setPlayerHand) {
+PYAPI(setPlayerHand) {
 	Player* p;
 	const char* x;
 	if (PyArg_ParseTuple(args, "Ks:setPlayerHand", &p, &x)) {
-		if (PlayerCheck(p)) {
-			Json::Value j = toJson(x);
-			Tag* t = toTag(j);
-			p->getSelectedItem()->fromTag(t);
-			t->deCompound();
+		if (CHECK_PLAYER(p)) {
+			p->getSelectedItem()->fromJson(toJson(x));
 			p->sendInventroy();
-			delete t;
 			return Py_True;
 		}
 	}
 	return Py_False;
 }
-api_function(setPlayerItems) {
-	Player* p;
-	const char* x;
-	if (PyArg_ParseTuple(args, "Ks:setPlayerItems", &p, &x)) {
-		if (PlayerCheck(p)) {
-			Json::Value j = toJson(x);
-			if (j.isArray()) {
-				vector<ItemStack*> is = p->getContainer()->getSlots();
-				for (unsigned i = 0; i < j.size(); i++) {
-					Tag* t = toTag(j[i]);
-					is[i]->fromTag(t);
-					t->deCompound();
-					delete t;
-				}
-				p->sendInventroy();
-			}
+PYAPI(getPlayerItem) {
+	Player* p; int slot;
+	if (PyArg_ParseTuple(args, "Ki:getPlayerItem", &p, &slot)) {
+		if (CHECK_PLAYER(p)) {
+			ItemStack* item = p->getInventoryItem(slot);
+			string str = toJson(item->save()).toStyledString();
+			return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 		}
-		return Py_True;
 	}
 	return Py_False;
 }
-api_function(setPlayerEnderChests) {
+PYAPI(setPlayerItem) {
+	Player* p; int slot; const char* x;
+	if (PyArg_ParseTuple(args, "Kis:setPlayerItem", &p, &slot, &x)) {
+		if (CHECK_PLAYER(p) && slot >= 0 && slot <= 36) {
+			p->getInventoryItem(slot)->fromJson(toJson(x));
+			return Py_True;
+		}
+	}
+	return Py_False;
+}
+PYAPI(getPlayerEnderChests) {
+	Player* p;
+	if (PyArg_ParseTuple(args, "K:getPlayerEnderChests", &p)) {
+		if (CHECK_PLAYER(p)) {
+			Json::Value j;
+			vector<ItemStack*> is = p->getEnderChestContainer()->getSlots();
+			for (auto i : is) {
+				j.append(toJson(i->save()));
+			}
+			string str = j.toStyledString();
+			return PyUnicode_FromStringAndSize(str.c_str(), str.length());
+		}
+	}
+	return Py_False;
+}
+PYAPI(setPlayerEnderChests) {
 	Player* p;
 	const char* x;
 	if (PyArg_ParseTuple(args, "Ks:setPlayerEnderChests", &p, &x)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			Json::Value j = toJson(x);
 			if (j.isArray()) {
 				vector<ItemStack*> is = p->getEnderChestContainer()->getSlots();
 				for (unsigned i = 0; i < j.size(); i++) {
-					Tag* t = toTag(j[i]);
-					is[i]->fromTag(t);
-					t->deCompound();
-					delete t;
+					is[i]->fromJson(j[i]);
 				}
 				p->sendInventroy();
 				return Py_True;
@@ -1025,27 +1025,24 @@ api_function(setPlayerEnderChests) {
 	return Py_False;
 }
 // 增加/移除物品
-api_function(addItemEx) {
+PYAPI(addItemEx) {
 	Player* p;
 	const char* x;
 	if (PyArg_ParseTuple(args, "Ks:addItemEx", &p, &x)) {
-		if (PlayerCheck(p)) {
-			Tag* t = toTag(toJson(x));
+		if (CHECK_PLAYER(p)) {
 			ItemStack i;
-			i.fromTag(t);
+			i.fromJson(toJson(x));
 			p->addItem(&i);
 			p->sendInventroy();
-			t->deCompound();
-			delete t;
 			return Py_True;
 		}
 	}
 	return Py_False;
 }
-api_function(removeItem) {
+PYAPI(removeItem) {
 	Player* p; int slot, num;
 	if (PyArg_ParseTuple(args, "Kii:removeItem", &p, &slot, &num)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			p->getContainer()->clearItem(slot, num);
 			p->sendInventroy();
 		}
@@ -1053,12 +1050,12 @@ api_function(removeItem) {
 	return Py_None;
 }
 // 设置玩家侧边栏
-api_function(setSidebar) {
+PYAPI(setSidebar) {
 	Player* p;
 	const char* title;
 	const char* data;
 	if (PyArg_ParseTuple(args, "Kss:setSidebar", &p, &title, &data)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			Json::Value j = toJson(data);
 			setDisplayObjectivePacket(p, title);
 			if (j.isObject()) {
@@ -1075,22 +1072,22 @@ api_function(setSidebar) {
 	}
 	return Py_False;
 }
-api_function(removeSidebar) {
+PYAPI(removeSidebar) {
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:removeSidebar", &p)) {
-		if (PlayerCheck(p)) {
+		if (CHECK_PLAYER(p)) {
 			setDisplayObjectivePacket(p, "", "");
 		}
 	}
 	return Py_None;
 }
 // 根据坐标设置方块
-api_function(getBlock) {
+PYAPI(getBlock) {
 	BlockPos bp; int did;
 	if (PyArg_ParseTuple(args, "iiii:getBlock", &bp.x, &bp.y, &bp.z, &did)) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
-			fprintf(stderr, u8"未知纬度ID:%d", did);
+			fprintf(stderr, u8"未知纬度ID:%d\n", did);
 			return Py_False;
 		}
 		auto bl = bs->getBlock(bp)->getBlockLegacy();
@@ -1101,13 +1098,13 @@ api_function(getBlock) {
 	}
 	return Py_False;
 }
-api_function(setBlock) {
+PYAPI(setBlock) {
 	const char* name;
 	BlockPos bp; int did;
 	if (PyArg_ParseTuple(args, "siiii:setBlock", &name, &bp.x, &bp.y, &bp.z, &did)) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
-			fprintf(stderr, u8"未知纬度ID:%d", did);
+			fprintf(stderr, u8"未知纬度ID:%d\n", did);
 			return Py_False;
 		}
 		bs->setBlock(name, bp);
@@ -1116,56 +1113,60 @@ api_function(setBlock) {
 	return Py_None;
 }
 #pragma endregion
+#pragma region Function List
 static PyMethodDef api_list[]{
-api_method(getVersion),
-api_method(logout),
-api_method(runcmd),
-api_method(setTimer),
-api_method(removeTimer),
-api_method(setListener),
-api_method(setShareData),
-api_method(getShareData),
-api_method(setCommandDescription),
-api_method(getPlayerList),
-api_method(sendSimpleForm),
-api_method(sendModalForm),
-api_method(sendCustomForm),
-api_method(transferServer),
-api_method(getPlayerInfo),
-api_method(getActorInfo),
-api_method(getActorInfoEx),
-api_method(getPlayerPerm),
-api_method(setPlayerPerm),
-api_method(addLevel),
-api_method(setName),
-api_method(getPlayerScore),
-api_method(modifyPlayerScore),
-api_method(talkAs),
-api_method(runcmdAs),
-api_method(teleport),
-api_method(tellraw),
-api_method(tellrawEx),
-api_method(setBossBar),
-api_method(removeBossBar),
-api_method(getScoreBoardId),
-api_method(createScoreBoardId),
-api_method(setDamage),
-api_method(setServerMotd),
-api_method(getPlayerItems),
-api_method(getPlayerHand),
-api_method(getPlayerItem),
-api_method(setPlayerHand),
-api_method(setPlayerItems),
-api_method(setPlayerEnderChests),
-api_method(addItemEx),
-api_method(removeItem),
-api_method(setSidebar),
-api_method(removeSidebar),
-api_method(getBlock),
-api_method(setBlock),
+API_METHOD(getVersion),
+API_METHOD(logout),
+API_METHOD(runcmd),
+API_METHOD(setTimer),
+API_METHOD(removeTimer),
+API_METHOD(setListener),
+API_METHOD(setShareData),
+API_METHOD(getShareData),
+API_METHOD(setCommandDescription),
+API_METHOD(getPlayerList),
+API_METHOD(sendSimpleForm),
+API_METHOD(sendModalForm),
+API_METHOD(sendCustomForm),
+API_METHOD(transferServer),
+API_METHOD(getPlayerInfo),
+API_METHOD(getActorInfo),
+API_METHOD(getActorInfoEx),
+API_METHOD(getPlayerPerm),
+API_METHOD(setPlayerPerm),
+API_METHOD(addLevel),
+API_METHOD(setName),
+API_METHOD(getPlayerScore),
+API_METHOD(modifyPlayerScore),
+API_METHOD(talkAs),
+API_METHOD(runcmdAs),
+API_METHOD(teleport),
+API_METHOD(tellraw),
+API_METHOD(tellrawEx),
+API_METHOD(setBossBar),
+API_METHOD(removeBossBar),
+API_METHOD(getScoreBoardId),
+API_METHOD(createScoreBoardId),
+API_METHOD(setDamage),
+API_METHOD(setServerMotd),
+API_METHOD(getPlayerItems),
+API_METHOD(setPlayerItems),
+API_METHOD(getPlayerHand),
+API_METHOD(setPlayerHand),
+API_METHOD(getPlayerItem),
+API_METHOD(setPlayerItem),
+API_METHOD(getPlayerEnderChests),
+API_METHOD(setPlayerEnderChests),
+API_METHOD(addItemEx),
+API_METHOD(removeItem),
+API_METHOD(setSidebar),
+API_METHOD(removeSidebar),
+API_METHOD(getBlock),
+API_METHOD(setBlock),
 {}
 };
 static PyModuleDef api_module{ PyModuleDef_HEAD_INIT, "mc", 0, -1, api_list, 0, 0, 0, 0 };
+#pragma endregion
 static void init() {
 	//PyPreConfig cfg;
 	//PyPreConfig_InitPythonConfig(&cfg);
@@ -1174,7 +1175,7 @@ static void init() {
 	//Py_PreInitialize(&cfg);
 	PyImport_AppendInittab("mc", [] { return PyModule_Create(&api_module); }); //增加一个模块
 	Py_Initialize();
-	PyEval_InitThreads();
+	//PyEval_InitThreads();
 	if (!filesystem::exists("py"))
 		filesystem::create_directory("py");
 	filesystem::directory_iterator files("py");
@@ -1187,9 +1188,9 @@ static void init() {
 			PyErr_Print();
 		}
 	}
-	PyEval_SaveThread();
+	//PyEval_SaveThread();
 }
-int DllMain(VA, int dwReason, VA) {
+int __stdcall DllMain(void*, int dwReason, void*) {
 	if (dwReason == 1) {
 		//while (1) {
 		//	Tag* t = toTag(toJson(R"()"));
@@ -1197,8 +1198,9 @@ int DllMain(VA, int dwReason, VA) {
 		//	t->deCompound();
 		//	delete t;
 		//}
+		ios::sync_with_stdio(false);
 		init();
-		puts(u8"[BDSpyrunner] 1.0.3 loaded.");
+		puts(u8"[BDSpyrunner] 1.0.5 loaded.");
 		puts(u8"[BDSpyrunner] 感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return 1;

@@ -173,10 +173,10 @@ Tag* toTag(const Json::Value& j) {
 		switch (type) {
 		case End:break;
 		case Byte:
-			c->putByte(key, j[x].asInt());
+			c->putByte(key, (unsigned char)j[x].asInt());
 			break;
 		case Short:
-			c->putShort(key, j[x].asInt());
+			c->putShort(key, (short)j[x].asInt());
 			break;
 		case Int:
 			c->putInt(key, j[x].asInt());

@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "NBT.hpp"
 using namespace std;
+#pragma region Block
 struct BlockLegacy {
 	string getBlockName() {
 		return f(string, this + 128);
@@ -45,22 +46,8 @@ struct BlockSource {
 		return f(int, (f(VA, this + 32) + 208));
 	}
 };
-struct Level {
-	// 获取方块源 没这个维度返回空指针
-	BlockSource* getBlockSource(int did) {
-		VA d = SYMCALL<VA>("?getDimension@Level@@QEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
-			this, did);
-		if (!d)return 0;
-		return f(BlockSource*, d + 88);// IDA Level::tickEntities 120
-	}
-	VA getScoreBoard() {// IDA Level::removeEntityReferences
-		return f(VA, this + 8376);
-	}
-	struct Actor* fetchEntity(VA id) {
-		return SYMCALL<struct Actor*>("?fetchEntity@Level@@QEBAPEAVActor@@UActorUniqueID@@_N@Z",
-			this, id, false);
-	}
-};
+#pragma endregion
+#pragma region Math
 struct Vec3 {
 	float x = 0.0f, y = 0.0f, z = 0.0f;
 	string toString() {
@@ -70,7 +57,8 @@ struct Vec3 {
 	}
 };
 struct Vec2 { float x = 0.0f, y = 0.0f; };
-struct MobEffectInstance { char fill[0x1C]; };
+#pragma endregion
+#pragma region Item
 struct Item;
 struct ItemStackBase {
 	VA vtable;
@@ -114,6 +102,9 @@ struct ItemStackBase {
 	bool isNull() {
 		return SYMCALL<bool>("?isNull@ItemStackBase@@QEBA_NXZ", this);
 	}
+	bool isEmptyStack() {
+		return f(char, this + 34) == 0;
+	}
 	Tag* getNetworkUserData() {
 		Tag* ct;
 		SYMCALL("?getNetworkUserData@ItemStackBase@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
@@ -125,9 +116,6 @@ struct ItemStackBase {
 		SYMCALL("?save@ItemStackBase@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
 			this, &t);
 		return t;
-	}
-	bool isEmptyStack() {
-		return f(char, this + 34) == 0;
 	}
 	ItemStackBase* fromTag(Tag* t) {
 		return SYMCALL<ItemStackBase*>("?fromTag@ItemStack@@SA?AV1@AEBVCompoundTag@@@Z",
@@ -144,11 +132,17 @@ struct ItemStackBase {
 	Item* getItem() {
 		return SYMCALL<Item*>("?getItem@ItemStackBase@@QEBAPEBVItem@@XZ", this);
 	}
+	void fromJson(Json::Value j) {
+		Tag* t = toTag(j);
+		fromTag(t);
+		t->deCompound();
+		delete t;
+	}
 };
 struct ItemStack : ItemStackBase {};
 struct Container {
 	// 获取容器内所有物品
-	auto getSlots() {
+	vector<ItemStack*> getSlots() {
 		vector<ItemStack*> s;
 		SYMCALL<VA>("?getSlots@Container@@UEBA?BV?$vector@PEBVItemStack@@V?$allocator@PEBVItemStack@@@std@@@std@@XZ",
 			this, &s);
@@ -158,6 +152,8 @@ struct Container {
 		SYMCALL("?removeItem@Container@@UEAAXHH@Z", this, slot, num);
 	}
 };
+#pragma endregion
+#pragma region Actor
 struct Actor {
 	// 获取生物名称信息
 	string getNameTag() {
@@ -229,6 +225,7 @@ struct Actor {
 	}
 };
 struct Mob : Actor {
+	struct MobEffectInstance { char fill[0x1C]; };
 	// 获取状态列表
 	auto getEffects() {	// IDA Mob::addAdditionalSaveData 84
 		return (vector<MobEffectInstance>*)((VA*)this + 190);
@@ -339,6 +336,8 @@ struct Player : Mob {
 			this, target, 0, dim, 0, 0, 0, SYM("?INVALID_ID@ActorUniqueID@@2U1@B"));
 	}
 };
+#pragma endregion
+#pragma region Scoreboard
 struct PlayerScore {
 	VA getscore() {
 		return f(VA, this + 4);
@@ -426,24 +425,26 @@ struct Scoreboard {
 		return SYMCALL<ScoreboardId*>("?createScoreboardId@ServerScoreboard@@UEAAAEBUScoreboardId@@AEBVPlayer@@@Z", this, player);
 	}
 };
-struct MinecraftCommands {
-	void* myVTBL;
-	void* UUID[2];
-	Level* lvl;
-	string Name;
-	char Perm;
-	static void* fake_vtbl[26];
-	static void dummy() {
-	};
-	MinecraftCommands(Level* l) {
-		if (fake_vtbl[1] == nullptr) {
-			memcpy(fake_vtbl, (void**)(SYM("??_7ServerCommandOrigin@@6B@")) - 1, sizeof(fake_vtbl));
-			fake_vtbl[1] = (void*)dummy;
-		}
-		myVTBL = fake_vtbl + 1;
-		Name = "Server";
-		Perm = 5;
-		lvl = l;
+#pragma endregion
+struct Level {
+	// 获取方块源 没这个维度返回空指针
+	BlockSource* getBlockSource(int did) {
+		VA d = SYMCALL<VA>("?getDimension@Level@@QEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
+			this, did);
+		if (!d)return 0;
+		return f(BlockSource*, d + 88);// IDA Level::tickEntities 120
+	}
+	VA getScoreBoard() {// IDA Level::removeEntityReferences
+		return f(VA, this + 8376);
+	}
+	Actor* fetchEntity(VA id) {
+		return SYMCALL< Actor*>("?fetchEntity@Level@@QEBAPEAVActor@@UActorUniqueID@@_N@Z",
+			this, id, false);
 	}
 };
-void* MinecraftCommands::fake_vtbl[26];
+struct ServerNetworkHandler {
+	Player* _getServerPlayer(VA id, VA pkt) {
+		return SYMCALL<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
+			this, id, f(char, pkt + 16));
+	}
+};
