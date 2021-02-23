@@ -31,7 +31,7 @@ static inline VA createPacket(int type) {
 }
 static bool EventCall(Event e, PyObject* val) {
 	if (PyFuncs[e].empty()) {
-		Py_XDECREF(val);
+		Py_DECREF(val);
 		return true;
 	}
 	bool result = true;
@@ -46,7 +46,7 @@ static bool EventCall(Event e, PyObject* val) {
 			result = false;
 		PyErr_Print();
 	}
-	Py_XDECREF(val);
+	Py_DECREF(val);
 	Py_UNBLOCK_THREADS;
 	Py_END_ALLOW_THREADS;
 	if (!nHold)
@@ -193,14 +193,16 @@ Hook(ServerScoreboard_, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnum
 }
 Hook(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, VA size) {
-	bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromStringAndSize(str, size));
-	if (!res)return _this;
+	if (&_this == &cout) {
+		bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromStringAndSize(str, size));
+		if (!res)return _this;
+	}
 	return original(_this, str, size);
 }
 Hook(onConsoleOutput2, int, "printf",
-	const char* format, const char* str) {
-	bool res = EventCall(Event::onConsoleInput, PyUnicode_FromString(str));
-	CHECK_RETURN(format, str);
+	const char* format, va_list va) {
+	bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromString(va));
+	CHECK_RETURN(format, va);
 }
 Hook(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 	VA _this, const string& cmd) {
@@ -484,24 +486,22 @@ Hook(onLevelExplode, bool, "?explode@Level@@QEAAXAEAVBlockSource@@PEAVActor@@AEB
 	));
 	CHECK_RETURN(_this, bs, a3, pos, a5, a6, a7, a8, a9);
 }
-Hook(onCommandBlockPerform, bool, "?performCommand@CommandBlockActor@@QEAA_NAEAVBlockSource@@@Z",
-	VA _this, BlockSource* a2) {
+Hook(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@@AEAVCommandBlockActor@@AEBVBlockPos@@_N@Z",
+	VA _this, BlockSource* a2, VA a3, BlockPos* bp, bool a5) {
 	//脉冲:0,重复:1,链:2
-	int mode = SYMCALL<int>("?getMode@CommandBlockActor@@QEBA?AW4CommandBlockMode@@AEAVBlockSource@@@Z", _this, a2);
+	int mode = SYMCALL<int>("?getMode@CommandBlockActor@@QEBA?AW4CommandBlockMode@@AEAVBlockSource@@@Z", a3, a2);
 	//无条件:0,有条件:1
-	bool condition = SYMCALL<bool>("?getConditionalMode@CommandBlockActor@@QEBA_NAEAVBlockSource@@@Z", _this, a2);
-	string cmd = f(string, _this + 264);
-	string rawname = f(string, _this + 296);
-	BlockPos bp = f(BlockPos, _this + 44);
-	bool res = EventCall(Event::onCommandBlockPerform,
-		Py_BuildValue("{s:i,s:i,s:s,s:s,s:[i,i,i]}",
-			"mode", mode,
-			"condition", (int)condition,
-			"cmd", cmd.c_str(),
-			"rawname", rawname.c_str(),
-			"position", bp.x, bp.y, bp.z
-		));
-	CHECK_RETURN(_this, a2);
+	bool condition = SYMCALL<bool>("?getConditionalMode@CommandBlockActor@@QEBA_NAEAVBlockSource@@@Z", a3, a2);
+	string cmd = f(string, a3 + 264);
+	string rawname = f(string, a3 + 296);
+	bool res = EventCall(Event::onCommandBlockPerform, Py_BuildValue("{s:i,s:b,s:s,s:s,s:[i,i,i]}",
+		"mode", mode,
+		"condition", condition,
+		"cmd", cmd.c_str(),
+		"rawname", rawname.c_str(),
+		"position", bp->x, bp->y, bp->z
+	));
+	CHECK_RETURN(_this, a2, a3, bp, a5);
 }
 Hook(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
 	VA _this, Player* p, char a3, int a4, int a5) {
@@ -566,7 +566,7 @@ Hook(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPl
 // 获取版本
 PYAPI(getVersion) {
 	PyArg_ParseTuple(args, ":getVersion");
-	return PyLong_FromLong(105);
+	return PyLong_FromLong(106);
 }
 // 指令输出
 PYAPI(logout) {
@@ -608,12 +608,14 @@ PYAPI(removeTimer) {
 PYAPI(setListener) {
 	const char* name; PyObject* fn;
 	if (PyArg_ParseTuple(args, "sO:setListener", &name, &fn)) {
-		char e = toEvent(name);
-		if (e != -1) {
-			PyFuncs[(Event)e].push_back(fn);
+		try {
+			Event e = toEvent(name);
+			PyFuncs[e].push_back(fn);
 			return Py_True;
 		}
-		else fprintf(stderr, u8"无效的监听:%d\n", e);
+		catch (const std::out_of_range&) {
+			cerr << u8"无效的监听:" << name << endl;
+		}
 	}
 	return Py_False;
 }
@@ -1190,8 +1192,8 @@ static void init() {
 	}
 	//PyEval_SaveThread();
 }
-int __stdcall DllMain(void*, int dwReason, void*) {
-	if (dwReason == 1) {
+BOOL WINAPI DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
+	if (reason == 1) {
 		//while (1) {
 		//	Tag* t = toTag(toJson(R"()"));
 		//	cout << toJson(t) << endl;
@@ -1200,7 +1202,7 @@ int __stdcall DllMain(void*, int dwReason, void*) {
 		//}
 		ios::sync_with_stdio(false);
 		init();
-		puts(u8"[BDSpyrunner] 1.0.5 loaded.");
+		puts(u8"[BDSpyrunner] 1.0.6 loaded.");
 		puts(u8"[BDSpyrunner] 感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return 1;

@@ -1,7 +1,9 @@
 #pragma once
 #include <string>
+#include <unordered_map>
 using std::string;
-enum class Event{
+using std::unordered_map;
+enum class Event {
 	onConsoleInput,
 	onConsoleOutput,
 	onSelectForm,
@@ -32,35 +34,66 @@ enum class Event{
 	onScoreChanged,
 	onMove
 };
-static char toEvent(const string& s) {
-	if (s == u8"后台输入")return 0;
-	else if (s == u8"后台输出")return 1;
-	else if (s == u8"选择表单")return 2;
-	else if (s == u8"使用物品")return 3;
-	else if (s == u8"放置方块")return 4;
-	else if (s == u8"破坏方块")return 5;
-	else if (s == u8"打开箱子")return 6;
-	else if (s == u8"打开木桶")return 7;
-	else if (s == u8"关闭箱子")return 8;
-	else if (s == u8"关闭木桶")return 9;
-	else if (s == u8"放入取出")return 10;
-	else if (s == u8"切换维度")return 11;
-	else if (s == u8"生物死亡")return 12;
-	else if (s == u8"生物受伤")return 13;
-	else if (s == u8"玩家重生")return 14;
-	else if (s == u8"聊天消息")return 15;
-	else if (s == u8"输入文本")return 16;
-	else if (s == u8"更新命令方块")return 17;
-	else if (s == u8"输入指令")return 18;
-	else if (s == u8"命令方块执行")return 19;
-	else if (s == u8"加入游戏")return 20;
-	else if (s == u8"离开游戏")return 21;
-	else if (s == u8"玩家攻击")return 22;
-	else if (s == u8"世界爆炸")return 23;
-	else if (s == u8"玩家穿戴")return 24;
-	else if (s == u8"耕地破坏")return 25;
-	else if (s == u8"使用重生锚")return 26;
-	else if (s == u8"计分板改变")return 27;
-	else if (s == u8"玩家移动")return 28;
-	else return -1;
+static Event toEvent(const string& s) {
+	const static unordered_map<string, Event> events{
+	{u8"后台输入",Event::onConsoleInput},
+	{u8"后台输出",Event::onConsoleOutput},
+	{u8"选择表单",Event::onSelectForm},
+	{u8"使用物品",Event::onUseItem},
+	{u8"放置方块",Event::onPlaceBlock},
+	{u8"破坏方块",Event::onDestroyBlock},
+	{u8"打开箱子",Event::onOpenChest},
+	{u8"打开木桶",Event::onOpenBarrel},
+	{u8"关闭箱子",Event::onCloseChest},
+	{u8"关闭木桶",Event::onCloseBarrel},
+	{u8"放入取出",Event::onContainerChange},
+	{u8"切换维度",Event::onChangeDimension},
+	{u8"生物死亡",Event::onMobDie},
+	{u8"生物受伤",Event::onMobHurt},
+	{u8"玩家重生",Event::onRespawn},
+	{u8"聊天消息",Event::onChat},
+	{u8"输入文本",Event::onInputText},
+	{u8"更新命令方块",Event::onCommandBlockUpdate},
+	{u8"输入指令",Event::onInputCommand},
+	{u8"命令方块执行",Event::onCommandBlockPerform},
+	{u8"加入游戏",Event::onPlyaerJoin},
+	{u8"离开游戏",Event::onPlyaerLeft},
+	{u8"玩家攻击",Event::onPlayerAttack},
+	{u8"世界爆炸",Event::onLevelExplode},
+	{u8"玩家穿戴",Event::onSetArmor},
+	{u8"耕地破坏",Event::onFallBlockTransform},
+	{u8"使用重生锚",Event::onUseRespawnAnchorBlock},
+	{u8"计分板改变",Event::onScoreChanged},
+	{u8"玩家移动",Event::onMove},
+	{u8"onConsoleInput",Event::onConsoleInput},
+	{u8"onConsoleOutput",Event::onConsoleOutput},
+	{u8"onSelectForm",Event::onSelectForm},
+	{u8"onUseItem",Event::onUseItem},
+	{u8"onPlaceBlock",Event::onPlaceBlock},
+	{u8"onDestroyBlock",Event::onDestroyBlock},
+	{u8"onOpenChest",Event::onOpenChest},
+	{u8"onOpenBarrel",Event::onOpenBarrel},
+	{u8"onCloseChest",Event::onCloseChest},
+	{u8"onCloseBarrel",Event::onCloseBarrel},
+	{u8"onContainerChange",Event::onContainerChange},
+	{u8"onChangeDimension",Event::onChangeDimension},
+	{u8"onMobDie",Event::onMobDie},
+	{u8"onMobHurt",Event::onMobHurt},
+	{u8"onRespawn",Event::onRespawn},
+	{u8"onChat",Event::onChat},
+	{u8"onInputText",Event::onInputText},
+	{u8"onCommandBlockUpdate",Event::onCommandBlockUpdate},
+	{u8"onInputCommand",Event::onInputCommand},
+	{u8"onCommandBlockPerform",Event::onCommandBlockPerform},
+	{u8"onPlyaerJoin",Event::onPlyaerJoin},
+	{u8"onPlyaerLeft",Event::onPlyaerLeft},
+	{u8"onPlayerAttack",Event::onPlayerAttack},
+	{u8"onLevelExplode",Event::onLevelExplode},
+	{u8"onSetArmor",Event::onSetArmor},
+	{u8"onFallBlockTransform",Event::onFallBlockTransform},
+	{u8"onUseRespawnAnchorBlock",Event::onUseRespawnAnchorBlock},
+	{u8"onScoreChanged",Event::onScoreChanged},
+	{u8"onMove",Event::onMove}
+	};
+	return events.at(s);
 }
