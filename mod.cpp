@@ -30,23 +30,24 @@ static inline VA createPacket(int type) {
 	return pkt;
 }
 static bool EventCall(Event e, PyObject* val) {
-	if (PyFuncs[e].empty()) {
-		Py_DECREF(val);
-		return true;
-	}
 	bool result = true;
 	int nHold = PyGILState_Check();   //检测当前线程是否拥有GIL
-	PyGILState_STATE gstate = PyGILState_UNLOCKED;
+	PyGILState_STATE gstate = PyGILState_LOCKED;
 	if (!nHold)
 		gstate = PyGILState_Ensure();   //如果没有GIL，则申请获取GIL
 	Py_BEGIN_ALLOW_THREADS;
 	Py_BLOCK_THREADS;
-	for (PyObject* fn : PyFuncs[e]) {
-		if (PyObject_CallFunction(fn, "O", val) == Py_False)
-			result = false;
-		PyErr_Print();
+
+	auto& List = PyFuncs[e];
+	if (!List.empty()) {
+		for (PyObject* fn : List) {
+			if (PyObject_CallFunction(fn, "O", val) == Py_False)
+				result = false;
+			PyErr_Print();
+		}
 	}
-	Py_DECREF(val);
+	Py_CLEAR(val);
+
 	Py_UNBLOCK_THREADS;
 	Py_END_ALLOW_THREADS;
 	if (!nHold)
@@ -566,7 +567,7 @@ Hook(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPl
 // 获取版本
 PYAPI(getVersion) {
 	PyArg_ParseTuple(args, ":getVersion");
-	return PyLong_FromLong(106);
+	return PyLong_FromLong(107);
 }
 // 指令输出
 PYAPI(logout) {
@@ -852,7 +853,7 @@ PYAPI(tellraw) {
 PYAPI(tellrawEx) {
 	const char* msg;
 	Player* p; char mode;
-	if (PyArg_ParseTuple(args, "Ksb:tellraw", &p, &msg, &mode)) {
+	if (PyArg_ParseTuple(args, "Ksb:tellrawEx", &p, &msg, &mode)) {
 		if (TextPacket(p, mode, msg))
 			return Py_True;
 	}
@@ -967,6 +968,27 @@ PYAPI(setPlayerHand) {
 		if (CHECK_PLAYER(p)) {
 			p->getSelectedItem()->fromJson(toJson(x));
 			p->sendInventroy();
+			return Py_True;
+		}
+	}
+	return Py_False;
+}
+PYAPI(getPlayerArmor) {
+	Player* p; int slot;
+	if (PyArg_ParseTuple(args, "Ki:getPlayerArmor", &p, &slot)) {
+		if (CHECK_PLAYER(p) && slot >= 0 && slot <= 4) {
+			ItemStack* item = p->getArmor(slot);
+			string str = toJson(item->save()).toStyledString();
+			return PyUnicode_FromStringAndSize(str.c_str(), str.length());
+		}
+	}
+	return Py_False;
+}
+PYAPI(setPlayerArmor) {
+	Player* p; int slot; const char* x;
+	if (PyArg_ParseTuple(args, "Kis:setPlayerArmor", &p, &slot, &x)) {
+		if (CHECK_PLAYER(p) && slot >= 0 && slot <= 4) {
+			p->getArmor(slot)->fromJson(toJson(x));
 			return Py_True;
 		}
 	}
@@ -1155,6 +1177,8 @@ API_METHOD(getPlayerItems),
 API_METHOD(setPlayerItems),
 API_METHOD(getPlayerHand),
 API_METHOD(setPlayerHand),
+API_METHOD(getPlayerArmor),
+API_METHOD(setPlayerArmor),
 API_METHOD(getPlayerItem),
 API_METHOD(setPlayerItem),
 API_METHOD(getPlayerEnderChests),
@@ -1192,7 +1216,7 @@ static void init() {
 	}
 	//PyEval_SaveThread();
 }
-BOOL WINAPI DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
+BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 	if (reason == 1) {
 		//while (1) {
 		//	Tag* t = toTag(toJson(R"()"));
@@ -1202,7 +1226,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
 		//}
 		ios::sync_with_stdio(false);
 		init();
-		puts(u8"[BDSpyrunner] 1.0.6 loaded.");
+		puts(u8"[BDSpyrunner] 1.0.7 loaded.");
 		puts(u8"[BDSpyrunner] 感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return 1;

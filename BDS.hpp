@@ -178,6 +178,10 @@ struct Actor {
 	BlockSource* getBlockSource() {
 		return f(BlockSource*, this + 840);
 	}
+	ItemStack* getArmor(int slot) {
+		return SYMCALL<ItemStack*>("?getArmor@Actor@@UEBAAEBVItemStack@@W4ArmorSlot@@@Z",
+			this,slot);
+	}
 	// 获取实体类型
 	unsigned getEntityTypeId() {
 		return f(unsigned, this + 964);
@@ -229,14 +233,6 @@ struct Mob : Actor {
 	// 获取状态列表
 	auto getEffects() {	// IDA Mob::addAdditionalSaveData 84
 		return (vector<MobEffectInstance>*)((VA*)this + 190);
-	}
-	// 获取装备容器
-	VA getArmor() {		// IDA Mob::addAdditionalSaveData
-		return VA(this) + 1400;
-	}
-	// 获取手头容器
-	VA getHands() {
-		return VA(this) + 1408;		// IDA Mob::readAdditionalSaveData
 	}
 	// 保存当前副手至容器
 	VA saveOffhand(VA hlist) {
