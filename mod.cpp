@@ -24,6 +24,15 @@ static queue<function<void()>> _todos;
 static bool _logstate;
 #pragma endregion
 #pragma region Function Define
+template<class T>
+void inline print(const T& data) {
+	cout << data << endl;
+}
+template<class T, class... T2>
+void inline print(const T& data, T2... other) {
+	cout << data;
+	print(other...);
+}
 static void WriteLog(const string& s) {
 	if (_logstate) {
 		SYSTEMTIME m_time;
@@ -60,7 +69,6 @@ static inline VA createPacket(int type) {
 	return pkt;
 }
 static bool EventCall(Event e, PyObject* val) {
-	if (!val)cerr << u8"构建值失败" << endl;
 	bool result = true;
 	int nHold = PyGILState_Check();   //检测当前线程是否拥有GIL
 	PyGILState_STATE gstate = PyGILState_LOCKED;
@@ -71,7 +79,8 @@ static bool EventCall(Event e, PyObject* val) {
 
 	auto& List = _PyFuncs[e];
 	if (!List.empty()) {
-		WriteLog("EventCall " + to_string((int)e));
+		if (e != Event::onMove)
+			WriteLog("EventCall " + to_string((int)e));
 		for (PyObject* fn : List) {
 			if (PyObject_CallFunction(fn, "O", val) == Py_False)
 				result = false;
@@ -107,10 +116,10 @@ static bool TransferPacket(Player* p, const string& address, short port) {
 	}
 	return false;
 }
-static bool TextPacket(Player* p, char mode, const string& msg) {
+static bool TextPacket(Player* p, int mode, const string& msg) {
 	if (CheckisPlayer(p)) {
 		VA pkt = createPacket(9);
-		f(char, pkt + 40) = mode;
+		f(int, pkt + 40) = mode;
 		f(string, pkt + 48) = p->getNameTag();
 		f(string, pkt + 80) = msg;
 		p->sendPacket(pkt);
@@ -285,15 +294,17 @@ Hook(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@E
 	BlockLegacy* bl = b->getBlockLegacy();
 	short bid = bl->getBlockItemID();
 	string bn = bl->getBlockName();
-	bool res = EventCall(Event::onUseItem, Py_BuildValue("{s:K,s:i,s:i,s:s,s:s,s:i,s:[i,i,i]}",
-		"player", p,
-		"itemid", iid,
-		"itemaux", iaux,
-		"itemname", iname.c_str(),
-		"blockname", bn.c_str(),
-		"blockid", bid,
-		"position", bp->x, bp->y, bp->z
-	));
+	bool res = EventCall(Event::onUseItem,
+		Py_BuildValue("{s:K,s:i,s:i,s:s,s:s,s:i,s:[i,i,i]}",
+			"player", p,
+			"itemid", iid,
+			"itemaux", iaux,
+			"itemname", iname.c_str(),
+			"blockname", bn.c_str(),
+			"blockid", bid,
+			"position", bp->x, bp->y, bp->z
+		)
+	);
 	CheckResult(_this, item, bp, a4, a5, b);
 }
 Hook(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@EPEAVActor@@_N@Z",
@@ -303,12 +314,14 @@ Hook(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 		BlockLegacy* bl = b->getBlockLegacy();
 		short bid = bl->getBlockItemID();
 		string bn = bl->getBlockName();
-		res = EventCall(Event::onPlaceBlock, Py_BuildValue("{s:K,s:s,s:i,s:[i,i,i]}",
-			"player", p,
-			"blockname", bn.c_str(),
-			"blockid", bid,
-			"position", bp->x, bp->y, bp->z
-		));
+		res = EventCall(Event::onPlaceBlock,
+			Py_BuildValue("{s:K,s:s,s:i,s:[i,i,i]}",
+				"player", p,
+				"blockname", bn.c_str(),
+				"blockid", bid,
+				"position", bp->x, bp->y, bp->z
+			)
+		);
 	}
 	CheckResult(_this, b, bp, a4, p, _bool);
 }
@@ -320,47 +333,56 @@ Hook(onDestroyBlock, bool, "?_destroyBlockInternal@GameMode@@AEAA_NAEBVBlockPos@
 	BlockLegacy* bl = b->getBlockLegacy();
 	short bid = bl->getBlockItemID();
 	string bn = bl->getBlockName();
-	bool res = true;
-	EventCall(Event::onDestroyBlock, Py_BuildValue("{s:K,s:s,s:i,s:[i,i,i]}",
-		"player", p,
-		"blockname", bn.c_str(),
-		"blockid", (int)bid,
-		"position", bp->x, bp->y, bp->z
-	));
+	bool res = EventCall(Event::onDestroyBlock,
+		Py_BuildValue("{s:K,s:s,s:i,s:[i,i,i]}",
+			"player", p,
+			"blockname", bn.c_str(),
+			"blockid", (int)bid,
+			"position", bp->x, bp->y, bp->z
+		)
+	);
 	CheckResult(_this, bp);
 }
 Hook(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
-	bool res = EventCall(Event::onOpenChest, Py_BuildValue("{s:K,s:[i,i,i]}",
-		"player", p,
-		"position", bp->x, bp->y, bp->z
-	));
+	bool res = EventCall(Event::onOpenChest,
+		Py_BuildValue("{s:K,s:[i,i,i]}",
+			"player", p,
+			"position", bp->x, bp->y, bp->z
+		)
+	);
 	CheckResult(_this, p, bp);
 }
 Hook(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
-	bool res = EventCall(Event::onOpenBarrel, Py_BuildValue("{s:K,s:[i,i,i]}",
-		"player", p,
-		"position", bp->x, bp->y, bp->z
-	));
+	bool res = EventCall(Event::onOpenBarrel,
+		Py_BuildValue("{s:K,s:[i,i,i]}",
+			"player", p,
+			"position", bp->x, bp->y, bp->z
+		)
+	);
 	CheckResult(_this, p, bp);
 }
 Hook(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	VA _this, Player* p) {
 	auto bp = (BlockPos*)(_this - 204);
-	EventCall(Event::onCloseChest, Py_BuildValue("{s:K,s:[i,i,i]}",
-		"player", p,
-		"position", bp->x, bp->y, bp->z
-	));
+	EventCall(Event::onCloseChest,
+		Py_BuildValue("{s:K,s:[i,i,i]}",
+			"player", p,
+			"position", bp->x, bp->y, bp->z
+		)
+	);
 	original(_this, p);
 }
 Hook(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	VA _this, Player* p) {
 	auto bp = (BlockPos*)(_this - 204);
-	EventCall(Event::onCloseBarrel, Py_BuildValue("{s:K,s:[i,i,i]}",
-		"player", p,
-		"position", bp->x, bp->y, bp->z
-	));
+	EventCall(Event::onCloseBarrel,
+		Py_BuildValue("{s:K,s:[i,i,i]}",
+			"player", p,
+			"position", bp->x, bp->y, bp->z
+		)
+	);
 	original(_this, p);
 }
 Hook(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEAAXH@Z",
@@ -374,27 +396,31 @@ Hook(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 		VA v5 = (*(VA(**)(VA))(*(VA*)a1 + 160))(a1);
 		if (v5) {
 			ItemStack* i = (ItemStack*)(*(VA(**)(VA, VA))(*(VA*)v5 + 40))(v5, slot);
-			EventCall(Event::onContainerChange, Py_BuildValue("{s:K,s:s,s:i,s:[i,i,i],s:i,s:i,s:s,s:i,s:i}",
-				"player", f(Player*, a1 + 208),
-				"blockname", bl->getBlockName().c_str(),
-				"blockid", bid,
-				"position", bp->x, bp->y, bp->z,
-				"itemid", i->getId(),
-				"itemcount", i->mCount,
-				"itemname", i->getName().c_str(),
-				"itemaux", i->mAuxValue,
-				"slot", slot
-			));
+			EventCall(Event::onContainerChange,
+				Py_BuildValue("{s:K,s:s,s:i,s:[i,i,i],s:i,s:i,s:s,s:i,s:i}",
+					"player", f(Player*, a1 + 208),
+					"blockname", bl->getBlockName().c_str(),
+					"blockid", bid,
+					"position", bp->x, bp->y, bp->z,
+					"itemid", i->getId(),
+					"itemcount", i->mCount,
+					"itemname", i->getName().c_str(),
+					"itemaux", i->mAuxValue,
+					"slot", slot
+				)
+			);
 		}
 	}
 	original(a1, slot);
 }
 Hook(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@@Z",
 	Player* p, Actor* a) {
-	bool res = EventCall(Event::onPlayerAttack, Py_BuildValue("{s:K,s:K}",
-		"player", p,
-		"actor", a
-	));
+	bool res = EventCall(Event::onPlayerAttack,
+		Py_BuildValue("{s:K,s:K}",
+			"player", p,
+			"actor", a
+		)
+	);
 	CheckResult(p, a);
 }
 Hook(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@AEAVChangeDimensionRequest@@@Z",
@@ -409,11 +435,13 @@ Hook(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	Mob* _this, VA dmsg) {
 	char v72;
 	Actor* sa = f(Level*, _this + 856)->fetchEntity(*(VA*)((*(VA(__fastcall**)(VA, char*))(*(VA*)dmsg + 64))(dmsg, &v72)));
-	bool res = EventCall(Event::onMobDie, Py_BuildValue("{s:I,s:K,s:K}",
-		"dmcase", f(unsigned, dmsg + 8),
-		"actor1", _this,
-		"actor2", sa//可能为0
-	));
+	bool res = EventCall(Event::onMobDie,
+		Py_BuildValue("{s:I,s:K,s:K}",
+			"dmcase", f(unsigned, dmsg + 8),
+			"actor1", _this,
+			"actor2", sa//可能为0
+		)
+	);
 	if (res) original(_this, dmsg);
 }
 Hook(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
@@ -451,10 +479,12 @@ Hook(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifie
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
 		string msg = f(string, pkt + 80);
-		bool res = EventCall(Event::onInputText, Py_BuildValue("{s:K,s:s}",
-			"player", p,
-			"msg", msg.c_str()
-		));
+		bool res = EventCall(Event::onInputText,
+			Py_BuildValue("{s:K,s:s}",
+				"player", p,
+				"msg", msg.c_str()
+			)
+		);
 		if (res)original(_this, id, pkt);
 	}
 }
@@ -463,10 +493,12 @@ Hook(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdenti
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
 		string cmd = f(string, pkt + 40);
-		bool res = EventCall(Event::onInputCommand, Py_BuildValue("{s:K,s:s}",
-			"player", p,
-			"cmd", cmd.c_str()
-		));
+		bool res = EventCall(Event::onInputCommand,
+			Py_BuildValue("{s:K,s:s}",
+				"player", p,
+				"cmd", cmd.c_str()
+			)
+		);
 		if (res)original(_this, id, pkt);
 	}
 }
@@ -501,28 +533,32 @@ Hook(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 		auto output = f(string, pkt + 96);
 		auto rawname = f(string, pkt + 128);
 		auto delay = f(int, pkt + 160);
-		res = EventCall(Event::onCommandBlockUpdate, Py_BuildValue("{s:K,s:i,s:i,s:i,s:s,s:s,s:s,s:i,s:[i,i,i]}",
-			"player", p,
-			"mode", mode,
-			"condition", condition,
-			"redstone", redstone,
-			"cmd", cmd.c_str(),
-			"output", output.c_str(),
-			"rawname", rawname.c_str(),
-			"delay", delay,
-			"position", bp.x, bp.y, bp.z
-		));
+		res = EventCall(Event::onCommandBlockUpdate,
+			Py_BuildValue("{s:K,s:i,s:i,s:i,s:s,s:s,s:s,s:i,s:[i,i,i]}",
+				"player", p,
+				"mode", mode,
+				"condition", condition,
+				"redstone", redstone,
+				"cmd", cmd.c_str(),
+				"output", output.c_str(),
+				"rawname", rawname.c_str(),
+				"delay", delay,
+				"position", bp.x, bp.y, bp.z
+			)
+		);
 	}
 	if (res)original(_this, id, pkt);
 }
 Hook(onLevelExplode, bool, "?explode@Level@@QEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
 	Level* _this, BlockSource* bs, Actor* a3, Vec3 pos, float a5, bool a6, bool a7, float a8, bool a9) {
-	bool res = EventCall(Event::onLevelExplode, Py_BuildValue("{s:K,s:[f,f,f],s:i,s:i}",
-		"actor", a3,
-		"position", pos.x, pos.y, pos.z,
-		"dimensionid", bs->getDimensionId(),
-		"power", a5
-	));
+	bool res = EventCall(Event::onLevelExplode,
+		Py_BuildValue("{s:K,s:[f,f,f],s:i,s:i}",
+			"actor", a3,
+			"position", pos.x, pos.y, pos.z,
+			"dimensionid", bs->getDimensionId(),
+			"power", a5
+		)
+	);
 	CheckResult(_this, bs, a3, pos, a5, a6, a7, a8, a9);
 }
 Hook(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@@AEAVCommandBlockActor@@AEBVBlockPos@@_N@Z",
@@ -533,13 +569,15 @@ Hook(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@
 	bool condition = SYMCALL<bool>("?getConditionalMode@CommandBlockActor@@QEBA_NAEAVBlockSource@@@Z", a3, a2);
 	string cmd = f(string, a3 + 264);
 	string rawname = f(string, a3 + 296);
-	bool res = EventCall(Event::onCommandBlockPerform, Py_BuildValue("{s:i,s:b,s:s,s:s,s:[i,i,i]}",
-		"mode", mode,
-		"condition", condition,
-		"cmd", cmd.c_str(),
-		"rawname", rawname.c_str(),
-		"position", bp->x, bp->y, bp->z
-	));
+	bool res = EventCall(Event::onCommandBlockPerform,
+		Py_BuildValue("{s:i,s:b,s:s,s:s,s:[i,i,i]}",
+			"mode", mode,
+			"condition", condition,
+			"cmd", cmd.c_str(),
+			"rawname", rawname.c_str(),
+			"position", bp->x, bp->y, bp->z
+		)
+	);
 	CheckResult(_this, a2, a3, bp, a5);
 }
 Hook(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
@@ -550,14 +588,16 @@ Hook(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z"
 Hook(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 	Player* p, unsigned slot, ItemStack* i) {
 	if (!i->getId())return original(p, slot, i);
-	bool res = EventCall(Event::onSetArmor, Py_BuildValue("{s:K,s:i,s:i,s:s,s:i,s:i}",
-		"player", p,
-		"itemid", i->getId(),
-		"itemcount", i->mCount,
-		"itemname", i->getName().c_str(),
-		"itemaux", i->mAuxValue,
-		"slot", slot
-	));
+	bool res = EventCall(Event::onSetArmor,
+		Py_BuildValue("{s:K,s:i,s:i,s:s,s:i,s:i}",
+			"player", p,
+			"itemid", i->getId(),
+			"itemcount", i->mCount,
+			"itemname", i->getName().c_str(),
+			"itemaux", i->mAuxValue,
+			"slot", slot
+		)
+	);
 	if (res)original(p, slot, i);
 }
 Hook(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboardId@@AEBVObjective@@@Z",
@@ -568,23 +608,27 @@ Hook(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboar
 	修改计分板时（此函数hook此处)：/scoreboard players <add|remove|set> <playersname> <objectivename> <playersnum>
 	*/
 	int scoreboardid = a2->id;
-	EventCall(Event::onScoreChanged, Py_BuildValue("{s:i,s:i,s:s,s:s}",
-		"scoreboardid", scoreboardid,
-		"playersnum", a3->getPlayerScore(a2)->getCount(),
-		"objectivename", a3->getScoreName().c_str(),
-		"objectivedisname", a3->getScoreDisplayName().c_str()
-	));
+	EventCall(Event::onScoreChanged,
+		Py_BuildValue("{s:i,s:i,s:s,s:s}",
+			"scoreboardid", scoreboardid,
+			"playersnum", a3->getPlayerScore(a2)->getCount(),
+			"objectivename", a3->getScoreName().c_str(),
+			"objectivedisname", a3->getScoreDisplayName().c_str()
+		)
+	);
 	original(_this, a2, a3);
 }
 Hook(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@M@Z",
 	VA _this, BlockSource* a1, BlockPos* a2, Player* p, VA a4) {
 	bool res = true;
 	if (CheckisPlayer(p)) {
-		res = EventCall(Event::onFallBlockTransform, Py_BuildValue("{s:K,s:[i,i,i],s:i}",
-			"player", p,
-			"position", a2->x, a2->y, a2->z,
-			"dimensionid", a1->getDimensionId()
-		));
+		res = EventCall(Event::onFallBlockTransform,
+			Py_BuildValue("{s:K,s:[i,i,i],s:i}",
+				"player", p,
+				"position", a2->x, a2->y, a2->z,
+				"dimensionid", a1->getDimensionId()
+			)
+		);
 	}
 	if (res)original(_this, a1, a2, p, a4);
 }
@@ -592,13 +636,32 @@ Hook(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPl
 	Player* p, BlockPos* a2, BlockSource* a3, void* a4) {
 	bool res = true;
 	if (CheckisPlayer(p)) {
-		res = EventCall(Event::onUseRespawnAnchorBlock, Py_BuildValue("{s:K,s:[i,i,i],s:i}",
-			"player", p,
-			"position", a2->x, a2->y, a2->z,
-			"dimensionid", a3->getDimensionId()
-		));
+		res = EventCall(Event::onUseRespawnAnchorBlock,
+			Py_BuildValue("{s:K,s:[i,i,i],s:i}",
+				"player", p,
+				"position", a2->x, a2->y, a2->z,
+				"dimensionid", a3->getDimensionId()
+			)
+		);
 	}
 	CheckResult(p, a2, a3, a4);
+}
+Hook(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBlockSource@@AEBVBlockPos@@EE@Z",
+	BlockActor* _this, BlockSource* bs, BlockPos* bp, unsigned a3, unsigned a4) {
+	auto blg = bs->getBlock(*bp)->getBlockLegacy();
+	string bn = blg->getBlockName();
+	short bid = blg->getBlockItemID();
+	BlockPos* bp2 = _this->getPosition();
+	bool res = EventCall(Event::onPistonPush,
+		Py_BuildValue("{s:s,s:i,s:[i,i,i],s:[i,i,i],s:i}",
+			"blockname", bn.c_str(),
+			"blockid", bid,
+			"blockpos", bp->x, bp->y, bp->z,
+			"pistonpos", bp2->x, bp2->y, bp2->z,
+			"dimensionid", bs->getDimensionId()
+		)
+	);
+	CheckResult(_this, bs, bp, a3, a4);
 }
 #pragma endregion
 #pragma region API Function
@@ -606,7 +669,7 @@ Hook(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPl
 PyAPIFunction(getVersion) {
 	WriteLog(__func__);
 	PyArg_ParseTuple(args, ":getVersion");
-	return PyLong_FromLong(111);
+	return PyLong_FromLong(112);
 }
 // 指令输出
 PyAPIFunction(logout) {
@@ -917,8 +980,8 @@ PyAPIFunction(tellraw) {
 PyAPIFunction(tellrawEx) {
 	WriteLog(__func__);
 	const char* msg;
-	Player* p; char mode;
-	if (PyArg_ParseTuple(args, "Ksb:tellrawEx", &p, &msg, &mode)) {
+	Player* p; int mode;
+	if (PyArg_ParseTuple(args, "Ksi:tellrawEx", &p, &msg, &mode)) {
 		if (TextPacket(p, mode, msg))
 			return Py_True;
 	}
@@ -1295,7 +1358,7 @@ static void init() {
 		auto& path = info.path();
 		if (path.extension() == ".py") {
 			const string& name = path.stem().u8string();
-			cout << "[BDSpyrunner] loading " << name << endl;
+			print("[BDSpyrunner] loading ", name);
 			PyImport_ImportModule(("py." + name).c_str());
 			PyErr_Print();
 		}
@@ -1316,7 +1379,7 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 		if (filesystem::exists("py/log"))
 			_logstate = true;
 		init();
-		puts(u8"[BDSpyrunner] 1.1.1 loaded.");
+		puts(u8"[BDSpyrunner] 1.1.2 loaded.");
 		puts(u8"[BDSpyrunner] 感谢小枫云 http://ipyvps.com 的赞助.");
 		WriteLog("Server Started.");
 	}

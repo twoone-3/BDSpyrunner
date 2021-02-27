@@ -32,7 +32,8 @@ enum class Event {
 	onFallBlockTransform,
 	onUseRespawnAnchorBlock,
 	onScoreChanged,
-	onMove
+	onMove,
+	onPistonPush
 };
 static Event toEvent(const string& s) {
 	const static unordered_map<string, Event> events{
@@ -65,6 +66,7 @@ static Event toEvent(const string& s) {
 	{u8"使用重生锚",Event::onUseRespawnAnchorBlock},
 	{u8"计分板改变",Event::onScoreChanged},
 	{u8"玩家移动",Event::onMove},
+	{u8"活塞推动",Event::onPistonPush},
 	{u8"onConsoleInput",Event::onConsoleInput},
 	{u8"onConsoleOutput",Event::onConsoleOutput},
 	{u8"onSelectForm",Event::onSelectForm},
@@ -93,7 +95,8 @@ static Event toEvent(const string& s) {
 	{u8"onFallBlockTransform",Event::onFallBlockTransform},
 	{u8"onUseRespawnAnchorBlock",Event::onUseRespawnAnchorBlock},
 	{u8"onScoreChanged",Event::onScoreChanged},
-	{u8"onMove",Event::onMove}
+	{u8"onMove",Event::onMove},
+	{u8"onPistonPush",Event::onPistonPush}
 	};
 	return events.at(s);
 }

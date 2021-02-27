@@ -11,5 +11,7 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Event.hpp" />
+    <ClInclude Include="BDS.hpp" />
+    <ClInclude Include="NBT.hpp" />
   </ItemGroup>
 </Project>

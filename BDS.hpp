@@ -26,7 +26,7 @@ struct BlockActor {
 		return f(Block*, this + 16);
 	}
 	BlockPos* getPosition() {// IDA BlockActor::BlockActor 18~20
-		return f(BlockPos*, this + 44);
+		return (BlockPos*)(this + 44);
 	}
 };
 struct BlockSource {
@@ -62,23 +62,21 @@ struct Vec2 { float x = 0.0f, y = 0.0f; };
 struct Item;
 struct ItemStackBase {
 	VA vtable;
-	VA mItem;
-	VA mUserData;
-	VA mBlock;
+	Item* mItem;
+	Tag* mUserData;
+	Block* mBlock;
 	short mAuxValue;
 	char mCount;
-	char mValid;
-	char unk[4];
+	bool mValid;
 	VA mPickupTime;
-	char mShowPickUp;
-	char unk2[7];
-	vector<VA*> mCanPlaceOn;
+	bool mShowPickUp;
+	vector<BlockLegacy*> mCanPlaceOn;
 	VA mCanPlaceOnHash;
-	vector<VA*> mCanDestroy;
+	vector<BlockLegacy*> mCanDestroy;
 	VA mCanDestroyHash;
 	VA mBlockingTick;
 	ItemStackBase* mChargedItem;
-	VA uk;
+	VA unk;
 
 	// 取物品ID,特殊值,损耗
 	short getId() {
@@ -139,6 +137,7 @@ struct ItemStackBase {
 		delete t;
 	}
 };
+static_assert(sizeof(ItemStackBase) == 0x90);
 struct ItemStack : ItemStackBase {};
 struct Container {
 	// 获取容器内所有物品
@@ -180,7 +179,7 @@ struct Actor {
 	}
 	ItemStack* getArmor(int slot) {
 		return SYMCALL<ItemStack*>("?getArmor@Actor@@UEBAAEBVItemStack@@W4ArmorSlot@@@Z",
-			this,slot);
+			this, slot);
 	}
 	// 获取实体类型
 	unsigned getEntityTypeId() {
@@ -363,7 +362,8 @@ struct ScorePacketInfo {
 	string fake_name;
 
 	ScorePacketInfo(ScoreboardId* s, unsigned num, const string& fake) :
-		sid(*s), score(num), fake_name(fake) {}
+		sid(*s), score(num), fake_name(fake) {
+	}
 
 };
 struct Objective {
@@ -436,6 +436,9 @@ struct Level {
 	Actor* fetchEntity(VA id) {
 		return SYMCALL< Actor*>("?fetchEntity@Level@@QEBAPEAVActor@@UActorUniqueID@@_N@Z",
 			this, id, false);
+	}
+	const vector<Player*>& getAllPlayers() {
+		return f(vector<Player*>, this + 104);
 	}
 };
 struct ServerNetworkHandler {

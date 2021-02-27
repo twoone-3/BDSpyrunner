@@ -17,7 +17,9 @@
     <ClCompile Include="mod.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BDS.hpp" />
     <ClInclude Include="Event.hpp" />
+    <ClInclude Include="NBT.hpp" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
