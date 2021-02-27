@@ -1109,7 +1109,6 @@ bool Reader::good() const { return errors_.empty(); }
 // for features implementation.
 class OurFeatures {
 public:
-	static OurFeatures all();
 	bool allowComments_;
 	bool allowTrailingCommas_;
 	bool strictRoot_;
@@ -1122,8 +1121,6 @@ public:
 	bool skipBom_;
 	size_t stackLimit_;
 }; // OurFeatures
-
-OurFeatures OurFeatures::all() { return {}; }
 
 // Implementation of class Reader
 // ////////////////////////////////
@@ -2149,7 +2146,7 @@ CharReaderBuilder::CharReaderBuilder() { setDefaults(&settings_); }
 CharReaderBuilder::~CharReaderBuilder() = default;
 CharReader* CharReaderBuilder::newCharReader() const {
 	bool collectComments = settings_["collectComments"].asBool();
-	OurFeatures features = OurFeatures::all();
+	OurFeatures features;
 	features.allowComments_ = settings_["allowComments"].asBool();
 	features.allowTrailingCommas_ = settings_["allowTrailingCommas"].asBool();
 	features.strictRoot_ = settings_["strictRoot"].asBool();

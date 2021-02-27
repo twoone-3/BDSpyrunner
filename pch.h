@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <queue>
+#include <thread>
 #include <functional>
 #include <filesystem>
 #include <unordered_map>
@@ -22,23 +23,11 @@ template<typename ret = void, typename... Args>
 static inline ret SYMCALL(const char* sym, Args... args) {
 	return ((ret(*)(Args...))SYM(sym))(args...);
 }
-static inline void* HookRegister(const char* sym, void* hook, void* org) {
+static void* HookRegister(const char* sym, void* hook, void* org) {
 	void* found = SYM(sym);
 	if (!found)printf("Failed to hook %s\n", sym);
 	HookFunction(found, org, hook);
 	return org;
-}
-static Json::Value toJson(const std::string& s) {
-	Json::Value j;
-	Json::CharReaderBuilder rb;
-	std::string errs;
-	Json::CharReader* r(rb.newCharReader());
-	bool res = r->parse(s.c_str(), s.c_str() + s.length(), &j, &errs);
-	if (!res || !errs.empty()) {
-		fprintf(stderr, "[Jsoncpp] %s\n", errs.c_str());
-	}
-	delete r;
-	return std::move(j);
 }
 #define Hook(name, ret, sym, ...)		\
 namespace name {						\
