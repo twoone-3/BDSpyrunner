@@ -10,8 +10,10 @@
 #include <functional>
 #include <filesystem>
 #include <unordered_map>
-#include "json/json.h"
+#include "Json.h"
 #include "include/Python.h"
+#pragma warning(disable:4996)
+#pragma execution_character_set("utf-8")
 #define f(type, ptr) (*reinterpret_cast<type*>(ptr))
 #define SYM(sym) GetServerSymbol(sym)
 using VA = unsigned long long;

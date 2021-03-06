@@ -1,7 +1,6 @@
 ﻿#include "pch.h"
 #include "BDS.hpp"
 #include "Event.hpp"
-#pragma warning(disable:4996)
 #pragma region Macro
 #define Py_Method(name) {#name, api_##name, 1, 0}
 #define PyAPIFunction(name) static PyObject* api_##name(PyObject* , PyObject* args)
@@ -20,8 +19,7 @@ static vector<pair<string, string>> Command;// 注册命令
 static unordered_map<string, PyObject*> ShareData;// 共享数据
 static int _Damage;// 伤害值
 static unordered_map<PyObject*, unsigned[2]> tick;// 执行队列
-static queue<function<void()>> _todos;
-static bool _logstate;
+//static queue<function<void()>> _todos;
 #pragma endregion
 #pragma region Function Define
 template<class T>
@@ -33,34 +31,12 @@ void inline print(const T& data, T2... other) {
 	cout << data;
 	print(other...);
 }
-static void WriteLog(const string& s) {
-	if (_logstate) {
-		SYSTEMTIME m_time;
-		GetLocalTime(&m_time);
-		char path[24];
-		sprintf(path, "py/log/%02d-%02d-%02d.log", m_time.wYear, m_time.wMonth,
-			m_time.wDay);
-		char time[16];
-		sprintf(time, "[%02d:%02d:%02d]", m_time.wHour, m_time.wMinute,
-			m_time.wSecond);
-		FILE* f = fopen(path, "ab+");
-		fwrite(time, 10, 1, f);
-		fwrite(s.c_str(), s.length(), 1, f);
-		fputc('\n', f);
-		fclose(f);
-	}
-}
-static Json::Value toJson(const string& s) {
-	Json::Value j;
-	Json::CharReaderBuilder rb;
-	string errs;
-	Json::CharReader* r(rb.newCharReader());
-	bool res = r->parse(s.c_str(), s.c_str() + s.length(), &j, &errs);
-	if (!res || !errs.empty()) {
-		cerr << "JSON" << errs << endl;;
-	}
-	delete r;
-	return std::move(j);
+static Json toJson(const char* s) {
+	Json j;
+	string err;
+	if (!j.parse(s, &err))
+		cerr << "JSON错误" << err << endl;;
+	return move(j);
 }
 static inline VA createPacket(int type) {
 	VA pkt;
@@ -79,8 +55,6 @@ static bool EventCall(Event e, PyObject* val) {
 
 	auto& List = _PyFuncs[e];
 	if (!List.empty()) {
-		if (e != Event::onMove)
-			WriteLog("EventCall " + to_string((int)e));
 		for (PyObject* fn : List) {
 			if (PyObject_CallFunction(fn, "O", val) == Py_False)
 				result = false;
@@ -667,13 +641,11 @@ Hook(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 #pragma region API Function
 // 获取版本
 PyAPIFunction(getVersion) {
-	WriteLog(__func__);
 	PyArg_ParseTuple(args, ":getVersion");
-	return PyLong_FromLong(112);
+	return PyLong_FromLong(113);
 }
 // 指令输出
 PyAPIFunction(logout) {
-	WriteLog(__func__);
 	const char* msg;
 	if (PyArg_ParseTuple(args, "s:logout", &msg)) {
 		SYMCALL<ostream&>("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
@@ -684,7 +656,6 @@ PyAPIFunction(logout) {
 }
 // 执行指令
 PyAPIFunction(runcmd) {
-	WriteLog(__func__);
 	const char* cmd;
 	if (PyArg_ParseTuple(args, "s:runcmd", &cmd)) {
 		onConsoleInput::original(_cmdqueue, cmd);
@@ -694,7 +665,6 @@ PyAPIFunction(runcmd) {
 }
 // 计时器
 PyAPIFunction(setTimer) {
-	WriteLog(__func__);
 	unsigned time; PyObject* func;
 	if (PyArg_ParseTuple(args, "OI:setTimer", &func, &time)) {
 		if (!PyCallable_Check(func))
@@ -705,7 +675,6 @@ PyAPIFunction(setTimer) {
 	return Py_True;
 }
 PyAPIFunction(removeTimer) {
-	WriteLog(__func__);
 	PyObject* func;
 	if (PyArg_ParseTuple(args, "O:removeTimer", &func, &time)) {
 		tick.erase(func);
@@ -716,21 +685,19 @@ PyAPIFunction(removeTimer) {
 PyAPIFunction(setListener) {
 	const char* name; PyObject* fn;
 	if (PyArg_ParseTuple(args, "sO:setListener", &name, &fn)) {
-		WriteLog("setListener "s + name);
 		try {
 			Event e = toEvent(name);
 			_PyFuncs[e].push_back(fn);
 			return Py_True;
 		}
 		catch (const std::out_of_range&) {
-			cerr << u8"无效的监听:" << name << endl;
+			cerr << "无效的监听:" << name << endl;
 		}
 	}
 	return Py_False;
 }
 // 共享数据
 PyAPIFunction(setShareData) {
-	WriteLog(__func__);
 	const char* index; PyObject* data;
 	if (PyArg_ParseTuple(args, "sO:setShareData", &index, &data)) {
 		ShareData[index] = data;
@@ -739,7 +706,6 @@ PyAPIFunction(setShareData) {
 	return Py_False;
 }
 PyAPIFunction(getShareData) {
-	WriteLog(__func__);
 	const char* index;
 	if (PyArg_ParseTuple(args, "s:getShareData", &index)) {
 		return ShareData[index];
@@ -748,7 +714,6 @@ PyAPIFunction(getShareData) {
 }
 // 设置指令说明
 PyAPIFunction(setCommandDescription) {
-	WriteLog(__func__);
 	const char* cmd, * des;
 	if (PyArg_ParseTuple(args, "ss:setCommandDescribe", &cmd, &des)) {
 		Command.push_back({ cmd,des });
@@ -757,7 +722,6 @@ PyAPIFunction(setCommandDescription) {
 	return Py_False;
 }
 PyAPIFunction(getPlayerList) {
-	WriteLog(__func__);
 	PyObject* list = PyList_New(0);
 	PyArg_ParseTuple(args, ":getPlayerList");
 	for (auto& p : _PlayerList) {
@@ -768,7 +732,6 @@ PyAPIFunction(getPlayerList) {
 }
 // 发送表单
 PyAPIFunction(sendCustomForm) {
-	WriteLog(__func__);
 	Player* p; const char* str;
 	if (PyArg_ParseTuple(args, "Ks:sendCustomForm", &p, &str)) {
 		return PyLong_FromLong(ModalFormRequestPacket(p, str));
@@ -776,7 +739,6 @@ PyAPIFunction(sendCustomForm) {
 	return PyLong_FromLong(0);
 }
 PyAPIFunction(sendSimpleForm) {
-	WriteLog(__func__);
 	Player* p; const char* title, * content, * buttons;
 	if (PyArg_ParseTuple(args, "Ksss:sendSimpleForm", &p, &title, &content, &buttons)) {
 		char str[0x400];
@@ -786,7 +748,6 @@ PyAPIFunction(sendSimpleForm) {
 	return Py_False;
 }
 PyAPIFunction(sendModalForm) {
-	WriteLog(__func__);
 	Player* p; const char* title, * content, * button1, * button2;
 	if (PyArg_ParseTuple(args, "Kssss:sendModalForm", &p, &title, &content, &button1, &button2)) {
 		char str[0x400];
@@ -797,7 +758,6 @@ PyAPIFunction(sendModalForm) {
 }
 // 跨服传送
 PyAPIFunction(transferServer) {
-	WriteLog(__func__);
 	Player* p; const char* address; short port;
 	if (PyArg_ParseTuple(args, "Ksh:transferServer", &p, &address, &port)) {
 		if (TransferPacket(p, address, port))
@@ -807,7 +767,6 @@ PyAPIFunction(transferServer) {
 }
 // 获取玩家信息
 PyAPIFunction(getPlayerInfo) {
-	WriteLog(__func__);
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:getPlayerInfo", &p)) {
 		if (CheckisPlayer(p)) {
@@ -827,7 +786,6 @@ PyAPIFunction(getPlayerInfo) {
 	return PyDict_New();
 }
 PyAPIFunction(getActorInfo) {
-	WriteLog(__func__);
 	Actor* a;
 	if (PyArg_ParseTuple(args, "K:getActorInfo", &a)) {
 		if (!a)
@@ -846,7 +804,6 @@ PyAPIFunction(getActorInfo) {
 	return Py_False;
 }
 PyAPIFunction(getActorInfoEx) {
-	WriteLog(__func__);
 	Actor* a;
 	if (PyArg_ParseTuple(args, "K:getActorInfoEx", &a)) {
 		if (!a)
@@ -861,7 +818,6 @@ PyAPIFunction(getActorInfoEx) {
 }
 // 玩家权限
 PyAPIFunction(getPlayerPerm) {
-	WriteLog(__func__);
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:getPlayerPerm", &p)) {
 		if (CheckisPlayer(p)) {
@@ -871,7 +827,6 @@ PyAPIFunction(getPlayerPerm) {
 	return Py_False;
 }
 PyAPIFunction(setPlayerPerm) {
-	WriteLog(__func__);
 	Player* p; unsigned char lv;
 	if (PyArg_ParseTuple(args, "Kb:setPlayerPerm", &p, &lv)) {
 		if (CheckisPlayer(p)) {
@@ -883,7 +838,6 @@ PyAPIFunction(setPlayerPerm) {
 }
 // 增加玩家等级
 PyAPIFunction(addLevel) {
-	WriteLog(__func__);
 	Player* p; int lv;
 	if (PyArg_ParseTuple(args, "Ki::addLevel", &p, &lv)) {
 		if (CheckisPlayer(p)) {
@@ -895,7 +849,6 @@ PyAPIFunction(addLevel) {
 }
 // 设置玩家名字
 PyAPIFunction(setName) {
-	WriteLog(__func__);
 	Player* p; const char* name;
 	if (PyArg_ParseTuple(args, "Ks:setName", &p, &name)) {
 		if (CheckisPlayer(p)) {
@@ -907,7 +860,6 @@ PyAPIFunction(setName) {
 }
 // 玩家分数
 PyAPIFunction(getPlayerScore) {
-	WriteLog(__func__);
 	Player* p; const char* obj;
 	if (PyArg_ParseTuple(args, "Ks:getPlayerScore", &p, &obj)) {
 		if (CheckisPlayer(p)) {
@@ -922,7 +874,6 @@ PyAPIFunction(getPlayerScore) {
 	return Py_False;
 }
 PyAPIFunction(modifyPlayerScore) {
-	WriteLog(__func__);
 	Player* p; const char* obj; int count; int mode;
 	if (PyArg_ParseTuple(args, "Ksii:modifyPlayerScore", &p, &obj, &count, &mode)) {
 		if (CheckisPlayer(p) && mode >= 0 && mode <= 3) {
@@ -938,7 +889,6 @@ PyAPIFunction(modifyPlayerScore) {
 }
 // 模拟玩家发送文本
 PyAPIFunction(talkAs) {
-	WriteLog(__func__);
 	Player* p; const char* msg;
 	if (PyArg_ParseTuple(args, "Ks:talkAs", &p, &msg)) {
 		if (TextPacket(p, 1, msg))
@@ -948,7 +898,6 @@ PyAPIFunction(talkAs) {
 }
 // 模拟玩家执行指令
 PyAPIFunction(runcmdAs) {
-	WriteLog(__func__);
 	Player* p; const char* cmd;
 	if (PyArg_ParseTuple(args, "Ks:runcmdAs", &p, &cmd)) {
 		if (CommandRequestPacket(p, cmd))
@@ -958,7 +907,6 @@ PyAPIFunction(runcmdAs) {
 }
 // 传送玩家
 PyAPIFunction(teleport) {
-	WriteLog(__func__);
 	Player* p; float x, y, z; int did;
 	if (PyArg_ParseTuple(args, "Kfffi:teleport", &p, &x, &y, &z, &did)) {
 		p->teleport({ x,y,z }, did);
@@ -968,7 +916,6 @@ PyAPIFunction(teleport) {
 }
 // 原始输出
 PyAPIFunction(tellraw) {
-	WriteLog(__func__);
 	const char* msg;
 	Player* p;
 	if (PyArg_ParseTuple(args, "Ks:tellraw", &p, &msg)) {
@@ -978,7 +925,6 @@ PyAPIFunction(tellraw) {
 	return Py_False;
 }
 PyAPIFunction(tellrawEx) {
-	WriteLog(__func__);
 	const char* msg;
 	Player* p; int mode;
 	if (PyArg_ParseTuple(args, "Ksi:tellrawEx", &p, &msg, &mode)) {
@@ -989,7 +935,6 @@ PyAPIFunction(tellrawEx) {
 }
 // boss栏
 PyAPIFunction(setBossBar) {
-	WriteLog(__func__);
 	Player* p; const char* name; float per;
 	if (PyArg_ParseTuple(args, "Ksf:", &p, &name, &per)) {
 		if (BossEventPacket(p, name, per, 0))
@@ -998,7 +943,6 @@ PyAPIFunction(setBossBar) {
 	return Py_False;
 }
 PyAPIFunction(removeBossBar) {
-	WriteLog(__func__);
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:removeBossBar", &p)) {
 		if (BossEventPacket(p, "", 0.0, 2))
@@ -1008,7 +952,6 @@ PyAPIFunction(removeBossBar) {
 }
 // 通过玩家指针获取计分板id
 PyAPIFunction(getScoreBoardId) {
-	WriteLog(__func__);
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:getScoreBoardId", &p)) {
 		if (CheckisPlayer(p)) {
@@ -1020,7 +963,6 @@ PyAPIFunction(getScoreBoardId) {
 	return Py_False;
 }
 PyAPIFunction(createScoreBoardId) {
-	WriteLog(__func__);
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:createScoreBoardId", &p)) {
 		if (CheckisPlayer(p)) {
@@ -1032,7 +974,6 @@ PyAPIFunction(createScoreBoardId) {
 }
 // 修改生物受伤的伤害值!
 PyAPIFunction(setDamage) {
-	WriteLog(__func__);
 	int a;
 	if (PyArg_ParseTuple(args, "i:setDamage", &a)) {
 		_Damage = a;
@@ -1041,7 +982,6 @@ PyAPIFunction(setDamage) {
 	return Py_False;
 }
 PyAPIFunction(setServerMotd) {
-	WriteLog(__func__);
 	const char* n;
 	if (PyArg_ParseTuple(args, "s:setServerMotd", &n) && _Handle) {
 		string name = n;
@@ -1053,11 +993,10 @@ PyAPIFunction(setServerMotd) {
 }
 // 玩家背包相关操作
 PyAPIFunction(getPlayerItems) {
-	WriteLog(__func__);
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:getPlayerItems", &p)) {
 		if (CheckisPlayer(p)) {
-			Json::Value j;
+			Json j;
 			for (auto& i : p->getContainer()->getSlots()) {
 				j.append(toJson(i->save()));
 			}
@@ -1068,13 +1007,12 @@ PyAPIFunction(getPlayerItems) {
 	return Py_False;
 }
 PyAPIFunction(setPlayerItems) {
-	WriteLog(__func__);
 	Player* p;
 	const char* x;
 	if (PyArg_ParseTuple(args, "Ks:setPlayerItems", &p, &x)) {
 		if (CheckisPlayer(p)) {
-			Json::Value j = toJson(x);
-			if (j.isArray()) {
+			Json j = toJson(x);
+			if (j.getType() == Json::Type::Array) {
 				vector<ItemStack*> is = p->getContainer()->getSlots();
 				for (unsigned i = 0; i < j.size(); i++) {
 					is[i]->fromJson(j[i]);
@@ -1087,7 +1025,6 @@ PyAPIFunction(setPlayerItems) {
 	return Py_False;
 }
 PyAPIFunction(getPlayerHand) {
-	WriteLog(__func__);
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:getPlayerHand", &p)) {
 		if (CheckisPlayer(p)) {
@@ -1099,7 +1036,6 @@ PyAPIFunction(getPlayerHand) {
 	return Py_False;
 }
 PyAPIFunction(setPlayerHand) {
-	WriteLog(__func__);
 	Player* p;
 	const char* x;
 	if (PyArg_ParseTuple(args, "Ks:setPlayerHand", &p, &x)) {
@@ -1112,7 +1048,6 @@ PyAPIFunction(setPlayerHand) {
 	return Py_False;
 }
 PyAPIFunction(getPlayerArmor) {
-	WriteLog(__func__);
 	Player* p; int slot;
 	if (PyArg_ParseTuple(args, "Ki:getPlayerArmor", &p, &slot)) {
 		if (CheckisPlayer(p) && slot >= 0 && slot <= 4) {
@@ -1124,7 +1059,6 @@ PyAPIFunction(getPlayerArmor) {
 	return Py_False;
 }
 PyAPIFunction(setPlayerArmor) {
-	WriteLog(__func__);
 	Player* p; int slot; const char* x;
 	if (PyArg_ParseTuple(args, "Kis:setPlayerArmor", &p, &slot, &x)) {
 		if (CheckisPlayer(p) && slot >= 0 && slot <= 4) {
@@ -1135,7 +1069,6 @@ PyAPIFunction(setPlayerArmor) {
 	return Py_False;
 }
 PyAPIFunction(getPlayerItem) {
-	WriteLog(__func__);
 	Player* p; int slot;
 	if (PyArg_ParseTuple(args, "Ki:getPlayerItem", &p, &slot)) {
 		if (CheckisPlayer(p)) {
@@ -1147,7 +1080,6 @@ PyAPIFunction(getPlayerItem) {
 	return Py_False;
 }
 PyAPIFunction(setPlayerItem) {
-	WriteLog(__func__);
 	Player* p; int slot; const char* x;
 	if (PyArg_ParseTuple(args, "Kis:setPlayerItem", &p, &slot, &x)) {
 		if (CheckisPlayer(p) && slot >= 0 && slot <= 36) {
@@ -1158,11 +1090,10 @@ PyAPIFunction(setPlayerItem) {
 	return Py_False;
 }
 PyAPIFunction(getPlayerEnderChests) {
-	WriteLog(__func__);
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:getPlayerEnderChests", &p)) {
 		if (CheckisPlayer(p)) {
-			Json::Value j;
+			Json j;
 			vector<ItemStack*> is = p->getEnderChestContainer()->getSlots();
 			for (auto i : is) {
 				j.append(toJson(i->save()));
@@ -1174,13 +1105,12 @@ PyAPIFunction(getPlayerEnderChests) {
 	return Py_False;
 }
 PyAPIFunction(setPlayerEnderChests) {
-	WriteLog(__func__);
 	Player* p;
 	const char* x;
 	if (PyArg_ParseTuple(args, "Ks:setPlayerEnderChests", &p, &x)) {
 		if (CheckisPlayer(p)) {
-			Json::Value j = toJson(x);
-			if (j.isArray()) {
+			Json j = toJson(x);
+			if (j.getType() == Json::Type::Array) {
 				vector<ItemStack*> is = p->getEnderChestContainer()->getSlots();
 				for (unsigned i = 0; i < j.size(); i++) {
 					is[i]->fromJson(j[i]);
@@ -1194,7 +1124,6 @@ PyAPIFunction(setPlayerEnderChests) {
 }
 // 增加/移除物品
 PyAPIFunction(addItemEx) {
-	WriteLog(__func__);
 	Player* p;
 	const char* x;
 	if (PyArg_ParseTuple(args, "Ks:addItemEx", &p, &x)) {
@@ -1209,7 +1138,6 @@ PyAPIFunction(addItemEx) {
 	return Py_False;
 }
 PyAPIFunction(removeItem) {
-	WriteLog(__func__);
 	Player* p; int slot, num;
 	if (PyArg_ParseTuple(args, "Kii:removeItem", &p, &slot, &num)) {
 		if (CheckisPlayer(p)) {
@@ -1221,19 +1149,18 @@ PyAPIFunction(removeItem) {
 }
 // 设置玩家侧边栏
 PyAPIFunction(setSidebar) {
-	WriteLog(__func__);
 	Player* p;
 	const char* title;
 	const char* data;
 	if (PyArg_ParseTuple(args, "Kss:setSidebar", &p, &title, &data)) {
 		if (CheckisPlayer(p)) {
-			Json::Value j = toJson(data);
+			Json j = toJson(data);
 			setDisplayObjectivePacket(p, title);
-			if (j.isObject()) {
+			if (j.getType() == Json::Type::Object) {
 				vector<ScorePacketInfo> info;
-				for (auto& x : j.getMemberNames()) {
-					ScorePacketInfo o(_scoreboard->createScoreBoardId(x),
-						j[x].asInt(), x);
+				for (auto& x : j.asObject()) {
+					ScorePacketInfo o(_scoreboard->createScoreBoardId(x.first),
+						x.second.asInt(), x.first);
 					info.push_back(o);
 				}
 				SetScorePacket(p, 0, info);
@@ -1244,7 +1171,6 @@ PyAPIFunction(setSidebar) {
 	return Py_False;
 }
 PyAPIFunction(removeSidebar) {
-	WriteLog(__func__);
 	Player* p;
 	if (PyArg_ParseTuple(args, "K:removeSidebar", &p)) {
 		if (CheckisPlayer(p)) {
@@ -1255,12 +1181,11 @@ PyAPIFunction(removeSidebar) {
 }
 // 根据坐标设置方块
 PyAPIFunction(getBlock) {
-	WriteLog(__func__);
 	BlockPos bp; int did;
 	if (PyArg_ParseTuple(args, "iiii:getBlock", &bp.x, &bp.y, &bp.z, &did)) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
-			cerr << u8"未知纬度ID:" << did << endl;
+			cerr << "未知纬度ID:" << did << endl;
 			return Py_False;
 		}
 		auto bl = bs->getBlock(bp)->getBlockLegacy();
@@ -1272,13 +1197,12 @@ PyAPIFunction(getBlock) {
 	return Py_False;
 }
 PyAPIFunction(setBlock) {
-	WriteLog(__func__);
 	const char* name;
 	BlockPos bp; int did;
 	if (PyArg_ParseTuple(args, "siiii:setBlock", &name, &bp.x, &bp.y, &bp.z, &did)) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
-			cerr << u8"未知纬度ID:" << did << endl;
+			cerr << "未知纬度ID:" << did << endl;
 			return Py_False;
 		}
 		bs->setBlock(name, bp);
@@ -1368,20 +1292,17 @@ static void init() {
 BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 	if (reason == 1) {
 		//while (1) {
-		//	Tag* t = toTag(toJson(R"({})"));
-		//	cout << toJson(t) << endl;
+		//	Tag* t = toTag(toJson(R"({"Count1": 1,"Damage2":0,"Name8":"minecraft:netherite_sword","WasPickedUp1":0,"tag10":{"RepairCost3":3,"display10":{"Name8":"下界合金剑"},"ench9":[{"id2":9,"lvl2": 5},{"id2":13,"lvl2":2}]}}'))"));
+		//	cout << toJson(t).toStyledString() << endl;
 		//	t->deCompound();
 		//	delete t;
 		//}
-		ios::sync_with_stdio(false);
+		//ios::sync_with_stdio(false);
 		if (!filesystem::exists("py"))
 			filesystem::create_directory("py");
-		if (filesystem::exists("py/log"))
-			_logstate = true;
 		init();
-		puts(u8"[BDSpyrunner] 1.1.2 loaded.");
-		puts(u8"[BDSpyrunner] 感谢小枫云 http://ipyvps.com 的赞助.");
-		WriteLog("Server Started.");
+		puts("[BDSpyrunner] 1.1.3 loaded.");
+		puts("[BDSpyrunner] 感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return 1;
 }

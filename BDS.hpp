@@ -130,7 +130,7 @@ struct ItemStackBase {
 	Item* getItem() {
 		return SYMCALL<Item*>("?getItem@ItemStackBase@@QEBAPEBVItem@@XZ", this);
 	}
-	void fromJson(Json::Value j) {
+	void fromJson(const Json& j) {
 		Tag* t = toTag(j);
 		fromTag(t);
 		t->deCompound();
