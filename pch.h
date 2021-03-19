@@ -10,12 +10,15 @@
 #include <functional>
 #include <filesystem>
 #include <unordered_map>
-#include "Json.h"
+#include "json/json.h"
 #include "include/Python.h"
-#pragma warning(disable:4996)
-#pragma execution_character_set("utf-8")
+
 #define f(type, ptr) (*reinterpret_cast<type*>(ptr))
 #define SYM(sym) GetServerSymbol(sym)
+
+#pragma warning(disable:4996)
+#pragma execution_character_set("utf-8")
+using namespace std;
 using VA = unsigned long long;
 extern "C" {
 	_declspec(dllimport) int HookFunction(void*, void*, void*);
@@ -27,7 +30,7 @@ static inline ret SYMCALL(const char* sym, Args... args) {
 }
 static void* HookRegister(const char* sym, void* hook, void* org) {
 	void* found = SYM(sym);
-	if (!found)printf("Failed to hook %s\n", sym);
+	if (!found)cerr << "Failed to hook " << sym << endl;
 	HookFunction(found, org, hook);
 	return org;
 }

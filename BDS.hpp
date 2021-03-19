@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "pch.h"
 #include "NBT.hpp"
-using namespace std;
 #pragma region Block
 struct BlockLegacy {
 	string getBlockName() {
@@ -130,7 +129,7 @@ struct ItemStackBase {
 	Item* getItem() {
 		return SYMCALL<Item*>("?getItem@ItemStackBase@@QEBAPEBVItem@@XZ", this);
 	}
-	void fromJson(const Json& j) {
+	void fromJson(Json::Value j) {
 		Tag* t = toTag(j);
 		fromTag(t);
 		t->deCompound();

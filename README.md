@@ -1,3 +1,3 @@
 ![logo](logo.png)
-* ÏêÏ¸½éÉÜ
+* è¯¦ç»†ä»‹ç»
 [Wiki](https://github.com/twoone-3/BDSpyrunner/wiki)

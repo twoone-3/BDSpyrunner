@@ -36,7 +36,7 @@ enum class Event {
 	onPistonPush
 };
 static Event toEvent(const string& s) {
-	static const unordered_map<string, Event> events{
+	const static unordered_map<string, Event> events{
 	{"后台输入",Event::onConsoleInput},
 	{"后台输出",Event::onConsoleOutput},
 	{"选择表单",Event::onSelectForm},

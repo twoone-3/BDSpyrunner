@@ -68,10 +68,10 @@ struct Tag {
 	auto& asCompound() { return *(map<string, Tag>*)((VA)this + 8); }
 };
 
-Json ListtoJson(Tag* t);
-Json toJson(Tag* t);
-Tag* toTag(const Json& j);
-Tag* ArraytoTag(const Json& j);
+Json::Value ListtoJson(Tag* t);
+Json::Value toJson(Tag* t);
+Tag* toTag(const Json::Value& j);
+Tag* ArraytoTag(const Json::Value& j);
 
 Tag* newTag(TagType t) {
 	Tag* tag = 0;
@@ -79,8 +79,8 @@ Tag* newTag(TagType t) {
 		&tag, t);
 	return tag;
 }
-Json ListtoJson(Tag* t) {
-	Json j;
+Json::Value ListtoJson(Tag* t) {
+	Json::Value j;
 	for (auto& c : t->asList()) {
 		switch (*((char*)t + 32)) {
 		case End:
@@ -117,8 +117,8 @@ Json ListtoJson(Tag* t) {
 	}
 	return move(j);
 }
-Json toJson(Tag* t) {
-	Json j;
+Json::Value toJson(Tag* t) {
+	Json::Value j;
 	for (auto& x : t->asCompound()) {
 		switch (x.second.type()) {
 		case End:
@@ -155,10 +155,10 @@ Json toJson(Tag* t) {
 	}
 	return move(j);
 }
-Tag* toTag(const Json& j) {
+Tag* toTag(const Json::Value& j) {
 	Tag* c = newTag(Compound);
-	for (auto& x : j.asObject()) {
-		string key = x.first;
+	for (auto& x : j.getMemberNames()) {
+		string key = x;
 		char& e = key.back();
 		int type = 0;
 		if (*(&e - 1) == '1' && e == '0') {
@@ -173,36 +173,36 @@ Tag* toTag(const Json& j) {
 		switch (type) {
 		case End:break;
 		case Byte:
-			c->putByte(key, (unsigned char)x.second.asInt());
+			c->putByte(key, (unsigned char)j[x].asInt());
 			break;
 		case Short:
-			c->putShort(key, (short)x.second.asInt());
+			c->putShort(key, (short)j[x].asInt());
 			break;
 		case Int:
-			c->putInt(key, x.second.asInt());
+			c->putInt(key, j[x].asInt());
 			break;
 		case Int64:
-			c->putInt64(key, x.second.asInt());
+			c->putInt64(key, j[x].asInt());
 			break;
 		case Float:
-			c->putFloat(key, (float)x.second.asDouble());
+			c->putFloat(key, j[x].asFloat());
 			break;
 		case Double:
-			c->putFloat(key, (float)x.second.asDouble());
+			c->putFloat(key, (float)j[x].asDouble());
 			break;
 		case ByteArray:break;
 		case String:
-			c->putString(key, x.second.asString());
+			c->putString(key, j[x].asString());
 			break;
 		case List: {
-			Tag* lt = ArraytoTag(x.second);
+			Tag* lt = ArraytoTag(j[x]);
 			c->put(key, lt);
 			lt->deList();
 			delete lt;
 			break;
 		}
 		case Compound: {
-			Tag* t = toTag(x.second);
+			Tag* t = toTag(j[x]);
 			c->putCompound(key, t);
 			//delete t;
 			break;
@@ -211,41 +211,43 @@ Tag* toTag(const Json& j) {
 	}
 	return c;
 }
-Tag* ArraytoTag(const Json& j) {
+Tag* ArraytoTag(const Json::Value& j) {
 	Tag* l = newTag(List);
-	for (auto& x : j.asArray()) {
-		switch (x.second.getType()) {
-		case Json::Type::Null:break;
-		case Json::Type::Int:
+	for (auto& x : j) {
+		Json::ValueType type = x.type();
+		switch (type) {
+		case Json::nullValue:break;
+		case Json::intValue:
+		case Json::uintValue:
 		{
 			Tag* t = newTag(Int);
-			*(int*)t->val = x.second.asInt();
+			*(int*)t->val = x.asInt();
 			l->add(t);
 			break;
 		}
-		case Json::Type::Double:
+		case Json::realValue:
 		{
 			Tag* t = newTag(Double);
-			*(double*)t->val = x.second.asDouble();
+			*(double*)t->val = x.asDouble();
 			l->add(t);
 			break;
 		}
-		case Json::Type::String:
+		case Json::stringValue:
 		{
 			Tag* t = newTag(String);
-			*(string*)t->val = x.second.asString();
+			*(string*)t->val = x.asString();
 			l->add(t);
 			break;
 		}
-		case Json::Type::Array:
+		case Json::arrayValue:
 		{
-			Tag* t = ArraytoTag(x.second);
+			Tag* t = ArraytoTag(x);
 			l->add(t);
 			break;
 		}
-		case Json::Type::Object:
+		case Json::objectValue:
 		{
-			Tag* t = toTag(x.second);
+			Tag* t = toTag(x);
 			l->add(t);
 			break;
 		}
