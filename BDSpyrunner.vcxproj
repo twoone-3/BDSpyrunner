@@ -11,9 +11,6 @@
     <Library Include="python36.lib" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="jsoncpp.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="mod.cpp" />
   </ItemGroup>
   <ItemGroup>

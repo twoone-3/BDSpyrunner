@@ -156,8 +156,9 @@ Json::Value toJson(Tag* t) {
 }
 Tag* toTag(const Json::Value& j) {
 	Tag* c = newTag(Compound);
-	for (auto& x : j.getMemberNames()) {
-		string key = x;
+	if(j.isObject())
+	for (auto& x : j.asObject()) {
+		string key = x.first;
 		char& e = key.back();
 		int type = 0;
 		if (*(&e - 1) == '1' && e == '0') {
@@ -172,36 +173,36 @@ Tag* toTag(const Json::Value& j) {
 		switch (type) {
 		case End:break;
 		case Byte:
-			c->putByte(key, (unsigned char)j[x].asInt());
+			c->putByte(key, (unsigned char)x.second.asInt());
 			break;
 		case Short:
-			c->putShort(key, (short)j[x].asInt());
+			c->putShort(key, (short)x.second.asInt());
 			break;
 		case Int:
-			c->putInt(key, j[x].asInt());
+			c->putInt(key, x.second.asInt());
 			break;
 		case Int64:
-			c->putInt64(key, j[x].asInt());
+			c->putInt64(key, x.second.asInt());
 			break;
 		case Float:
-			c->putFloat(key, j[x].asFloat());
+			c->putFloat(key, (float)x.second.asDouble());
 			break;
 		case Double:
-			c->putFloat(key, (float)j[x].asDouble());
+			c->putFloat(key, (float)x.second.asDouble());
 			break;
 		case ByteArray:break;
 		case String:
-			c->putString(key, j[x].asString());
+			c->putString(key, x.second.asString());
 			break;
 		case List: {
-			Tag* lt = ArraytoTag(j[x]);
+			Tag* lt = ArraytoTag(x.second);
 			c->put(key, lt);
 			lt->deList();
 			delete lt;
 			break;
 		}
 		case Compound: {
-			Tag* t = toTag(j[x]);
+			Tag* t = toTag(x.second);
 			c->putCompound(key, t);
 			//delete t;
 			break;
@@ -212,41 +213,39 @@ Tag* toTag(const Json::Value& j) {
 }
 Tag* ArraytoTag(const Json::Value& j) {
 	Tag* l = newTag(List);
-	for (auto& x : j) {
-		Json::ValueType type = x.type();
-		switch (type) {
-		case Json::nullValue:break;
-		case Json::intValue:
-		case Json::uintValue:
+	for (auto& x : j.asArray()) {
+		switch (x.second.type()) {
+		case Json::Type::Null:break;
+		case Json::Type::Int:
 		{
 			Tag* t = newTag(Int);
-			*(int*)t->val = x.asInt();
+			*(int*)t->val = x.second.asInt();
 			l->add(t);
 			break;
 		}
-		case Json::realValue:
+		case Json::Type::Double:
 		{
 			Tag* t = newTag(Double);
-			*(double*)t->val = x.asDouble();
+			*(double*)t->val = x.second.asDouble();
 			l->add(t);
 			break;
 		}
-		case Json::stringValue:
+		case Json::Type::String:
 		{
 			Tag* t = newTag(String);
-			*(string*)t->val = x.asString();
+			*(string*)t->val = x.second.asString();
 			l->add(t);
 			break;
 		}
-		case Json::arrayValue:
+		case Json::Type::Array:
 		{
-			Tag* t = ArraytoTag(x);
+			Tag* t = ArraytoTag(x.second);
 			l->add(t);
 			break;
 		}
-		case Json::objectValue:
+		case Json::Type::Object:
 		{
-			Tag* t = toTag(x);
+			Tag* t = toTag(x.second);
 			l->add(t);
 			break;
 		}

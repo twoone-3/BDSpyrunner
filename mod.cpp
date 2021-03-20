@@ -2,10 +2,10 @@
 #include "BDS.hpp"
 #include "Event.h"
 #pragma region Macro
-#if 1
-#define WriteLog(s) print(s)
+#if 0
+#define WriteLog(...) print(__VA_ARGS__)
 #else
-#define WriteLog
+#define WriteLog(...) 0
 #endif
 #define Py_Method(name) {#name, api_##name, 1, 0}
 #define PyAPIFunction(name) static PyObject* api_##name(PyObject* , PyObject* args)
@@ -13,17 +13,17 @@
 #define CheckisPlayer(ptr) _PlayerList[(Player*)ptr]
 #pragma endregion
 #pragma region Global variable
-static VA _cmdqueue = 0;// 指令队列
+static VA _cmdqueue = 0;//指令队列
 static ServerNetworkHandler* _Handle = 0;
 static Level* _level = 0;
-static Scoreboard* _scoreboard;// 计分板
-static unsigned _formid = 1;// 表单ID
-static unordered_map<Event, vector<PyObject*>> _PyFuncs;// Py函数表
-static unordered_map<Player*, bool> _PlayerList;// 玩家列表
-static vector<pair<string, string>> Command;// 注册命令
-static unordered_map<string, PyObject*> ShareData;// 共享数据
-static int _Damage;// 伤害值
-static unordered_map<PyObject*, unsigned[2]> tick;// 执行队列
+static Scoreboard* _scoreboard;//计分板
+static unsigned _formid = 1;//表单ID
+static unordered_map<Event, vector<PyObject*>> _PyFuncs;//Py函数表
+static unordered_map<Player*, bool> _PlayerList;//玩家列表
+static vector<pair<string, string>> Command;//注册命令
+static unordered_map<string, PyObject*> ShareData;//共享数据
+static int _Damage;//伤害值
+static unordered_map<PyObject*, unsigned[2]> tick;//执行队列
 static queue<function<void()>> _todos;
 static bool _logstate;
 #pragma endregion
@@ -37,17 +37,13 @@ void inline print(const T& data, T2... other) {
 	cout << data;
 	print(other...);
 }
-static Json::Value toJson(const string& s) {
+static Json::Value toJson(const char* s) {
 	Json::Value j;
-	Json::CharReaderBuilder rb;
-	string errs;
-	Json::CharReader* r(rb.newCharReader());
-	bool res = r->parse(s.c_str(), s.c_str() + s.length(), &j, &errs);
-	if (!res || !errs.empty()) {
-		cerr << "JSON" << errs << endl;;
+	Json::Value::Reader r(s);
+	if (!r.readValue(j)) {
+		cerr << "JSON" << r.getErrorString() << endl;;
 	}
-	delete r;
-	return std::move(j);
+	return move(j);
 }
 static inline VA createPacket(int type) {
 	VA pkt[2];
@@ -67,7 +63,7 @@ static bool EventCall(Event e, PyObject* val) {
 	auto& List = _PyFuncs[e];
 	if (!List.empty()) {
 		if (e != Event::onMove)
-			WriteLog("EventCall " + to_string((int)e));
+			WriteLog("EventCall ", e);
 		for (PyObject* fn : List) {
 			if (PyObject_CallFunction(fn, "O", val) == Py_False)
 				result = false;
@@ -165,7 +161,7 @@ Hook(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	VA a1, VA a2, VA a3, VA a4) {
 	original(a1, a2, a3, a4);
 #if 0
-	// 执行todos函数
+	//执行todos函数
 	if (!todos.empty()) {
 		for (int i = 0; i < todos.size(); i++) {
 			todos.front()();
@@ -236,7 +232,7 @@ Hook(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std
 //}
 Hook(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 	VA _this, const string& cmd) {
-	// 是否开启debug模式
+	//是否开启debug模式
 	static bool debug = false;
 	if (cmd == "pydebug") {
 		if (debug) {
@@ -312,7 +308,7 @@ Hook(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 	CheckResult(_this, b, bp, a4, p, _bool);
 }
 Hook(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
-	BlockSource* _this, Actor* p, BlockPos* bp, ItemStackBase* a3, bool a4) {
+	BlockSource* _this, Actor* p, BlockPos* bp, ItemStack* a3, bool a4) {
 	BlockLegacy* bl = _this->getBlock(bp)->getBlockLegacy();
 	short bid = bl->getBlockItemID();
 	string bn = bl->getBlockName();
@@ -370,12 +366,12 @@ Hook(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 }
 Hook(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEAAXH@Z",
 	VA a1, VA slot) {
-	Actor* v3 = f(Actor*, a1 + 208);// IDA LevelContainerModel::_getContainer line 15 25
+	Actor* v3 = f(Actor*, a1 + 208);//IDA LevelContainerModel::_getContainer line 15 25
 	BlockSource* bs = v3->getBlockSource();
 	BlockPos* bp = (BlockPos*)(a1 + 216);
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
 	short bid = bl->getBlockItemID();
-	if (bid == 54 || bid == 130 || bid == 146 || bid == -203 || bid == 205 || bid == 218) {	// 非箱子、桶、潜影盒的情况不作处理
+	if (bid == 54 || bid == 130 || bid == 146 || bid == -203 || bid == 205 || bid == 218) {	//非箱子、桶、潜影盒的情况不作处理
 		VA v5 = (*(VA(**)(VA))(*(VA*)a1 + 160))(a1);
 		if (v5) {
 			ItemStack* i = (ItemStack*)(*(VA(**)(VA, VA))(*(VA*)v5 + 40))(v5, slot);
@@ -648,13 +644,13 @@ Hook(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 }
 #pragma endregion
 #pragma region API Function
-// 获取版本
+//获取版本
 PyAPIFunction(getVersion) {
 	WriteLog(__func__);
 	PyArg_ParseTuple(args, ":getVersion");
-	return PyLong_FromLong(112);
+	return PyLong_FromLong(122);
 }
-// 指令输出
+//指令输出
 PyAPIFunction(logout) {
 	WriteLog(__func__);
 	const char* msg;
@@ -665,7 +661,7 @@ PyAPIFunction(logout) {
 	}
 	return Py_False;
 }
-// 执行指令
+//执行指令
 PyAPIFunction(runcmd) {
 	WriteLog(__func__);
 	const char* cmd;
@@ -675,7 +671,7 @@ PyAPIFunction(runcmd) {
 	}
 	return Py_False;
 }
-// 计时器
+//计时器
 PyAPIFunction(setTimer) {
 	WriteLog(__func__);
 	unsigned time; PyObject* func;
@@ -695,7 +691,7 @@ PyAPIFunction(removeTimer) {
 	}
 	return Py_True;
 }
-// 设置监听
+//设置监听
 PyAPIFunction(setListener) {
 	const char* name; PyObject* fn;
 	if (PyArg_ParseTuple(args, "sO:setListener", &name, &fn)) {
@@ -711,7 +707,7 @@ PyAPIFunction(setListener) {
 	}
 	return Py_False;
 }
-// 共享数据
+//共享数据
 PyAPIFunction(setShareData) {
 	WriteLog(__func__);
 	const char* index; PyObject* data;
@@ -729,7 +725,7 @@ PyAPIFunction(getShareData) {
 	}
 	return Py_False;
 }
-// 设置指令说明
+//设置指令说明
 PyAPIFunction(setCommandDescription) {
 	WriteLog(__func__);
 	const char* cmd, * des;
@@ -749,7 +745,7 @@ PyAPIFunction(getPlayerList) {
 	}
 	return list;
 }
-// 发送表单
+//发送表单
 PyAPIFunction(sendCustomForm) {
 	WriteLog(__func__);
 	Player* p; const char* str;
@@ -778,7 +774,7 @@ PyAPIFunction(sendModalForm) {
 	}
 	return Py_False;
 }
-// 跨服传送
+//跨服传送
 PyAPIFunction(transferServer) {
 	WriteLog(__func__);
 	Player* p; const char* address; short port;
@@ -788,7 +784,7 @@ PyAPIFunction(transferServer) {
 	}
 	return Py_False;
 }
-// 获取玩家信息
+//获取玩家信息
 PyAPIFunction(getPlayerInfo) {
 	WriteLog(__func__);
 	Player* p;
@@ -842,7 +838,7 @@ PyAPIFunction(getActorInfoEx) {
 	}
 	return Py_False;
 }
-// 玩家权限
+//玩家权限
 PyAPIFunction(getPlayerPerm) {
 	WriteLog(__func__);
 	Player* p;
@@ -864,7 +860,7 @@ PyAPIFunction(setPlayerPerm) {
 	}
 	return Py_False;
 }
-// 增加玩家等级
+//增加玩家等级
 PyAPIFunction(addLevel) {
 	WriteLog(__func__);
 	Player* p; int lv;
@@ -876,7 +872,7 @@ PyAPIFunction(addLevel) {
 	}
 	return Py_False;
 }
-// 设置玩家名字
+//设置玩家名字
 PyAPIFunction(setName) {
 	WriteLog(__func__);
 	Player* p; const char* name;
@@ -888,7 +884,7 @@ PyAPIFunction(setName) {
 	}
 	return Py_False;
 }
-// 玩家分数
+//玩家分数
 PyAPIFunction(getPlayerScore) {
 	WriteLog(__func__);
 	Player* p; const char* obj;
@@ -919,7 +915,7 @@ PyAPIFunction(modifyPlayerScore) {
 	}
 	return Py_False;
 }
-// 模拟玩家发送文本
+//模拟玩家发送文本
 PyAPIFunction(talkAs) {
 	WriteLog(__func__);
 	Player* p; const char* msg;
@@ -929,7 +925,7 @@ PyAPIFunction(talkAs) {
 	}
 	return Py_False;
 }
-// 模拟玩家执行指令
+//模拟玩家执行指令
 PyAPIFunction(runcmdAs) {
 	WriteLog(__func__);
 	Player* p; const char* cmd;
@@ -939,7 +935,7 @@ PyAPIFunction(runcmdAs) {
 	}
 	return Py_False;
 }
-// 传送玩家
+//传送玩家
 PyAPIFunction(teleport) {
 	WriteLog(__func__);
 	Player* p; float x, y, z; int did;
@@ -949,7 +945,7 @@ PyAPIFunction(teleport) {
 	}
 	return Py_False;
 }
-// 原始输出
+//原始输出
 PyAPIFunction(tellraw) {
 	WriteLog(__func__);
 	const char* msg;
@@ -970,7 +966,7 @@ PyAPIFunction(tellrawEx) {
 	}
 	return Py_False;
 }
-// boss栏
+//boss栏
 PyAPIFunction(setBossBar) {
 	WriteLog(__func__);
 	Player* p; const char* name; float per;
@@ -989,7 +985,7 @@ PyAPIFunction(removeBossBar) {
 	}
 	return Py_False;
 }
-// 通过玩家指针获取计分板id
+//通过玩家指针获取计分板id
 PyAPIFunction(getScoreBoardId) {
 	WriteLog(__func__);
 	Player* p;
@@ -1013,7 +1009,7 @@ PyAPIFunction(createScoreBoardId) {
 	}
 	return Py_False;
 }
-// 修改生物受伤的伤害值!
+//修改生物受伤的伤害值!
 PyAPIFunction(setDamage) {
 	WriteLog(__func__);
 	int a;
@@ -1034,7 +1030,7 @@ PyAPIFunction(setServerMotd) {
 	}
 	return Py_False;
 }
-// 玩家背包相关操作
+//玩家背包相关操作
 PyAPIFunction(getPlayerItems) {
 	WriteLog(__func__);
 	Player* p;
@@ -1175,7 +1171,7 @@ PyAPIFunction(setPlayerEnderChests) {
 	}
 	return Py_False;
 }
-// 增加/移除物品
+//增加/移除物品
 PyAPIFunction(addItemEx) {
 	WriteLog(__func__);
 	Player* p;
@@ -1202,7 +1198,7 @@ PyAPIFunction(removeItem) {
 	}
 	return Py_None;
 }
-// 设置玩家侧边栏
+//设置玩家侧边栏
 PyAPIFunction(setSidebar) {
 	WriteLog(__func__);
 	Player* p;
@@ -1214,9 +1210,9 @@ PyAPIFunction(setSidebar) {
 			setDisplayObjectivePacket(p, title);
 			if (j.isObject()) {
 				vector<ScorePacketInfo> info;
-				for (auto& x : j.getMemberNames()) {
-					ScorePacketInfo o(_scoreboard->createScoreBoardId(x),
-						j[x].asInt(), x);
+				for (auto& x : j.asObject()) {
+					ScorePacketInfo o(_scoreboard->createScoreBoardId(x.first),
+						x.second.asInt(), x.first);
 					info.push_back(o);
 				}
 				SetScorePacket(p, 0, info);
@@ -1236,7 +1232,7 @@ PyAPIFunction(removeSidebar) {
 	}
 	return Py_None;
 }
-// 根据坐标设置方块
+//根据坐标设置方块
 PyAPIFunction(getBlock) {
 	WriteLog(__func__);
 	BlockPos bp; int did;
@@ -1327,7 +1323,7 @@ Py_Method(setBlock),
 static PyModuleDef api_module{ PyModuleDef_HEAD_INIT, "mc", 0, -1, api_list, 0, 0, 0, 0 };
 #pragma endregion
 static void init() {
-	// 解释器初始化
+	//解释器初始化
 	//PyPreConfig cfg;
 	//PyPreConfig_InitPythonConfig(&cfg);
 	//cfg.utf8_mode = 1;
@@ -1352,16 +1348,15 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 	if (reason == 1) {
 		//while (1) {
 		//	Tag* t = toTag(toJson(R"({})"));
-		//	cout << toJson(t) << endl;
+		//	cout << toJson(t).toStyledString() << endl;
 		//	t->deCompound();
 		//	delete t;
 		//}
-		createPacket(100);
 		ios::sync_with_stdio(false);
 		if (!filesystem::exists("py"))
 			filesystem::create_directory("py");
 		init();
-		puts("[BDSpyrunner] 1.1.3 loaded.");
+		puts("[BDSpyrunner] 1.2.2 loaded.");
 		puts("[BDSpyrunner] 感谢小枫云 http://ipyvps.com 的赞助.");
 		WriteLog("Server Started.");
 	}
