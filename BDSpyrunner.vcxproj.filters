@@ -10,8 +10,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="Event.hpp" />
+    <ClInclude Include="Event.h" />
     <ClInclude Include="BDS.hpp" />
-    <ClInclude Include="NBT.hpp" />
+    <ClInclude Include="NBT.h" />
   </ItemGroup>
 </Project>

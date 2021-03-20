@@ -25,8 +25,10 @@ extern "C" {
 	_declspec(dllimport) void* GetServerSymbol(const char*);
 }
 template<typename ret = void, typename... Args>
-static inline ret SYMCALL(const char* sym, Args... args) {
-	return ((ret(*)(Args...))SYM(sym))(args...);
+static ret SYMCALL(const char* sym, Args... args) {
+	void* found = SYM(sym);
+	if (!found)cerr << "Failed to call " << sym << endl;
+	return ((ret(*)(Args...))found)(args...);
 }
 static void* HookRegister(const char* sym, void* hook, void* org) {
 	void* found = SYM(sym);

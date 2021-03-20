@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "pch.h"
-#include "NBT.hpp"
+#include "NBT.h"
 #pragma region Block
 struct BlockLegacy {
 	string getBlockName() {
@@ -16,7 +16,8 @@ struct BlockLegacy {
 };
 struct Block {
 	BlockLegacy* getBlockLegacy() {
-		return SYMCALL<BlockLegacy*>("?getLegacyBlock@Block@@QEBAAEBVBlockLegacy@@XZ", this);
+		return f(BlockLegacy*, this + 16);
+		//return SYMCALL<BlockLegacy*>("?getLegacyBlock@Block@@QEBAAEBVBlockLegacy@@XZ", this);
 	}
 };
 struct BlockPos { int x = 0, y = 0, z = 0; };
@@ -29,9 +30,9 @@ struct BlockActor {
 	}
 };
 struct BlockSource {
-	Block* getBlock(const BlockPos& bp) {
+	Block* getBlock(const BlockPos* bp) {
 		return SYMCALL<Block*>("?getBlock@BlockSource@@QEBAAEBVBlock@@AEBVBlockPos@@@Z",
-			this, &bp);
+			this, bp);
 	}
 	bool setBlock(const string& name, const BlockPos& bp) {
 		return SYMCALL<bool>("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z",
@@ -42,7 +43,7 @@ struct BlockSource {
 			this, pos);
 	}
 	int getDimensionId() {	// IDA Dimension::onBlockChanged 42
-		return f(int, (f(VA, this + 32) + 208));
+		return f(int, (f(VA, this + 32) + 216));
 	}
 };
 #pragma endregion
@@ -182,7 +183,7 @@ struct Actor {
 	}
 	// 获取实体类型
 	unsigned getEntityTypeId() {
-		return f(unsigned, this + 964);
+		return f(unsigned, this + 968);
 	}
 	// 获取查询用ID
 	VA getUniqueID() {
@@ -198,6 +199,10 @@ struct Actor {
 	// 更新属性
 	VA updateAttrs() {
 		return SYMCALL<VA>("?_sendDirtyActorData@Actor@@QEAAXXZ", this);
+	}
+	// 获取地图信息
+	struct Level* getLevel() {// IDA Mob::die 143
+		return f(Level*, this + 856);
 	}
 	VA getAttribute() {
 		return f(VA, this + 1144);
@@ -237,16 +242,12 @@ struct Mob : Actor {
 		return SYMCALL<VA>("?saveOffhand@Mob@@IEBA?AV?$unique_ptr@VListTag@@U?$default_delete@VListTag@@@std@@@std@@XZ",
 			this, hlist);
 	}
-	// 获取地图信息
-	VA getLevel() {// IDA Mob::die 143
-		return f(VA, this + 856);
-	}
 };
 struct Player : Mob {
 	string getUuid() {// IDA ServerNetworkHandler::_createNewPlayer 217
 		string p;
 		SYMCALL<string&>("?asString@UUID@mce@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
-			this + 2824, &p);
+			this + 2832, &p);
 		return p;
 	}
 	// 发送数据包
@@ -256,8 +257,8 @@ struct Player : Mob {
 	}
 	// 根据地图信息获取玩家xuid
 	string& getXuid() {
-		return SYMCALL<string&>("?getPlayerXUID@Level@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
-			getLevel(), this + 2824);
+		return SYMCALL<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
+			getLevel(), this + 2832);
 	}
 	// 重设服务器玩家名
 	void setName(string name) {
@@ -266,14 +267,14 @@ struct Player : Mob {
 	}
 	// 获取网络标识符
 	VA getNetId() {
-		return (VA)this + 2536;// IDA ServerPlayer::setPermissions 34
+		return (VA)this + 2544;// IDA ServerPlayer::setPermissions 34
 	}
 	// 获取背包
 	Container* getContainer() {
-		return (Container*)f(VA, f(VA, this + 3048) + 176);
+		return (Container*)f(VA, f(VA, this + 3040) + 176);
 	}
 	VA getContainerManager() {
-		return (VA)this + 3040;		// IDA Player::setContainerManager 18
+		return (VA)this + 3024;		// IDA Player::setContainerManager 18
 	}
 	// 获取末影箱
 	Container* getEnderChestContainer() {
@@ -293,7 +294,7 @@ struct Player : Mob {
 	}
 	// 获取当前选中的框位置
 	int getSelectdItemSlot() {// IDA Player::getSelectedItem 12
-		return f(unsigned, f(VA, this + 3048) + 16);
+		return f(unsigned, f(VA, this + 3040) + 16);
 	}
 	// 获取当前物品
 	ItemStack* getSelectedItem() {
@@ -305,7 +306,7 @@ struct Player : Mob {
 	}
 	// 获取游戏时命令权限
 	char getPermission() {// IDA ServerPlayer::setPermissions 17
-		return *f(char*, this + 2216);
+		return *f(char*, this + 2224);
 	}
 	// 设置游戏时命令权限
 	void setPermission(char m) {
@@ -319,15 +320,15 @@ struct Player : Mob {
 	// 设置游戏时游玩权限
 	void setPermissionLevel(char m) {
 		SYMCALL("?setPlayerPermissions@Abilities@@QEAAXW4PlayerPermissionLevel@@@Z",
-			this + 2192, m);
+			this + 2200, m);
 	}
 	void sendInventroy() {
 		SYMCALL("?sendInventory@ServerPlayer@@UEAAX_N@Z",
 			this, true);
 	}
 	void teleport(Vec3 target, int dim) {
-		SYMCALL("?teleport@TeleportCommand@@SAXAEAVActor@@VVec3@@PEAV3@V?$AutomaticID@VDimension@@H@@VRelativeFloat@@4HAEBUActorUniqueID@@@Z",
-			this, target, 0, dim, 0, 0, 0, SYM("?INVALID_ID@ActorUniqueID@@2U1@B"));
+		SYMCALL("?teleport@TeleportCommand@@SAXAEAVActor@@VVec3@@PEAV3@V?$AutomaticID@VDimension@@H@@VRelativeFloat@@4H@Z",
+			this, target, 0, dim, 0, 0, 0);
 	}
 };
 #pragma endregion
@@ -427,13 +428,13 @@ struct Level {
 		VA d = SYMCALL<VA>("?getDimension@Level@@QEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
 			this, did);
 		if (!d)return 0;
-		return f(BlockSource*, d + 88);// IDA Level::tickEntities 120
+		return f(BlockSource*, d + 96);// IDA Level::tickEntities 120
 	}
 	VA getScoreBoard() {// IDA Level::removeEntityReferences
 		return f(VA, this + 8376);
 	}
 	Actor* fetchEntity(VA id) {
-		return SYMCALL< Actor*>("?fetchEntity@Level@@QEBAPEAVActor@@UActorUniqueID@@_N@Z",
+		return SYMCALL<Actor*>("?fetchEntity@Level@@UEBAPEAVActor@@UActorUniqueID@@_N@Z",
 			this, id, false);
 	}
 	const vector<Player*>& getAllPlayers() {

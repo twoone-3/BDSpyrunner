@@ -1,7 +1,12 @@
 ﻿#include "pch.h"
 #include "BDS.hpp"
-#include "Event.hpp"
+#include "Event.h"
 #pragma region Macro
+#if 1
+#define WriteLog(s) print(s)
+#else
+#define WriteLog
+#endif
 #define Py_Method(name) {#name, api_##name, 1, 0}
 #define PyAPIFunction(name) static PyObject* api_##name(PyObject* , PyObject* args)
 #define CheckResult(...) if (!res) return 0; return original(__VA_ARGS__)
@@ -32,23 +37,6 @@ void inline print(const T& data, T2... other) {
 	cout << data;
 	print(other...);
 }
-static void WriteLog(const string& s) {
-	if (_logstate) {
-		SYSTEMTIME m_time;
-		GetLocalTime(&m_time);
-		char path[24];
-		sprintf(path, "py/log/%02d-%02d-%02d.log", m_time.wYear, m_time.wMonth,
-			m_time.wDay);
-		char time[16];
-		sprintf(time, "[%02d:%02d:%02d]", m_time.wHour, m_time.wMinute,
-			m_time.wSecond);
-		FILE* f = fopen(path, "ab+");
-		fwrite(time, 10, 1, f);
-		fwrite(s.c_str(), s.length(), 1, f);
-		fputc('\n', f);
-		fclose(f);
-	}
-}
 static Json::Value toJson(const string& s) {
 	Json::Value j;
 	Json::CharReaderBuilder rb;
@@ -62,10 +50,10 @@ static Json::Value toJson(const string& s) {
 	return std::move(j);
 }
 static inline VA createPacket(int type) {
-	VA pkt;
+	VA pkt[2];
 	SYMCALL("?createPacket@MinecraftPackets@@SA?AV?$shared_ptr@VPacket@@@std@@W4MinecraftPacketIds@@@Z",
-		&pkt, type);
-	return pkt;
+		pkt, type);
+	return *pkt;
 }
 static bool EventCall(Event e, PyObject* val) {
 	bool result = true;
@@ -94,12 +82,12 @@ static bool EventCall(Event e, PyObject* val) {
 		PyGILState_Release(gstate);    //释放当前线程的GIL
 	return result;
 }
-static unsigned ModalFormRequestPacket(Player* p, string str) {
+static unsigned ModalFormRequestPacket(Player* p, const string& str) {
 	unsigned fid = _formid++;
 	if (CheckisPlayer(p)) {
 		VA pkt = createPacket(100);
-		f(unsigned, pkt + 40) = fid;
-		f(string, pkt + 48) = str;
+		f(unsigned, pkt + 48) = fid;
+		f(string, pkt + 56) = str;
 		p->sendPacket(pkt);
 	}
 	return fid;
@@ -107,9 +95,8 @@ static unsigned ModalFormRequestPacket(Player* p, string str) {
 static bool TransferPacket(Player* p, const string& address, short port) {
 	if (CheckisPlayer(p)) {
 		VA pkt = createPacket(85);
-		f(string, pkt + 40) = address;
-		f(short, pkt + 72) = port;
-		//Sleep(10);
+		f(string, pkt + 48) = address;
+		f(short, pkt + 80) = port;
 		p->sendPacket(pkt);
 		return true;
 	}
@@ -118,9 +105,9 @@ static bool TransferPacket(Player* p, const string& address, short port) {
 static bool TextPacket(Player* p, int mode, const string& msg) {
 	if (CheckisPlayer(p)) {
 		VA pkt = createPacket(9);
-		f(int, pkt + 40) = mode;
-		f(string, pkt + 48) = p->getNameTag();
-		f(string, pkt + 80) = msg;
+		f(int, pkt + 48) = mode;
+		f(string, pkt + 56) = p->getNameTag();
+		f(string, pkt + 88) = msg;
 		p->sendPacket(pkt);
 		return true;
 	}
@@ -129,7 +116,7 @@ static bool TextPacket(Player* p, int mode, const string& msg) {
 static bool CommandRequestPacket(Player* p, const string& cmd) {
 	if (CheckisPlayer(p)) {
 		VA pkt = createPacket(77);
-		f(string, pkt + 40) = cmd;
+		f(string, pkt + 48) = cmd;
 		SYMCALL<VA>("?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
 			_Handle, p->getNetId(), pkt);
 		//p->sendPacket(pkt);
@@ -140,10 +127,10 @@ static bool CommandRequestPacket(Player* p, const string& cmd) {
 static bool BossEventPacket(Player* p, string name, float per, int eventtype) {
 	if (CheckisPlayer(p)) {
 		VA pkt = createPacket(74);
-		f(VA, pkt + 48) = f(VA, pkt + 56) = f(VA, p->getUniqueID());
-		f(int, pkt + 64) = eventtype;//0显示,1更新,2隐藏,
-		f(string, pkt + 72) = name;
-		f(float, pkt + 104) = per;
+		f(VA, pkt + 56) = f(VA, pkt + 64) = f(VA, p->getUniqueID());
+		f(int, pkt + 72) = eventtype;//0显示,1更新,2隐藏,
+		f(string, pkt + 80) = name;
+		f(float, pkt + 112) = per;
 		p->sendPacket(pkt);
 		return true;
 	}
@@ -152,11 +139,11 @@ static bool BossEventPacket(Player* p, string name, float per, int eventtype) {
 static bool setDisplayObjectivePacket(Player* p, const string& title, const string& name = "name") {
 	if (CheckisPlayer(p)) {
 		VA pkt = createPacket(107);
-		f(string, pkt + 40) = "sidebar";
-		f(string, pkt + 72) = name;
-		f(string, pkt + 104) = title;
-		f(string, pkt + 136) = "dummy";
-		f(char, pkt + 168) = 0;
+		f(string, pkt + 48) = "sidebar";
+		f(string, pkt + 80) = name;
+		f(string, pkt + 112) = title;
+		f(string, pkt + 144) = "dummy";
+		f(char, pkt + 176) = 0;
 		p->sendPacket(pkt);
 		return true;
 	}
@@ -165,8 +152,8 @@ static bool setDisplayObjectivePacket(Player* p, const string& title, const stri
 static bool SetScorePacket(Player* p, char type, const vector<ScorePacketInfo>& slot) {
 	if (CheckisPlayer(p)) {
 		VA pkt = createPacket(108);
-		f(char, pkt + 40) = type;//{set,remove}
-		f(vector<ScorePacketInfo>, pkt + 48) = slot;
+		f(char, pkt + 48) = type;//{set,remove}
+		f(vector<ScorePacketInfo>, pkt + 56) = slot;
 		p->sendPacket(pkt);
 		return true;
 	}
@@ -211,15 +198,15 @@ Hook(SPSCQueue, VA, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$al
 	_cmdqueue = original(_this);
 	return _cmdqueue;
 }
-Hook(Level_Level, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@AEAVStructureManager@@AEAVResourcePackManager@@AEAVIEntityRegistryOwner@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
+Hook(Level_Level, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEAVIEntityRegistryOwner@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
 	VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13) {
 	_level = original(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13);
 	return _level;
 }
-Hook(GameSession_, VA, "??0GameSession@@QEAA@AEAVNetworkHandler@@V?$unique_ptr@VServerNetworkHandler@@U?$default_delete@VServerNetworkHandler@@@std@@@std@@AEAVLoopbackPacketSender@@V?$unique_ptr@VNetEventCallback@@U?$default_delete@VNetEventCallback@@@std@@@3@V?$unique_ptr@VLevel@@U?$default_delete@VLevel@@@std@@@3@E@Z",
-	VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7) {
-	_Handle = f(ServerNetworkHandler*, a3);
-	return original(a1, a2, a3, a4, a5, a6, a7);
+Hook(ServerNetworkHandler_ServerNetworkHandler, VA, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEAVLevel@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@Bedrock@@@Z",
+	ServerNetworkHandler* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13, VA a14, VA a15, VA a16, VA a17, VA a18, VA a19) {
+	_Handle = _this;
+	return original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19);
 }
 Hook(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",//"?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",?setup@KillCommand@@SAXAEAVCommandRegistry@@@Z
 	VA _this) {
@@ -242,11 +229,11 @@ Hook(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std
 	}
 	return original(_this, str, size);
 }
-Hook(onConsoleOutput2, int, "printf",
-	const char* format, va_list va) {
-	bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromString(va));
-	CheckResult(format, va);
-}
+//Hook(onConsoleOutput2, int, "printf",
+//	const char* format, va_list va) {
+//	bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromString(va));
+//	CheckResult(format, va);
+//}
 Hook(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 	VA _this, const string& cmd) {
 	// 是否开启debug模式
@@ -307,7 +294,7 @@ Hook(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@E
 	CheckResult(_this, item, bp, a4, a5, b);
 }
 Hook(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@EPEAVActor@@_N@Z",
-	BlockSource* _this, Block* b, BlockPos* bp, unsigned __int8 a4, Actor* p, bool _bool) {
+	BlockSource* _this, Block* b, BlockPos* bp, unsigned char a4, Actor* p, bool _bool) {
 	bool res = true;
 	if (CheckisPlayer(p)) {
 		BlockLegacy* bl = b->getBlockLegacy();
@@ -324,12 +311,9 @@ Hook(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 	}
 	CheckResult(_this, b, bp, a4, p, _bool);
 }
-Hook(onDestroyBlock, bool, "?_destroyBlockInternal@GameMode@@AEAA_NAEBVBlockPos@@E@Z",
-	VA _this, BlockPos* bp) {
-	Player* p = f(Player*, _this + 8);
-	BlockSource* bs = p->getBlockSource();
-	Block* b = bs->getBlock(*bp);
-	BlockLegacy* bl = b->getBlockLegacy();
+Hook(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
+	BlockSource* _this, Actor* p, BlockPos* bp, ItemStackBase* a3, bool a4) {
+	BlockLegacy* bl = _this->getBlock(bp)->getBlockLegacy();
 	short bid = bl->getBlockItemID();
 	string bn = bl->getBlockName();
 	bool res = EventCall(Event::onDestroyBlock,
@@ -340,7 +324,7 @@ Hook(onDestroyBlock, bool, "?_destroyBlockInternal@GameMode@@AEAA_NAEBVBlockPos@
 			"position", bp->x, bp->y, bp->z
 		)
 	);
-	CheckResult(_this, bp);
+	CheckResult(_this, p, bp, a3, a4);
 }
 Hook(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
@@ -386,10 +370,10 @@ Hook(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 }
 Hook(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEAAXH@Z",
 	VA a1, VA slot) {
-	VA v3 = f(VA, a1 + 208);// IDA LevelContainerModel::_getContainer line 15 25
-	BlockSource* bs = f(BlockSource*, f(VA, v3 + 848) + 88);
+	Actor* v3 = f(Actor*, a1 + 208);// IDA LevelContainerModel::_getContainer line 15 25
+	BlockSource* bs = v3->getBlockSource();
 	BlockPos* bp = (BlockPos*)(a1 + 216);
-	BlockLegacy* bl = bs->getBlock(*bp)->getBlockLegacy();
+	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
 	short bid = bl->getBlockItemID();
 	if (bid == 54 || bid == 130 || bid == 146 || bid == -203 || bid == 205 || bid == 218) {	// 非箱子、桶、潜影盒的情况不作处理
 		VA v5 = (*(VA(**)(VA))(*(VA*)a1 + 160))(a1);
@@ -433,7 +417,7 @@ Hook(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@
 Hook(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	Mob* _this, VA dmsg) {
 	char v72;
-	Actor* sa = f(Level*, _this + 856)->fetchEntity(*(VA*)((*(VA(__fastcall**)(VA, char*))(*(VA*)dmsg + 64))(dmsg, &v72)));
+	Actor* sa = _this->getLevel()->fetchEntity(*(VA*)((*(VA(__fastcall**)(VA, char*))(*(VA*)dmsg + 64))(dmsg, &v72)));
 	bool res = EventCall(Event::onMobDie,
 		Py_BuildValue("{s:I,s:K,s:K}",
 			"dmcase", f(unsigned, dmsg + 8),
@@ -447,7 +431,7 @@ Hook(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 	Mob* _this, VA dmsg, int a3, bool a4, bool a5) {
 	_Damage = a3;//将生物受伤的值设置为可调整
 	char v72;
-	Actor* sa = f(Level*, _this + 856)->fetchEntity(*(VA*)((*(VA(__fastcall**)(VA, char*))(*(VA*)dmsg + 64))(dmsg, &v72)));
+	Actor* sa = _this->getLevel()->fetchEntity(*(VA*)((*(VA(__fastcall**)(VA, char*))(*(VA*)dmsg + 64))(dmsg, &v72)));
 	bool res = EventCall(Event::onMobHurt,
 		Py_BuildValue("{s:i,s:K,s:K,s:i}",
 			"dmcase", f(unsigned, dmsg + 8),
@@ -477,7 +461,7 @@ Hook(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifie
 	ServerNetworkHandler* _this, VA id, /*TextPacket*/VA pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		string msg = f(string, pkt + 80);
+		const string& msg = f(string, pkt + 88);
 		bool res = EventCall(Event::onInputText,
 			Py_BuildValue("{s:K,s:s}",
 				"player", p,
@@ -491,7 +475,7 @@ Hook(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdenti
 	ServerNetworkHandler* _this, VA id, /*CommandRequestPacket*/VA pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		string cmd = f(string, pkt + 40);
+		const string& cmd = f(string, pkt + 48);
 		bool res = EventCall(Event::onInputCommand,
 			Py_BuildValue("{s:K,s:s}",
 				"player", p,
@@ -506,8 +490,8 @@ Hook(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormRe
 	VA pkt = *ppkt;
 	Player* p = handle->_getServerPlayer(id, pkt);
 	if (p) {
-		unsigned fid = f(unsigned, pkt + 40);
-		string data = f(string, pkt + 48);
+		unsigned fid = f(unsigned, pkt + 48);
+		string data = f(string, pkt + 56);
 		if (data.back() == '\n')data.pop_back();
 		EventCall(Event::onSelectForm,
 			Py_BuildValue("{s:K,s:s,s:i}",
@@ -524,14 +508,14 @@ Hook(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 	bool res = true;
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		auto bp = f(BlockPos, pkt + 40);
-		auto mode = f(unsigned short, pkt + 52);
-		auto condition = f(bool, pkt + 54);
-		auto redstone = f(bool, pkt + 55);
-		auto cmd = f(string, pkt + 64);
-		auto output = f(string, pkt + 96);
-		auto rawname = f(string, pkt + 128);
-		auto delay = f(int, pkt + 160);
+		auto bp = f(BlockPos, pkt + 48);
+		auto mode = f(unsigned short, pkt + 60);
+		auto condition = f(bool, pkt + 62);
+		auto redstone = f(bool, pkt + 63);
+		auto cmd = f(string, pkt + 72);
+		auto output = f(string, pkt + 104);
+		auto rawname = f(string, pkt + 136);
+		auto delay = f(int, pkt + 168);
 		res = EventCall(Event::onCommandBlockUpdate,
 			Py_BuildValue("{s:K,s:i,s:i,s:i,s:s,s:s,s:s,s:i,s:[i,i,i]}",
 				"player", p,
@@ -548,7 +532,7 @@ Hook(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 	}
 	if (res)original(_this, id, pkt);
 }
-Hook(onLevelExplode, bool, "?explode@Level@@QEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
+Hook(onLevelExplode, bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
 	Level* _this, BlockSource* bs, Actor* a3, Vec3 pos, float a5, bool a6, bool a7, float a8, bool a9) {
 	bool res = EventCall(Event::onLevelExplode,
 		Py_BuildValue("{s:K,s:[f,f,f],s:i,s:i}",
@@ -647,7 +631,7 @@ Hook(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPl
 }
 Hook(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBlockSource@@AEBVBlockPos@@EE@Z",
 	BlockActor* _this, BlockSource* bs, BlockPos* bp, unsigned a3, unsigned a4) {
-	auto blg = bs->getBlock(*bp)->getBlockLegacy();
+	auto blg = bs->getBlock(bp)->getBlockLegacy();
 	string bn = blg->getBlockName();
 	short bid = blg->getBlockItemID();
 	BlockPos* bp2 = _this->getPosition();
@@ -1262,7 +1246,7 @@ PyAPIFunction(getBlock) {
 			cerr << "未知纬度ID:" << did << endl;
 			return Py_False;
 		}
-		auto bl = bs->getBlock(bp)->getBlockLegacy();
+		auto bl = bs->getBlock(&bp)->getBlockLegacy();
 		return Py_BuildValue("{s:s:s:i}",
 			"blockname", bl->getBlockName().c_str(),
 			"blockid", (int)bl->getBlockItemID()
@@ -1372,13 +1356,12 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 		//	t->deCompound();
 		//	delete t;
 		//}
+		createPacket(100);
 		ios::sync_with_stdio(false);
 		if (!filesystem::exists("py"))
 			filesystem::create_directory("py");
-		if (filesystem::exists("py/log"))
-			_logstate = true;
 		init();
-		puts("[BDSpyrunner] 1.1.2 loaded.");
+		puts("[BDSpyrunner] 1.1.3 loaded.");
 		puts("[BDSpyrunner] 感谢小枫云 http://ipyvps.com 的赞助.");
 		WriteLog("Server Started.");
 	}

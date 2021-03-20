@@ -1,6 +1,5 @@
 #pragma once
 #include "pch.h"
-using namespace std;
 enum TagType {
 	End, Byte, Short, Int, Int64, Float,
 	Double, ByteArray, String, List, Compound,

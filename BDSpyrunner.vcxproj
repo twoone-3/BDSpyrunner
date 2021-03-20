@@ -18,8 +18,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BDS.hpp" />
-    <ClInclude Include="Event.hpp" />
-    <ClInclude Include="NBT.hpp" />
+    <ClInclude Include="Event.h" />
+    <ClInclude Include="NBT.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
