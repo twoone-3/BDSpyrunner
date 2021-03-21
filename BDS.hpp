@@ -168,6 +168,10 @@ struct Actor {
 	Vec3* getPos() {
 		return SYMCALL<Vec3*>("?getPos@Actor@@UEBAAEBVVec3@@XZ", this);
 	}
+	//是否已移除
+	bool isRemoved() {
+		return f(bool, this + 7688);
+	}
 	//是否悬空
 	bool isStand() {//IDA MovePlayerPacket::MovePlayerPacket 30
 		return f(bool, this + 448);
@@ -429,15 +433,24 @@ struct Level {
 		if (!d)return 0;
 		return f(BlockSource*, d + 96);//IDA Level::tickEntities 120
 	}
-	VA getScoreBoard() {//IDA Level::removeEntityReferences
-		return f(VA, this + 8376);
+	Scoreboard* getScoreBoard() {//IDA Level::removeEntityReferences
+		return f(Scoreboard*, this + 8464);
+	}
+	unsigned getSeed() {
+		return SYMCALL<unsigned>("?getSeed@Level@@UEAAIXZ", this);
+	}
+	string getPlayerNames() {
+		string s;
+		SYMCALL<string&>("?getPlayerNames@Level@@UEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+			this, &s);
+		return s;
 	}
 	Actor* fetchEntity(VA id) {
 		return SYMCALL<Actor*>("?fetchEntity@Level@@UEBAPEAVActor@@UActorUniqueID@@_N@Z",
 			this, id, false);
 	}
 	const vector<Player*>& getAllPlayers() {
-		return f(vector<Player*>, this + 104);
+		return f(vector<Player*>, this + 112);
 	}
 };
 struct ServerNetworkHandler {

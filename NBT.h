@@ -1,7 +1,7 @@
 #pragma once
 #include "pch.h"
 enum TagType {
-	End, Byte, Short, Int, Int64, Float,
+	End, Byte, Short, Int, Integer, Float,
 	Double, ByteArray, String, List, Compound,
 };
 struct Tag {
@@ -28,8 +28,8 @@ struct Tag {
 		return SYMCALL("?putInt@CompoundTag@@QEAAAEAHV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@H@Z",
 			this, key, value);
 	}
-	void putInt64(const string& key, const int64_t& value) {
-		return SYMCALL("?putInt64@CompoundTag@@QEAAAEA_JV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_J@Z",
+	void putInteger(const string& key, const int64_t& value) {
+		return SYMCALL("?putInteger@CompoundTag@@QEAAAEA_JV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_J@Z",
 			this, key, value);
 	}
 	void putFloat(const string& key, const float& value) {
@@ -93,7 +93,7 @@ Json::Value ListtoJson(Tag* t) {
 		case Int:
 			j.append(c->asInt());
 			break;
-		case Int64:
+		case Integer:
 			j.append(c->asInt64());
 			break;
 		case Float:
@@ -131,8 +131,8 @@ Json::Value toJson(Tag* t) {
 		case Int:
 			j[x.first + to_string(Int)] = x.second.asInt();
 			break;
-		case Int64:
-			j[x.first + to_string(Int64)] = x.second.asInt64();
+		case Integer:
+			j[x.first + to_string(Integer)] = x.second.asInt64();
 			break;
 		case Float:
 			j[x.first + to_string(Float)] = x.second.asFloat();
@@ -156,7 +156,8 @@ Json::Value toJson(Tag* t) {
 }
 Tag* toTag(const Json::Value& j) {
 	Tag* c = newTag(Compound);
-	if(j.isObject())
+	if (!j.isObject())
+		return c;
 	for (auto& x : j.asObject()) {
 		string key = x.first;
 		char& e = key.back();
@@ -173,16 +174,16 @@ Tag* toTag(const Json::Value& j) {
 		switch (type) {
 		case End:break;
 		case Byte:
-			c->putByte(key, (unsigned char)x.second.asInt());
+			c->putByte(key, (unsigned char)x.second.asInt64());
 			break;
 		case Short:
-			c->putShort(key, (short)x.second.asInt());
+			c->putShort(key, (short)x.second.asInt64());
 			break;
 		case Int:
 			c->putInt(key, x.second.asInt());
 			break;
-		case Int64:
-			c->putInt64(key, x.second.asInt());
+		case Integer:
+			c->putInteger(key, x.second.asInt64());
 			break;
 		case Float:
 			c->putFloat(key, (float)x.second.asDouble());
@@ -194,14 +195,16 @@ Tag* toTag(const Json::Value& j) {
 		case String:
 			c->putString(key, x.second.asString());
 			break;
-		case List: {
+		case List:
+		{
 			Tag* lt = ArraytoTag(x.second);
 			c->put(key, lt);
 			lt->deList();
 			delete lt;
 			break;
 		}
-		case Compound: {
+		case Compound:
+		{
 			Tag* t = toTag(x.second);
 			c->putCompound(key, t);
 			//delete t;
@@ -213,10 +216,12 @@ Tag* toTag(const Json::Value& j) {
 }
 Tag* ArraytoTag(const Json::Value& j) {
 	Tag* l = newTag(List);
+	if (!j.isArray())
+		return l;
 	for (auto& x : j.asArray()) {
 		switch (x.second.type()) {
 		case Json::Type::Null:break;
-		case Json::Type::Int:
+		case Json::Type::Integer:
 		{
 			Tag* t = newTag(Int);
 			*(int*)t->val = x.second.asInt();
