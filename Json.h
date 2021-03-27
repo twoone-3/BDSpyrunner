@@ -1,18 +1,13 @@
-﻿// Jsob.h version 1.3.0 made by twoone3
+﻿// Jsob.h version 1.3.3 made by twoone3
 // Github: https://github.com/twoone-3/Json
-// All development is aimed at learning
 #pragma once
 #include <iostream>
 #include <string>
 #include <map>
-#pragma warning(disable:4996)
-//格式化JSON字符串的缩进 可以为字符或字符串
-#define JSON_INDENT '\t'
 #define JSON_CHECK(x) if(!x)return false
 
 namespace Json {
 using std::move;
-using std::swap;
 
 //JSON类型枚举
 enum class Type {
@@ -39,11 +34,6 @@ union Data {
 	Array* a;
 	Object* o;
 };
-
-//封装函数-将JSON转字符串
-String toString(const Value& value);
-//封装函数-将JSON转格式化字符串
-String toStyledString(const Value& value);
 
 //JSON数据类型
 class Value {
@@ -77,8 +67,8 @@ public:
 		type_ = other.type_;
 	};
 	Value(Value&& other) {
-		swap(data_, other.data_);
-		swap(type_, other.type_);
+		std::swap(data_, other.data_);
+		std::swap(type_, other.type_);
 	};
 
 	~Value() { clear(); }
@@ -87,8 +77,8 @@ public:
 		return operator=(Value(other));
 	};
 	Value& operator=(Value&& other)noexcept {
-		swap(data_, other.data_);
-		swap(type_, other.type_);
+		std::swap(data_, other.data_);
+		std::swap(type_, other.type_);
 		return *this;
 	};
 
@@ -113,21 +103,28 @@ public:
 
 	//取键对应值
 	Value& operator[](const String& i) {
-		if (type_ != Type::Object) {
-			setNewObject();
-		}
+		setObject();
 		return data_.o->operator[](i);
+	}
+	Value& get(const String& i) {
+		return operator[](i);
 	}
 	//取索引对应值
 	Value& operator[](const size_t i) {
-		if (type_ != Type::Array) {
-			setNewArray();
-		}
+		setArray();
 		return data_.a->operator[](i);
 	}
+	Value& get(const size_t i) {
+		return operator[](i);
+	}
+
+	//*(T*)this
+	template<typename T>
+	T& as() { return *(T*)this; }
 
 	bool& asBool() { return data_.b; }
 	int& asInt() { return *(int*)this; }
+	unsigned& asUInt() { return *(unsigned*)this; }
 	long long& asInt64() { return data_.l; }
 	double& asDouble() { return data_.d; }
 	String& asString() { return *data_.s; }
@@ -136,6 +133,7 @@ public:
 
 	const bool& asBool()const { return data_.b; }
 	const int& asInt()const { return *(int*)this; }
+	const unsigned& asUInt()const { return *(unsigned*)this; }
 	const long long& asInt64()const { return data_.l; }
 	const double& asDouble()const { return data_.d; }
 	const String& asString()const { return *data_.s; }
@@ -151,40 +149,33 @@ public:
 	bool isArray()const { return type_ == Type::Array; }
 	bool isObject()const { return type_ == Type::Object; }
 
-	//转换成紧凑的字符串
-	String toString()const {
-		return Json::toString(*this);
-	}
-	//转换成格式化的字符串
-	String toStyledString()const {
-		return Json::toStyledString(*this);
-	}
-
 	//新建一个字符串
-	void setNewString() {
-		clear();
-		data_.s = new String;
-		type_ = Type::String;
+	void setString() {
+		if (type_ != Type::String) {
+			clear();
+			data_.s = new String;
+			type_ = Type::String;
+		}
 	}
 	//新建一个对象
-	void setNewArray() {
-		clear();
-		data_.a = new Array;
-		type_ = Type::Array;
+	void setArray() {
+		if (type_ != Type::Array) {
+			clear();
+			data_.a = new Array;
+			type_ = Type::Array;
+		}
 	}
 	//新建一个数组
-	void setNewObject() {
-		clear();
-		data_.o = new Object;
-		type_ = Type::Object;
+	void setObject() {
+		if (type_ != Type::Object) {
+			clear();
+			data_.o = new Object;
+			type_ = Type::Object;
+		}
 	}
 
-	//获取数据
-	Data& data() { return data_; }
-	const Data& data()const { return data_; }
 	//获取类型
-	Type& type() { return type_; }
-	const Type& type()const { return type_; }
+	Type type()const { return type_; }
 
 	//移除数组的指定成员
 	bool remove(size_t i) {
@@ -194,7 +185,7 @@ public:
 		if (i >= size)
 			return false;
 		for (; i < size - 1; ++i) {
-			swap((*data_.a)[i], (*data_.a)[i + 1]);
+			std::swap((*data_.a)[i], (*data_.a)[i + 1]);
 		}
 		data_.a->erase(size - 1);
 		return true;
@@ -210,9 +201,7 @@ public:
 		append(Value(j));
 	}
 	void append(Value&& j) {
-		if (type_ != Type::Array) {
-			setNewArray();
-		}
+		setArray();
 		data_.a->emplace(data_.a->size(), j);
 	}
 	//获取大小
@@ -262,30 +251,33 @@ public:
 		data_.s = 0;
 	}
 
+	//转换成紧凑的字符串
+	String toString()const;
+	//转换成格式化的字符串
+	String toStyledString()const;
+
 private:
 	Data data_;
 	Type type_;
 };
 //用于解析JSON
 class Reader {
-	const char* ptr;
-	unsigned line;
-	String err;
+	const char* ptr_;
+	unsigned line_;
+	String err_;
 public:
-	Reader(const char* s) :ptr(s), line(1) {}
+	Reader(const char* s) :ptr_(s), line_(1) {}
 
-	String& getErrorString() { return err; }
-	const char& readChar() { return *ptr; }
-	const char& readNextCharFront() { return *++ptr; }
-	const char& readNextCharBack() { return *ptr++; }
-	void nextChar() { ++ptr; }
-	void nextLine() { ++line; }
-	//新增错误并返回false
-	bool addError(const char* s) {
-		err.append(s);
-		err.append(" at Line ");
-		err.append(std::to_string(line));
-		return false;
+	String& getErrorString() { return err_; }
+	const char& readChar() { return *ptr_; }
+	const char& readNextCharFront() { return *++ptr_; }
+	const char& readNextCharBack() { return *ptr_++; }
+	void nextChar() { ++ptr_; }
+	void nextLine() { ++line_; }
+	void addError(const char* s) {
+		err_.append(s);
+		err_.append(" at Line ");
+		err_.append(std::to_string(line_));
 	}
 
 	bool readNull() {
@@ -293,7 +285,10 @@ public:
 			nextChar();
 			return true;
 		}
-		else return addError("Miss 'null'");
+		else {
+			addError("Miss 'null'");
+			return false;
+		}
 	}
 	bool readTrue(Value& value) {
 		if (readNextCharFront() == 'r' && readNextCharFront() == 'u' && readNextCharFront() == 'e') {
@@ -301,7 +296,10 @@ public:
 			value = true;
 			return true;
 		}
-		else return addError("Miss 'true'");
+		else {
+			addError("Miss 'true'");
+			return false;
+		}
 	}
 	bool readFalse(Value& value) {
 		if (readNextCharFront() == 'a' && readNextCharFront() == 'l' && readNextCharFront() == 's' && readNextCharFront() == 'e') {
@@ -309,13 +307,16 @@ public:
 			value = false;
 			return true;
 		}
-		else return addError("Miss 'false'");
+		else {
+			addError("Miss 'false'");
+			return false;
+		}
 	}
 	bool readNumber(Value& value) {
 		char* end;
-		double num = strtod(ptr, &end);
+		double num = strtod(ptr_, &end);
 		bool is_double = false;
-		for (const char* tmp = ptr; tmp != end; tmp++) {
+		for (const char* tmp = ptr_; tmp != end; tmp++) {
 			switch (*tmp) {
 			case'.':
 			case'e':
@@ -327,16 +328,20 @@ public:
 			value = num;
 		else
 			value = (long long)num;
-		ptr = end;
+		ptr_ = end;
 		return true;
 	}
 	bool readString(String& s) {
-		char ch = 0;
 		nextChar();
-		while (1) {
+		char ch;
+		while (true) {
 			ch = readNextCharBack();
 			switch (ch) {
-			case '\"':return true;
+			case'\0':
+				addError("Miss '\"'");
+				return false;
+			case '\"':
+				return true;
 			case '\\':
 				switch (readNextCharBack()) {
 				case '\"': s += '\"'; break;
@@ -352,48 +357,54 @@ public:
 					unsigned u = 0;
 					readHex4(u);
 					if (u >= 0xD800 && u <= 0xDBFF) {
-						if (readNextCharBack() != '\\')
-							return addError("Invalid character");
-						if (readNextCharBack() != 'u')
-							return addError("Invalid character");
+						if (readNextCharBack() != '\\') {
+							addError("Invalid character");
+							return false;
+						}
+						if (readNextCharBack() != 'u') {
+							addError("Invalid character");
+							return false;
+						}
 						unsigned tmp_u;
 						readHex4(tmp_u);
-						if (tmp_u < 0xDC00 || tmp_u > 0xDFFF)
-							return addError("Invalid character");
+						if (tmp_u < 0xDC00 || tmp_u > 0xDFFF) {
+							addError("Invalid character");
+							return false;
+						}
 						u = 0x10000 + (u - 0xD800) * 0x400 + (tmp_u - 0xDC00);
 					}
-					if (u > 0x10FFFF)
-						return addError("Invalid character");
+					if (u > 0x10FFFF) {
+						addError("Invalid character");
+						return false;
+					}
 					encode_utf8(u, s);
 					break;
 				}
 				default:
-					return addError("Invalid ESC");
+					addError("Invalid Escape character");
+					return false;
 				}
 				break;
 			default:
-				//if (ch < ' ')return 0;
-				s += ch;
+				s.push_back(ch);
 				break;
 			}
 		}
 		return true;
 	}
 	bool readString(Value& value) {
-		value.data().s = new String();
-		value.type() = Type::String;
+		value.setString();
 		return readString(value.asString());
 	}
 	bool readArray(Value& value) {
 		nextChar();
-		value.setNewArray();
 		JSON_CHECK(skipBlank());
+		value.setArray();
 		if (readChar() == ']') {
 			nextChar();
 			return true;
 		}
 		while (true) {
-			JSON_CHECK(skipBlank());
 			JSON_CHECK(readValue(value.asArray()[value.asArray().size()]));
 			JSON_CHECK(skipBlank());
 			if (readChar() == ',') {
@@ -403,29 +414,35 @@ public:
 				nextChar();
 				break;
 			}
-			else return addError("Miss ',' or ']'");
+			else {
+				addError("Miss ',' or ']'");
+				return false;
+			}
 		}
 		return true;
 	}
 	bool readObject(Value& value) {
 		nextChar();
 		JSON_CHECK(skipBlank());
-		value.setNewObject();
+		value.setObject();
 		if (readChar() == '}') {
 			nextChar();
 			return true;
 		}
 		while (true) {
 			JSON_CHECK(skipBlank());
-			if (readChar() != '"')
-				return addError("Miss '\"'");
+			if (readChar() != '"') {
+				addError("Miss '\"'");
+				return false;
+			}
 			String key;
 			JSON_CHECK(readString(key));
 			JSON_CHECK(skipBlank());
-			if (readChar() != ':')
-				return addError("Miss ':'");
+			if (readChar() != ':') {
+				addError("Miss ':'");
+				return false;
+			}
 			nextChar();
-			JSON_CHECK(skipBlank());
 			JSON_CHECK(readValue(value.asObject()[key]));
 			JSON_CHECK(skipBlank());
 			if (readChar() == ',')
@@ -434,12 +451,18 @@ public:
 				nextChar();
 				return true;
 			}
-			else return addError("Miss ',' or '}'");
+			else {
+				addError("Miss ',' or '}'");
+				return false;
+			}
 		}
 	}
 	bool readValue(Value& value) {
 		JSON_CHECK(skipBlank());
 		switch (readChar()) {
+		case '\0':
+			addError("Invalid character");
+			return false;
 		case 'n':return readNull();
 		case 't':return readTrue(value);
 		case 'f':return readFalse(value);
@@ -471,9 +494,11 @@ public:
 				//多行注释
 				else if (readChar() == '*') {
 					nextChar();
-					while (readChar() != '*' || *(ptr + 1) != '/') {
-						if (readChar() == '\0')
-							return addError("Miss '*/'");
+					while (readChar() != '*' || *(ptr_ + 1) != '/') {
+						if (readChar() == '\0') {
+							addError("Miss '*/'");
+							return false;
+						}
 						if (readChar() == '\n')
 							nextLine();
 						nextChar();
@@ -482,7 +507,8 @@ public:
 					nextChar();
 				}
 				else {
-					return addError("Invalid comment");
+					addError("Invalid comment");
+					return false;
 				}
 				break;
 			default:
@@ -504,7 +530,10 @@ public:
 				u |= ch - 'a' + 10;
 			else if (ch >= 'A' && ch <= 'F')
 				u |= ch - 'A' + 10;
-			else return addError("Invalid charactor");
+			else {
+				addError("Invalid charactor");
+				return false;
+			}
 		}
 		return true;
 	}
@@ -530,65 +559,63 @@ public:
 };
 //用于生成JSON字符串
 class Writer {
-	String out;
-	size_t indent;
+	String out_;
+	size_t indent_ = 0;
 public:
-	Writer() :indent(0) {}
-
-	String& getString() { return out; }
+	String& getString() { return out_; }
 	void writeNull() {
-		out.append("null", 4);
+		out_.append("null", 4);
 	}
 	void writeBool(const bool value) {
 		if (value)
-			out.append("true", 4);
+			out_.append("true", 4);
 		else
-			out.append("false", 5);
+			out_.append("false", 5);
 	}
 	void writeInteger(const long long value) {
-		out.append(std::to_string(value));
+		out_.append(std::to_string(value));
 	}
 	void writeDouble(const double value) {
-		char buf[32];
-		snprintf(buf, 31, "%15.15lf", value);
+		char buf[16];
+		snprintf(buf, 15, "%lf", value);
 		String s = buf;
 		while (s.back() == '0') {
 			if (*(&s.back() - 1) != '.')
 				s.pop_back();
 			else break;
 		}
-		out.append(s);
+		out_.append(s);
 	}
 	void writeString(const String& value) {
-		out.push_back('"');
-		out.append(value);
-		out.push_back('"');
+		out_.push_back('"');
+		out_.append(value);
+		out_.push_back('"');
 	}
 	void writeArray(const Array& value) {
-		out.push_back('[');
+		out_.push_back('[');
 		if (!value.empty()) {
 			for (auto& i : value) {
 				writeValue(i.second);
-				out.push_back(',');
+				out_.push_back(',');
 			}
-			out.pop_back();
+			out_.pop_back();
 		}
-		out.push_back(']');
+		out_.push_back(']');
 	}
 	void writeObject(const Object& value) {
-		out.push_back('{');
+		out_.push_back('{');
 		if (!value.empty()) {
 			for (auto& i : value) {
-				out.push_back('"');
-				out.append(i.first);
-				out.push_back('"');
-				out.push_back(':');
+				out_.push_back('"');
+				out_.append(i.first);
+				out_.push_back('"');
+				out_.push_back(':');
 				writeValue(i.second);
-				out.push_back(',');
+				out_.push_back(',');
 			}
-			out.pop_back();
+			out_.pop_back();
 		}
-		out.push_back('}');
+		out_.push_back('}');
 	}
 	void writeValue(const Value& value) {
 		switch (value.type()) {
@@ -602,54 +629,54 @@ public:
 		}
 	}
 	void writeIndent() {
-		for (size_t i = indent; i--;)
-			out += (JSON_INDENT);
+		for (size_t i = indent_; i--;)
+			out_.append("    ", 4);
 	}
 	void writeNewline() {
-		out.push_back('\n');
+		out_.push_back('\n');
 	}
 	void writeStyledArray(const Array& value) {
-		out.push_back('[');
+		out_.push_back('[');
 		if (!value.empty()) {
 			writeNewline();
-			++indent;
+			++indent_;
 			for (auto& i : value) {
 				writeIndent();
 				writeStyledValue(i.second);
-				out.push_back(',');
+				out_.push_back(',');
 				writeNewline();
 			}
-			--indent;
-			out.pop_back();
-			out.pop_back();
+			--indent_;
+			out_.pop_back();
+			out_.pop_back();
 			writeNewline();
 			writeIndent();
 		}
-		out.push_back(']');
+		out_.push_back(']');
 	}
 	void writeStyledObject(const Object& value) {
-		out.push_back('{');
+		out_.push_back('{');
 		if (!value.empty()) {
 			writeNewline();
-			++indent;
+			++indent_;
 			for (auto& i : value) {
 				writeIndent();
-				out.push_back('"');
-				out.append(i.first);
-				out.push_back('"');
-				out.push_back(':');
-				out.push_back(' ');
+				out_.push_back('"');
+				out_.append(i.first);
+				out_.push_back('"');
+				out_.push_back(':');
+				out_.push_back(' ');
 				writeStyledValue(i.second);
-				out.push_back(',');
+				out_.push_back(',');
 				writeNewline();
 			}
-			--indent;
-			out.pop_back();
-			out.pop_back();
+			--indent_;
+			out_.pop_back();
+			out_.pop_back();
 			writeNewline();
 			writeIndent();
 		}
-		out.push_back('}');
+		out_.push_back('}');
 	}
 	void writeStyledValue(const Value& value) {
 		switch (value.type()) {
@@ -672,20 +699,23 @@ Value toJson(const char* str) {
 		std::cerr << r.getErrorString() << std::endl;
 	return move(v);
 }
+Value toJson(const String& str) {
+	return toJson(str.c_str());
+}
 //封装函数-将JSON转字符串
-String toString(const Value& value) {
+String Value::toString()const {
 	Writer w;
-	w.writeValue(value);
+	w.writeValue(*this);
 	return w.getString();
 }
 //封装函数-将JSON转格式化字符串
-String toStyledString(const Value& value) {
+String Value::toStyledString()const {
 	Writer w;
-	w.writeStyledValue(value);
+	w.writeStyledValue(*this);
 	return w.getString();
 }
 
 std::ostream& operator<<(std::ostream& o, const Value& v) {
-	return o << toStyledString(v);
+	return o << v.toStyledString();
 }
 } // namespace Json

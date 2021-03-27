@@ -1,7 +1,6 @@
 ﻿#include "pch.h"
 #include "BDS.hpp"
 #include "Event.h"
-using Json::toJson;
 #pragma region Macro
 #define Py_Method(name) {#name, api_##name, 1, 0}
 #define PyAPIFunction(name) static PyObject* api_##name(PyObject* , PyObject* args)
@@ -24,22 +23,21 @@ static unordered_map<PyObject*, unsigned[2]> tick;//执行队列
 static queue<function<void()>> _todos;
 #pragma endregion
 #pragma region Function Define
-template<class T>
-void inline print(const T& data) {
+using Json::toJson;
+template<class T>void inline print(const T& data) {
 	cout << data << endl;
 }
-template<class T, class... T2>
-void inline print(const T& data, T2... other) {
+template<class T, class... T2>void inline print(const T& data, T2... other) {
 	cout << data;
 	print(other...);
 }
-static inline VA createPacket(int type) {
+static inline VA createPacket(const int type) {
 	VA pkt[2];
 	SYMCALL("?createPacket@MinecraftPackets@@SA?AV?$shared_ptr@VPacket@@@std@@W4MinecraftPacketIds@@@Z",
 		pkt, type);
 	return *pkt;
 }
-static bool isPlayer(void* ptr) {
+static bool isPlayer(const void* ptr) {
 	for (auto& p : _level->getAllPlayers()) {
 		if (ptr == p)
 			return true;
@@ -152,8 +150,6 @@ static bool SetScorePacket(Player* p, char type, const vector<ScorePacketInfo>& 
 #pragma region Hook List
 Hook(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	Level* _this) {
-	if (!_level)
-		_level = _this;
 	original(_this);
 	//执行todos函数
 	if (!_todos.empty()) {
@@ -187,14 +183,11 @@ Hook(SPSCQueue, VA, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$al
 	_cmdqueue = original(_this);
 	return _cmdqueue;
 }
-#if 0
 Hook(Level_Level, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEAVIEntityRegistryOwner@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
 	VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13) {
-	print("level");
 	_level = original(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13);
 	return _level;
 }
-#endif
 Hook(ServerNetworkHandler_ServerNetworkHandler, VA, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEAVLevel@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@Bedrock@@@Z",
 	ServerNetworkHandler* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13, VA a14, VA a15, VA a16, VA a17, VA a18, VA a19) {
 	_Handle = _this;
@@ -305,6 +298,16 @@ Hook(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 }
 Hook(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
 	BlockSource* _this, Actor* p, BlockPos* bp, ItemStack* a3, bool a4) {
+	//BlockPos size = { 5,5,5 };
+	//StructureSettings ss(&size, 0, 0);
+	//StructureTemplate st("tmp");
+	//StructureTemplate st2("tmp2");
+	//st.fillFromWorld(_this, bp, &ss);
+	//Json::Value v(toJson(st.save()));
+	//cout << v << endl;
+	//st2.fromJson(v);
+	//st2.placeInWorld(_this, _level->getBlockPalette(), bp, &ss);
+	////st.placeInWorld(_this, bp, &ss);
 	BlockLegacy* bl = _this->getBlock(bp)->getBlockLegacy();
 	short bid = bl->getBlockItemID();
 	string bn = bl->getBlockName();
@@ -643,7 +646,7 @@ Hook(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 //获取版本
 PyAPIFunction(getVersion) {
 	PyArg_ParseTuple(args, ":getVersion");
-	return PyLong_FromLong(123);
+	return PyLong_FromLong(124);
 }
 //指令输出
 PyAPIFunction(logout) {
@@ -1184,7 +1187,7 @@ PyAPIFunction(removeSidebar) {
 	return Py_None;
 }
 //根据坐标设置方块
-PyAPIFunction(getBlock) {
+static PyObject* api_getBlock(PyObject*, PyObject* args) {
 	BlockPos bp; int did;
 	if (PyArg_ParseTuple(args, "iiii:getBlock", &bp.x, &bp.y, &bp.z, &did)) {
 		auto bs = _level->getBlockSource(did);
@@ -1200,7 +1203,7 @@ PyAPIFunction(getBlock) {
 	}
 	return Py_False;
 }
-PyAPIFunction(setBlock) {
+static PyObject* api_setBlock(PyObject*, PyObject* args) {
 	const char* name;
 	BlockPos bp; int did;
 	if (PyArg_ParseTuple(args, "siiii:setBlock", &name, &bp.x, &bp.y, &bp.z, &did)) {
@@ -1210,6 +1213,71 @@ PyAPIFunction(setBlock) {
 			return Py_False;
 		}
 		bs->setBlock(name, bp);
+		return Py_True;
+	}
+	return Py_None;
+}
+//获取一个结构
+static PyObject* api_getStructure(PyObject*, PyObject* args) {
+	BlockPos pos1, pos2; int did;
+	if (PyArg_ParseTuple(args, "iiiiiii:getStructure",
+		&pos1.x, &pos1.y, &pos1.z,
+		&pos2.x, &pos2.y, &pos2.z, &did)) {
+		auto bs = _level->getBlockSource(did);
+		if (!bs) {
+			cerr << "未知纬度ID:" << did << endl;
+			return Py_False;
+		}
+		BlockPos start = {
+			min(pos1.x,pos2.x),
+			min(pos1.y,pos2.y),
+			min(pos1.z,pos2.z) };
+		BlockPos size = {
+			max(pos1.x,pos2.x) - start.x,
+			max(pos1.y,pos2.y) - start.y,
+			max(pos1.z,pos2.z) - start.z
+		};
+		StructureSettings ss(&size, true, false);
+		StructureTemplate st("tmp");
+		st.fillFromWorld(bs, &start, &ss);
+		string str = toJson(st.save()).toStyledString();
+		return PyUnicode_FromStringAndSize(str.c_str(), str.length());
+	}
+	return Py_None;
+}
+static PyObject* api_setStructure(PyObject*, PyObject* args) {
+	const char* data = "";
+	BlockPos pos; int did;
+	if (PyArg_ParseTuple(args, "siiii:setStructure",
+		&data, &pos.x, &pos.y, &pos.z, &did)) {
+		auto bs = _level->getBlockSource(did);
+		if (!bs) {
+			cerr << "未知纬度ID:" << did << endl;
+			return Py_False;
+		}
+		Json::Value value = toJson(data);
+		if (!value["size9"].isArray()) {
+			cerr << "结构JSON错误" << endl;
+			return Py_False;
+		}
+		BlockPos size = {
+			value["size9"][0].asInt(),
+			value["size9"][1].asInt(),
+			value["size9"][2].asInt()
+		};
+		StructureSettings ss(&size, true, false);
+		StructureTemplate st("tmp");
+		st.fromJson(value);
+		st.placeInWorld(bs, _level->getBlockPalette(), &pos, &ss);
+		for (int x = 0; x != size.x; x++) {
+			for (int y = 0; y != size.y; y++) {
+				for (int z = 0; z != size.z; z++) {
+					BlockPos bp = { x,y,z };
+					bs->neighborChanged(&bp);
+				}
+			}
+
+		}
 		return Py_True;
 	}
 	return Py_None;
@@ -1267,6 +1335,8 @@ Py_Method(setSidebar),
 Py_Method(removeSidebar),
 Py_Method(getBlock),
 Py_Method(setBlock),
+Py_Method(getStructure),
+Py_Method(setStructure),
 {}
 };
 static PyModuleDef api_module{ PyModuleDef_HEAD_INIT, "mc", 0, -1, api_list, 0, 0, 0, 0 };
@@ -1301,11 +1371,11 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 		//	t->deCompound();
 		//	delete t;
 		//}
-		ios::sync_with_stdio(false);
+		//sizeof(Json::Value);
 		if (!filesystem::exists("py"))
 			filesystem::create_directory("py");
 		init();
-		puts("[BDSpyrunner] 1.2.3 loaded.");
+		puts("[BDSpyrunner] 1.2.4 loaded.");
 		puts("[BDSpyrunner] 感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return 1;

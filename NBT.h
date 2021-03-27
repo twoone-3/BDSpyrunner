@@ -1,12 +1,12 @@
 #pragma once
 #include "pch.h"
 enum TagType {
-	End, Byte, Short, Int, Integer, Float,
+	End, Byte, Short, Int, Int64, Float,
 	Double, ByteArray, String, List, Compound,
 };
 struct Tag {
-	VA vftable;
-	VA val[3];
+	void* vftable;
+	char _this[24];
 
 	void put(const string& key, const Tag* value) {
 		return SYMCALL("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
@@ -28,8 +28,8 @@ struct Tag {
 		return SYMCALL("?putInt@CompoundTag@@QEAAAEAHV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@H@Z",
 			this, key, value);
 	}
-	void putInteger(const string& key, const int64_t& value) {
-		return SYMCALL("?putInteger@CompoundTag@@QEAAAEA_JV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_J@Z",
+	void putInt64(const string& key, const int64_t& value) {
+		return SYMCALL("?putInt64@CompoundTag@@QEAAAEA_JV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_J@Z",
 			this, key, value);
 	}
 	void putFloat(const string& key, const float& value) {
@@ -80,9 +80,11 @@ Tag* newTag(TagType t) {
 }
 Json::Value ListtoJson(Tag* t) {
 	Json::Value j;
+	j.setArray();
 	for (auto& c : t->asList()) {
 		switch (*((char*)t + 32)) {
 		case End:
+			cout << "End" << endl;
 			break;
 		case Byte:
 			j.append(c->asByte());
@@ -93,7 +95,8 @@ Json::Value ListtoJson(Tag* t) {
 		case Int:
 			j.append(c->asInt());
 			break;
-		case Integer:
+		case Int64:
+			cout << "Int64" << endl;
 			j.append(c->asInt64());
 			break;
 		case Float:
@@ -102,7 +105,9 @@ Json::Value ListtoJson(Tag* t) {
 		case Double:
 			j.append(c->asDouble());
 			break;
-		case ByteArray:break;
+		case ByteArray:
+			cout << "BtyeArray" << endl;
+			break;
 		case String:
 			j.append(c->asString());
 			break;
@@ -112,15 +117,19 @@ Json::Value ListtoJson(Tag* t) {
 		case Compound:
 			j.append(toJson(c));
 			break;
+		default:
+			cout << "default" << endl;
 		}
 	}
 	return move(j);
 }
 Json::Value toJson(Tag* t) {
 	Json::Value j;
+	j.setObject();
 	for (auto& x : t->asCompound()) {
 		switch (x.second.type()) {
 		case End:
+			cout << x.first << endl;
 			break;
 		case Byte:
 			j[x.first + to_string(Byte)] = x.second.asByte();
@@ -131,8 +140,8 @@ Json::Value toJson(Tag* t) {
 		case Int:
 			j[x.first + to_string(Int)] = x.second.asInt();
 			break;
-		case Integer:
-			j[x.first + to_string(Integer)] = x.second.asInt64();
+		case Int64:
+			j[x.first + to_string(Int64)] = x.second.asInt64();
 			break;
 		case Float:
 			j[x.first + to_string(Float)] = x.second.asFloat();
@@ -140,7 +149,9 @@ Json::Value toJson(Tag* t) {
 		case Double:
 			j[x.first + to_string(Double)] = x.second.asDouble();
 			break;
-		case ByteArray:break;
+		case ByteArray:
+			cout << x.first << endl;
+			break;
 		case String:
 			j[x.first + to_string(String)] = x.second.asString();
 			break;
@@ -150,6 +161,8 @@ Json::Value toJson(Tag* t) {
 		case Compound:
 			j[x.first + to_string(Compound)] = toJson(&x.second);
 			break;
+		default:
+			cout << x.first << endl;
 		}
 	}
 	return move(j);
@@ -164,7 +177,8 @@ Tag* toTag(const Json::Value& j) {
 		int type = 0;
 		if (*(&e - 1) == '1' && e == '0') {
 			type = 10;
-			key.resize(key.length() - 2);
+			key.pop_back();
+			key.pop_back();
 		}
 		else if (e >= '0' && e <= '9') {
 			type = e - '0';
@@ -182,8 +196,8 @@ Tag* toTag(const Json::Value& j) {
 		case Int:
 			c->putInt(key, x.second.asInt());
 			break;
-		case Integer:
-			c->putInteger(key, x.second.asInt64());
+		case Int64:
+			c->putInt64(key, x.second.asInt64());
 			break;
 		case Float:
 			c->putFloat(key, (float)x.second.asDouble());
@@ -224,21 +238,21 @@ Tag* ArraytoTag(const Json::Value& j) {
 		case Json::Type::Integer:
 		{
 			Tag* t = newTag(Int);
-			*(int*)t->val = x.second.asInt();
+			*(int*)t->_this = x.second.asInt();
 			l->add(t);
 			break;
 		}
 		case Json::Type::Double:
 		{
 			Tag* t = newTag(Double);
-			*(double*)t->val = x.second.asDouble();
+			*(double*)t->_this = x.second.asDouble();
 			l->add(t);
 			break;
 		}
 		case Json::Type::String:
 		{
 			Tag* t = newTag(String);
-			*(string*)t->val = x.second.asString();
+			*(string*)t->_this = x.second.asString();
 			l->add(t);
 			break;
 		}

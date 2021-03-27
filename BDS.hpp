@@ -2,6 +2,9 @@
 #include "pch.h"
 #include "NBT.h"
 #pragma region Block
+struct BlockPalette {
+
+};
 struct BlockLegacy {
 	string getBlockName() {
 		return f(string, this + 128);
@@ -20,7 +23,15 @@ struct Block {
 		//return SYMCALL<BlockLegacy*>("?getLegacyBlock@Block@@QEBAAEBVBlockLegacy@@XZ", this);
 	}
 };
-struct BlockPos { int x = 0, y = 0, z = 0; };
+struct BlockPos {
+	int x = 0, y = 0, z = 0;
+
+	string toString() {
+		char str[32];
+		sprintf_s(str, "(%d,%d,%d)", x, y, z);
+		return str;
+	}
+};
 struct BlockActor {
 	Block* getBlock() {
 		return f(Block*, this + 16);
@@ -37,6 +48,10 @@ struct BlockSource {
 	bool setBlock(const string& name, const BlockPos& bp) {
 		return SYMCALL<bool>("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z",
 			this, &bp, *(Block**)GetServerSymbol(("?m" + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()), 3, nullptr);
+	}
+	void neighborChanged(const BlockPos* pos) {
+		SYMCALL("?neighborChanged@BlockSource@@QEAAXAEBVBlockPos@@0@Z",
+			this, pos, pos);
 	}
 	void updateNeighborsAt(const BlockPos* pos) {
 		SYMCALL("?updateNeighborsAt@BlockSource@@QEAAXAEBVBlockPos@@@Z",
@@ -59,7 +74,7 @@ struct Vec3 {
 struct Vec2 { float x = 0.0f, y = 0.0f; };
 #pragma endregion
 #pragma region Item
-struct Item;
+struct Item {};
 struct ItemStack {
 	VA vtable;
 	Item* mItem;
@@ -144,7 +159,7 @@ struct Container {
 		vector<ItemStack*> s;
 		SYMCALL<VA>("?getSlots@Container@@UEBA?BV?$vector@PEBVItemStack@@V?$allocator@PEBVItemStack@@@std@@@std@@XZ",
 			this, &s);
-		return s;
+		return move(s);
 	}
 	void clearItem(int slot, int num) {
 		SYMCALL("?removeItem@Container@@UEAAXHH@Z", this, slot, num);
@@ -425,10 +440,78 @@ struct Scoreboard {
 	}
 };
 #pragma endregion
+#pragma region Structure
+struct string_span {
+	size_t len;
+	const char* str;
+	string_span(const char* s) : len(strlen(s)), str(s) {}
+	string_span(const std::string& s) : len(s.length()), str(s.c_str()) {}
+};
+struct StructureSettings {
+	char _this[96];
+	StructureSettings(BlockPos* size, bool IgnoreEntities, bool IgnoreBlocks) {
+		SYMCALL("??0StructureSettings@@QEAA@XZ", this);
+		f(bool, _this + 32) = IgnoreEntities;
+		f(bool, _this + 34) = IgnoreBlocks;
+		f(BlockPos, _this + 36) = *size;
+		f(BlockPos, _this + 48) = { 0,0,0 };
+	}
+	~StructureSettings() {
+		((string*)this)->~basic_string();
+	}
+};
+#if 0
+struct StructureDataLoadHelper {
+	char _this[136];
+
+	StructureDataLoadHelper(BlockPos* bp1, BlockPos* bp2, Vec3* v, VA id, char Rotation, char Mirror, Level* level) {
+		SYMCALL("??0StructureDataLoadHelper@@QEAA@AEBVBlockPos@@0AEBVVec3@@UActorUniqueID@@W4Rotation@@W4Mirror@@AEAVLevel@@@Z",
+			this, bp1, bp2, v, id, Rotation, Mirror, level);
+	}
+	~StructureDataLoadHelper() {
+		SYMCALL("??1StructureDataLoadHelper@@UEAA@XZ", this);
+	}
+};
+#endif
+struct StructureTemplate {
+	char _this[216];
+	StructureTemplate(const string_span& s) {
+		SYMCALL("??0StructureTemplate@@QEAA@V?$basic_string_span@$$CBD$0?0@gsl@@@Z",
+			this, s);
+	}
+	~StructureTemplate() {
+		SYMCALL("??1StructureTemplate@@QEAA@XZ", this);
+	}
+	Tag* save() {
+		Tag* t = 0;
+		SYMCALL<Tag*>("?save@StructureTemplateData@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
+			_this + 32, &t);
+		return t;
+	}
+	void load(Tag* t) {
+		SYMCALL<bool>("?load@StructureTemplateData@@QEAA_NAEBVCompoundTag@@@Z",
+			_this + 32, t);
+	}
+	void fromJson(const Json::Value& value) {
+		Tag* t = toTag(value);
+		load(t);
+		t->deCompound();
+		delete t;
+	}
+	void fillFromWorld(BlockSource* a2, BlockPos* a3, StructureSettings* a4) {
+		SYMCALL("?fillFromWorld@StructureTemplate@@QEAAXAEAVBlockSource@@AEBVBlockPos@@AEBVStructureSettings@@@Z",
+			this, a2, a3, a4);
+	}
+	void placeInWorld(BlockSource* a2, BlockPalette*a3, BlockPos* a4, StructureSettings* a5) {
+		SYMCALL("?placeInWorld@StructureTemplate@@QEBAXAEAVBlockSource@@AEBVBlockPalette@@AEBVBlockPos@@AEBVStructureSettings@@PEAVStructureTelemetryServerData@@_N@Z",
+			this, a2, a3, a4, a5);
+	}
+};
+#pragma endregion
 struct Level {
 	//获取方块源 没这个维度返回空指针
 	BlockSource* getBlockSource(int did) {
-		VA d = SYMCALL<VA>("?getDimension@Level@@QEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
+		VA d = SYMCALL<VA>("?getDimension@Level@@UEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
 			this, did);
 		if (!d)return 0;
 		return f(BlockSource*, d + 96);//IDA Level::tickEntities 120
@@ -451,6 +534,9 @@ struct Level {
 	}
 	const vector<Player*>& getAllPlayers() {
 		return f(vector<Player*>, this + 112);
+	}
+	BlockPalette* getBlockPalette() {
+		return f(BlockPalette*, this + 2072);
 	}
 };
 struct ServerNetworkHandler {
