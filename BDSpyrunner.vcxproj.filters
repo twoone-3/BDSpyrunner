@@ -2,15 +2,17 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Library Include="chakra.lib" />
-    <Library Include="python36.lib" />
+    <Library Include="python37.lib" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mod.cpp" />
+    <ClCompile Include="jsoncpp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="BDS.hpp" />
     <ClInclude Include="NBT.h" />
+    <ClInclude Include="PyEntityObject.h" />
   </ItemGroup>
 </Project>

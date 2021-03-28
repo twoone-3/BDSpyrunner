@@ -7,10 +7,10 @@ struct BlockPalette {
 };
 struct BlockLegacy {
 	string getBlockName() {
-		return f(string, this + 128);
+		return FETCH(string, this + 128);
 	}
 	short getBlockItemID() {//IDA Item::beginCreativeGroup(,Block*,) 18~22
-		short v3 = f(short, this + 328);
+		short v3 = FETCH(short, this + 328);
 		if (v3 < 0x100) {
 			return v3;
 		}
@@ -19,7 +19,7 @@ struct BlockLegacy {
 };
 struct Block {
 	BlockLegacy* getBlockLegacy() {
-		return f(BlockLegacy*, this + 16);
+		return FETCH(BlockLegacy*, this + 16);
 		//return SYMCALL<BlockLegacy*>("?getLegacyBlock@Block@@QEBAAEBVBlockLegacy@@XZ", this);
 	}
 };
@@ -34,7 +34,7 @@ struct BlockPos {
 };
 struct BlockActor {
 	Block* getBlock() {
-		return f(Block*, this + 16);
+		return FETCH(Block*, this + 16);
 	}
 	BlockPos* getPosition() {//IDA BlockActor::BlockActor 18~20
 		return (BlockPos*)(this + 44);
@@ -58,7 +58,7 @@ struct BlockSource {
 			this, pos);
 	}
 	int getDimensionId() {	//IDA Dimension::onBlockChanged 42
-		return f(int, (f(VA, this + 32) + 216));
+		return FETCH(int, FETCH(VA, this + 32) + 216);
 	}
 };
 #pragma endregion
@@ -109,14 +109,14 @@ struct ItemStack {
 	}
 	//取容器内数量
 	int getStackCount() {//IDA ContainerModel::networkUpdateItem
-		return f(int, this + 34);
+		return FETCH(int, this + 34);
 	}
 	//判断是否空容器
 	bool isNull() {
 		return SYMCALL<bool>("?isNull@ItemStackBase@@QEBA_NXZ", this);
 	}
 	bool isEmptyStack() {
-		return f(char, this + 34) == 0;
+		return FETCH(char, this + 34) == 0;
 	}
 	Tag* getNetworkUserData() {
 		Tag* ct;
@@ -185,15 +185,15 @@ struct Actor {
 	}
 	//是否已移除
 	bool isRemoved() {
-		return f(bool, this + 7688);
+		return FETCH(bool, this + 7688);
 	}
 	//是否悬空
 	bool isStand() {//IDA MovePlayerPacket::MovePlayerPacket 30
-		return f(bool, this + 448);
+		return FETCH(bool, this + 448);
 	}
 	//取方块源
 	BlockSource* getBlockSource() {
-		return f(BlockSource*, this + 840);
+		return FETCH(BlockSource*, this + 840);
 	}
 	ItemStack* getArmor(int slot) {
 		return SYMCALL<ItemStack*>("?getArmor@Actor@@UEBAAEBVItemStack@@W4ArmorSlot@@@Z",
@@ -201,7 +201,7 @@ struct Actor {
 	}
 	//获取实体类型
 	unsigned getEntityTypeId() {
-		return f(unsigned, this + 968);
+		return FETCH(unsigned, this + 968);
 	}
 	//获取查询用ID
 	VA getUniqueID() {
@@ -220,10 +220,10 @@ struct Actor {
 	}
 	//获取地图信息
 	struct Level* getLevel() {//IDA Mob::die 143
-		return f(Level*, this + 856);
+		return FETCH(Level*, this + 856);
 	}
 	VA getAttribute() {
-		return f(VA, this + 1144);
+		return FETCH(VA, this + 1144);
 	}
 	//添加一个状态
 	VA addEffect(VA ef) {
@@ -239,8 +239,8 @@ struct Actor {
 	void setHealth(int value, int max) {
 		VA hattr = ((*(VA(__fastcall**)(Actor*, void*))(*(VA*)this + 1552))(
 			this, SYM("?HEALTH@SharedAttributes@@2VAttribute@@B")));
-		f(int, hattr + 132) = value;
-		f(int, hattr + 128) = max;
+		FETCH(int, hattr + 132) = value;
+		FETCH(int, hattr + 128) = max;
 		//SYMCALL("?_setDirty@AttributeInstance@@AEAAXXZ", hattr);
 	}
 	Tag* save() {
@@ -279,9 +279,9 @@ struct Player : Mob {
 			getLevel(), this + 2832);
 	}
 	//重设服务器玩家名
-	void setName(string name) {
+	void setName(const string& name) {
 		SYMCALL("?setName@Player@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
-			this, name);
+			this, &name);
 	}
 	//获取网络标识符
 	VA getNetId() {
@@ -289,14 +289,14 @@ struct Player : Mob {
 	}
 	//获取背包
 	Container* getContainer() {
-		return (Container*)f(VA, f(VA, this + 3040) + 176);
+		return FETCH(Container*, FETCH(VA, this + 3040) + 176);
 	}
 	VA getContainerManager() {
 		return (VA)this + 3024;	//IDA Player::setContainerManager 18
 	}
 	//获取末影箱
 	Container* getEnderChestContainer() {
-		return f(Container*, this + 4176);//IDA ReplaceItemCommand::execute 1038
+		return FETCH(Container*, this + 4176);//IDA ReplaceItemCommand::execute 1038
 	}
 	//设置一个装备
 	VA setArmor(int i, ItemStack* item) {
@@ -312,7 +312,7 @@ struct Player : Mob {
 	}
 	//获取当前选中的框位置
 	int getSelectdItemSlot() {//IDA Player::getSelectedItem 12
-		return f(unsigned, f(VA, this + 3040) + 16);
+		return FETCH(unsigned, FETCH(VA, this + 3040) + 16);
 	}
 	//获取当前物品
 	ItemStack* getSelectedItem() {
@@ -323,28 +323,28 @@ struct Player : Mob {
 		return getContainer()->getSlots()[slot];
 	}
 	//获取游戏时命令权限
-	char getPermission() {//IDA ServerPlayer::setPermissions 17
-		return *f(char*, this + 2224);
+	char getPermissions() {//IDA ServerPlayer::setPermissions 17
+		return FETCH(char, FETCH(char*, this + 2224));
 	}
 	//设置游戏时命令权限
-	void setPermission(char m) {
+	void setPermissions(char m) {
 		SYMCALL("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z",
 			this, m);
 	}
 	//获取游戏时游玩权限
 	char getPermissionLevel() {//IDA Abilities::setPlayerPermissions ?
-		return f(char, f(char*, this + 2192) + 1);
+		return FETCH(char, FETCH(char*, this + 2224) + 1);
 	}
 	//设置游戏时游玩权限
 	void setPermissionLevel(char m) {
 		SYMCALL("?setPlayerPermissions@Abilities@@QEAAXW4PlayerPermissionLevel@@@Z",
-			this + 2200, m);
+			this + 2224, m);
 	}
 	void sendInventroy() {
 		SYMCALL("?sendInventory@ServerPlayer@@UEAAX_N@Z",
 			this, true);
 	}
-	void teleport(Vec3 target, int dim) {
+	void teleport(const Vec3& target,const int dim) {
 		SYMCALL("?teleport@TeleportCommand@@SAXAEAVActor@@VVec3@@PEAV3@V?$AutomaticID@VDimension@@H@@VRelativeFloat@@4H@Z",
 			this, target, 0, dim, 0, 0, 0);
 	}
@@ -353,7 +353,7 @@ struct Player : Mob {
 #pragma region Scoreboard
 struct PlayerScore {
 	VA getscore() {
-		return f(VA, this + 4);
+		return FETCH(VA, this + 4);
 	}
 };
 struct ScoreInfo {
@@ -362,7 +362,7 @@ struct ScoreInfo {
 	//string displayname  +96
 	//string name +64
 	int getCount() {
-		return f(int, this + 12);
+		return FETCH(int, this + 12);
 	}
 };
 struct ScoreboardId {
@@ -387,11 +387,11 @@ struct ScorePacketInfo {
 struct Objective {
 	//获取计分板名称
 	auto getScoreName() {
-		return f(string, this + 64);
+		return FETCH(string, this + 64);
 	}
 	//获取计分板展示名称
 	auto getScoreDisplayName() {
-		return f(string, this + 96);
+		return FETCH(string, this + 96);
 	}
 	auto createScoreboardId(Player* player) {
 		return SYMCALL<ScoreboardId*>("?createScoreboardId@ServerScoreboard@@UEAAAEBUScoreboardId@@AEBVPlayer@@@Z", this, player);
@@ -451,10 +451,10 @@ struct StructureSettings {
 	char _this[96];
 	StructureSettings(BlockPos* size, bool IgnoreEntities, bool IgnoreBlocks) {
 		SYMCALL("??0StructureSettings@@QEAA@XZ", this);
-		f(bool, _this + 32) = IgnoreEntities;
-		f(bool, _this + 34) = IgnoreBlocks;
-		f(BlockPos, _this + 36) = *size;
-		f(BlockPos, _this + 48) = { 0,0,0 };
+		FETCH(bool, _this + 32) = IgnoreEntities;
+		FETCH(bool, _this + 34) = IgnoreBlocks;
+		FETCH(BlockPos, _this + 36) = *size;
+		FETCH(BlockPos, _this + 48) = { 0,0,0 };
 	}
 	~StructureSettings() {
 		((string*)this)->~basic_string();
@@ -502,7 +502,7 @@ struct StructureTemplate {
 		SYMCALL("?fillFromWorld@StructureTemplate@@QEAAXAEAVBlockSource@@AEBVBlockPos@@AEBVStructureSettings@@@Z",
 			this, a2, a3, a4);
 	}
-	void placeInWorld(BlockSource* a2, BlockPalette*a3, BlockPos* a4, StructureSettings* a5) {
+	void placeInWorld(BlockSource* a2, BlockPalette* a3, BlockPos* a4, StructureSettings* a5) {
 		SYMCALL("?placeInWorld@StructureTemplate@@QEBAXAEAVBlockSource@@AEBVBlockPalette@@AEBVBlockPos@@AEBVStructureSettings@@PEAVStructureTelemetryServerData@@_N@Z",
 			this, a2, a3, a4, a5);
 	}
@@ -514,10 +514,10 @@ struct Level {
 		VA d = SYMCALL<VA>("?getDimension@Level@@UEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
 			this, did);
 		if (!d)return 0;
-		return f(BlockSource*, d + 96);//IDA Level::tickEntities 120
+		return FETCH(BlockSource*, d + 96);//IDA Level::tickEntities 120
 	}
 	Scoreboard* getScoreBoard() {//IDA Level::removeEntityReferences
-		return f(Scoreboard*, this + 8464);
+		return FETCH(Scoreboard*, this + 8464);
 	}
 	unsigned getSeed() {
 		return SYMCALL<unsigned>("?getSeed@Level@@UEAAIXZ", this);
@@ -533,15 +533,15 @@ struct Level {
 			this, id, false);
 	}
 	const vector<Player*>& getAllPlayers() {
-		return f(vector<Player*>, this + 112);
+		return FETCH(vector<Player*>, this + 112);
 	}
 	BlockPalette* getBlockPalette() {
-		return f(BlockPalette*, this + 2072);
+		return FETCH(BlockPalette*, this + 2072);
 	}
 };
 struct ServerNetworkHandler {
 	Player* _getServerPlayer(VA id, VA pkt) {
 		return SYMCALL<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
-			this, id, f(char, pkt + 16));
+			this, id, FETCH(char, pkt + 16));
 	}
 };

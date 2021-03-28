@@ -10,13 +10,13 @@
 #include <functional>
 #include <filesystem>
 #include <unordered_map>
-#include "Json.h"
+#include "json/json.h"
 #include "include/Python.h"
 
-#define f(type, ptr) (*reinterpret_cast<type*>(ptr))
+#define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
 #define SYM(sym) GetServerSymbol(sym)
 
-#pragma warning(disable:4996)
+//#pragma warning(disable:4996)
 #pragma execution_character_set("utf-8")
 using namespace std;
 using VA = unsigned long long;
@@ -36,7 +36,7 @@ static void* HookRegister(const char* sym, void* hook, void* org) {
 	HookFunction(found, org, hook);
 	return org;
 }
-#define Hook(name, ret, sym, ...)		\
+#define HOOK(name, ret, sym, ...)		\
 namespace name {						\
 	typedef ret(*fn)(__VA_ARGS__);		\
 	static ret _hook(__VA_ARGS__);		\
