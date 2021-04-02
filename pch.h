@@ -10,6 +10,7 @@
 #include <functional>
 #include <filesystem>
 #include <unordered_map>
+#define JSON_USE_EXCEPTION 0
 #include "json/json.h"
 #include "include/Python.h"
 

@@ -243,6 +243,10 @@ struct Actor {
 		FETCH(int, hattr + 128) = max;
 		//SYMCALL("?_setDirty@AttributeInstance@@AEAAXXZ", hattr);
 	}
+	//获取副手
+	ItemStack* getOffHand() {
+		return SYMCALL<ItemStack*>("?getOffhandSlot@Actor@@QEBAAEBVItemStack@@XZ", this);
+	}
 	Tag* save() {
 		Tag* t = newTag(Compound);
 		SYMCALL("?save@Actor@@UEAA_NAEAVCompoundTag@@@Z", this, t);
@@ -254,11 +258,6 @@ struct Mob : Actor {
 	//获取状态列表
 	auto getEffects() {	//IDA Mob::addAdditionalSaveData 84
 		return (vector<MobEffectInstance>*)((VA*)this + 190);
-	}
-	//保存当前副手至容器
-	VA saveOffhand(VA hlist) {
-		return SYMCALL<VA>("?saveOffhand@Mob@@IEBA?AV?$unique_ptr@VListTag@@U?$default_delete@VListTag@@@std@@@std@@XZ",
-			this, hlist);
 	}
 };
 struct Player : Mob {
@@ -291,6 +290,10 @@ struct Player : Mob {
 	Container* getContainer() {
 		return FETCH(Container*, FETCH(VA, this + 3040) + 176);
 	}
+	//获取装备容器
+	Container* getArmorContainer() {
+		return FETCH(Container*, this + 1512);
+	}
 	VA getContainerManager() {
 		return (VA)this + 3024;	//IDA Player::setContainerManager 18
 	}
@@ -310,8 +313,12 @@ struct Player : Mob {
 	void addItem(ItemStack* item) {
 		SYMCALL<VA>("?addItem@@YAXAEAVPlayer@@AEAVItemStack@@@Z", this, item);
 	}
+	//增加等级
+	void addLevel(const int level) {
+		SYMCALL("?addLevels@Player@@UEAAXH@Z", this, level);
+	}
 	//获取当前选中的框位置
-	int getSelectdItemSlot() {//IDA Player::getSelectedItem 12
+	int getSelectedItemSlot() {//IDA Player::getSelectedItem 12
 		return FETCH(unsigned, FETCH(VA, this + 3040) + 16);
 	}
 	//获取当前物品

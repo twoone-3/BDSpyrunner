@@ -1,8 +1,7 @@
 #pragma once
 #include "BDS.hpp"
 //玩家指针类型
-struct PyEntityObject {
-	PyObject_HEAD;
+struct PyEntityObject : PyObject {
 	void* ptr_;
 
 	Player* asPlayer() {
@@ -108,19 +107,12 @@ static PyGetSetDef PyEntity_GetSet[]{
 	{"permissions", (getter)PyEntity_GetPermissions, (setter)PyEntity_SetPermissions, nullptr},
 	{nullptr}
 };
-//设置玩家侧边栏
-static PyObject* PyEntity_SetSidebar(PyEntityObject* self, PyObject* args);
-static PyObject* PyEntity_RemoveSidebar(PyEntityObject* self, PyObject* args);
 
-static PyMethodDef PyEntity_Methods[]{
-	{"setSidebar", (PyCFunction)PyEntity_SetSidebar, METH_VARARGS, nullptr},
-	{"removeSidebar", (PyCFunction)PyEntity_RemoveSidebar, METH_NOARGS, nullptr},
-	{nullptr}
-};
+extern PyMethodDef PyEntity_Methods[];
 
 static PyTypeObject PyEntity_Type{
 	PyVarObject_HEAD_INIT(nullptr, 0)
-	"Entity",                 /* tp_name */
+	"EntityObject",                 /* tp_name */
 	sizeof(PyEntityObject),   /* tp_basicsize */
 	0,                       /* tp_itemsize */
 	PyEntity_Dealloc,     /* tp_dealloc */
@@ -162,11 +154,10 @@ static PyTypeObject PyEntity_Type{
 PyObject* PyEntity_FromPtr(void* ptr) {
 	PyEntityObject* obj;
 	safeCall([&] {
-		if (PyType_Ready(&PyEntity_Type) < 0) {
+		if (!PyType_Ready(&PyEntity_Type))
+			obj = (PyEntityObject*)PyObject_CallFunctionObjArgs((PyObject*)&PyEntity_Type, 0);
+		else
 			Py_DECREF(&PyEntity_Type);
-			return nullptr;
-		}
-		obj = (PyEntityObject*)PyObject_CallFunctionObjArgs((PyObject*)&PyEntity_Type, 0);
 		}
 	);
 	obj->ptr_ = ptr;
