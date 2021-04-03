@@ -1619,70 +1619,70 @@ PyMethodDef PyEntity_Methods[]
 #pragma region Function List
 static PyMethodDef api_list[]
 {
-	{"getVersion", api_getVersion, 4, 0},
-	{"logout", api_logout, 1, 0},
-	{"runcmd", api_runcmd, 1, 0},
-	{"setTimer", api_setTimer, 1, 0},
-	{"removeTimer", api_removeTimer, 1, 0},
-	//{"setTimeout", api_setTimeout, 1, 0},
-	{"setListener", api_setListener, 1, 0},
-	{"setShareData", api_setShareData, 1, 0},
-	{"getShareData", api_getShareData, 1, 0},
-	{"setCommandDescription", api_setCommandDescription, 1, 0},
-	{"getPlayerList", api_getPlayerList, 4, 0},
-	{"sendSimpleForm", api_sendSimpleForm, 1, 0},
-	{"sendModalForm", api_sendModalForm, 1, 0},
-	{"sendCustomForm", api_sendCustomForm, 1, 0},
-	{"transferServer", api_transferServer, 1, 0},
-	{"getPlayerInfo", api_getPlayerInfo, 1, 0},
-	{"getActorInfo", api_getActorInfo, 1, 0},
-	{"getActorInfoEx", api_getActorInfoEx, 1, 0},
-	{"getPlayerPerm", api_getPlayerPerm, 1, 0},
-	{"setPlayerPerm", api_setPlayerPerm, 1, 0},
-	{"addLevel", api_addLevel, 1, 0},
-	{"setName", api_setName, 1, 0},
-	{"getPlayerScore", api_getPlayerScore, 1, 0},
-	{"modifyPlayerScore", api_modifyPlayerScore, 1, 0},
-	{"talkAs", api_talkAs, 1, 0},
-	{"runcmdAs", api_runcmdAs, 1, 0},
-	{"teleport", api_teleport, 1, 0},
-	{"tellraw", api_tellraw, 1, 0},
-	{"tellrawEx", api_tellrawEx, 1, 0},
-	{"setBossBar", api_setBossBar, 1, 0},
-	{"removeBossBar", api_removeBossBar, 1, 0},
-	{"setDamage", api_setDamage, 1, 0},
-	{"setServerMotd", api_setServerMotd, 1, 0},
-	{"getPlayerItems", api_getPlayerItems, 1, 0},
-	{"setPlayerItems", api_setPlayerItems, 1, 0},
-	{"getPlayerHand", api_getPlayerHand, 1, 0},
-	{"setPlayerHand", api_setPlayerHand, 1, 0},
-	{"getPlayerArmor", api_getPlayerArmor, 1, 0},
-	{"setPlayerArmor", api_setPlayerArmor, 1, 0},
-	{"getPlayerItem", api_getPlayerItem, 1, 0},
-	{"setPlayerItem", api_setPlayerItem, 1, 0},
-	{"getPlayerEnderChests", api_getPlayerEnderChests, 1, 0},
-	{"setPlayerEnderChests", api_setPlayerEnderChests, 1, 0},
-	{"addItemEx", api_addItemEx, 1, 0},
-	{"removeItem", api_removeItem, 1, 0},
-	{"setSidebar", api_setSidebar, 1, 0},
-	{"removeSidebar", api_removeSidebar, 1, 0},
-	{"getBlock", api_getBlock, 1, 0},
-	{"setBlock", api_setBlock, 1, 0},
-	{"getStructure", api_getStructure, 1, 0},
-	{"setStructure", api_setStructure, 1, 0},
-	{0,0,0,0}
+	{"getVersion", api_getVersion, 4, nullptr},
+	{"logout", api_logout, 1, nullptr},
+	{"runcmd", api_runcmd, 1, nullptr},
+	{"setTimer", api_setTimer, 1, nullptr},
+	{"removeTimer", api_removeTimer, 1, nullptr},
+	//{"setTimeout", api_setTimeout, 1, nullptr},
+	{"setListener", api_setListener, 1, nullptr},
+	{"setShareData", api_setShareData, 1, nullptr},
+	{"getShareData", api_getShareData, 1, nullptr},
+	{"setCommandDescription", api_setCommandDescription, 1, nullptr},
+	{"getPlayerList", api_getPlayerList, 4, nullptr},
+	{"sendSimpleForm", api_sendSimpleForm, 1, nullptr},
+	{"sendModalForm", api_sendModalForm, 1, nullptr},
+	{"sendCustomForm", api_sendCustomForm, 1, nullptr},
+	{"transferServer", api_transferServer, 1, nullptr},
+	{"getPlayerInfo", api_getPlayerInfo, 1, nullptr},
+	{"getActorInfo", api_getActorInfo, 1, nullptr},
+	{"getActorInfoEx", api_getActorInfoEx, 1, nullptr},
+	{"getPlayerPerm", api_getPlayerPerm, 1, nullptr},
+	{"setPlayerPerm", api_setPlayerPerm, 1, nullptr},
+	{"addLevel", api_addLevel, 1, nullptr},
+	{"setName", api_setName, 1, nullptr},
+	{"getPlayerScore", api_getPlayerScore, 1, nullptr},
+	{"modifyPlayerScore", api_modifyPlayerScore, 1, nullptr},
+	{"talkAs", api_talkAs, 1, nullptr},
+	{"runcmdAs", api_runcmdAs, 1, nullptr},
+	{"teleport", api_teleport, 1, nullptr},
+	{"tellraw", api_tellraw, 1, nullptr},
+	{"tellrawEx", api_tellrawEx, 1, nullptr},
+	{"setBossBar", api_setBossBar, 1, nullptr},
+	{"removeBossBar", api_removeBossBar, 1, nullptr},
+	{"setDamage", api_setDamage, 1, nullptr},
+	{"setServerMotd", api_setServerMotd, 1, nullptr},
+	{"getPlayerItems", api_getPlayerItems, 1, nullptr},
+	{"setPlayerItems", api_setPlayerItems, 1, nullptr},
+	{"getPlayerHand", api_getPlayerHand, 1, nullptr},
+	{"setPlayerHand", api_setPlayerHand, 1, nullptr},
+	{"getPlayerArmor", api_getPlayerArmor, 1, nullptr},
+	{"setPlayerArmor", api_setPlayerArmor, 1, nullptr},
+	{"getPlayerItem", api_getPlayerItem, 1, nullptr},
+	{"setPlayerItem", api_setPlayerItem, 1, nullptr},
+	{"getPlayerEnderChests", api_getPlayerEnderChests, 1, nullptr},
+	{"setPlayerEnderChests", api_setPlayerEnderChests, 1, nullptr},
+	{"addItemEx", api_addItemEx, 1, nullptr},
+	{"removeItem", api_removeItem, 1, nullptr},
+	{"setSidebar", api_setSidebar, 1, nullptr},
+	{"removeSidebar", api_removeSidebar, 1, nullptr},
+	{"getBlock", api_getBlock, 1, nullptr},
+	{"setBlock", api_setBlock, 1, nullptr},
+	{"getStructure", api_getStructure, 1, nullptr},
+	{"setStructure", api_setStructure, 1, nullptr},
+	{nullptr}
 };
 static PyModuleDef api_module
 {
 	PyModuleDef_HEAD_INIT,
 	"mc",
-	0,
+	nullptr,
 	-1,
 	api_list,
-	0,
-	0,
-	0,
-	0
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr
 };
 static PyObject* api_init() {
 	return PyModule_Create(&api_module);
@@ -1696,8 +1696,8 @@ static void init() {
 	//cfg.configure_locale = 0;
 	//Py_PreInitialize(&cfg);
 	PyImport_AppendInittab("mc", api_init); //增加一个模块
-	Py_Initialize();
-	//PyEval_InitThreads();
+	Py_Initialize();//初始化解释器
+	PyEval_InitThreads();//启用线程支持
 	filesystem::directory_iterator files("py");
 	for (auto& info : files) {
 		auto& path = info.path();
@@ -1708,7 +1708,7 @@ static void init() {
 			PyErr_Print();
 		}
 	}
-	//PyEval_SaveThread();
+	PyEval_SaveThread();//释放当前线程
 }
 BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 	if (reason == 1) {
