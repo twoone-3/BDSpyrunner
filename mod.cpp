@@ -74,7 +74,7 @@ static bool EventCall(Event e, PyObject* val) {
 		auto& List = _PyFuncs[e];
 		if (!List.empty()) {
 			for (PyObject* fn : List) {
-				if (PyObject_CallFunction(fn, "O", val) == Py_False)
+				if (PyObject_CallFunction(fn,"O", val) == Py_False)
 					result = false;
 				PyErr_Print();
 			}
@@ -178,7 +178,7 @@ HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 			for (auto& i : tick) {
 				if (!i.second[0]) {
 					i.second[0] = i.second[1];
-					PyObject_CallFunction(i.first, 0);
+					PyObject_CallFunctionObjArgs(i.first);
 				}
 				else i.second[0]--;
 			}
@@ -255,13 +255,13 @@ HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifi
 	if (p) {
 		//_PlayerList[p] = true;
 		//EventCall(Event::onPlayerJoin, PyLong_FromUnsignedLongLong((VA)p));
-		EventCall(Event::onPlayerJoin, PyEntity_FromPtr(p));
+		EventCall(Event::onPlayerJoin, PyEntity_FromEntity(p));
 	}
 	original(_this, id, pkt);
 }
 HOOK(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
 	VA _this, Player* p, char v3) {
-	EventCall(Event::onPlayerLeft, PyEntity_FromPtr(p));
+	EventCall(Event::onPlayerLeft, PyEntity_FromEntity(p));
 	//_PlayerList.erase(p);
 	return original(_this, p, v3);
 }
@@ -276,7 +276,7 @@ HOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@E
 	string bn = bl->getBlockName();
 	bool res = EventCall(Event::onUseItem,
 		Py_BuildValue("{s:O,s:i,s:i,s:s,s:s,s:i,s:[i,i,i]}",
-			"player", PyEntity_FromPtr(p),
+			"player", PyEntity_FromEntity(p),
 			"itemid", iid,
 			"itemaux", iaux,
 			"itemname", iname.c_str(),
@@ -296,7 +296,7 @@ HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 		string bn = bl->getBlockName();
 		res = EventCall(Event::onPlaceBlock,
 			Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i]}",
-				"player", PyEntity_FromPtr(p),
+				"player", PyEntity_FromEntity(p),
 				"blockname", bn.c_str(),
 				"blockid", bid,
 				"position", bp->x, bp->y, bp->z
@@ -327,7 +327,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 	string bn = bl->getBlockName();
 	bool res = EventCall(Event::onDestroyBlock,
 		Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i]}",
-			"player", PyEntity_FromPtr(p),
+			"player", PyEntity_FromEntity(p),
 			"blockname", bn.c_str(),
 			"blockid", (int)bid,
 			"position", bp->x, bp->y, bp->z
@@ -339,7 +339,7 @@ HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
 	bool res = EventCall(Event::onOpenChest,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
-			"player", PyEntity_FromPtr(p),
+			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
 		)
 	);
@@ -349,7 +349,7 @@ HOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z"
 	VA _this, Player* p, BlockPos* bp) {
 	bool res = EventCall(Event::onOpenBarrel,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
-			"player", PyEntity_FromPtr(p),
+			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
 		)
 	);
@@ -360,7 +360,7 @@ HOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	auto bp = (BlockPos*)(_this - 204);
 	EventCall(Event::onCloseChest,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
-			"player", PyEntity_FromPtr(p),
+			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
 		)
 	);
@@ -371,7 +371,7 @@ HOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	auto bp = (BlockPos*)(_this - 204);
 	EventCall(Event::onCloseBarrel,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
-			"player", PyEntity_FromPtr(p),
+			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
 		)
 	);
@@ -391,7 +391,7 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 			Player* p = FETCH(Player*, a1 + 208);
 			EventCall(Event::onContainerChange,
 				Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i],s:i,s:i,s:s,s:i,s:i}",
-					"player", PyEntity_FromPtr(p),
+					"player", PyEntity_FromEntity(p),
 					"blockname", bl->getBlockName().c_str(),
 					"blockid", bid,
 					"position", bp->x, bp->y, bp->z,
@@ -410,8 +410,8 @@ HOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@@Z",
 	Player* p, Actor* a) {
 	bool res = EventCall(Event::onPlayerAttack,
 		Py_BuildValue("{s:O,s:O}",
-			"player", PyEntity_FromPtr(p),
-			"actor", PyEntity_FromPtr(a)
+			"player", PyEntity_FromEntity(p),
+			"actor", PyEntity_FromEntity(a)
 		)
 	);
 	CheckResult(p, a);
@@ -431,8 +431,8 @@ HOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	bool res = EventCall(Event::onMobDie,
 		Py_BuildValue("{s:I,s:O,s:O}",
 			"dmcase", FETCH(unsigned, dmsg + 8),
-			"actor1", PyEntity_FromPtr(_this),
-			"actor2", PyEntity_FromPtr(sa)//可能为0
+			"actor1", PyEntity_FromEntity(_this),
+			"actor2", PyEntity_FromEntity(sa)//可能为0
 		)
 	);
 	if (res) original(_this, dmsg);
@@ -445,8 +445,8 @@ HOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 	bool res = EventCall(Event::onMobHurt,
 		Py_BuildValue("{s:i,s:O,s:O,s:i}",
 			"dmcase", FETCH(unsigned, dmsg + 8),
-			"actor1", PyEntity_FromPtr(_this),
-			"actor2", PyEntity_FromPtr(sa),//可能为0
+			"actor1", PyEntity_FromEntity(_this),
+			"actor2", PyEntity_FromEntity(sa),//可能为0
 			"damage", a3
 		)
 	);
@@ -454,7 +454,7 @@ HOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 }
 HOOK(onRespawn, void, "?respawn@Player@@UEAAXXZ",
 	Player* p) {
-	EventCall(Event::onRespawn, PyEntity_FromPtr(p));
+	EventCall(Event::onRespawn, PyEntity_FromEntity(p));
 	original(p);
 }
 HOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@000@Z",
@@ -474,7 +474,7 @@ HOOK(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifie
 		const string& msg = FETCH(string, pkt + 88);
 		bool res = EventCall(Event::onInputText,
 			Py_BuildValue("{s:O,s:s}",
-				"player", PyEntity_FromPtr(p),
+				"player", PyEntity_FromEntity(p),
 				"msg", msg.c_str()
 			)
 		);
@@ -488,7 +488,7 @@ HOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdenti
 		const string& cmd = FETCH(string, pkt + 48);
 		bool res = EventCall(Event::onInputCommand,
 			Py_BuildValue("{s:O,s:s}",
-				"player", PyEntity_FromPtr(p),
+				"player", PyEntity_FromEntity(p),
 				"cmd", cmd.c_str()
 			)
 		);
@@ -505,7 +505,7 @@ HOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormRe
 		if (data.back() == '\n')data.pop_back();
 		EventCall(Event::onSelectForm,
 			Py_BuildValue("{s:O,s:s,s:i}",
-				"player", PyEntity_FromPtr(p),
+				"player", PyEntity_FromEntity(p),
 				"selected", data.c_str(),
 				"formid", fid
 			)
@@ -528,7 +528,7 @@ HOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 		auto delay = FETCH(int, pkt + 168);
 		res = EventCall(Event::onCommandBlockUpdate,
 			Py_BuildValue("{s:O,s:i,s:i,s:i,s:s,s:s,s:s,s:i,s:[i,i,i]}",
-				"player", PyEntity_FromPtr(p),
+				"player", PyEntity_FromEntity(p),
 				"mode", mode,
 				"condition", condition,
 				"redstone", redstone,
@@ -575,7 +575,7 @@ HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@
 }
 HOOK(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
 	VA _this, Player* p, char a3, int a4, int a5) {
-	EventCall(Event::onMove, PyEntity_FromPtr(p));
+	EventCall(Event::onMove, PyEntity_FromEntity(p));
 	original(_this, p, a3, a4, a5);
 }
 HOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
@@ -583,7 +583,7 @@ HOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 	if (!i->getId())return original(p, slot, i);
 	bool res = EventCall(Event::onSetArmor,
 		Py_BuildValue("{s:O,s:i,s:i,s:s,s:i,s:i}",
-			"player", PyEntity_FromPtr(p),
+			"player", PyEntity_FromEntity(p),
 			"itemid", i->getId(),
 			"itemcount", i->mCount,
 			"itemname", i->getName().c_str(),
@@ -617,7 +617,7 @@ HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSour
 	if (isPlayer(p)) {
 		res = EventCall(Event::onFallBlockTransform,
 			Py_BuildValue("{s:O,s:[i,i,i],s:i}",
-				"player", PyEntity_FromPtr(p),
+				"player", PyEntity_FromEntity(p),
 				"position", a2->x, a2->y, a2->z,
 				"dimensionid", a1->getDimensionId()
 			)
@@ -631,7 +631,7 @@ HOOK(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPl
 	if (isPlayer(p)) {
 		res = EventCall(Event::onUseRespawnAnchorBlock,
 			Py_BuildValue("{s:O,s:[i,i,i],s:i}",
-				"player", PyEntity_FromPtr(p),
+				"player", PyEntity_FromEntity(p),
 				"position", a2->x, a2->y, a2->z,
 				"dimensionid", a3->getDimensionId()
 			)
@@ -1201,14 +1201,17 @@ PyAPIFunction(setSidebar) {
 	if (PyArg_ParseTuple(args, "Oss:setSidebar", &obj, &title, &data)) {
 		Player* p = obj->asPlayer();
 		if (isPlayer(p)) {
-			Json::Value j = toJson(data);
 			setDisplayObjectivePacket(p, title);
-			if (j.isObject()) {
+			Json::Value value= toJson(data);
+			if (value.isObject()) {
 				vector<ScorePacketInfo> info;
-				for (auto& x : j.getMemberNames()) {
-					ScorePacketInfo o(_scoreboard->createScoreBoardId(x),
-						j[x].asInt(), x);
+				auto begin = value.begin();
+				auto end = value.end();
+				while (begin != end) {
+					ScorePacketInfo o(_scoreboard->createScoreBoardId(begin.name()),
+						begin->asInt(), begin.name());
 					info.push_back(o);
+					begin++;
 				}
 				SetScorePacket(p, 0, info);
 				return Py_True;
@@ -1536,13 +1539,16 @@ static PyObject* PyEntity_SetSidebar(PyEntityObject* self, PyObject* args) {
 	const char* data = "";
 	if (PyArg_ParseTuple(args, "ss:setSidebar", &title, &data)) {
 		setDisplayObjectivePacket(self->asPlayer(), title);
-		Json::Value j = toJson(data);
-		if (j.isObject()) {
+		Json::Value value = toJson(data);
+		if (value.isObject()) {
 			vector<ScorePacketInfo> info;
-			for (auto& x : j.getMemberNames()) {
-				ScorePacketInfo o(_scoreboard->createScoreBoardId(x),
-					j[x].asInt(), x);
+			auto begin = value.begin();
+			auto end = value.end();
+			while (begin != end) {
+				ScorePacketInfo o(_scoreboard->createScoreBoardId(begin.name()),
+					begin->asInt(), begin.name());
 				info.push_back(o);
+				begin++;
 			}
 			SetScorePacket(self->asPlayer(), 0, info);
 		}

@@ -1,6 +1,6 @@
 #pragma once
 #include "pch.h"
-enum TagType : char{
+enum TagType : char {
 	End, Byte, Short, Int, Int64, Float, Double,
 	ByteArray, String, List, Compound, IntArray
 };
@@ -160,10 +160,12 @@ Json::Value toJson(Tag* t) {
 	}
 	return move(j);
 }
-Tag* toTag(const Json::Value& j) {
+Tag* toTag(const Json::Value& value) {
 	Tag* c = newTag(Compound);
-	for (auto& x : j.getMemberNames()) {
-		string key = x;
+	auto begin = value.begin();
+	auto end = value.end();
+	while (begin != end) {
+		string key = begin.name();
 		char& e = key.back();
 		int type = 0;
 		if (*(&e - 1) == '1' && e == '0') {
@@ -179,30 +181,30 @@ Tag* toTag(const Json::Value& j) {
 		switch (type) {
 		case End:break;
 		case Byte:
-			c->putByte(key, (unsigned char)j[x].asInt());
+			c->putByte(key, (unsigned char)begin->asInt());
 			break;
 		case Short:
-			c->putShort(key, (short)j[x].asInt());
+			c->putShort(key, (short)begin->asInt());
 			break;
 		case Int:
-			c->putInt(key, j[x].asInt());
+			c->putInt(key, begin->asInt());
 			break;
 		case Int64:
-			c->putInt64(key, j[x].asInt64());
+			c->putInt64(key, begin->asInt64());
 			break;
 		case Float:
-			c->putFloat(key, j[x].asFloat());
+			c->putFloat(key, begin->asFloat());
 			break;
 		case Double:
-			c->putFloat(key, (float)j[x].asDouble());
+			c->putFloat(key, (float)begin->asDouble());
 			break;
 		case ByteArray:break;
 		case String:
-			c->putString(key, j[x].asString());
+			c->putString(key, begin->asString());
 			break;
 		case List:
 		{
-			Tag* lt = ArraytoTag(j[x]);
+			Tag* lt = ArraytoTag(*begin);
 			c->put(key, lt);
 			lt->deList();
 			delete lt;
@@ -210,18 +212,19 @@ Tag* toTag(const Json::Value& j) {
 		}
 		case Compound:
 		{
-			Tag* t = toTag(j[x]);
+			Tag* t = toTag(*begin);
 			c->putCompound(key, t);
 			//delete t;
 			break;
 		}
 		}
+		begin++;
 	}
 	return c;
 }
-Tag* ArraytoTag(const Json::Value& j) {
+Tag* ArraytoTag(const Json::Value& value) {
 	Tag* l = newTag(List);
-	for (auto& x : j) {
+	for (auto& x : value) {
 		switch (x.type()) {
 		case Json::nullValue:break;
 		case Json::intValue:

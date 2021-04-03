@@ -27,7 +27,6 @@ static void safeCall(const function<void()>& fn);
 static PyObject* PyEntity_GetName(PyEntityObject* self, void*) {
 	return PyUnicode_FromString(self->asPlayer()->getNameTag().c_str());
 }
-//设置名字
 static int PyEntity_SetName(PyEntityObject* self, PyObject* arg, void*) {
 	if (PyObject_TypeCheck(arg, &PyUnicode_Type)) {
 		if (isPlayer(self->ptr_)) {
@@ -82,7 +81,6 @@ static PyObject* PyEntity_GetPermissions(PyEntityObject* self, void*) {
 	PyErr_BadArgument();
 	return nullptr;
 }
-//获取权限
 static int PyEntity_SetPermissions(PyEntityObject* self, PyObject* arg, void*) {
 	if (PyObject_TypeCheck(arg, &PyUnicode_Type)) {
 		if (isPlayer(self->ptr_)) {
@@ -96,7 +94,8 @@ static int PyEntity_SetPermissions(PyEntityObject* self, PyObject* arg, void*) {
 	return -1;
 }
 
-static PyGetSetDef PyEntity_GetSet[]{
+static PyGetSetDef PyEntity_GetSet[]
+{
 	{"name", (getter)PyEntity_GetName, (setter)PyEntity_SetName, nullptr},
 	{"uuid", (getter)PyEntity_GetUuid, nullptr, nullptr},
 	{"xuid", (getter)PyEntity_GetXuid, nullptr, nullptr},
@@ -110,7 +109,8 @@ static PyGetSetDef PyEntity_GetSet[]{
 
 extern PyMethodDef PyEntity_Methods[];
 
-static PyTypeObject PyEntity_Type{
+static PyTypeObject PyEntity_Type
+{
 	PyVarObject_HEAD_INIT(nullptr, 0)
 	"EntityObject",                 /* tp_name */
 	sizeof(PyEntityObject),   /* tp_basicsize */
@@ -151,7 +151,7 @@ static PyTypeObject PyEntity_Type{
 	PyEntity_New         /* tp_new */
 };
 
-PyObject* PyEntity_FromPtr(void* ptr) {
+PyObject* PyEntity_FromEntity(Actor* ptr) {
 	PyEntityObject* obj;
 	safeCall([&] {
 		if (!PyType_Ready(&PyEntity_Type))
