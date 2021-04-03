@@ -74,7 +74,7 @@ static bool EventCall(Event e, PyObject* val) {
 		auto& List = _PyFuncs[e];
 		if (!List.empty()) {
 			for (PyObject* fn : List) {
-				if (PyObject_CallFunction(fn,"O", val) == Py_False)
+				if (PyObject_CallFunction(fn, "O", val) == Py_False)
 					result = false;
 				PyErr_Print();
 			}
@@ -178,7 +178,7 @@ HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 			for (auto& i : tick) {
 				if (!i.second[0]) {
 					i.second[0] = i.second[1];
-					PyObject_CallFunctionObjArgs(i.first);
+					PyObject_CallFunction(i.first, nullptr);
 				}
 				else i.second[0]--;
 			}
@@ -242,7 +242,10 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 		return 0;
 	}
 	if (debug) {
-		PyRun_SimpleString(cmd.c_str());
+		safeCall([&cmd] {
+			PyRun_SimpleString(cmd.c_str());
+			}
+		);
 		cout << '>';
 		return 0;
 	}
@@ -668,37 +671,54 @@ static PyObject* api_logout(PyObject*, PyObject* args) {
 	if (PyArg_ParseTuple(args, "s:logout", &msg)) {
 		SYMCALL<ostream&>("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 			&cout, msg, strlen(msg));
-		return Py_True;
+		Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //执行指令
 static PyObject* api_runcmd(PyObject*, PyObject* args) {
 	const char* cmd = "";
 	if (PyArg_ParseTuple(args, "s:runcmd", &cmd)) {
 		onConsoleInput::original(_cmdqueue, cmd);
-		return Py_True;
+		Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //计时器
 static PyObject* api_setTimer(PyObject*, PyObject* args) {
 	unsigned time; PyObject* func;
 	if (PyArg_ParseTuple(args, "OI:setTimer", &func, &time)) {
 		if (!PyCallable_Check(func))
-			return Py_False;
+			Py_RETURN_NONE;
 		tick[func][0] = time;
 		tick[func][1] = time;
 	}
-	return Py_True;
+	Py_RETURN_NONE;
 }
 static PyObject* api_removeTimer(PyObject*, PyObject* args) {
 	PyObject* func;
-	if (PyArg_ParseTuple(args, "O:removeTimer", &func, &time)) {
+	if (PyArg_ParseTuple(args, "O:removeTimer", &func)) {
 		tick.erase(func);
 	}
-	return Py_True;
+	Py_RETURN_NONE;
 }
+//延时执行一次函数（x）
+#if 0
+static PyObject* api_setTimeout(PyObject*, PyObject* args) {
+	PyObject* func; unsigned time;
+	if (PyArg_ParseTuple(args, "OI:setTimeout", &func, &time)) {
+		safeCall([&func, &time] {
+			thread([&] {
+				Sleep(time);
+				PyObject_CallFunction(func, nullptr);
+				}
+			).detach();
+			}
+		);
+	}
+	Py_RETURN_NONE;
+}
+#endif
 //设置监听
 static PyObject* api_setListener(PyObject*, PyObject* args) {
 	const char* name = ""; PyObject* fn;
@@ -706,38 +726,38 @@ static PyObject* api_setListener(PyObject*, PyObject* args) {
 		try {
 			Event e = toEvent(name);
 			_PyFuncs[e].push_back(fn);
-			return Py_True;
+			Py_RETURN_NONE;
 		}
 		catch (const std::out_of_range&) {
 			cerr << "无效的监听:" << name << endl;
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //共享数据
 static PyObject* api_setShareData(PyObject*, PyObject* args) {
 	const char* index = ""; PyObject* data;
 	if (PyArg_ParseTuple(args, "sO:setShareData", &index, &data)) {
 		ShareData.emplace(index, data);
-		return Py_True;
+		Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 static PyObject* api_getShareData(PyObject*, PyObject* args) {
 	const char* index = "";
 	if (PyArg_ParseTuple(args, "s:getShareData", &index)) {
 		return ShareData[index];
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //设置指令说明
 static PyObject* api_setCommandDescription(PyObject*, PyObject* args) {
 	const char* cmd = "", * des = "";
 	if (PyArg_ParseTuple(args, "ss:setCommandDescribe", &cmd, &des)) {
 		_Command.push_back({ cmd,des });
-		return Py_True;
+		Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 static PyObject* api_getPlayerList(PyObject*, PyObject*) {
 	PyObject* list = PyList_New(0);
@@ -763,7 +783,7 @@ static PyObject* api_sendSimpleForm(PyObject*, PyObject* args) {
 		sprintf_s(str, 4096, R"({"title":"%s","content":"%s","buttons":%s,"type":"form"})", title, content, buttons);
 		return PyLong_FromLong(ModalFormRequestPacket(obj->asPlayer(), str));
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 static PyObject* api_sendModalForm(PyObject*, PyObject* args) {
 	PyEntityObject* obj;
@@ -773,7 +793,7 @@ static PyObject* api_sendModalForm(PyObject*, PyObject* args) {
 		sprintf_s(str, 4096, R"({"title":"%s","content":"%s","button1":"%s","button2":"%s","type":"modal"})", title, content, button1, button2);
 		return PyLong_FromLong(ModalFormRequestPacket(obj->asPlayer(), str));
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //跨服传送
 static PyObject* api_transferServer(PyObject*, PyObject* args) {
@@ -781,9 +801,9 @@ static PyObject* api_transferServer(PyObject*, PyObject* args) {
 	const char* address = ""; short port;
 	if (PyArg_ParseTuple(args, "Osh:transferServer", &obj, &address, &port)) {
 		if (TransferPacket(obj->asPlayer(), address, port))
-			return Py_True;
+			Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //获取玩家信息
 static PyObject* api_getPlayerInfo(PyObject*, PyObject* args) {
@@ -823,7 +843,7 @@ static PyObject* api_getActorInfo(PyObject*, PyObject* args) {
 			);
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 static PyObject* api_getActorInfoEx(PyObject*, PyObject* args) {
 	PyEntityObject* obj;
@@ -837,7 +857,7 @@ static PyObject* api_getActorInfoEx(PyObject*, PyObject* args) {
 			return PyUnicode_FromStringAndSize(info.c_str(), info.length());
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //玩家权限
 static PyObject* api_getPlayerPerm(PyObject*, PyObject* args) {
@@ -848,7 +868,7 @@ static PyObject* api_getPlayerPerm(PyObject*, PyObject* args) {
 			return PyLong_FromLong(p->getPermissions());
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 static PyObject* api_setPlayerPerm(PyObject*, PyObject* args) {
 	PyEntityObject* obj;
@@ -857,10 +877,10 @@ static PyObject* api_setPlayerPerm(PyObject*, PyObject* args) {
 		Player* p = obj->asPlayer();
 		if (isPlayer(p)) {
 			p->setPermissionLevel(lv);
-			return Py_True;
+			Py_RETURN_NONE;
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //增加玩家等级
 static PyObject* api_addLevel(PyObject*, PyObject* args) {
@@ -870,10 +890,10 @@ static PyObject* api_addLevel(PyObject*, PyObject* args) {
 		Player* p = obj->asPlayer();
 		if (isPlayer(p)) {
 			p->addLevel(lv);
-			return Py_True;
+			Py_RETURN_NONE;
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //设置玩家名字
 PyAPIFunction(setName) {
@@ -883,10 +903,10 @@ PyAPIFunction(setName) {
 		Player* p = obj->asPlayer();
 		if (isPlayer(p)) {
 			p->setName(name);
-			return Py_True;
+			Py_RETURN_NONE;
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //玩家分数
 PyAPIFunction(getPlayerScore) {
@@ -903,7 +923,7 @@ PyAPIFunction(getPlayerScore) {
 			}
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(modifyPlayerScore) {
 	PyEntityObject* obj;
@@ -915,11 +935,11 @@ PyAPIFunction(modifyPlayerScore) {
 			if (testobj) {
 				//mode:{set,add,remove}
 				_scoreboard->modifyPlayerScore((ScoreboardId*)_scoreboard->getScoreboardId(p), testobj, count, mode);
-				return Py_True;
+				Py_RETURN_NONE;
 			}
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //模拟玩家发送文本
 PyAPIFunction(talkAs) {
@@ -928,9 +948,9 @@ PyAPIFunction(talkAs) {
 	if (PyArg_ParseTuple(args, "Os:talkAs", &obj, &msg)) {
 		Player* p = obj->asPlayer();
 		if (TextPacket(p, 1, msg))
-			return Py_True;
+			Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //模拟玩家执行指令
 PyAPIFunction(runcmdAs) {
@@ -939,9 +959,9 @@ PyAPIFunction(runcmdAs) {
 	if (PyArg_ParseTuple(args, "Os:runcmdAs", &obj, &cmd)) {
 		Player* p = obj->asPlayer();
 		if (CommandRequestPacket(p, cmd))
-			return Py_True;
+			Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //传送玩家
 PyAPIFunction(teleport) {
@@ -951,10 +971,10 @@ PyAPIFunction(teleport) {
 		Player* p = obj->asPlayer();
 		if (isPlayer(p)) {
 			p->teleport({ x,y,z }, did);
-			return Py_True;
+			Py_RETURN_NONE;
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //原始输出
 PyAPIFunction(tellraw) {
@@ -963,9 +983,9 @@ PyAPIFunction(tellraw) {
 	if (PyArg_ParseTuple(args, "Os:tellraw", &obj, &msg)) {
 		Player* p = obj->asPlayer();
 		if (TextPacket(p, 0, msg))
-			return Py_True;
+			Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(tellrawEx) {
 	const char* msg = "";
@@ -974,9 +994,9 @@ PyAPIFunction(tellrawEx) {
 	if (PyArg_ParseTuple(args, "Osi:tellrawEx", &obj, &msg, &mode)) {
 		Player* p = obj->asPlayer();
 		if (TextPacket(p, mode, msg))
-			return Py_True;
+			Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //boss栏
 PyAPIFunction(setBossBar) {
@@ -985,27 +1005,27 @@ PyAPIFunction(setBossBar) {
 	if (PyArg_ParseTuple(args, "Osf:", &obj, &name, &per)) {
 		Player* p = obj->asPlayer();
 		if (BossEventPacket(p, name, per, 0))
-			return Py_True;
+			Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(removeBossBar) {
 	PyEntityObject* obj;
 	if (PyArg_ParseTuple(args, "O:removeBossBar", &obj)) {
 		Player* p = obj->asPlayer();
 		if (BossEventPacket(p, "", 0.0, 2))
-			return Py_True;
+			Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //修改生物受伤的伤害值!
 PyAPIFunction(setDamage) {
 	int a;
 	if (PyArg_ParseTuple(args, "i:setDamage", &a)) {
 		_Damage = a;
-		return Py_True;
+		Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(setServerMotd) {
 	const char* n;
@@ -1017,9 +1037,9 @@ PyAPIFunction(setServerMotd) {
 					_Handle, &name, true);
 			}
 			});
-		return Py_True;
+		Py_RETURN_NONE;
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //玩家背包相关操作
 PyAPIFunction(getPlayerItems) {
@@ -1035,7 +1055,7 @@ PyAPIFunction(getPlayerItems) {
 			return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(setPlayerItems) {
 	PyEntityObject* obj;
@@ -1050,11 +1070,11 @@ PyAPIFunction(setPlayerItems) {
 					is[i]->fromJson(j[i]);
 				}
 				p->sendInventroy();
-				return Py_True;
+				Py_RETURN_NONE;
 			}
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(getPlayerHand) {
 	PyEntityObject* obj;
@@ -1066,7 +1086,7 @@ PyAPIFunction(getPlayerHand) {
 			return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(setPlayerHand) {
 	PyEntityObject* obj;
@@ -1076,10 +1096,10 @@ PyAPIFunction(setPlayerHand) {
 		if (isPlayer(p)) {
 			p->getSelectedItem()->fromJson(toJson(x));
 			p->sendInventroy();
-			return Py_True;
+			Py_RETURN_NONE;
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(getPlayerArmor) {
 	PyEntityObject* obj;
@@ -1092,7 +1112,7 @@ PyAPIFunction(getPlayerArmor) {
 			return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(setPlayerArmor) {
 	PyEntityObject* obj;
@@ -1101,10 +1121,10 @@ PyAPIFunction(setPlayerArmor) {
 		Player* p = obj->asPlayer();
 		if (isPlayer(p) && slot >= 0 && slot <= 4) {
 			p->getArmor(slot)->fromJson(toJson(x));
-			return Py_True;
+			Py_RETURN_NONE;
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(getPlayerItem) {
 	PyEntityObject* obj;
@@ -1117,7 +1137,7 @@ PyAPIFunction(getPlayerItem) {
 			return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(setPlayerItem) {
 	PyEntityObject* obj;
@@ -1126,10 +1146,10 @@ PyAPIFunction(setPlayerItem) {
 		Player* p = obj->asPlayer();
 		if (isPlayer(p) && slot >= 0 && slot <= 36) {
 			p->getInventoryItem(slot)->fromJson(toJson(x));
-			return Py_True;
+			Py_RETURN_NONE;
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(getPlayerEnderChests) {
 	PyEntityObject* obj;
@@ -1145,7 +1165,7 @@ PyAPIFunction(getPlayerEnderChests) {
 			return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(setPlayerEnderChests) {
 	PyEntityObject* obj;
@@ -1160,11 +1180,11 @@ PyAPIFunction(setPlayerEnderChests) {
 					is[i]->fromJson(j[i]);
 				}
 				p->sendInventroy();
-				return Py_True;
+				Py_RETURN_NONE;
 			}
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //增加/移除物品
 PyAPIFunction(addItemEx) {
@@ -1177,10 +1197,10 @@ PyAPIFunction(addItemEx) {
 			i.fromJson(toJson(x));
 			p->addItem(&i);
 			p->sendInventroy();
-			return Py_True;
+			Py_RETURN_NONE;
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(removeItem) {
 	PyEntityObject* obj;
@@ -1192,7 +1212,7 @@ PyAPIFunction(removeItem) {
 			p->sendInventroy();
 		}
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //设置玩家侧边栏✓
 PyAPIFunction(setSidebar) {
@@ -1202,7 +1222,7 @@ PyAPIFunction(setSidebar) {
 		Player* p = obj->asPlayer();
 		if (isPlayer(p)) {
 			setDisplayObjectivePacket(p, title);
-			Json::Value value= toJson(data);
+			Json::Value value = toJson(data);
 			if (value.isObject()) {
 				vector<ScorePacketInfo> info;
 				auto begin = value.begin();
@@ -1214,11 +1234,11 @@ PyAPIFunction(setSidebar) {
 					begin++;
 				}
 				SetScorePacket(p, 0, info);
-				return Py_True;
+				Py_RETURN_NONE;
 			}
 		}
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 PyAPIFunction(removeSidebar) {
 	PyEntityObject* obj;
@@ -1228,7 +1248,7 @@ PyAPIFunction(removeSidebar) {
 			setDisplayObjectivePacket(p, "", "");
 		}
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //根据坐标设置方块
 static PyObject* api_getBlock(PyObject*, PyObject* args) {
@@ -1237,7 +1257,7 @@ static PyObject* api_getBlock(PyObject*, PyObject* args) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
 			cerr << "未知纬度ID:" << did << endl;
-			return Py_False;
+			Py_RETURN_NONE;
 		}
 		auto bl = bs->getBlock(&bp)->getBlockLegacy();
 		return Py_BuildValue("{s:s:s:i}",
@@ -1245,7 +1265,7 @@ static PyObject* api_getBlock(PyObject*, PyObject* args) {
 			"blockid", (int)bl->getBlockItemID()
 		);
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 static PyObject* api_setBlock(PyObject*, PyObject* args) {
 	const char* name = "";
@@ -1254,12 +1274,12 @@ static PyObject* api_setBlock(PyObject*, PyObject* args) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
 			cerr << "未知纬度ID:" << did << endl;
-			return Py_False;
+			Py_RETURN_NONE;
 		}
 		bs->setBlock(name, bp);
-		return Py_True;
+		Py_RETURN_NONE;
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //获取一个结构
 static PyObject* api_getStructure(PyObject*, PyObject* args) {
@@ -1270,7 +1290,7 @@ static PyObject* api_getStructure(PyObject*, PyObject* args) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
 			cerr << "未知纬度ID:" << did << endl;
-			return Py_False;
+			Py_RETURN_NONE;
 		}
 		BlockPos start = {
 			min(pos1.x,pos2.x),
@@ -1287,7 +1307,7 @@ static PyObject* api_getStructure(PyObject*, PyObject* args) {
 		string str = toJson(st.save()).toStyledString();
 		return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 static PyObject* api_setStructure(PyObject*, PyObject* args) {
 	const char* data = "";
@@ -1297,12 +1317,12 @@ static PyObject* api_setStructure(PyObject*, PyObject* args) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
 			cerr << "未知纬度ID:" << did << endl;
-			return Py_False;
+			Py_RETURN_NONE;
 		}
 		Json::Value value = toJson(data);
 		if (!value["size9"].isArray()) {
 			cerr << "结构JSON错误" << endl;
-			return Py_False;
+			Py_RETURN_NONE;
 		}
 		BlockPos size = {
 			value["size9"][0].asInt(),
@@ -1322,9 +1342,9 @@ static PyObject* api_setStructure(PyObject*, PyObject* args) {
 			}
 
 		}
-		return Py_True;
+		Py_RETURN_NONE;
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 #pragma endregion
 #pragma region New API
@@ -1355,7 +1375,7 @@ static PyObject* PyEntity_GetAllItem(PyEntityObject* self, PyObject*) {
 		const string& str = json.toStyledString();
 		return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 static PyObject* PyEntity_SetAllItem(PyEntityObject* self, PyObject* args) {
 	const char* x = "";
@@ -1398,7 +1418,7 @@ static PyObject* PyEntity_SetAllItem(PyEntityObject* self, PyObject* args) {
 			p->sendInventroy();
 		}
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //增加/移除物品
 static PyObject* PyEntity_AddItem(PyEntityObject* self, PyObject* args) {
@@ -1412,7 +1432,7 @@ static PyObject* PyEntity_AddItem(PyEntityObject* self, PyObject* args) {
 			p->sendInventroy();
 		}
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 static PyObject* PyEntity_RemoveItem(PyEntityObject* self, PyObject* args) {
 	int slot, num;
@@ -1423,7 +1443,7 @@ static PyObject* PyEntity_RemoveItem(PyEntityObject* self, PyObject* args) {
 			p->sendInventroy();
 		}
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //传送
 static PyObject* PyEntity_Teleport(PyEntityObject* self, PyObject* args) {
@@ -1434,7 +1454,7 @@ static PyObject* PyEntity_Teleport(PyEntityObject* self, PyObject* args) {
 			p->teleport(pos, did);
 		}
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //发送数据包
 static PyObject* PyEntity_SendTextPacket(PyEntityObject* self, PyObject* args) {
@@ -1443,14 +1463,14 @@ static PyObject* PyEntity_SendTextPacket(PyEntityObject* self, PyObject* args) {
 	if (PyArg_ParseTuple(args, "si:sendTextPacket", &msg, &mode)) {
 		TextPacket(self->asPlayer(), mode, msg);
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 static PyObject* PyEntity_SendCommandPacket(PyEntityObject* self, PyObject* args) {
 	const char* cmd = "";
 	if (PyArg_ParseTuple(args, "s:sendCommandPacket", &cmd)) {
 		CommandRequestPacket(self->asPlayer(), cmd);
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //计分板操作
 static PyObject* PyEntity_GetScore(PyEntityObject* self, PyObject* args) {
@@ -1466,7 +1486,7 @@ static PyObject* PyEntity_GetScore(PyEntityObject* self, PyObject* args) {
 			}
 		}
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 static PyObject* PyEntity_ModifyScore(PyEntityObject* self, PyObject* args) {
 	const char* objname = ""; int count; int mode;
@@ -1480,7 +1500,7 @@ static PyObject* PyEntity_ModifyScore(PyEntityObject* self, PyObject* args) {
 			}
 		}
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //增加等级
 static PyObject* PyEntity_AddLevel(PyEntityObject* self, PyObject* args) {
@@ -1491,7 +1511,7 @@ static PyObject* PyEntity_AddLevel(PyEntityObject* self, PyObject* args) {
 			p->addLevel(level);
 		}
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //跨服传送
 static PyObject* PyEntity_TransferServer(PyEntityObject* self, PyObject* args) {
@@ -1500,7 +1520,7 @@ static PyObject* PyEntity_TransferServer(PyEntityObject* self, PyObject* args) {
 	if (PyArg_ParseTuple(args, "sh:transferServer", &address, &port)) {
 		TransferPacket(self->asPlayer(), address, port);
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //发送表单
 static PyObject* PyEntity_SendCustomForm(PyEntityObject* self, PyObject* args) {
@@ -1519,7 +1539,7 @@ static PyObject* PyEntity_SendSimpleForm(PyEntityObject* self, PyObject* args) {
 		sprintf_s(str, 4096, R"({"title":"%s","content":"%s","buttons":%s,"type":"form"})", title, content, buttons);
 		return PyLong_FromLong(ModalFormRequestPacket(self->asPlayer(), str));
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 static PyObject* PyEntity_SendModalForm(PyEntityObject* self, PyObject* args) {
 	const char* title = "";
@@ -1531,7 +1551,7 @@ static PyObject* PyEntity_SendModalForm(PyEntityObject* self, PyObject* args) {
 		sprintf_s(str, 4096, R"({"title":"%s","content":"%s","button1":"%s","button2":"%s","type":"modal"})", title, content, button1, button2);
 		return PyLong_FromLong(ModalFormRequestPacket(self->asPlayer(), str));
 	}
-	return Py_False;
+	Py_RETURN_NONE;
 }
 //设置侧边栏
 static PyObject* PyEntity_SetSidebar(PyEntityObject* self, PyObject* args) {
@@ -1553,11 +1573,11 @@ static PyObject* PyEntity_SetSidebar(PyEntityObject* self, PyObject* args) {
 			SetScorePacket(self->asPlayer(), 0, info);
 		}
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 static PyObject* PyEntity_RemoveSidebar(PyEntityObject* self, PyObject*) {
 	setDisplayObjectivePacket(self->asPlayer(), "", "");
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //Boss栏
 static PyObject* PyEntity_SetBossbar(PyEntityObject* self, PyObject* args) {
@@ -1565,11 +1585,11 @@ static PyObject* PyEntity_SetBossbar(PyEntityObject* self, PyObject* args) {
 	if (PyArg_ParseTuple(args, "sf:setBossBar", &name, &per)) {
 		BossEventPacket(self->asPlayer(), name, per, 0);
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 static PyObject* PyEntity_RemoveBossbar(PyEntityObject* self, PyObject*) {
 	BossEventPacket(self->asPlayer(), "", 0, 2);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 //玩家方法
 PyMethodDef PyEntity_Methods[]
@@ -1604,6 +1624,7 @@ static PyMethodDef api_list[]
 	{"runcmd", api_runcmd, 1, 0},
 	{"setTimer", api_setTimer, 1, 0},
 	{"removeTimer", api_removeTimer, 1, 0},
+	//{"setTimeout", api_setTimeout, 1, 0},
 	{"setListener", api_setListener, 1, 0},
 	{"setShareData", api_setShareData, 1, 0},
 	{"getShareData", api_getShareData, 1, 0},
@@ -1676,7 +1697,7 @@ static void init() {
 	//Py_PreInitialize(&cfg);
 	PyImport_AppendInittab("mc", api_init); //增加一个模块
 	Py_Initialize();
-	PyEval_InitThreads();
+	//PyEval_InitThreads();
 	filesystem::directory_iterator files("py");
 	for (auto& info : files) {
 		auto& path = info.path();
@@ -1687,7 +1708,7 @@ static void init() {
 			PyErr_Print();
 		}
 	}
-	PyEval_SaveThread();
+	//PyEval_SaveThread();
 }
 BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 	if (reason == 1) {
@@ -1701,7 +1722,7 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 		if (!filesystem::exists("py"))
 			filesystem::create_directory("py");
 		init();
-		puts("[BDSpyrunner] 1.3.0 loaded.感谢小枫云 http://ipyvps.com 的赞助.");
+		puts("[BDSpyrunner] 1.3.1 loaded. 感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return 1;
 }

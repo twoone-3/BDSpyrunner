@@ -82,83 +82,84 @@ Tag* newTag(TagType t) {
 	return tag;
 }
 Json::Value ListtoJson(Tag* t) {
-	Json::Value j(Json::arrayValue);
+	Json::Value value(Json::arrayValue);
 	for (auto& c : t->asList()) {
 		switch (t->getListType()) {
 		case End:
 			break;
 		case Byte:
-			j.append(c->asByte());
+			value.append(c->asByte());
 			break;
 		case Short:
-			j.append(c->asShort());
+			value.append(c->asShort());
 			break;
 		case Int:
-			j.append(c->asInt());
+			value.append(c->asInt());
 			break;
 		case Int64:
-			j.append(c->asInt64());
+			value.append(c->asInt64());
 			break;
 		case Float:
-			j.append(c->asFloat());
+			value.append(c->asFloat());
 			break;
 		case Double:
-			j.append(c->asDouble());
+			value.append(c->asDouble());
 			break;
 		case ByteArray:break;
 		case String:
-			j.append(c->asString());
+			value.append(c->asString());
 			break;
 		case List:
-			j.append(ListtoJson(c));
+			value.append(ListtoJson(c));
 			break;
 		case Compound:
-			j.append(toJson(c));
+			value.append(toJson(c));
 			break;
 		default:
 			puts("default");
 		}
 	}
-	return move(j);
+	return move(value);
 }
 Json::Value toJson(Tag* t) {
-	Json::Value j(Json::objectValue);
+	Json::Value value(Json::objectValue);
 	for (auto& x : t->asCompound()) {
-		//cout << x.first << " - " << (int)x.second.getVariantType() << endl;
-		switch (x.second.getVariantType()) {
+		TagType type = x.second.getVariantType();
+		string key(x.first + to_string(type));
+		switch (type) {
 		case End:
 			break;
 		case Byte:
-			j[x.first + to_string(Byte)] = x.second.asByte();
+			value[key] = x.second.asByte();
 			break;
 		case Short:
-			j[x.first + to_string(Short)] = x.second.asShort();
+			value[key] = x.second.asShort();
 			break;
 		case Int:
-			j[x.first + to_string(Int)] = x.second.asInt();
+			value[key] = x.second.asInt();
 			break;
 		case Int64:
-			j[x.first + to_string(Int64)] = x.second.asInt64();
+			value[key] = x.second.asInt64();
 			break;
 		case Float:
-			j[x.first + to_string(Float)] = x.second.asFloat();
+			value[key] = x.second.asFloat();
 			break;
 		case Double:
-			j[x.first + to_string(Double)] = x.second.asDouble();
+			value[key] = x.second.asDouble();
 			break;
 		case ByteArray:break;
 		case String:
-			j[x.first + to_string(String)] = x.second.asString();
+			value[key] = x.second.asString();
 			break;
 		case List:
-			j[x.first + to_string(List)] = ListtoJson(&x.second);
+			value[key] = ListtoJson(&x.second);
 			break;
 		case Compound:
-			j[x.first + to_string(Compound)] = toJson(&x.second);
+			value[key] = toJson(&x.second);
 			break;
 		}
 	}
-	return move(j);
+	return move(value);
 }
 Tag* toTag(const Json::Value& value) {
 	Tag* c = newTag(Compound);
