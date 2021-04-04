@@ -12,6 +12,7 @@
 #include <unordered_map>
 #define JSON_USE_EXCEPTION 0
 #include "json/json.h"
+#define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
 #define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))

@@ -663,7 +663,7 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 #pragma region API Function
 //获取版本
 static PyObject* api_getVersion(PyObject*, PyObject*) {
-	return PyLong_FromLong(130);
+	return PyLong_FromLong(132);
 }
 //指令输出
 static PyObject* api_logout(PyObject*, PyObject* args) {
@@ -762,7 +762,7 @@ static PyObject* api_setCommandDescription(PyObject*, PyObject* args) {
 static PyObject* api_getPlayerList(PyObject*, PyObject*) {
 	PyObject* list = PyList_New(0);
 	for (auto& p : _level->getAllPlayers()) {
-		PyList_Append(list, PyLong_FromUnsignedLongLong((VA)p));
+		PyList_Append(list, PyEntity_FromEntity(p));
 	}
 	return list;
 }
@@ -824,7 +824,7 @@ static PyObject* api_getPlayerInfo(PyObject*, PyObject* args) {
 			);
 		}
 	}
-	return PyDict_New();
+	Py_RETURN_NONE;
 }
 static PyObject* api_getActorInfo(PyObject*, PyObject* args) {
 	PyEntityObject* obj;
@@ -1722,7 +1722,7 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 		if (!filesystem::exists("py"))
 			filesystem::create_directory("py");
 		init();
-		puts("[BDSpyrunner] 1.3.1 loaded. 感谢小枫云 http://ipyvps.com 的赞助.");
+		puts("[BDSpyrunner] 1.3.2 loaded. 感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return 1;
 }

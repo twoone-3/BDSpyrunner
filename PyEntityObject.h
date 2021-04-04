@@ -1,23 +1,56 @@
 #pragma once
 #include "BDS.hpp"
+#include "include/structmember.h"
 //玩家指针类型
-struct PyEntityObject : PyObject {
-	void* ptr_;
+struct PyEntityObject {
+	PyObject_HEAD;
+	Actor* ptr_;
 
 	Player* asPlayer() {
 		return (Player*)ptr_;
 	}
 };
 //初始化
-static PyObject* PyEntity_New(PyTypeObject* type, PyObject* args, PyObject* kwargs) {
-	kwargs;
-	args;
+static PyObject* PyEntity_New(PyTypeObject* type, PyObject*, PyObject*) {
 	PyEntityObject* self = (PyEntityObject*)type->tp_alloc(type, 0);
 	return (PyObject*)self;
 }
 //回收
 static void PyEntity_Dealloc(PyObject* obj) {
 	Py_TYPE(obj)->tp_free(obj);
+}
+//转字符串
+static PyObject* PyEntity_Str(PyEntityObject* self) {
+	char str[32];
+	sprintf_s(str, 31, "%p", self->ptr_);
+	return PyUnicode_FromString(str);
+}
+//哈希
+static Py_hash_t PyEntity_Hash(PyObject* self) {
+	return (Py_hash_t)((PyEntityObject*)self)->ptr_;
+}
+//比较
+static PyObject* PyEntity_RichCompare(PyObject* self, PyObject* other, int op) {
+	switch (op) {
+		//<
+	case Py_LT:break;
+		//<=
+	case Py_LE:break;
+		//==
+	case Py_EQ:
+		if (((PyEntityObject*)self)->ptr_ == ((PyEntityObject*)other)->ptr_)
+			Py_RETURN_TRUE;
+		else
+			Py_RETURN_FALSE;
+		break;
+		//!=
+	case Py_NE:break;
+		//>
+	case Py_GT:break;
+		//>=
+	case Py_GE:break;
+	}
+	Py_RETURN_NOTIMPLEMENTED;
 }
 
 static bool isPlayer(const void* ptr);
@@ -124,17 +157,17 @@ static PyTypeObject PyEntity_Type
 	nullptr,             /* tp_as_number */
 	nullptr,             /* tp_as_sequence */
 	nullptr,             /* tp_as_mapping */
-	nullptr,             /* tp_hash  */
+	PyEntity_Hash,             /* tp_hash  */
 	nullptr,             /* tp_call */
-	nullptr,             /* tp_str */
+	(reprfunc)PyEntity_Str,             /* tp_str */
 	nullptr,             /* tp_getattro */
 	nullptr,             /* tp_setattro */
 	nullptr,             /* tp_as_buffer */
-	Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,    /* tp_flags */
+	Py_TPFLAGS_DEFAULT,    /* tp_flags */
 	"Type of Player* or Actor*.",       /* tp_doc */
 	nullptr,             /* tp_traverse */
 	nullptr,             /* tp_clear */
-	nullptr,             /* tp_richcompare */
+	PyEntity_RichCompare,             /* tp_richcompare */
 	0,             /* tp_weaklistoffset */
 	nullptr,             /* tp_iter */
 	nullptr,             /* tp_iternext */
@@ -151,15 +184,13 @@ static PyTypeObject PyEntity_Type
 	PyEntity_New         /* tp_new */
 };
 
-PyObject* PyEntity_FromEntity(Actor* ptr) {
-	PyEntityObject* obj;
+static PyObject* PyEntity_FromEntity(Actor* ptr) {
+	PyObject* obj;
 	safeCall([&] {
 		if (!PyType_Ready(&PyEntity_Type))
-			obj = (PyEntityObject*)PyObject_CallFunctionObjArgs((PyObject*)&PyEntity_Type, 0);
-		else
-			Py_DECREF(&PyEntity_Type);
+			obj = PyObject_CallFunction((PyObject*)&PyEntity_Type, 0);
 		}
 	);
-	obj->ptr_ = ptr;
-	return (PyObject*)obj;
+	((PyEntityObject*)obj)->ptr_ = ptr;
+	return obj;
 }
