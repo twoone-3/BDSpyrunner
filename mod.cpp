@@ -165,6 +165,8 @@ static bool SetScorePacket(Player* p, char type, const vector<ScorePacketInfo>& 
 #pragma region Hook List
 HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	Level* _this) {
+	if (!_level)
+		_level = _this;
 	original(_this);
 	//执行todos函数
 	if (!_todos.empty()) {
@@ -191,11 +193,6 @@ HOOK(SPSCQueue, VA, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$al
 	_cmdqueue = original(_this);
 	return _cmdqueue;
 }
-HOOK(Level_Level, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEAVIEntityRegistryOwner@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
-	VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13) {
-	_level = original(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13);
-	return _level;
-}
 HOOK(ServerNetworkHandler_ServerNetworkHandler, VA, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEAVLevel@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@Bedrock@@@Z",
 	ServerNetworkHandler* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13, VA a14, VA a15, VA a16, VA a17, VA a18, VA a19) {
 	_Handle = _this;
@@ -217,7 +214,10 @@ HOOK(ServerScoreboard_, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnum
 HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, VA size) {
 	if (&_this == &cout) {
-		bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromStringAndSize(str, size));
+		wchar_t* wstr = new wchar_t[size];
+		MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str, -1, wstr, (int)size);
+		bool res = EventCall(Event::onConsoleOutput,PyUnicode_FromWideChar(wstr,size));
+		delete wstr;
 		if (!res)return _this;
 	}
 	return original(_this, str, size);
@@ -663,7 +663,7 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 #pragma region API Function
 //获取版本
 static PyObject* api_getVersion(PyObject*, PyObject*) {
-	return PyLong_FromLong(132);
+	return PyLong_FromLong(133);
 }
 //指令输出
 static PyObject* api_logout(PyObject*, PyObject* args) {
@@ -679,8 +679,10 @@ static PyObject* api_logout(PyObject*, PyObject* args) {
 static PyObject* api_runcmd(PyObject*, PyObject* args) {
 	const char* cmd = "";
 	if (PyArg_ParseTuple(args, "s:runcmd", &cmd)) {
-		onConsoleInput::original(_cmdqueue, cmd);
-		Py_RETURN_NONE;
+		if (_cmdqueue)
+			onConsoleInput::original(_cmdqueue, cmd);
+		else
+			cerr<<"命令队列未初始化"<<endl;
 	}
 	Py_RETURN_NONE;
 }
@@ -1459,8 +1461,8 @@ static PyObject* PyEntity_Teleport(PyEntityObject* self, PyObject* args) {
 //发送数据包
 static PyObject* PyEntity_SendTextPacket(PyEntityObject* self, PyObject* args) {
 	const char* msg = "";
-	int mode;
-	if (PyArg_ParseTuple(args, "si:sendTextPacket", &msg, &mode)) {
+	int mode = 0;
+	if (PyArg_ParseTuple(args, "s|i:sendTextPacket", &msg, &mode)) {
 		TextPacket(self->asPlayer(), mode, msg);
 	}
 	Py_RETURN_NONE;
@@ -1722,7 +1724,7 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 		if (!filesystem::exists("py"))
 			filesystem::create_directory("py");
 		init();
-		puts("[BDSpyrunner] 1.3.2 loaded. 感谢小枫云 http://ipyvps.com 的赞助.");
+		puts("[BDSpyrunner] 1.3.3 loaded. 感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return 1;
 }

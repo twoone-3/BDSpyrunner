@@ -1,6 +1,7 @@
 #pragma once
 #include "BDS.hpp"
-#include "include/structmember.h"
+//#include "include/structmember.h"
+
 //玩家指针类型
 struct PyEntityObject {
 	PyObject_HEAD;
@@ -95,6 +96,10 @@ static PyObject* PyEntity_GetPos(PyEntityObject* self, void*) {
 	PyList_SetItem(list, 2, PyFloat_FromDouble(pos->z));
 	return list;
 }
+//获取维度ID
+static PyObject* PyEntity_GetDimensionId(PyEntityObject* self, void*) {
+	return PyLong_FromLong(self->ptr_->getDimensionId());
+}
 //是否着地
 static PyObject* PyEntity_GetIsStand(PyEntityObject* self, void*) {
 	return PyBool_FromLong(self->asPlayer()->isStand());
@@ -133,10 +138,11 @@ static PyGetSetDef PyEntity_GetSet[]
 	{"uuid", (getter)PyEntity_GetUuid, nullptr, nullptr},
 	{"xuid", (getter)PyEntity_GetXuid, nullptr, nullptr},
 	{"pos", (getter)PyEntity_GetPos, nullptr, nullptr},
+	{"did", (getter)PyEntity_GetDimensionId, nullptr, nullptr},
 	{"isstand", (getter)PyEntity_GetIsStand, nullptr, nullptr},
 	{"health", (getter)PyEntity_GetHealth, nullptr, nullptr},
 	{"maxhealth", (getter)PyEntity_GetMaxHealth, nullptr, nullptr},
-	{"permissions", (getter)PyEntity_GetPermissions, (setter)PyEntity_SetPermissions, nullptr},
+	{"perm", (getter)PyEntity_GetPermissions, (setter)PyEntity_SetPermissions, nullptr},
 	{nullptr}
 };
 
