@@ -5,7 +5,6 @@
 #pragma region Macro
 #define PyAPIFunction(name) static PyObject* api_##name(PyObject* , PyObject* args)
 #define CheckResult(...) if (!res) return 0; return original(__VA_ARGS__)
-//#define isPlayer(ptr) _PlayerList[(Player*)ptr]
 #pragma endregion
 #pragma region Global variable
 static VA _cmdqueue;//指令队列
@@ -14,12 +13,10 @@ static Level* _level;
 static Scoreboard* _scoreboard;//计分板
 static unsigned _formid = 1;//表单ID
 static unordered_map<Event, vector<PyObject*>> _PyFuncs;//Py函数表
-//static unordered_map<Player*, bool> _PlayerList;//玩家列表
 static vector<pair<string, string>> _Command;//注册命令
 static unordered_map<string, PyObject*> ShareData;//共享数据
 static int _Damage;//伤害值
-static unordered_map<PyObject*, unsigned[2]> tick;//执行队列
-static queue<function<void()>> _todos;
+//static queue<function<void()>> _todos;
 #pragma endregion
 #pragma region Function Define
 template<class T>void inline print(const T& data) {
@@ -168,25 +165,13 @@ HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	if (!_level)
 		_level = _this;
 	original(_this);
-	//执行todos函数
-	if (!_todos.empty()) {
-		for (int i = 0; i < _todos.size(); i++) {
-			_todos.front()();
-			_todos.pop();
-		}
-	}
-	if (!tick.empty()) {
-		safeCall([] {
-			for (auto& i : tick) {
-				if (!i.second[0]) {
-					i.second[0] = i.second[1];
-					PyObject_CallFunction(i.first, nullptr);
-				}
-				else i.second[0]--;
-			}
-			}
-		);
-	}
+	////执行todos函数
+	//if (!_todos.empty()) {
+	//	for (int i = 0; i < _todos.size(); i++) {
+	//		_todos.front()();
+	//		_todos.pop();
+	//	}
+	//}
 }
 HOOK(SPSCQueue, VA, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@QEAA@_K@Z",
 	VA _this) {
@@ -216,7 +201,7 @@ HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std
 	if (&_this == &cout) {
 		wchar_t* wstr = new wchar_t[size];
 		MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str, -1, wstr, (int)size);
-		bool res = EventCall(Event::onConsoleOutput,PyUnicode_FromWideChar(wstr,size));
+		bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromWideChar(wstr, size));
 		delete wstr;
 		if (!res)return _this;
 	}
@@ -423,7 +408,7 @@ HOOK(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@
 	VA _this, Player* p, VA req) {
 	bool result = original(_this, p, req);
 	if (result) {
-		EventCall(Event::onChangeDimension, PyLong_FromUnsignedLongLong((VA)p));
+		EventCall(Event::onChangeDimension, PyEntity_FromEntity(p));
 	}
 	return result;
 }
@@ -682,45 +667,23 @@ static PyObject* api_runcmd(PyObject*, PyObject* args) {
 		if (_cmdqueue)
 			onConsoleInput::original(_cmdqueue, cmd);
 		else
-			cerr<<"命令队列未初始化"<<endl;
+			cerr << "命令队列未初始化" << endl;
 	}
 	Py_RETURN_NONE;
 }
-//计时器
-static PyObject* api_setTimer(PyObject*, PyObject* args) {
-	unsigned time; PyObject* func;
-	if (PyArg_ParseTuple(args, "OI:setTimer", &func, &time)) {
-		if (!PyCallable_Check(func))
-			Py_RETURN_NONE;
-		tick[func][0] = time;
-		tick[func][1] = time;
-	}
-	Py_RETURN_NONE;
-}
-static PyObject* api_removeTimer(PyObject*, PyObject* args) {
+//多线程
+static PyObject* api_newThread(PyObject*, PyObject* args) {
 	PyObject* func;
-	if (PyArg_ParseTuple(args, "O:removeTimer", &func)) {
-		tick.erase(func);
-	}
-	Py_RETURN_NONE;
-}
-//延时执行一次函数（x）
-#if 0
-static PyObject* api_setTimeout(PyObject*, PyObject* args) {
-	PyObject* func; unsigned time;
-	if (PyArg_ParseTuple(args, "OI:setTimeout", &func, &time)) {
-		safeCall([&func, &time] {
-			thread([&] {
-				Sleep(time);
-				PyObject_CallFunction(func, nullptr);
-				}
-			).detach();
+	if (PyArg_ParseTuple(args, "O:newTread", &func)) {
+		thread([&] {
+			safeCall([&] {
+				PyObject_CallFunctionObjArgs(func);
+				});
 			}
-		);
+		).detach();
 	}
 	Py_RETURN_NONE;
 }
-#endif
 //设置监听
 static PyObject* api_setListener(PyObject*, PyObject* args) {
 	const char* name = ""; PyObject* fn;
@@ -728,7 +691,6 @@ static PyObject* api_setListener(PyObject*, PyObject* args) {
 		try {
 			Event e = toEvent(name);
 			_PyFuncs[e].push_back(fn);
-			Py_RETURN_NONE;
 		}
 		catch (const std::out_of_range&) {
 			cerr << "无效的监听:" << name << endl;
@@ -1032,14 +994,11 @@ PyAPIFunction(setDamage) {
 PyAPIFunction(setServerMotd) {
 	const char* n;
 	if (PyArg_ParseTuple(args, "s:setServerMotd", &n)) {
-		_todos.push([n] {
-			if (_Handle) {
-				string name(n);
-				SYMCALL<VA>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
-					_Handle, &name, true);
-			}
-			});
-		Py_RETURN_NONE;
+		if (_Handle) {
+			string name(n);
+			SYMCALL<VA>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
+				_Handle, &name, true);
+		}
 	}
 	Py_RETURN_NONE;
 }
@@ -1624,9 +1583,7 @@ static PyMethodDef api_list[]
 	{"getVersion", api_getVersion, 4, nullptr},
 	{"logout", api_logout, 1, nullptr},
 	{"runcmd", api_runcmd, 1, nullptr},
-	{"setTimer", api_setTimer, 1, nullptr},
-	{"removeTimer", api_removeTimer, 1, nullptr},
-	//{"setTimeout", api_setTimeout, 1, nullptr},
+	{"newThread", api_newThread, 1, nullptr},
 	{"setListener", api_setListener, 1, nullptr},
 	{"setShareData", api_setShareData, 1, nullptr},
 	{"getShareData", api_getShareData, 1, nullptr},
@@ -1700,13 +1657,13 @@ static void init() {
 	PyImport_AppendInittab("mc", api_init); //增加一个模块
 	Py_Initialize();//初始化解释器
 	PyEval_InitThreads();//启用线程支持
-	filesystem::directory_iterator files("py");
+	filesystem::directory_iterator files("plugins/py");
 	for (auto& info : files) {
 		auto& path = info.path();
 		if (path.extension() == ".py" || path.extension() == ".pyd") {
 			const string& name = path.stem().u8string();
 			print("[BDSpyrunner] loading ", name);
-			PyImport_ImportModule(("py." + name).c_str());
+			PyImport_ImportModule(name.c_str());
 			PyErr_Print();
 		}
 	}
@@ -1721,10 +1678,17 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 		//	delete t;
 		//}
 		//sizeof(Json::Value);
-		if (!filesystem::exists("py"))
-			filesystem::create_directory("py");
+		if (!filesystem::exists("plugins")) {
+			filesystem::create_directory("plugins");
+		}
+		if (!filesystem::exists("plugins/py")) {
+			filesystem::create_directory("plugins/py");
+		}
+		wstring path(L"./plugins/py;");
+		path.append(Py_GetPath());
+		Py_SetPath(path.c_str());
 		init();
-		puts("[BDSpyrunner] 1.3.3 loaded. 感谢小枫云 http://ipyvps.com 的赞助.");
+		puts("[BDSpyrunner] 1.3.4 loaded. 感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return 1;
 }

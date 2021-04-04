@@ -2,9 +2,7 @@
 #include "pch.h"
 #include "NBT.h"
 #pragma region Block
-struct BlockPalette {
-
-};
+struct BlockPalette {};
 struct BlockLegacy {
 	string getBlockName() {
 		return FETCH(string, this + 128);
@@ -20,7 +18,6 @@ struct BlockLegacy {
 struct Block {
 	BlockLegacy* getBlockLegacy() {
 		return FETCH(BlockLegacy*, this + 16);
-		//return SYMCALL<BlockLegacy*>("?getLegacyBlock@Block@@QEBAAEBVBlockLegacy@@XZ", this);
 	}
 };
 struct BlockPos {
@@ -71,7 +68,14 @@ struct Vec3 {
 		return str;
 	}
 };
-struct Vec2 { float x = 0.0f, y = 0.0f; };
+struct Vec2 {
+	float x = 0.0f, y = 0.0f;
+	string toString() {
+		char str[48];
+		sprintf_s(str, "(%f,%f)", x, y);
+		return str;
+	}
+};
 #pragma endregion
 #pragma region Item
 struct Item {};
@@ -174,14 +178,15 @@ struct Actor {
 	}
 	//获取生物当前所处维度ID
 	int getDimensionId() {
-		int did;
-		SYMCALL<int&>("?getDimensionId@Actor@@UEBA?AV?$AutomaticID@VDimension@@H@@XZ",
-			this, &did);
-		return did;
+		return FETCH(int, this + 236);//IDA Actor::getDimensionId
 	}
 	//获取生物当前所在坐标
 	Vec3* getPos() {
-		return SYMCALL<Vec3*>("?getPos@Actor@@UEBAAEBVVec3@@XZ", this);
+		return (Vec3*)(this + 1220);//IDA Actor::getPos
+	}
+	//获取生物之前所在坐标
+	Vec3* getPosOld() {
+		return (Vec3*)(this + 1232);//IDA Actor::getPosOld
 	}
 	//是否已移除
 	bool isRemoved() {
