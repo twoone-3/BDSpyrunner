@@ -648,7 +648,7 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 #pragma region API Function
 //获取版本
 static PyObject* api_getVersion(PyObject*, PyObject*) {
-	return PyLong_FromLong(133);
+	return PyLong_FromLong(135);
 }
 //指令输出
 static PyObject* api_logout(PyObject*, PyObject* args) {
@@ -656,7 +656,6 @@ static PyObject* api_logout(PyObject*, PyObject* args) {
 	if (PyArg_ParseTuple(args, "s:logout", &msg)) {
 		SYMCALL<ostream&>("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 			&cout, msg, strlen(msg));
-		Py_RETURN_NONE;
 	}
 	Py_RETURN_NONE;
 }
@@ -674,11 +673,12 @@ static PyObject* api_runcmd(PyObject*, PyObject* args) {
 //多线程
 static PyObject* api_newThread(PyObject*, PyObject* args) {
 	PyObject* func;
-	if (PyArg_ParseTuple(args, "O:newTread", &func)) {
+	if (PyArg_ParseTuple(args, "O:newThread", &func) && PyFunction_Check(func)) {
 		thread([&] {
 			safeCall([&] {
-				PyObject_CallFunctionObjArgs(func);
-				});
+				PyObject_CallFunctionObjArgs(func, nullptr);
+				}
+			);
 			}
 		).detach();
 	}
@@ -686,11 +686,11 @@ static PyObject* api_newThread(PyObject*, PyObject* args) {
 }
 //设置监听
 static PyObject* api_setListener(PyObject*, PyObject* args) {
-	const char* name = ""; PyObject* fn;
-	if (PyArg_ParseTuple(args, "sO:setListener", &name, &fn)) {
+	const char* name = ""; PyObject* func;
+	if (PyArg_ParseTuple(args, "sO:setListener", &name, &func) && PyFunction_Check(func)) {
 		try {
 			Event e = toEvent(name);
-			_PyFuncs[e].push_back(fn);
+			_PyFuncs[e].push_back(func);
 		}
 		catch (const std::out_of_range&) {
 			cerr << "无效的监听:" << name << endl;
@@ -1688,7 +1688,7 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 		path.append(Py_GetPath());
 		Py_SetPath(path.c_str());
 		init();
-		puts("[BDSpyrunner] 1.3.4 loaded. 感谢小枫云 http://ipyvps.com 的赞助.");
+		puts("[BDSpyrunner] 1.3.5 loaded. 感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return 1;
 }

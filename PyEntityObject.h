@@ -2,6 +2,9 @@
 #include "BDS.hpp"
 //#include "include/structmember.h"
 
+static bool isPlayer(const void* ptr);
+static void safeCall(const function<void()>& fn);
+
 //玩家指针类型
 struct PyEntityObject {
 	PyObject_HEAD;
@@ -53,9 +56,6 @@ static PyObject* PyEntity_RichCompare(PyObject* self, PyObject* other, int op) {
 	}
 	Py_RETURN_NOTIMPLEMENTED;
 }
-
-static bool isPlayer(const void* ptr);
-static void safeCall(const function<void()>& fn);
 
 //获取名字
 static PyObject* PyEntity_GetName(PyEntityObject* self, void*) {
@@ -194,7 +194,7 @@ static PyObject* PyEntity_FromEntity(Actor* ptr) {
 	PyObject* obj;
 	safeCall([&] {
 		if (!PyType_Ready(&PyEntity_Type))
-			obj = PyObject_CallFunction((PyObject*)&PyEntity_Type, 0);
+			obj = PyObject_CallFunctionObjArgs((PyObject*)&PyEntity_Type, nullptr);
 		}
 	);
 	((PyEntityObject*)obj)->ptr_ = ptr;
