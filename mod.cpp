@@ -1,5 +1,4 @@
 ﻿#include "pch.h"
-#include "BDS.hpp"
 #include "Event.h"
 #include "PyEntityObject.h"
 #pragma region Macro
@@ -930,11 +929,11 @@ PyAPIFunction(runcmdAs) {
 //传送玩家
 PyAPIFunction(teleport) {
 	PyEntityObject* obj;
-	float x, y, z; int did;
-	if (PyArg_ParseTuple(args, "Offfi:teleport", &obj, &x, &y, &z, &did)) {
+	Vec3 pos; int did;
+	if (PyArg_ParseTuple(args, "Offfi:teleport", &obj, &pos.x, &pos.y, &pos.z, &did)) {
 		Player* p = obj->asPlayer();
 		if (isPlayer(p)) {
-			p->teleport({ x,y,z }, did);
+			p->teleport(&pos, did);
 			Py_RETURN_NONE;
 		}
 	}
@@ -1412,7 +1411,7 @@ static PyObject* PyEntity_Teleport(PyEntityObject* self, PyObject* args) {
 	if (PyArg_ParseTuple(args, "fffi:teleport", &pos.x, &pos.y, &pos.z, &did)) {
 		Player* p = self->asPlayer();
 		if (isPlayer(p)) {
-			p->teleport(pos, did);
+			p->teleport(&pos, did);
 		}
 	}
 	Py_RETURN_NONE;

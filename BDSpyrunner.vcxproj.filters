@@ -11,8 +11,14 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Event.h" />
-    <ClInclude Include="BDS.hpp" />
-    <ClInclude Include="NBT.h" />
+    <ClInclude Include="BDS\Level.h" />
+    <ClInclude Include="BDS\NBT.h" />
     <ClInclude Include="PyEntityObject.h" />
+    <ClInclude Include="BDS\Actor.h" />
+    <ClInclude Include="BDS\Block.h" />
+    <ClInclude Include="BDS\Math.h" />
+    <ClInclude Include="BDS\Item.h" />
+    <ClInclude Include="BDS\ScoreBoard.h" />
+    <ClInclude Include="BDS\Structure.h" />
   </ItemGroup>
 </Project>

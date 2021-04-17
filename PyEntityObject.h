@@ -1,5 +1,5 @@
 #pragma once
-#include "BDS.hpp"
+#include "BDS/Actor.h"
 //#include "include/structmember.h"
 
 static bool isPlayer(const void* ptr);
