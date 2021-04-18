@@ -127,8 +127,6 @@ Json::Value ListtoJson(Tag* t) {
 		case Compound:
 			value.append(toJson(c));
 			break;
-		default:
-			puts("default");
 		}
 	}
 	return move(value);
@@ -174,7 +172,7 @@ Json::Value toJson(Tag* t) {
 			son = toJson(&x.second);
 			break;
 		case IntArray:
-			puts("IntArrayTag");
+			print("IntArrayTag");
 			break;
 		}
 	}

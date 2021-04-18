@@ -11,6 +11,7 @@
 #include <thread>
 #include <functional>
 #include <filesystem>
+#include <map>
 #include <unordered_map>
 #define JSON_USE_EXCEPTION 0
 #include "json/json.h"
@@ -31,6 +32,16 @@ struct name {							\
 name::fn name::original = *(name::fn*)HookRegister(sym, name::_hook, &name::original); \
 ret name::_hook(__VA_ARGS__)
 
+template<class T>
+static void inline print(const T& data) {
+	cout << data << endl;
+}
+template<class T, class... T2>
+static void inline print(const T& data, T2... other) {
+	cout << data;
+	print(other...);
+}
+
 extern "C" {
 	_declspec(dllimport) int HookFunction(void*, void*, void*);
 	_declspec(dllimport) void* GetServerSymbol(const char*);
@@ -38,12 +49,14 @@ extern "C" {
 template<typename ret = void, typename... Args>
 static ret SYMCALL(const char* sym, Args... args) {
 	void* found = SYM(sym);
-	if (!found)std::cerr << "Failed to call " << sym << std::endl;
+	if (!found)
+		print("Failed to call ", sym);
 	return ((ret(*)(Args...))found)(args...);
 }
 static void* HookRegister(const char* sym, void* hook, void* org) {
 	void* found = SYM(sym);
-	if (!found)std::cerr << "Failed to hook " << sym << std::endl;
+	if (!found)
+		print("Failed to hook ", sym);
 	HookFunction(found, org, hook);
 	return org;
 }

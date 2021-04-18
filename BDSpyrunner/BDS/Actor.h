@@ -185,22 +185,26 @@ struct Player : Mob {
 		SYMCALL("?setPlayerPermissions@Abilities@@QEAAXW4PlayerPermissionLevel@@@Z",
 			this + 2224, m);
 	}
+	//发送背包
 	void sendInventroy() {
 		SYMCALL("?sendInventory@ServerPlayer@@UEAAX_N@Z",
 			this, true);
 	}
+	//刷新区块
+	void resendAllChunks() {
+		SYMCALL("?resendAllChunks@ServerPlayer@@UEAAXXZ",this);
+	}
+	//断开连接
+	//void disconnect() {
+	//	SYMCALL("?disconnect@ServerPlayer@@QEAAXXZ",this);
+	//}
+	//传送
 	void teleport(Vec3* target, int did) {
-		//SYMCALL("?changeDimension@ServerPlayer@@UEAAXV?$AutomaticID@VDimension@@H@@_N@Z",
-		//	this, did);
-		//SYMCALL("?teleportTo@Player@@UEAAXAEBVVec3@@_NHH@Z",
-		//	this, target, true, 0, 0);
 		char mem[128];
 		SYMCALL("?computeTarget@TeleportCommand@@SA?AVTeleportTarget@@AEAVActor@@VVec3@@PEAV4@V?$AutomaticID@VDimension@@H@@VRelativeFloat@@4H@Z",
-			&mem, this, target, 0, did, 0, 0, 15
-			);
+			&mem, this, target, 0, did, 0, 0, 15);
 		SYMCALL("?applyTarget@TeleportCommand@@SAXAEAVActor@@VTeleportTarget@@@Z",
-			this, &mem
-			);
+			this, &mem);
 	}
 };
 #pragma endregion

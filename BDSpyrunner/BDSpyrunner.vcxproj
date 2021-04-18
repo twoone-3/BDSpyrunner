@@ -38,7 +38,6 @@
     <ClInclude Include="BDS\NBT.h" />
     <ClInclude Include="BDS\ScoreBoard.h" />
     <ClInclude Include="BDS\Structure.h" />
-    <ClInclude Include="Event.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
