@@ -33,8 +33,7 @@ jobs:
     - name: Copy Out Files
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
-        ls ..\..\test\bdxcore_mod\
-        cp -a ..\..\test\bdxcore_mod\*.dll D:/out
+        cp -a D:\a\BDSpyrunner\test\bdxcore_mod\*.dll D:/out
       shell: bash
 
     - name: Upload artifact
