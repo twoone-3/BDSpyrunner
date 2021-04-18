@@ -1,5 +1,5 @@
 ﻿#pragma once
-#pragma region Block
+#include "Math.h"
 struct BlockPalette {};
 struct BlockLegacy {
 	string getBlockName() {
@@ -47,4 +47,3 @@ struct BlockSource {
 		return FETCH(int, FETCH(VA, this + 32) + 216);
 	}
 };
-#pragma endregion

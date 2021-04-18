@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "../pch.h"
-#include "Actor.h"
+struct Player;
 struct PlayerScore {
 	VA getscore() {
 		return FETCH(VA, this + 4);

@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "../pch.h"
+#include "Level.h"
 #include "Math.h"
 #include "Block.h"
 #include "Item.h"
@@ -47,17 +48,17 @@ struct Actor {
 	}
 	//获取实体类型
 	string getEntityTypeName() {
-		string en_name;
-		SYMCALL<string&>("?EntityTypeToLocString@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4ActorType@@W4ActorTypeNamespaceRules@@@Z",
-			&en_name, getEntityTypeId());
-		return en_name;
+		string type;
+		SYMCALL<string&>("?EntityTypeToString@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4ActorType@@W4ActorTypeNamespaceRules@@@Z",
+			&type, getEntityTypeId());
+		return type;
 	}
 	//更新属性
 	VA updateAttrs() {
 		return SYMCALL<VA>("?_sendDirtyActorData@Actor@@QEAAXXZ", this);
 	}
 	//获取地图信息
-	struct Level* getLevel() {//IDA Mob::die 143
+	Level* getLevel() {//IDA Mob::die 143
 		return FETCH(Level*, this + 856);
 	}
 	VA getAttribute() {
@@ -207,4 +208,3 @@ struct Player : Mob {
 			this, &mem);
 	}
 };
-#pragma endregion

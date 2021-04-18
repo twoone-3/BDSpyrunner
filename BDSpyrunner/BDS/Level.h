@@ -2,7 +2,7 @@
 #include "../pch.h"
 #include "Block.h"
 #include "ScoreBoard.h"
-#include "Actor.h"
+struct Actor;
 struct Level {
 	//获取方块源 没这个维度返回空指针
 	BlockSource* getBlockSource(int did) {

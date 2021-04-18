@@ -324,6 +324,18 @@ static PyObject* PyEntity_GetDimensionId(PyEntityObject* self, void*) {
 static PyObject* PyEntity_GetIsStand(PyEntityObject* self, void*) {
 	return PyBool_FromLong(self->actor_->isStand());
 }
+//获取类型
+static PyObject* PyEntity_GetTypeID(PyEntityObject* self, void*) {
+	return PyLong_FromLong(self->actor_->getEntityTypeId());
+}
+//获取类型字符串
+static PyObject* PyEntity_GetTypeName(PyEntityObject* self, void*) {
+	return PyUnicode_FromString(self->actor_->getEntityTypeName().c_str());
+}
+//获取nbt数据
+static PyObject* PyEntity_GetNBTInfo(PyEntityObject* self, void*) {
+	return PyUnicode_FromString(toJson(self->actor_->save()).toStyledString().c_str());
+}
 //获取生命值
 static PyObject* PyEntity_GetHealth(PyEntityObject* self, void*) {
 	return PyLong_FromLong(self->actor_->getHealth());
@@ -358,6 +370,9 @@ static PyGetSetDef PyEntity_GetSet[]{
 	{"pos", (getter)PyEntity_GetPos, nullptr, nullptr},
 	{"did", (getter)PyEntity_GetDimensionId, nullptr, nullptr},
 	{"isstand", (getter)PyEntity_GetIsStand, nullptr, nullptr},
+	{"typeid", (getter)PyEntity_GetTypeID, nullptr, nullptr},
+	{"typename", (getter)PyEntity_GetTypeName, nullptr, nullptr},
+	{"nbt", (getter)PyEntity_GetNBTInfo, nullptr, nullptr},
 	{"health", (getter)PyEntity_GetHealth, nullptr, nullptr},
 	{"maxhealth", (getter)PyEntity_GetMaxHealth, nullptr, nullptr},
 	{"perm", (getter)PyEntity_GetPermissions, (setter)PyEntity_SetPermissions, nullptr},
@@ -502,7 +517,7 @@ static PyObject* PyEntity_ResendAllChunks(PyEntityObject* self, PyObject*) {
 }
 static PyObject* PyEntity_Disconnect(PyEntityObject* self, PyObject* args) {
 	const char* msg = "";
-	if (PyArg_ParseTuple(args, "s:sendCommandPacket", &msg)) {
+	if (PyArg_ParseTuple(args, "s:disconnect", &msg)) {
 		Player* p = self->asPlayer();
 		if (!p)
 			return nullptr;
@@ -664,13 +679,12 @@ PyMethodDef PyEntity_Methods[]{
 	{"teleport", (PyCFunction)PyEntity_Teleport, 1, nullptr},
 	{"sendTextPacket", (PyCFunction)PyEntity_SendTextPacket, 1, nullptr},
 	{"sendCommandPacket", (PyCFunction)PyEntity_SendCommandPacket, 1, nullptr},
-	{"resendAllChunks", (PyCFunction)PyEntity_ResendAllChunks, 1, nullptr},
+	{"resendAllChunks", (PyCFunction)PyEntity_ResendAllChunks, 4, nullptr},
 	{"disconnect", (PyCFunction)PyEntity_Disconnect, 1, nullptr},
 	{"getScore", (PyCFunction)PyEntity_GetScore, 1, nullptr},
 	{"modifyScore", (PyCFunction)PyEntity_ModifyScore, 1, nullptr},
 	{"addLevel", (PyCFunction)PyEntity_AddLevel, 1, nullptr},
 	{"transferServer", (PyCFunction)PyEntity_TransferServer, 1, nullptr},
-	{"sendCustomForm", (PyCFunction)PyEntity_SendCustomForm, 1, nullptr},
 	{"sendCustomForm", (PyCFunction)PyEntity_SendCustomForm, 1, nullptr},
 	{"sendSimpleForm", (PyCFunction)PyEntity_SendSimpleForm, 1, nullptr},
 	{"sendModalForm", (PyCFunction)PyEntity_SendModalForm, 1, nullptr},
@@ -1216,7 +1230,7 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 #pragma region API Function
 //获取版本
 static PyObject* PyAPI_getVersion(PyObject*, PyObject*) {
-	return PyLong_FromLong(140);
+	return PyLong_FromLong(141);
 }
 //指令输出
 static PyObject* PyAPI_logout(PyObject*, PyObject* args) {
@@ -1491,7 +1505,7 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 			}
 		}
 		PyEval_SaveThread();//释放当前线程
-		print("[BDSpyrunner] 1.4.0 loaded. \n感谢小枫云 http://ipyvps.com 的赞助.");
+		print("[BDSpyrunner] 1.4.1 loaded. \n感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return TRUE;
 }
