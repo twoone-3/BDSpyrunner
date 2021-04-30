@@ -29,33 +29,12 @@
     <ClCompile Include="mod.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="BDS\Actor.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="BDS\Block.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="BDS\Item.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="BDS\Level.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="BDS\Math.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="BDS\NBT.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="BDS\ScoreBoard.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="BDS\Structure.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
