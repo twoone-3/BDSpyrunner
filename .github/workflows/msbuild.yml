@@ -1,0 +1,43 @@
+name: MSBuild
+
+on: [push]
+
+env:
+  SOLUTION_FILE_PATH: .
+  Platform: X64
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1
+
+    - name: Restore NuGet packages
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: nuget restore ${{env.SOLUTION_FILE_PATH}}
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: msbuild ./BDSpyrunner.sln -property:Configuration=Release
+
+    - name: MkDirs
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        mkdir D:/out
+
+    - name: Copy Out Files
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        cp -a D:/a/BDSpyrunner/test/bdxcore_mod/*.dll D:/out
+      shell: bash
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: BDSpyrunner
+        path: D:/out
