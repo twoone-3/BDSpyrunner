@@ -93,8 +93,7 @@ Json::Value toJson(Tag* t) {
 Tag* toTag(const Json::Value& value) {
 	Tag* c = newTag(Compound);
 	auto begin = value.begin();
-	auto end = value.end();
-	while (begin != end) {
+	while (begin != value.end()) {
 		string key = begin.name();
 		char& e = key.back();
 		int type = 0;

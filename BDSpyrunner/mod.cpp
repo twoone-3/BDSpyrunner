@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+//#define THREAD
 #pragma region Macro
 #define PY_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
 #define CheckResult(...) if (!res) return 0; return original(__VA_ARGS__)
@@ -106,8 +107,11 @@ static ServerNetworkHandler* _server_network_handler = nullptr;
 static Level* _level = nullptr;
 static Scoreboard* _scoreboard = nullptr;//计分板
 static unordered_map<Event, vector<PyObject*>> _functions;//Py函数表
-static map<string, string> _commands;//注册命令
+static vector<pair<string, string>> _commands;//注册命令
 static unordered_map<string, PyObject*> _share_data;//共享数据
+#ifdef THREAD
+static unordered_map<PyObject*, unsigned> _timeout;//延时执行
+#endif
 static int _damage;//伤害值
 #pragma endregion
 #pragma region Function Define
@@ -155,11 +159,17 @@ static Json::Value toJson(const string& s) {
 static bool EventCall(Event e, PyObject* val) {
 	bool result = true;
 	safeCall([&] {
-		auto& List = _functions[e];
+		vector<PyObject*>& List = _functions[e];
 		if (!List.empty()) {
 			for (PyObject* fn : List) {
+				//if (val) {
 				if (PyObject_CallFunction(fn, "O", val) == Py_False)
 					result = false;
+				//}
+				//else {
+				//	if (_PyObject_CallNoArg(fn) == Py_False)
+				//		result = false;
+				//}
 				PyErr_Print();
 			}
 		}
@@ -741,7 +751,7 @@ static PyObject* PyEntity_FromEntity(Actor* ptr) {
 	PyObject* obj;
 	safeCall([&] {
 		if (!PyType_Ready(&PyEntity_Type))
-			obj = _PyObject_CallNoArg((PyObject*)&PyEntity_Type);
+			obj = PyObject_CallFunction((PyObject*)&PyEntity_Type, nullptr);
 		}
 	);
 	((PyEntityObject*)obj)->actor_ = ptr;
@@ -755,13 +765,30 @@ HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	if (!_level)
 		_level = _this;
 	original(_this);
-	////执行todos函数
-	//if (!_todos.empty()) {
-	//	for (int i = 0; i < _todos.size(); i++) {
-	//		_todos.front()();
-	//		_todos.pop();
-	//	}
-	//}
+#ifdef THREAD
+	if (!_timeout.empty()) {
+		for (auto& x : _timeout) {
+			print(x.first, ' ', x.second);
+			//自减到0触发
+			if (!--x.second) {
+				safeCall([&x] {
+					PyObject_CallFunction(x.first, nullptr);
+					PyErr_Print();
+					});
+				//调用之后如果仍为0移除指针
+				if (!x.second)
+					_timeout.erase(x.first);
+			}
+		}
+		////执行todos函数
+		//if (!_todos.empty()) {
+		//	for (int i = 0; i < _todos.size(); i++) {
+		//		_todos.front()();
+		//		_todos.pop();
+		//	}
+		//}
+	}
+#endif
 }
 HOOK(SPSCQueue, SPSCQueue*, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@QEAA@_K@Z",
 	SPSCQueue* _this) {
@@ -1232,7 +1259,7 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 #pragma region API Function
 //获取版本
 static PyObject* PyAPI_getVersion(PyObject*, PyObject*) {
-	return PyLong_FromLong(141);
+	return PyLong_FromLong(142);
 }
 //指令输出
 static PyObject* PyAPI_logout(PyObject*, PyObject* args) {
@@ -1254,22 +1281,21 @@ static PyObject* PyAPI_runcmd(PyObject*, PyObject* args) {
 	}
 	Py_RETURN_NONE;
 }
-//多线程
-static PyObject* PyAPI_newThread(PyObject*, PyObject* args) {
-	PyObject* func;
-	if (PyArg_ParseTuple(args, "O:newThread", &func)) {
+#ifdef THREAD
+//延时执行一个函数
+static PyObject* PyAPI_setTimeout(PyObject*, PyObject* args) {
+	PyObject* func = nullptr;
+	unsigned time = 0;
+	if (PyArg_ParseTuple(args, "OI:setTimeout", &func, &time)) {
 		if (!PyFunction_Check(func)) {
 			PY_RETURN_ERROR("Parameter 1 is not callable");
 		}
-		thread([&] {
-			safeCall([&] {
-				_PyObject_CallNoArg(func);
-				});
-			}
-		).detach();
+		//_timeout.emplace(func, time / 50);
+		_timeout[func] = time / 50;
 	}
 	Py_RETURN_NONE;
 }
+#endif
 //设置监听
 static PyObject* PyAPI_setListener(PyObject*, PyObject* args) {
 	const char* name = ""; PyObject* func;
@@ -1309,7 +1335,7 @@ static PyObject* PyAPI_setCommandDescription(PyObject*, PyObject* args) {
 	const char* cmd = "";
 	const char* des = "";
 	if (PyArg_ParseTuple(args, "ss:setCommandDescription", &cmd, &des)) {
-		_commands.emplace(cmd, des);
+		_commands.push_back({ cmd, des });
 	}
 	Py_RETURN_NONE;
 }
@@ -1437,7 +1463,9 @@ static PyMethodDef PyAPI_Methods[]{
 	{"getVersion", PyAPI_getVersion, 4, nullptr},
 	{"logout", PyAPI_logout, 1, nullptr},
 	{"runcmd", PyAPI_runcmd, 1, nullptr},
-	{"newThread", PyAPI_newThread, 1, nullptr},
+#ifdef THREAD
+	{"setTimeout", PyAPI_setTimeout, 1, nullptr},
+#endif
 	{"setListener", PyAPI_setListener, 1, nullptr},
 	{"setShareData", PyAPI_setShareData, 1, nullptr},
 	{"getShareData", PyAPI_getShareData, 1, nullptr},
@@ -1507,7 +1535,7 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 			}
 		}
 		PyEval_SaveThread();//释放当前线程
-		print("[BDSpyrunner] 1.4.1 loaded.\n感谢小枫云 http://ipyvps.com 的赞助.");
+		print("[BDSpyrunner] 1.4.2 loaded.\n感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return TRUE;
 }
