@@ -9,6 +9,7 @@
 #include <vector>
 #include <queue>
 #include <thread>
+#include <mutex>
 #include <functional>
 #include <filesystem>
 #include <map>
@@ -21,7 +22,7 @@
 using namespace std;
 using VA = unsigned long long;
 
-#define FETCH(type, ptr) (*(type*)(ptr))
+#define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
 #define SYM(sym) GetServerSymbol(sym)
 #define HOOK(name, ret, sym, ...)		\
 struct name {							\
@@ -29,7 +30,7 @@ struct name {							\
 	static ret _hook(__VA_ARGS__);		\
 	static fn original;					\
 };										\
-name::fn name::original = *(name::fn*)SYMHOOK(sym, name::_hook, &name::original); \
+name::fn name::original = *reinterpret_cast<name::fn*>(SYMHOOK(sym, name::_hook, &name::original)); \
 ret name::_hook(__VA_ARGS__)
 
 extern "C" {
@@ -51,7 +52,7 @@ static ret SYMCALL(const char* sym, Args... args) {
 	void* found = SYM(sym);
 	if (!found)
 		print("Failed to call ", sym);
-	return ((ret(*)(Args...))found)(args...);
+	return reinterpret_cast<ret(*)(Args...)>(found)(args...);
 }
 static void* SYMHOOK(const char* sym, void* hook, void* org) {
 	void* found = SYM(sym);

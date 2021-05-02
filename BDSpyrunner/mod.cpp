@@ -1,5 +1,5 @@
 ﻿#include "pch.h"
-//#define THREAD
+#define THREAD
 #pragma region Macro
 #define PY_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
 #define CheckResult(...) if (!res) return 0; return original(__VA_ARGS__)
@@ -102,13 +102,22 @@ static const unordered_map<string, Event> events{
 };
 #pragma endregion
 #pragma region Global variable
-static struct SPSCQueue* _command_queue = nullptr;//指令队列
+//指令队列
+static struct SPSCQueue* _command_queue = nullptr;
+//网络处理
 static ServerNetworkHandler* _server_network_handler = nullptr;
+//世界
 static Level* _level = nullptr;
-static Scoreboard* _scoreboard = nullptr;//计分板
-static unordered_map<Event, vector<PyObject*>> _functions;//Py函数表
-static vector<pair<string, string>> _commands;//注册命令
-static unordered_map<string, PyObject*> _share_data;//共享数据
+//计分板
+static Scoreboard* _scoreboard = nullptr;
+//Py函数表
+static unordered_map<Event, vector<PyObject*>> _functions;
+//注册命令
+static vector<pair<string, string>> _commands;
+//共享数据
+static unordered_map<string, PyObject*> _share_data;
+//互斥锁
+//static mutex _lock;
 #ifdef THREAD
 static unordered_map<PyObject*, unsigned> _timeout;//延时执行
 #endif
@@ -132,6 +141,7 @@ static bool isPlayer(const void* ptr) {
 }
 //锁GIL调用函数
 static void safeCall(const function<void()>& fn) {
+	//lock_guard<mutex> lock(_lock);
 	int nHold = PyGILState_Check();   //检测当前线程是否拥有GIL
 	PyGILState_STATE gstate = PyGILState_LOCKED;
 	if (!nHold)
@@ -772,6 +782,7 @@ HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 			//自减到0触发
 			if (!--x.second) {
 				safeCall([&x] {
+					//lock_guard<mutex> lock(_lock);
 					PyObject_CallFunction(x.first, nullptr);
 					PyErr_Print();
 					});
