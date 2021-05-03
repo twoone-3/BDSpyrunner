@@ -778,7 +778,7 @@ HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 #ifdef THREAD
 	if (!_timeout.empty()) {
 		for (auto& x : _timeout) {
-			print(x.first, ' ', x.second);
+			//print(x.first, ' ', x.second);
 			//自减到0触发
 			if (!--x.second) {
 				safeCall([&x] {
@@ -814,8 +814,8 @@ HOOK(ServerNetworkHandler_ServerNetworkHandler, VA, "??0ServerNetworkHandler@@QE
 HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",//"?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",?setup@KillCommand@@SAXAEAVCommandRegistry@@@Z
 	VA _this) {
 	for (auto& cmd : _commands) {
-		SYMCALL("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
-			_this, cmd.first.c_str(), cmd.second.c_str(), 0, 0, 0x40);
+		SYMCALL<void, VA, const string&, const char*, char, char, char>("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
+			_this, cmd.first, cmd.second.c_str(), 0, 0, 0x40);
 	}
 	original(_this);
 }
@@ -1270,7 +1270,7 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 #pragma region API Function
 //获取版本
 static PyObject* PyAPI_getVersion(PyObject*, PyObject*) {
-	return PyLong_FromLong(142);
+	return PyLong_FromLong(143);
 }
 //指令输出
 static PyObject* PyAPI_logout(PyObject*, PyObject* args) {
@@ -1516,7 +1516,6 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 		//	delete t;
 		//}
 		//sizeof(Json::Value);
-		ios::sync_with_stdio(false);
 		if (!filesystem::exists("plugins")) {
 			filesystem::create_directory("plugins");
 		}
@@ -1546,7 +1545,7 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 			}
 		}
 		PyEval_SaveThread();//释放当前线程
-		print("[BDSpyrunner] 1.4.2 loaded.\n感谢小枫云 http://ipyvps.com 的赞助.");
+		print("[BDSpyrunner] 1.4.3 loaded.");//\n感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return TRUE;
 }
