@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 //#pragma warning(disable:4996)
 #pragma execution_character_set("utf-8")
 #define WIN32_LEAN_AND_MEAN
@@ -247,25 +247,25 @@ struct ItemStack {
 	ItemStack* mChargedItem;
 	VA unk;
 
-	//È¡ÎïÆ·ID,ÌØÊâÖµ,ËğºÄ
+	//å–ç‰©å“ID,ç‰¹æ®Šå€¼,æŸè€—
 	short getId() {
 		return SYMCALL<short>("?getId@ItemStackBase@@QEBAFXZ", this);
 	}
 	short getDamageValue() {
 		return SYMCALL<short>("?getDamageValue@ItemStackBase@@QEBAFXZ", this);
 	}
-	//È¡ÎïÆ·Ãû³Æ
+	//å–ç‰©å“åç§°
 	string getName() {
 		string str;
 		SYMCALL<string*>("?getRawNameId@ItemStackBase@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 			this, &str);
 		return str;
 	}
-	//È¡ÈİÆ÷ÄÚÊıÁ¿
+	//å–å®¹å™¨å†…æ•°é‡
 	int getStackCount() {//IDA ContainerModel::networkUpdateItem
 		return FETCH(int, this + 34);
 	}
-	//ÅĞ¶ÏÊÇ·ñ¿ÕÈİÆ÷
+	//åˆ¤æ–­æ˜¯å¦ç©ºå®¹å™¨
 	bool isNull() {
 		return SYMCALL<bool>("?isNull@ItemStackBase@@QEBA_NXZ", this);
 	}
@@ -308,7 +308,7 @@ struct ItemStack {
 };
 static_assert(sizeof(ItemStack) == 0x90);
 struct Container {
-	//»ñÈ¡ÈİÆ÷ÄÚËùÓĞÎïÆ·
+	//è·å–å®¹å™¨å†…æ‰€æœ‰ç‰©å“
 	vector<ItemStack*> getSlots() {
 		vector<ItemStack*> s;
 		SYMCALL<VA>("?getSlots@Container@@UEBA?BV?$vector@PEBVItemStack@@V?$allocator@PEBVItemStack@@@std@@@std@@XZ",
@@ -322,31 +322,31 @@ struct Container {
 #pragma endregion
 #pragma region Actor
 struct Actor {
-	//»ñÈ¡ÉúÎïÃû³ÆĞÅÏ¢
+	//è·å–ç”Ÿç‰©åç§°ä¿¡æ¯
 	string getNameTag() {
 		return SYMCALL<string&>("?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ", this);
 	}
-	//»ñÈ¡ÉúÎïµ±Ç°Ëù´¦Î¬¶ÈID
+	//è·å–ç”Ÿç‰©å½“å‰æ‰€å¤„ç»´åº¦ID
 	int getDimensionId() {
 		return FETCH(int, this + 236);//IDA Actor::getDimensionId
 	}
-	//»ñÈ¡ÉúÎïµ±Ç°ËùÔÚ×ø±ê
+	//è·å–ç”Ÿç‰©å½“å‰æ‰€åœ¨åæ ‡
 	Vec3* getPos() {
 		return (Vec3*)(this + 1220);//IDA Actor::getPos
 	}
-	//»ñÈ¡ÉúÎïÖ®Ç°ËùÔÚ×ø±ê
+	//è·å–ç”Ÿç‰©ä¹‹å‰æ‰€åœ¨åæ ‡
 	Vec3* getPosOld() {
 		return (Vec3*)(this + 1232);//IDA Actor::getPosOld
 	}
-	//ÊÇ·ñÒÑÒÆ³ı
+	//æ˜¯å¦å·²ç§»é™¤
 	bool isRemoved() {
 		return FETCH(bool, this + 7688);
 	}
-	//ÊÇ·ñĞü¿Õ
+	//æ˜¯å¦æ‚¬ç©º
 	bool isStand() {//IDA MovePlayerPacket::MovePlayerPacket 30
 		return FETCH(bool, this + 448);
 	}
-	//È¡·½¿éÔ´
+	//å–æ–¹å—æº
 	BlockSource* getBlockSource() {
 		return FETCH(BlockSource*, this + 840);
 	}
@@ -354,37 +354,37 @@ struct Actor {
 		return SYMCALL<ItemStack*>("?getArmor@Actor@@UEBAAEBVItemStack@@W4ArmorSlot@@@Z",
 			this, slot);
 	}
-	//»ñÈ¡ÊµÌåÀàĞÍ
+	//è·å–å®ä½“ç±»å‹
 	unsigned getEntityTypeId() {
 		return FETCH(unsigned, this + 968);
 	}
-	//»ñÈ¡²éÑ¯ÓÃID
+	//è·å–æŸ¥è¯¢ç”¨ID
 	VA getUniqueID() {
 		return SYMCALL<VA>("?getUniqueID@Actor@@QEBAAEBUActorUniqueID@@XZ", this);
 	}
-	//»ñÈ¡ÊµÌåÀàĞÍ
+	//è·å–å®ä½“ç±»å‹
 	string getEntityTypeName() {
 		string type;
 		SYMCALL<string&>("?EntityTypeToString@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4ActorType@@W4ActorTypeNamespaceRules@@@Z",
 			&type, getEntityTypeId());
 		return type;
 	}
-	//¸üĞÂÊôĞÔ
+	//æ›´æ–°å±æ€§
 	VA updateAttrs() {
 		return SYMCALL<VA>("?_sendDirtyActorData@Actor@@QEAAXXZ", this);
 	}
-	//»ñÈ¡µØÍ¼ĞÅÏ¢
+	//è·å–åœ°å›¾ä¿¡æ¯
 	struct Level* getLevel() {//IDA Mob::die 143
 		return FETCH(Level*, this + 856);
 	}
 	VA getAttribute() {
 		return FETCH(VA, this + 1144);
 	}
-	//Ìí¼ÓÒ»¸ö×´Ì¬
+	//æ·»åŠ ä¸€ä¸ªçŠ¶æ€
 	VA addEffect(VA ef) {
 		return SYMCALL<VA>("?addEffect@Actor@@QEAAXAEBVMobEffectInstance@@@Z", this, ef);
 	}
-	//»ñÈ¡ÉúÃüÖµ
+	//è·å–ç”Ÿå‘½å€¼
 	int getHealth() {
 		return SYMCALL<int>("?getHealth@Actor@@QEBAHXZ", this);
 	}
@@ -398,7 +398,7 @@ struct Actor {
 		FETCH(int, hattr + 128) = max;
 		//SYMCALL("?_setDirty@AttributeInstance@@AEAAXXZ", hattr);
 	}
-	//»ñÈ¡¸±ÊÖ
+	//è·å–å‰¯æ‰‹
 	ItemStack* getOffHand() {
 		return SYMCALL<ItemStack*>("?getOffhandSlot@Actor@@QEBAAEBVItemStack@@XZ", this);
 	}
@@ -407,18 +407,18 @@ struct Actor {
 		SYMCALL("?save@Actor@@UEAA_NAEAVCompoundTag@@@Z", this, t);
 		return t;
 	}
-	//ÉèÖÃ´óĞ¡
+	//è®¾ç½®å¤§å°
 	void setSize(float f1, float f2) {
 		SYMCALL("?setSize@Actor@@UEAAXMM@Z", this, f1, f2);
 	}
-	//ÊÇ·ñÇ±ĞĞ
+	//æ˜¯å¦æ½œè¡Œ
 	bool isSneaking() {
 		return SYMCALL<bool>("?isSneaking@Actor@@QEBA_NXZ", this);
 	}
 };
 struct Mob : Actor {
 	struct MobEffectInstance { char fill[0x1C]; };
-	//»ñÈ¡×´Ì¬ÁĞ±í
+	//è·å–çŠ¶æ€åˆ—è¡¨
 	auto getEffects() {	//IDA Mob::addAdditionalSaveData 84
 		return (vector<MobEffectInstance>*)((VA*)this + 190);
 	}
@@ -430,100 +430,100 @@ struct Player : Mob {
 			this + 2832, &p);
 		return p;
 	}
-	//·¢ËÍÊı¾İ°ü
+	//å‘é€æ•°æ®åŒ…
 	void sendPacket(VA pkt) {
 		return SYMCALL<void>("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z",
 			this, pkt);
 	}
-	//¸ù¾İµØÍ¼ĞÅÏ¢»ñÈ¡Íæ¼Òxuid
+	//æ ¹æ®åœ°å›¾ä¿¡æ¯è·å–ç©å®¶xuid
 	string& getXuid() {
 		return SYMCALL<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
 			getLevel(), this + 2832);
 	}
-	//ÖØÉè·şÎñÆ÷Íæ¼ÒÃû
+	//é‡è®¾æœåŠ¡å™¨ç©å®¶å
 	void setName(const string& name) {
 		SYMCALL("?setName@Player@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 			this, &name);
 	}
-	//»ñÈ¡ÍøÂç±êÊ¶·û
+	//è·å–ç½‘ç»œæ ‡è¯†ç¬¦
 	VA getNetId() {
 		return (VA)this + 2544;//IDA ServerPlayer::setPermissions 34
 	}
-	//»ñÈ¡±³°ü
+	//è·å–èƒŒåŒ…
 	Container* getContainer() {
 		return FETCH(Container*, FETCH(VA, this + 3040) + 176);
 	}
-	//»ñÈ¡×°±¸ÈİÆ÷
+	//è·å–è£…å¤‡å®¹å™¨
 	Container* getArmorContainer() {
 		return FETCH(Container*, this + 1512);
 	}
 	VA getContainerManager() {
 		return (VA)this + 3024;	//IDA Player::setContainerManager 18
 	}
-	//»ñÈ¡Ä©Ó°Ïä
+	//è·å–æœ«å½±ç®±
 	Container* getEnderChestContainer() {
 		return FETCH(Container*, this + 4176);//IDA ReplaceItemCommand::execute 1038
 	}
-	//ÉèÖÃÒ»¸ö×°±¸
+	//è®¾ç½®ä¸€ä¸ªè£…å¤‡
 	VA setArmor(int i, ItemStack* item) {
 		return SYMCALL<VA>("?setArmor@ServerPlayer@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z", this, i, item);
 	}
-	//ÉèÖÃ¸±ÊÖ
+	//è®¾ç½®å‰¯æ‰‹
 	VA setOffhandSlot(ItemStack* item) {
 		return SYMCALL<VA>("?setOffhandSlot@Player@@UEAAXAEBVItemStack@@@Z", this, item);
 	}
-	//Ìí¼ÓÒ»¸öÎïÆ·
+	//æ·»åŠ ä¸€ä¸ªç‰©å“
 	void addItem(ItemStack* item) {
 		SYMCALL<VA>("?addItem@@YAXAEAVPlayer@@AEAVItemStack@@@Z", this, item);
 	}
-	//Ôö¼ÓµÈ¼¶
+	//å¢åŠ ç­‰çº§
 	void addLevel(const int level) {
 		SYMCALL("?addLevels@Player@@UEAAXH@Z", this, level);
 	}
-	//»ñÈ¡µ±Ç°Ñ¡ÖĞµÄ¿òÎ»ÖÃ
+	//è·å–å½“å‰é€‰ä¸­çš„æ¡†ä½ç½®
 	int getSelectedItemSlot() {//IDA Player::getSelectedItem 12
 		return FETCH(unsigned, FETCH(VA, this + 3040) + 16);
 	}
-	//»ñÈ¡µ±Ç°ÎïÆ·
+	//è·å–å½“å‰ç‰©å“
 	ItemStack* getSelectedItem() {
 		return SYMCALL<ItemStack*>("?getSelectedItem@Player@@QEBAAEBVItemStack@@XZ", this);
 	}
-	//»ñÈ¡±³°üÎïÆ·
+	//è·å–èƒŒåŒ…ç‰©å“
 	ItemStack* getInventoryItem(int slot) {
 		return getContainer()->getSlots()[slot];
 	}
-	//»ñÈ¡ÓÎÏ·Ê±ÃüÁîÈ¨ÏŞ
+	//è·å–æ¸¸æˆæ—¶å‘½ä»¤æƒé™
 	char getPermissions() {//IDA ServerPlayer::setPermissions 17
 		return FETCH(char, FETCH(char*, this + 2224));
 	}
-	//ÉèÖÃÓÎÏ·Ê±ÃüÁîÈ¨ÏŞ
+	//è®¾ç½®æ¸¸æˆæ—¶å‘½ä»¤æƒé™
 	void setPermissions(char m) {
 		SYMCALL("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z",
 			this, m);
 	}
-	//»ñÈ¡ÓÎÏ·Ê±ÓÎÍæÈ¨ÏŞ
+	//è·å–æ¸¸æˆæ—¶æ¸¸ç©æƒé™
 	char getPermissionLevel() {//IDA Abilities::setPlayerPermissions ?
 		return FETCH(char, FETCH(char*, this + 2224) + 1);
 	}
-	//ÉèÖÃÓÎÏ·Ê±ÓÎÍæÈ¨ÏŞ
+	//è®¾ç½®æ¸¸æˆæ—¶æ¸¸ç©æƒé™
 	void setPermissionLevel(char m) {
 		SYMCALL("?setPlayerPermissions@Abilities@@QEAAXW4PlayerPermissionLevel@@@Z",
 			this + 2224, m);
 	}
-	//·¢ËÍ±³°ü
+	//å‘é€èƒŒåŒ…
 	void sendInventroy() {
 		SYMCALL("?sendInventory@ServerPlayer@@UEAAX_N@Z",
 			this, true);
 	}
-	//Ë¢ĞÂÇø¿é
+	//åˆ·æ–°åŒºå—
 	void resendAllChunks() {
 		SYMCALL("?resendAllChunks@ServerPlayer@@UEAAXXZ", this);
 	}
-	//¶Ï¿ªÁ¬½Ó
+	//æ–­å¼€è¿æ¥
 	//void disconnect() {
 	//	SYMCALL("?disconnect@ServerPlayer@@QEAAXXZ",this);
 	//}
-	//´«ËÍ
+	//ä¼ é€
 	void teleport(Vec3* target, int did) {
 		char mem[128];
 		SYMCALL("?computeTarget@TeleportCommand@@SA?AVTeleportTarget@@AEAVActor@@VVec3@@PEAV4@V?$AutomaticID@VDimension@@H@@VRelativeFloat@@4H@Z",
@@ -568,11 +568,11 @@ struct ScorePacketInfo {
 
 };
 struct Objective {
-	//»ñÈ¡¼Æ·Ö°åÃû³Æ
+	//è·å–è®¡åˆ†æ¿åç§°
 	auto getScoreName() {
 		return FETCH(string, this + 64);
 	}
-	//»ñÈ¡¼Æ·Ö°åÕ¹Ê¾Ãû³Æ
+	//è·å–è®¡åˆ†æ¿å±•ç¤ºåç§°
 	auto getScoreDisplayName() {
 		return FETCH(string, this + 96);
 	}
@@ -608,7 +608,7 @@ struct Scoreboard {
 	auto getScoreboardId(Player* a2) {
 		return SYMCALL<ScoreboardId*>("?getScoreboardId@Scoreboard@@QEBAAEBUScoreboardId@@AEBVActor@@@Z", this, a2);
 	}
-	//¸ü¸ÄÍæ¼Ò·ÖÊı
+	//æ›´æ”¹ç©å®¶åˆ†æ•°
 	int modifyPlayerScore(ScoreboardId* a3, Objective* a4, int count, int mode) {
 		bool a2 = true;
 		return SYMCALL<int>("?modifyPlayerScore@Scoreboard@@QEAAHAEA_NAEBUScoreboardId@@AEAVObjective@@HW4PlayerScoreSetFunction@@@Z",
@@ -625,7 +625,7 @@ struct Scoreboard {
 #pragma endregion
 #pragma region Level
 struct Level {
-	//»ñÈ¡·½¿éÔ´ Ã»Õâ¸öÎ¬¶È·µ»Ø¿ÕÖ¸Õë
+	//è·å–æ–¹å—æº æ²¡è¿™ä¸ªç»´åº¦è¿”å›ç©ºæŒ‡é’ˆ
 	BlockSource* getBlockSource(int did) {
 		VA d = SYMCALL<VA>("?getDimension@Level@@UEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
 			this, did);
