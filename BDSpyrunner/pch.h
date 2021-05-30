@@ -412,7 +412,7 @@ struct Actor {
 		SYMCALL("?setSize@Actor@@UEAAXMM@Z", this, f1, f2);
 	}
 	// «∑Ò«±––
-	bool isSneacking() {
+	bool isSneaking() {
 		return SYMCALL<bool>("?isSneaking@Actor@@QEBA_NXZ", this);
 	}
 };

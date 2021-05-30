@@ -346,8 +346,8 @@ static PyObject* PyEntity_GetIsStand(PyObject* self, void*) {
 	return PyBool_FromLong(PyEntity_AsActor(self)->isStand());
 }
 //是否潜行
-static PyObject* PyEntity_GetIsSneacking(PyObject* self, void*) {
-	return PyBool_FromLong(PyEntity_AsActor(self)->isSneacking());
+static PyObject* PyEntity_GetIsSneaking(PyObject* self, void*) {
+	return PyBool_FromLong(PyEntity_AsActor(self)->isSneaking());
 }
 //获取类型
 static PyObject* PyEntity_GetTypeID(PyObject* self, void*) {
@@ -395,7 +395,7 @@ static PyGetSetDef PyEntity_GetSet[]{
 	{"pos", PyEntity_GetPos, nullptr, nullptr},
 	{"did", PyEntity_GetDimensionId, nullptr, nullptr},
 	{"isstand", PyEntity_GetIsStand, nullptr, nullptr},
-	{"issneacking", PyEntity_GetIsSneacking, nullptr, nullptr},
+	{"issneak", PyEntity_GetIsSneaking, nullptr, nullptr},
 	{"typeid", PyEntity_GetTypeID, nullptr, nullptr},
 	{"typename", PyEntity_GetTypeName, nullptr, nullptr},
 	{"nbt", PyEntity_GetNBTInfo, nullptr, nullptr},
