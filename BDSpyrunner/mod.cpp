@@ -345,6 +345,10 @@ static PyObject* PyEntity_GetDimensionId(PyObject* self, void*) {
 static PyObject* PyEntity_GetIsStand(PyObject* self, void*) {
 	return PyBool_FromLong(PyEntity_AsActor(self)->isStand());
 }
+//是否潜行
+static PyObject* PyEntity_GetIsSneacking(PyObject* self, void*) {
+	return PyBool_FromLong(PyEntity_AsActor(self)->isSneacking());
+}
 //获取类型
 static PyObject* PyEntity_GetTypeID(PyObject* self, void*) {
 	return PyLong_FromLong(PyEntity_AsActor(self)->getEntityTypeId());
@@ -391,6 +395,7 @@ static PyGetSetDef PyEntity_GetSet[]{
 	{"pos", PyEntity_GetPos, nullptr, nullptr},
 	{"did", PyEntity_GetDimensionId, nullptr, nullptr},
 	{"isstand", PyEntity_GetIsStand, nullptr, nullptr},
+	{"issneacking", PyEntity_GetIsSneacking, nullptr, nullptr},
 	{"typeid", PyEntity_GetTypeID, nullptr, nullptr},
 	{"typename", PyEntity_GetTypeName, nullptr, nullptr},
 	{"nbt", PyEntity_GetNBTInfo, nullptr, nullptr},
@@ -504,6 +509,18 @@ static PyObject* PyEntity_Teleport(PyObject* self, PyObject* args) {
 		if (!p)
 			return nullptr;
 		p->teleport(&pos, did);
+	}
+	Py_RETURN_NONE;
+}
+//设置实体大小
+static PyObject* PyEntity_SetSize(PyObject* self, PyObject* args) {
+	float length;
+	float high;
+	if (PyArg_ParseTuple(args, "ff:setSize", &length, &high)) {
+		Player* p = PyEntity_AsPlayer(self);
+		if (!p)
+			return nullptr;
+		p->setSize(length, high);
 	}
 	Py_RETURN_NONE;
 }
@@ -698,6 +715,7 @@ static PyMethodDef PyEntity_Methods[]{
 	{"addItem", PyEntity_AddItem, 1, nullptr},
 	{"removeItem", PyEntity_RemoveItem, 1, nullptr},
 	{"teleport", PyEntity_Teleport, 1, nullptr},
+	{"setSize", PyEntity_SetSize, 1, nullptr},
 	{"sendTextPacket", PyEntity_SendTextPacket, 1, nullptr},
 	{"sendCommandPacket", PyEntity_SendCommandPacket, 1, nullptr},
 	{"resendAllChunks", PyEntity_ResendAllChunks, 4, nullptr},
@@ -1522,9 +1540,9 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 		if (!filesystem::exists("plugins/py")) {
 			filesystem::create_directory("plugins/py");
 		}
-		wstring path(L"plugins/py;");
-		path.append(Py_GetPath());
-		Py_SetPath(path.c_str());
+
+		//将plugins/py加入模块搜索路径
+		Py_SetPath((Py_GetPath() + L";plugins/py"s).c_str());
 		//解释器初始化
 		//PyPreConfig cfg;
 		//PyPreConfig_InitPythonConfig(&cfg);
@@ -1545,7 +1563,7 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 			}
 		}
 		PyEval_SaveThread();//释放当前线程
-		print("[BDSpyrunner] 1.4.3 loaded.");//\n感谢小枫云 http://ipyvps.com 的赞助.");
+		print("[BDSpyrunner] 1.4.4 loaded.");//\n感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return TRUE;
 }

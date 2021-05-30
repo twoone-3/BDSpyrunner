@@ -407,6 +407,14 @@ struct Actor {
 		SYMCALL("?save@Actor@@UEAA_NAEAVCompoundTag@@@Z", this, t);
 		return t;
 	}
+	//设置大小
+	void setSize(float f1, float f2) {
+		SYMCALL("?setSize@Actor@@UEAAXMM@Z", this, f1, f2);
+	}
+	//是否潜行
+	bool isSneacking() {
+		return SYMCALL<bool>("?isSneaking@Actor@@QEBA_NXZ", this);
+	}
 };
 struct Mob : Actor {
 	struct MobEffectInstance { char fill[0x1C]; };
