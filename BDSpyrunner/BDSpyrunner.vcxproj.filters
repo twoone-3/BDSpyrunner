@@ -23,13 +23,7 @@
     </Library>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="jsoncpp.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="mod.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="pch.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -37,7 +31,7 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="json\json.h">
+    <ClInclude Include="json.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

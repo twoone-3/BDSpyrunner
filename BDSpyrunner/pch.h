@@ -14,12 +14,9 @@
 #include <filesystem>
 #include <map>
 #include <unordered_map>
-#define JSON_USE_EXCEPTION 0
-#include "json/json.h"
-#define PY_SSIZE_T_CLEAN
-#include "include/Python.h"
+#include "json.h"
 
-using namespace std;
+using std::string;
 using VA = unsigned long long;
 
 #define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
@@ -30,31 +27,50 @@ struct name {							\
 	static ret _hook(__VA_ARGS__);		\
 	static fn original;					\
 };										\
-name::fn name::original = *reinterpret_cast<name::fn*>(SYMHOOK(sym, name::_hook, &name::original)); \
+name::fn name::original = *reinterpret_cast<name::fn*>(SymHook(sym, name::_hook, &name::original)); \
 ret name::_hook(__VA_ARGS__)
 
 extern "C" {
 	_declspec(dllimport) int HookFunction(void*, void*, void*);
 	_declspec(dllimport) void* GetServerSymbol(const char*);
 }
+/// <summary>
+/// 打印数据
+/// </summary>
+/// <typeparam name="T">任意类型</typeparam>
+/// <param name="data">要打印的数据</param>
 template<class T>
 static void inline print(const T& data) {
 	cout << data << endl;
 }
+/// <summary>
+/// 打印数据
+/// </summary>
+/// <typeparam name="T"></typeparam>
+/// <typeparam name="...T2"></typeparam>
+/// <param name="data">要打印的数据</param>
+/// <param name="...other">下次打印的数据</param>
 template<class T, class... T2>
 static void inline print(const T& data, T2... other) {
 	cout << data;
 	print(other...);
 }
-
+/// <summary>
+/// 调用一个函数
+/// </summary>
+/// <typeparam name="ret">返回类型</typeparam>
+/// <typeparam name="...Args">参数类型</typeparam>
+/// <param name="sym">符号</param>
+/// <param name="...args">参数列表</param>
+/// <returns>返回值</returns>
 template<typename ret = void, typename... Args>
-static ret SYMCALL(const char* sym, Args... args) {
+static ret SymCall(const char* sym, Args... args) {
 	void* found = SYM(sym);
 	if (!found)
 		print("Failed to call ", sym);
 	return reinterpret_cast<ret(*)(Args...)>(found)(args...);
 }
-static void* SYMHOOK(const char* sym, void* hook, void* org) {
+static void* SymHook(const char* sym, void* hook, void* org) {
 	void* found = SYM(sym);
 	if (!found)
 		print("Failed to hook ", sym);
@@ -74,56 +90,57 @@ struct TagMemoryChunk {
 
 	TagMemoryChunk(size_t size, unsigned char data[]) :cap_(size), size_(size), data_(data) {}
 };
+//所有Tag的合体
 struct Tag {
 	void* _vtable;
 	char _this[24];
 
 	void put(const string& key, const Tag* value) {
-		return SYMCALL("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
+		return SymCall("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
 			this, key, value);
 	}
 	void putByte(const string& key, unsigned char value) {
-		return SYMCALL("?putByte@CompoundTag@@QEAAAEAEV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@E@Z",
+		return SymCall("?putByte@CompoundTag@@QEAAAEAEV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@E@Z",
 			this, key, value);
 	}
 	void putShort(const string& key, short value) {
-		return SYMCALL("?putShort@CompoundTag@@QEAAAEAFV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@F@Z",
+		return SymCall("?putShort@CompoundTag@@QEAAAEAFV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@F@Z",
 			this, key, value);
 	}
 	void putString(const string& key, const string& value) {
-		return SYMCALL("?putString@CompoundTag@@QEAAAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V23@0@Z",
+		return SymCall("?putString@CompoundTag@@QEAAAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V23@0@Z",
 			this, key, value);
 	}
 	void putInt(const string& key, int value) {
-		return SYMCALL("?putInt@CompoundTag@@QEAAAEAHV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@H@Z",
+		return SymCall("?putInt@CompoundTag@@QEAAAEAHV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@H@Z",
 			this, key, value);
 	}
 	void putInt64(const string& key, long long value) {
-		return SYMCALL("?putInt64@CompoundTag@@QEAAAEA_JV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_J@Z",
+		return SymCall("?putInt64@CompoundTag@@QEAAAEA_JV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_J@Z",
 			this, key, value);
 	}
 	void putFloat(const string& key, float value) {
-		return SYMCALL("?putFloat@CompoundTag@@QEAAAEAMV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@M@Z",
+		return SymCall("?putFloat@CompoundTag@@QEAAAEAMV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@M@Z",
 			this, key, value);
 	}
 	void putByteArray(const string& key, const TagMemoryChunk& value) {
-		return SYMCALL("?putByteArray@CompoundTag@@QEAAAEAUTagMemoryChunk@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U2@@Z",
+		return SymCall("?putByteArray@CompoundTag@@QEAAAEAUTagMemoryChunk@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U2@@Z",
 			this, key, &value);
 	}
 	void putCompound(const string& key, const Tag* value) {
-		return SYMCALL("?putCompound@CompoundTag@@QEAAPEAV1@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@3@@Z",
+		return SymCall("?putCompound@CompoundTag@@QEAAPEAV1@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@3@@Z",
 			this, key, &value);
 	}
 
 	void add(Tag* t) {
-		SYMCALL("?add@ListTag@@QEAAXV?$unique_ptr@VTag@@U?$default_delete@VTag@@@std@@@std@@@Z",
+		SymCall("?add@ListTag@@QEAAXV?$unique_ptr@VTag@@U?$default_delete@VTag@@@std@@@std@@@Z",
 			this, &t);
 	}
 	void deCompound() {
-		SYMCALL("??1CompoundTag@@UEAA@XZ", this);
+		SymCall("??1CompoundTag@@UEAA@XZ", this);
 	}
 	void deList() {
-		SYMCALL("??1ListTag@@UEAA@XZ", this);
+		SymCall("??1ListTag@@UEAA@XZ", this);
 	}
 
 	TagType getVariantType() {
@@ -138,6 +155,7 @@ struct Tag {
 	auto& asInt64() { return *(long long*)((VA)this + 8); }
 	auto& asFloat() { return *(float*)((VA)this + 8); }
 	auto& asDouble() { return *(double*)((VA)this + 8); }
+	const char* asCString() { return *(const char**)((VA)this + 8); }
 	auto& asString() { return *(string*)((VA)this + 8); }
 	auto& asByteArray() { return *(TagMemoryChunk*)((VA)this + 8); }
 	auto asListTag() { return (Tag*)this; }
@@ -145,11 +163,215 @@ struct Tag {
 	auto& asCompound() { return *(map<string, Tag>*)((VA)this + 8); }
 };
 
-Tag* newTag(TagType t);
-Json::Value ListtoJson(Tag* t);
-Json::Value toJson(Tag* t);
-Tag* toTag(const Json::Value& j);
-Tag* ArraytoTag(const Json::Value& j);
+Tag* newTag(TagType);
+Document ListtoJson(Tag*);
+Document toJson(Tag*);
+Tag* toTag(const Value&);
+Tag* ArraytoTag(const Value&);
+
+//新建tag
+Tag* newTag(TagType t) {
+	Tag* tag;
+	SymCall("?newTag@Tag@@SA?AV?$unique_ptr@VTag@@U?$default_delete@VTag@@@std@@@std@@W4Type@1@@Z",
+		&tag, t);
+	return tag;
+}
+Document ListtoJson(Tag* t) {
+	Document value(kArrayType);
+	Document::AllocatorType& allocator = value.GetAllocator();
+	for (auto& c : t->asList()) {
+		switch (t->getListType()) {
+		case End:
+			break;
+		case Byte:
+			value.PushBack(Value(c->asByte()), allocator);
+			break;
+		case Short:
+			value.PushBack(c->asShort(), allocator);
+			break;
+		case Int:
+			value.PushBack(c->asInt(), allocator);
+			break;
+		case Int64:
+			value.PushBack(c->asInt64(), allocator);
+			break;
+		case Float:
+			value.PushBack(c->asFloat(), allocator);
+			break;
+		case Double:
+			value.PushBack(c->asDouble(), allocator);
+			break;
+		case ByteArray:break;
+		case String:
+			value.PushBack("", allocator);
+			break;
+		case List:
+			value.PushBack(ListtoJson(c).GetArray(), allocator);
+			break;
+		case Compound:
+			value.PushBack(toJson(c).GetObj(), allocator);
+			break;
+		}
+	}
+	return move(value);
+}
+Document toJson(Tag* t) {
+	Document value(kObjectType);
+	Document::AllocatorType& allocator = value.GetAllocator();
+	for (auto& x : t->asCompound()) {
+		TagType type = x.second.getVariantType();
+		Value& son = value[x.first + to_string(type)];
+		switch (type) {
+		case End:
+			break;
+		case Byte:
+			son = x.second.asByte();
+			break;
+		case Short:
+			son = x.second.asShort();
+			break;
+		case Int:
+			son = x.second.asInt();
+			break;
+		case Int64:
+			son = x.second.asInt64();
+			break;
+		case Float:
+			son = x.second.asFloat();
+			break;
+		case Double:
+			son = x.second.asDouble();
+			break;
+		case ByteArray:
+			son.SetArray();
+			for (size_t i = 0; i < x.second.asByteArray().size_; ++i)
+				son.PushBack(x.second.asByteArray().data_[i], allocator);
+			break;
+		case String:
+			//Value 不能直接用 std::string 赋值
+			son.SetString(x.second.asString().c_str(),(SizeType)x.second.asString().length());
+			break;
+		case List:
+			son = ListtoJson(&x.second).GetArray();
+			break;
+		case Compound:
+			son = toJson(&x.second).GetObj();
+			break;
+		case IntArray:
+			print("IntArrayTag");
+			break;
+		}
+	}
+	return move(value);
+}
+Tag* toTag(const Value& value) {
+	Tag* c = newTag(Compound);
+	for (auto& x : value.GetObj()) {
+		string key = x.name.GetString();
+		char& e = key.back();
+		int type = 0;
+		if (*(&e - 1) == '1' && e == '0') {
+			type = 10;
+			key.resize(key.length() - 2);
+		}
+		else if (e >= '0' && e <= '9') {
+			type = e - '0';
+			key.pop_back();
+		}
+		else continue;
+		//cout << key << " - " << type << endl;
+		switch (type) {
+		case End:break;
+		case Byte:
+			c->putByte(key, (uint8_t)x.value.GetInt());
+			break;
+		case Short:
+			c->putShort(key, (short)x.value.GetInt());
+			break;
+		case Int:
+			c->putInt(key, x.value.GetInt());
+			break;
+		case Int64:
+			c->putInt64(key, x.value.GetInt64());
+			break;
+		case Float:
+			c->putFloat(key, x.value.GetFloat());
+			break;
+		case Double:
+			c->putFloat(key, (float)x.value.GetDouble());
+			break;
+		case ByteArray:
+		{
+			SizeType size = x.value.Size();
+			unsigned char* data = new unsigned char[size];
+			for (unsigned i = 0; i < size; ++i)
+				data[i] = x.value.GetInt();
+			TagMemoryChunk tmc(size, data);
+			c->putByteArray(key, tmc);
+			break;
+		}
+		case String:
+			c->putString(key, x.value.GetString());
+			break;
+		case List:
+		{
+			Tag* lt = ArraytoTag(x.value);
+			c->put(key, lt);
+			lt->deList();
+			delete lt;
+			break;
+		}
+		case Compound:
+		{
+			Tag* t = toTag(x.value);
+			c->putCompound(key, t);
+			//delete t;
+			break;
+		}
+		}
+	}
+	return c;
+}
+Tag* ArraytoTag(const Value& value) {
+	Tag* l = newTag(List);
+	for (auto& x : value.GetArray()) {
+		Type type = x.GetType();
+		Tag* t = nullptr;
+		switch (type) {
+		case rapidjson::kNullType:
+			break;
+		case rapidjson::kFalseType:
+			break;
+		case rapidjson::kTrueType:
+			break;
+		case rapidjson::kObjectType:
+			t = toTag(x);
+			break;
+		case rapidjson::kArrayType:
+			t = ArraytoTag(x);
+			break;
+		case rapidjson::kStringType:
+			t = newTag(String);
+			*(string*)t->_this = x.GetString();
+			break;
+		case rapidjson::kNumberType:
+			if (x.IsInt() || x.IsUint()) {
+				t = newTag(Int);
+				*(int*)t->_this = x.GetInt();
+			}
+			else if (x.IsFloat() || x.IsDouble()) {
+				t = newTag(Double);
+				*(double*)t->_this = x.GetDouble();
+			}
+
+			break;
+		default:
+			break;
+		}
+		l->add(t);
+	}
+	return l;
+}
 #pragma endregion
 #pragma region Math
 struct Vec3 {
@@ -207,19 +429,19 @@ struct BlockActor {
 };
 struct BlockSource {
 	Block* getBlock(const BlockPos* bp) {
-		return SYMCALL<Block*>("?getBlock@BlockSource@@QEBAAEBVBlock@@AEBVBlockPos@@@Z",
+		return SymCall<Block*>("?getBlock@BlockSource@@QEBAAEBVBlock@@AEBVBlockPos@@@Z",
 			this, bp);
 	}
 	bool setBlock(const string& name, const BlockPos& bp) {
-		return SYMCALL<bool>("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z",
+		return SymCall<bool>("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z",
 			this, &bp, *(Block**)GetServerSymbol(("?m" + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()), 3, nullptr);
 	}
 	void neighborChanged(const BlockPos* pos) {
-		SYMCALL("?neighborChanged@BlockSource@@QEAAXAEBVBlockPos@@0@Z",
+		SymCall("?neighborChanged@BlockSource@@QEAAXAEBVBlockPos@@0@Z",
 			this, pos, pos);
 	}
 	void updateNeighborsAt(const BlockPos* pos) {
-		SYMCALL("?updateNeighborsAt@BlockSource@@QEAAXAEBVBlockPos@@@Z",
+		SymCall("?updateNeighborsAt@BlockSource@@QEAAXAEBVBlockPos@@@Z",
 			this, pos);
 	}
 	int getDimensionId() {	//IDA Dimension::onBlockChanged 42
@@ -249,15 +471,15 @@ struct ItemStack {
 
 	//取物品ID,特殊值,损耗
 	short getId() {
-		return SYMCALL<short>("?getId@ItemStackBase@@QEBAFXZ", this);
+		return SymCall<short>("?getId@ItemStackBase@@QEBAFXZ", this);
 	}
 	short getDamageValue() {
-		return SYMCALL<short>("?getDamageValue@ItemStackBase@@QEBAFXZ", this);
+		return SymCall<short>("?getDamageValue@ItemStackBase@@QEBAFXZ", this);
 	}
 	//取物品名称
 	string getName() {
 		string str;
-		SYMCALL<string*>("?getRawNameId@ItemStackBase@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+		SymCall<string*>("?getRawNameId@ItemStackBase@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 			this, &str);
 		return str;
 	}
@@ -267,40 +489,40 @@ struct ItemStack {
 	}
 	//判断是否空容器
 	bool isNull() {
-		return SYMCALL<bool>("?isNull@ItemStackBase@@QEBA_NXZ", this);
+		return SymCall<bool>("?isNull@ItemStackBase@@QEBA_NXZ", this);
 	}
 	bool isEmptyStack() {
 		return FETCH(char, this + 34) == 0;
 	}
 	Tag* getNetworkUserData() {
 		Tag* ct;
-		SYMCALL("?getNetworkUserData@ItemStackBase@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
+		SymCall("?getNetworkUserData@ItemStackBase@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
 			this, &ct);
 		return ct;
 	}
 	Tag* save() {
 		Tag* t = 0;
-		SYMCALL("?save@ItemStackBase@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
+		SymCall("?save@ItemStackBase@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
 			this, &t);
 		return t;
 	}
 	ItemStack* fromTag(Tag* t) {
-		return SYMCALL<ItemStack*>("?fromTag@ItemStack@@SA?AV1@AEBVCompoundTag@@@Z",
+		return SymCall<ItemStack*>("?fromTag@ItemStack@@SA?AV1@AEBVCompoundTag@@@Z",
 			this, t);
 	}
 	bool getFromId(short id, short aux, char count) {
 		memcpy(this, SYM("?EMPTY_ITEM@ItemStack@@2V1@B"), 0x90);
-		bool ret = SYMCALL<bool>("?_setItem@ItemStackBase@@IEAA_NH@Z", this, id);
+		bool ret = SymCall<bool>("?_setItem@ItemStackBase@@IEAA_NH@Z", this, id);
 		mCount = count;
 		mAuxValue = aux;
 		mValid = true;
 		return ret;
 	}
 	Item* getItem() {
-		return SYMCALL<Item*>("?getItem@ItemStackBase@@QEBAPEBVItem@@XZ", this);
+		return SymCall<Item*>("?getItem@ItemStackBase@@QEBAPEBVItem@@XZ", this);
 	}
-	void fromJson(Json::Value j) {
-		Tag* t = toTag(j);
+	void fromJson(const Value& value) {
+		Tag* t = toTag(value);
 		fromTag(t);
 		t->deCompound();
 		delete t;
@@ -311,12 +533,12 @@ struct Container {
 	//获取容器内所有物品
 	vector<ItemStack*> getSlots() {
 		vector<ItemStack*> s;
-		SYMCALL<VA>("?getSlots@Container@@UEBA?BV?$vector@PEBVItemStack@@V?$allocator@PEBVItemStack@@@std@@@std@@XZ",
+		SymCall<VA>("?getSlots@Container@@UEBA?BV?$vector@PEBVItemStack@@V?$allocator@PEBVItemStack@@@std@@@std@@XZ",
 			this, &s);
 		return move(s);
 	}
 	void clearItem(int slot, int num) {
-		SYMCALL("?removeItem@Container@@UEAAXHH@Z", this, slot, num);
+		SymCall("?removeItem@Container@@UEAAXHH@Z", this, slot, num);
 	}
 };
 #pragma endregion
@@ -324,7 +546,7 @@ struct Container {
 struct Actor {
 	//获取生物名称信息
 	string getNameTag() {
-		return SYMCALL<string&>("?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ", this);
+		return SymCall<string&>("?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ", this);
 	}
 	//获取生物当前所处维度ID
 	int getDimensionId() {
@@ -351,7 +573,7 @@ struct Actor {
 		return FETCH(BlockSource*, this + 840);
 	}
 	ItemStack* getArmor(int slot) {
-		return SYMCALL<ItemStack*>("?getArmor@Actor@@UEBAAEBVItemStack@@W4ArmorSlot@@@Z",
+		return SymCall<ItemStack*>("?getArmor@Actor@@UEBAAEBVItemStack@@W4ArmorSlot@@@Z",
 			this, slot);
 	}
 	//获取实体类型
@@ -360,18 +582,18 @@ struct Actor {
 	}
 	//获取查询用ID
 	VA getUniqueID() {
-		return SYMCALL<VA>("?getUniqueID@Actor@@QEBAAEBUActorUniqueID@@XZ", this);
+		return SymCall<VA>("?getUniqueID@Actor@@QEBAAEBUActorUniqueID@@XZ", this);
 	}
 	//获取实体类型
 	string getEntityTypeName() {
 		string type;
-		SYMCALL<string&>("?EntityTypeToString@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4ActorType@@W4ActorTypeNamespaceRules@@@Z",
+		SymCall<string&>("?EntityTypeToString@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4ActorType@@W4ActorTypeNamespaceRules@@@Z",
 			&type, getEntityTypeId());
 		return type;
 	}
 	//更新属性
 	VA updateAttrs() {
-		return SYMCALL<VA>("?_sendDirtyActorData@Actor@@QEAAXXZ", this);
+		return SymCall<VA>("?_sendDirtyActorData@Actor@@QEAAXXZ", this);
 	}
 	//获取地图信息
 	struct Level* getLevel() {//IDA Mob::die 143
@@ -382,38 +604,38 @@ struct Actor {
 	}
 	//添加一个状态
 	VA addEffect(VA ef) {
-		return SYMCALL<VA>("?addEffect@Actor@@QEAAXAEBVMobEffectInstance@@@Z", this, ef);
+		return SymCall<VA>("?addEffect@Actor@@QEAAXAEBVMobEffectInstance@@@Z", this, ef);
 	}
 	//获取生命值
 	int getHealth() {
-		return SYMCALL<int>("?getHealth@Actor@@QEBAHXZ", this);
+		return SymCall<int>("?getHealth@Actor@@QEBAHXZ", this);
 	}
 	int getMaxHealth() {
-		return SYMCALL<int>("?getMaxHealth@Actor@@QEBAHXZ", this);
+		return SymCall<int>("?getMaxHealth@Actor@@QEBAHXZ", this);
 	}
 	void setHealth(int value, int max) {
 		VA hattr = ((*(VA(__fastcall**)(Actor*, void*))(*(VA*)this + 1552))(
 			this, SYM("?HEALTH@SharedAttributes@@2VAttribute@@B")));
 		FETCH(int, hattr + 132) = value;
 		FETCH(int, hattr + 128) = max;
-		//SYMCALL("?_setDirty@AttributeInstance@@AEAAXXZ", hattr);
+		//SymCall("?_setDirty@AttributeInstance@@AEAAXXZ", hattr);
 	}
 	//获取副手
 	ItemStack* getOffHand() {
-		return SYMCALL<ItemStack*>("?getOffhandSlot@Actor@@QEBAAEBVItemStack@@XZ", this);
+		return SymCall<ItemStack*>("?getOffhandSlot@Actor@@QEBAAEBVItemStack@@XZ", this);
 	}
 	Tag* save() {
 		Tag* t = newTag(Compound);
-		SYMCALL("?save@Actor@@UEAA_NAEAVCompoundTag@@@Z", this, t);
+		SymCall("?save@Actor@@UEAA_NAEAVCompoundTag@@@Z", this, t);
 		return t;
 	}
 	//设置大小
 	void setSize(float f1, float f2) {
-		SYMCALL("?setSize@Actor@@UEAAXMM@Z", this, f1, f2);
+		SymCall("?setSize@Actor@@UEAAXMM@Z", this, f1, f2);
 	}
 	//是否潜行
 	bool isSneaking() {
-		return SYMCALL<bool>("?isSneaking@Actor@@QEBA_NXZ", this);
+		return SymCall<bool>("?isSneaking@Actor@@QEBA_NXZ", this);
 	}
 };
 struct Mob : Actor {
@@ -426,23 +648,23 @@ struct Mob : Actor {
 struct Player : Mob {
 	string getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 217
 		string p;
-		SYMCALL<string&>("?asString@UUID@mce@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+		SymCall<string&>("?asString@UUID@mce@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 			this + 2832, &p);
 		return p;
 	}
 	//发送数据包
 	void sendPacket(VA pkt) {
-		return SYMCALL<void>("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z",
+		return SymCall<void>("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z",
 			this, pkt);
 	}
 	//根据地图信息获取玩家xuid
 	string& getXuid() {
-		return SYMCALL<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
+		return SymCall<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
 			getLevel(), this + 2832);
 	}
 	//重设服务器玩家名
 	void setName(const string& name) {
-		SYMCALL("?setName@Player@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
+		SymCall("?setName@Player@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 			this, &name);
 	}
 	//获取网络标识符
@@ -466,19 +688,19 @@ struct Player : Mob {
 	}
 	//设置一个装备
 	VA setArmor(int i, ItemStack* item) {
-		return SYMCALL<VA>("?setArmor@ServerPlayer@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z", this, i, item);
+		return SymCall<VA>("?setArmor@ServerPlayer@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z", this, i, item);
 	}
 	//设置副手
 	VA setOffhandSlot(ItemStack* item) {
-		return SYMCALL<VA>("?setOffhandSlot@Player@@UEAAXAEBVItemStack@@@Z", this, item);
+		return SymCall<VA>("?setOffhandSlot@Player@@UEAAXAEBVItemStack@@@Z", this, item);
 	}
 	//添加一个物品
 	void addItem(ItemStack* item) {
-		SYMCALL<VA>("?addItem@@YAXAEAVPlayer@@AEAVItemStack@@@Z", this, item);
+		SymCall<VA>("?addItem@@YAXAEAVPlayer@@AEAVItemStack@@@Z", this, item);
 	}
 	//增加等级
 	void addLevel(const int level) {
-		SYMCALL("?addLevels@Player@@UEAAXH@Z", this, level);
+		SymCall("?addLevels@Player@@UEAAXH@Z", this, level);
 	}
 	//获取当前选中的框位置
 	int getSelectedItemSlot() {//IDA Player::getSelectedItem 12
@@ -486,7 +708,7 @@ struct Player : Mob {
 	}
 	//获取当前物品
 	ItemStack* getSelectedItem() {
-		return SYMCALL<ItemStack*>("?getSelectedItem@Player@@QEBAAEBVItemStack@@XZ", this);
+		return SymCall<ItemStack*>("?getSelectedItem@Player@@QEBAAEBVItemStack@@XZ", this);
 	}
 	//获取背包物品
 	ItemStack* getInventoryItem(int slot) {
@@ -498,7 +720,7 @@ struct Player : Mob {
 	}
 	//设置游戏时命令权限
 	void setPermissions(char m) {
-		SYMCALL("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z",
+		SymCall("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z",
 			this, m);
 	}
 	//获取游戏时游玩权限
@@ -507,28 +729,28 @@ struct Player : Mob {
 	}
 	//设置游戏时游玩权限
 	void setPermissionLevel(char m) {
-		SYMCALL("?setPlayerPermissions@Abilities@@QEAAXW4PlayerPermissionLevel@@@Z",
+		SymCall("?setPlayerPermissions@Abilities@@QEAAXW4PlayerPermissionLevel@@@Z",
 			this + 2224, m);
 	}
 	//发送背包
 	void sendInventroy() {
-		SYMCALL("?sendInventory@ServerPlayer@@UEAAX_N@Z",
+		SymCall("?sendInventory@ServerPlayer@@UEAAX_N@Z",
 			this, true);
 	}
 	//刷新区块
 	void resendAllChunks() {
-		SYMCALL("?resendAllChunks@ServerPlayer@@UEAAXXZ", this);
+		SymCall("?resendAllChunks@ServerPlayer@@UEAAXXZ", this);
 	}
 	//断开连接
 	//void disconnect() {
-	//	SYMCALL("?disconnect@ServerPlayer@@QEAAXXZ",this);
+	//	SymCall("?disconnect@ServerPlayer@@QEAAXXZ",this);
 	//}
 	//传送
 	void teleport(Vec3* target, int did) {
 		char mem[128];
-		SYMCALL("?computeTarget@TeleportCommand@@SA?AVTeleportTarget@@AEAVActor@@VVec3@@PEAV4@V?$AutomaticID@VDimension@@H@@VRelativeFloat@@4H@Z",
+		SymCall("?computeTarget@TeleportCommand@@SA?AVTeleportTarget@@AEAVActor@@VVec3@@PEAV4@V?$AutomaticID@VDimension@@H@@VRelativeFloat@@4H@Z",
 			&mem, this, target, 0, did, 0, 0, 15);
-		SYMCALL("?applyTarget@TeleportCommand@@SAXAEAVActor@@VTeleportTarget@@@Z",
+		SymCall("?applyTarget@TeleportCommand@@SAXAEAVActor@@VTeleportTarget@@@Z",
 			this, &mem);
 	}
 };
@@ -577,49 +799,49 @@ struct Objective {
 		return FETCH(string, this + 96);
 	}
 	auto createScoreboardId(Player* player) {
-		return SYMCALL<ScoreboardId*>("?createScoreboardId@ServerScoreboard@@UEAAAEBUScoreboardId@@AEBVPlayer@@@Z", this, player);
+		return SymCall<ScoreboardId*>("?createScoreboardId@ServerScoreboard@@UEAAAEBUScoreboardId@@AEBVPlayer@@@Z", this, player);
 	}
 	ScoreInfo* getPlayerScore(ScoreboardId* a2) {
 		char a1[12];
-		return SYMCALL<ScoreInfo*>("?getPlayerScore@Objective@@QEBA?AUScoreInfo@@AEBUScoreboardId@@@Z",
+		return SymCall<ScoreInfo*>("?getPlayerScore@Objective@@QEBA?AUScoreInfo@@AEBUScoreboardId@@@Z",
 			this, a1, a2);
 	}
 };
 struct Scoreboard {
 	auto getObjective(string str) {
-		return SYMCALL<Objective*>("?getObjective@Scoreboard@@QEBAPEAVObjective@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z", this, &str);
+		return SymCall<Objective*>("?getObjective@Scoreboard@@QEBAPEAVObjective@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z", this, &str);
 	}
 	auto getScoreboardId(const string& str) {
-		return SYMCALL<ScoreboardId*>("?getScoreboardId@Scoreboard@@QEBAAEBUScoreboardId@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
+		return SymCall<ScoreboardId*>("?getScoreboardId@Scoreboard@@QEBAAEBUScoreboardId@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 			this, &str);
 	}
 	vector<Objective*> getObjectives() {
 		vector<Objective*> s;
-		SYMCALL("?getObjectives@Scoreboard@@QEBA?AV?$vector@PEBVObjective@@V?$allocator@PEBVObjective@@@std@@@std@@XZ",
+		SymCall("?getObjectives@Scoreboard@@QEBA?AV?$vector@PEBVObjective@@V?$allocator@PEBVObjective@@@std@@@std@@XZ",
 			this, &s);
 		return s;
 	}
 	auto getDisplayInfoFiltered(string* str) {
-		return SYMCALL<vector<PlayerScore>*>("?getDisplayInfoFiltered@Scoreboard@@QEBA?AV?$vector@UPlayerScore@@V?$allocator@UPlayerScore@@@std@@@std@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@3@@Z", this, str);
+		return SymCall<vector<PlayerScore>*>("?getDisplayInfoFiltered@Scoreboard@@QEBA?AV?$vector@UPlayerScore@@V?$allocator@UPlayerScore@@@std@@@std@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@3@@Z", this, str);
 	}
 	auto getTrackedIds() {
-		return SYMCALL<vector<ScoreboardId>*>("?getTrackedIds@Scoreboard@@QEBA?AV?$vector@UScoreboardId@@V?$allocator@UScoreboardId@@@std@@@std@@XZ", this);
+		return SymCall<vector<ScoreboardId>*>("?getTrackedIds@Scoreboard@@QEBA?AV?$vector@UScoreboardId@@V?$allocator@UScoreboardId@@@std@@@std@@XZ", this);
 	}
 	auto getScoreboardId(Player* a2) {
-		return SYMCALL<ScoreboardId*>("?getScoreboardId@Scoreboard@@QEBAAEBUScoreboardId@@AEBVActor@@@Z", this, a2);
+		return SymCall<ScoreboardId*>("?getScoreboardId@Scoreboard@@QEBAAEBUScoreboardId@@AEBVActor@@@Z", this, a2);
 	}
 	//更改玩家分数
 	int modifyPlayerScore(ScoreboardId* a3, Objective* a4, int count, int mode) {
 		bool a2 = true;
-		return SYMCALL<int>("?modifyPlayerScore@Scoreboard@@QEAAHAEA_NAEBUScoreboardId@@AEAVObjective@@HW4PlayerScoreSetFunction@@@Z",
+		return SymCall<int>("?modifyPlayerScore@Scoreboard@@QEAAHAEA_NAEBUScoreboardId@@AEAVObjective@@HW4PlayerScoreSetFunction@@@Z",
 			this, &a2, a3, a4, count, mode);
 	}
 	auto createScoreBoardId(const string& s) {
-		return SYMCALL<ScoreboardId*>("?createScoreboardId@ServerScoreboard@@UEAAAEBUScoreboardId@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
+		return SymCall<ScoreboardId*>("?createScoreboardId@ServerScoreboard@@UEAAAEBUScoreboardId@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 			this, &s);
 	}
 	auto createScoreBoardId(Player* player) {
-		return SYMCALL<ScoreboardId*>("?createScoreboardId@ServerScoreboard@@UEAAAEBUScoreboardId@@AEBVPlayer@@@Z", this, player);
+		return SymCall<ScoreboardId*>("?createScoreboardId@ServerScoreboard@@UEAAAEBUScoreboardId@@AEBVPlayer@@@Z", this, player);
 	}
 };
 #pragma endregion
@@ -627,7 +849,7 @@ struct Scoreboard {
 struct Level {
 	//获取方块源 没这个维度返回空指针
 	BlockSource* getBlockSource(int did) {
-		VA d = SYMCALL<VA>("?getDimension@Level@@UEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
+		VA d = SymCall<VA>("?getDimension@Level@@UEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
 			this, did);
 		if (!d)return 0;
 		return FETCH(BlockSource*, d + 96);//IDA Level::tickEntities 120
@@ -636,16 +858,16 @@ struct Level {
 		return FETCH(Scoreboard*, this + 8464);
 	}
 	unsigned getSeed() {
-		return SYMCALL<unsigned>("?getSeed@Level@@UEAAIXZ", this);
+		return SymCall<unsigned>("?getSeed@Level@@UEAAIXZ", this);
 	}
 	string getPlayerNames() {
 		string s;
-		SYMCALL<string&>("?getPlayerNames@Level@@UEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+		SymCall<string&>("?getPlayerNames@Level@@UEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 			this, &s);
 		return s;
 	}
 	Actor* fetchEntity(VA id) {
-		return SYMCALL<Actor*>("?fetchEntity@Level@@UEBAPEAVActor@@UActorUniqueID@@_N@Z",
+		return SymCall<Actor*>("?fetchEntity@Level@@UEBAPEAVActor@@UActorUniqueID@@_N@Z",
 			this, id, false);
 	}
 	const vector<Player*>& getAllPlayers() {
@@ -657,7 +879,7 @@ struct Level {
 };
 struct ServerNetworkHandler {
 	Player* _getServerPlayer(VA id, VA pkt) {
-		return SYMCALL<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
+		return SymCall<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
 			this, id, FETCH(char, pkt + 16));
 	}
 };
@@ -672,7 +894,7 @@ struct string_span {
 struct StructureSettings {
 	char _this[96];
 	StructureSettings(BlockPos* size, bool IgnoreEntities, bool IgnoreBlocks) {
-		SYMCALL("??0StructureSettings@@QEAA@XZ", this);
+		SymCall("??0StructureSettings@@QEAA@XZ", this);
 		FETCH(bool, _this + 32) = IgnoreEntities;
 		FETCH(bool, _this + 34) = IgnoreBlocks;
 		FETCH(BlockPos, _this + 36) = *size;
@@ -687,45 +909,45 @@ struct StructureDataLoadHelper {
 	char _this[136];
 
 	StructureDataLoadHelper(BlockPos* bp1, BlockPos* bp2, Vec3* v, VA id, char Rotation, char Mirror, Level* level) {
-		SYMCALL("??0StructureDataLoadHelper@@QEAA@AEBVBlockPos@@0AEBVVec3@@UActorUniqueID@@W4Rotation@@W4Mirror@@AEAVLevel@@@Z",
+		SymCall("??0StructureDataLoadHelper@@QEAA@AEBVBlockPos@@0AEBVVec3@@UActorUniqueID@@W4Rotation@@W4Mirror@@AEAVLevel@@@Z",
 			this, bp1, bp2, v, id, Rotation, Mirror, level);
 	}
 	~StructureDataLoadHelper() {
-		SYMCALL("??1StructureDataLoadHelper@@UEAA@XZ", this);
+		SymCall("??1StructureDataLoadHelper@@UEAA@XZ", this);
 	}
 };
 #endif
 struct StructureTemplate {
 	char _this[216];
 	StructureTemplate(const string_span& s) {
-		SYMCALL("??0StructureTemplate@@QEAA@V?$basic_string_span@$$CBD$0?0@gsl@@@Z",
+		SymCall("??0StructureTemplate@@QEAA@V?$basic_string_span@$$CBD$0?0@gsl@@@Z",
 			this, s);
 	}
 	~StructureTemplate() {
-		SYMCALL("??1StructureTemplate@@QEAA@XZ", this);
+		SymCall("??1StructureTemplate@@QEAA@XZ", this);
 	}
 	Tag* save() {
 		Tag* t = 0;
-		SYMCALL<Tag*>("?save@StructureTemplateData@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
+		SymCall<Tag*>("?save@StructureTemplateData@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
 			_this + 32, &t);
 		return t;
 	}
 	void load(Tag* t) {
-		SYMCALL<bool>("?load@StructureTemplateData@@QEAA_NAEBVCompoundTag@@@Z",
+		SymCall<bool>("?load@StructureTemplateData@@QEAA_NAEBVCompoundTag@@@Z",
 			_this + 32, t);
 	}
-	void fromJson(const Json::Value& value) {
+	void fromJson(const Value& value) {
 		Tag* t = toTag(value);
 		load(t);
 		t->deCompound();
 		delete t;
 	}
 	void fillFromWorld(BlockSource* a2, BlockPos* a3, StructureSettings* a4) {
-		SYMCALL("?fillFromWorld@StructureTemplate@@QEAAXAEAVBlockSource@@AEBVBlockPos@@AEBVStructureSettings@@@Z",
+		SymCall("?fillFromWorld@StructureTemplate@@QEAAXAEAVBlockSource@@AEBVBlockPos@@AEBVStructureSettings@@@Z",
 			this, a2, a3, a4);
 	}
 	void placeInWorld(BlockSource* a2, BlockPalette* a3, BlockPos* a4, StructureSettings* a5) {
-		SYMCALL("?placeInWorld@StructureTemplate@@QEBAXAEAVBlockSource@@AEBVBlockPalette@@AEBVBlockPos@@AEBVStructureSettings@@PEAVStructureTelemetryServerData@@_N@Z",
+		SymCall("?placeInWorld@StructureTemplate@@QEBAXAEAVBlockSource@@AEBVBlockPalette@@AEBVBlockPos@@AEBVStructureSettings@@PEAVStructureTelemetryServerData@@_N@Z",
 			this, a2, a3, a4, a5);
 	}
 };

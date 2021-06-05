@@ -1,11 +1,14 @@
 ﻿#include "pch.h"
+#define PY_SSIZE_T_CLEAN
+#include "include/Python.h"
+
 #define THREAD
 #pragma region Macro
 #define PY_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
 #define CheckResult(...) if (!res) return 0; return original(__VA_ARGS__)
 #pragma endregion
 #pragma region Event
-enum class Event : char {
+enum class Event {
 	None,
 	onConsoleInput,
 	onConsoleOutput,
@@ -36,7 +39,8 @@ enum class Event : char {
 	onUseRespawnAnchorBlock,
 	onScoreChanged,
 	onMove,
-	onPistonPush
+	onPistonPush,
+	onEndermanRandomTeleport,
 };
 static const unordered_map<string, Event> events{
 {"后台输入",Event::onConsoleInput},
@@ -98,7 +102,8 @@ static const unordered_map<string, Event> events{
 {"onUseRespawnAnchorBlock",Event::onUseRespawnAnchorBlock},
 {"onScoreChanged",Event::onScoreChanged},
 {"onMove",Event::onMove},
-{"onPistonPush",Event::onPistonPush}
+{"onPistonPush",Event::onPistonPush},
+{"onEndermanRandomTeleport",Event::onEndermanRandomTeleport},
 };
 #pragma endregion
 #pragma region Global variable
@@ -125,14 +130,14 @@ static int _damage;//伤害值
 #pragma endregion
 #pragma region Function Define
 //创建包
-static inline VA createPacket(const int type) {
+static inline VA createPacket(int type) {
 	VA pkt[2];
-	SYMCALL("?createPacket@MinecraftPackets@@SA?AV?$shared_ptr@VPacket@@@std@@W4MinecraftPacketIds@@@Z",
+	SymCall("?createPacket@MinecraftPackets@@SA?AV?$shared_ptr@VPacket@@@std@@W4MinecraftPacketIds@@@Z",
 		pkt, type);
 	return *pkt;
 }
 //是否为玩家
-static bool isPlayer(const void* ptr) {
+static bool isPlayer(void* ptr) {
 	for (auto& p : _level->getAllPlayers()) {
 		if (ptr == p)
 			return true;
@@ -153,17 +158,6 @@ static void safeCall(const function<void()>& fn) {
 	Py_END_ALLOW_THREADS;
 	if (!nHold)
 		PyGILState_Release(gstate);    //释放当前线程的GIL
-}
-//字符串转JSON
-static Json::Value toJson(const string& s) {
-	Json::Value value;
-	Json::CharReaderBuilder crb;
-	string errs;
-	Json::CharReader* cr(crb.newCharReader());
-	if (!cr->parse(s.c_str(), s.c_str() + s.length(), &value, &errs))
-		cerr << errs << endl;
-	delete cr;
-	return std::move(value);
 }
 //事件回调
 static bool EventCall(Event e, PyObject* val) {
@@ -219,7 +213,7 @@ static void sendTextPacket(Player* p, int mode, const string& msg) {
 static void sendCommandRequestPacket(Player* p, const string& cmd) {
 	VA pkt = createPacket(77);
 	FETCH(string, pkt + 48) = cmd;
-	SYMCALL<VA>("?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
+	SymCall<VA>("?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
 		_server_network_handler, p->getNetId(), pkt);
 	//p->sendPacket(pkt);
 }
@@ -359,7 +353,10 @@ static PyObject* PyEntity_GetTypeName(PyObject* self, void*) {
 }
 //获取nbt数据
 static PyObject* PyEntity_GetNBTInfo(PyObject* self, void*) {
-	return PyUnicode_FromString(toJson(PyEntity_AsActor(self)->save()).toStyledString().c_str());
+	StringBuffer sb;
+	PrettyWriter pw(sb);
+	toJson(PyEntity_AsActor(self)->save()).Accept(pw);
+	return PyUnicode_FromStringAndSize(sb.GetString(), sb.GetSize());
 }
 //获取生命值
 static PyObject* PyEntity_GetHealth(PyObject* self, void*) {
@@ -410,28 +407,31 @@ static PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
 	Player* p = PyEntity_AsPlayer(self);
 	if (!p)
 		return nullptr;
-	Json::Value json(Json::objectValue);
+	Document json(kObjectType);
+	Document::AllocatorType& allocator = json.GetAllocator();
 
-	Json::Value& inventory = json["Inventory"];
+	Value& inventory = json["Inventory"];
 	for (auto& i : p->getContainer()->getSlots()) {
-		inventory.append(toJson(i->save()));
+		inventory.PushBack(toJson(i->save()), allocator);
 	}
 
-	Json::Value& endchest = json["EndChest"];
+	Value& endchest = json["EndChest"];
 	for (auto& i : p->getEnderChestContainer()->getSlots()) {
-		endchest.append(toJson(i->save()));
+		endchest.PushBack(toJson(i->save()), allocator);
 	}
 
-	Json::Value& armor = json["Armor"];
+	Value& armor = json["Armor"];
 	for (auto& i : p->getArmorContainer()->getSlots()) {
-		armor.append(toJson(i->save()));
+		armor.PushBack(toJson(i->save()), allocator);
 	}
 
-	json["OffHand"] = toJson(p->getOffHand()->save());
-	json["Hand"] = toJson(p->getSelectedItem()->save());
+	json["OffHand"] = toJson(p->getOffHand()->save()).GetObj();
+	json["Hand"] = toJson(p->getSelectedItem()->save()).GetObj();
 
-	const string& str = json.toStyledString();
-	return PyUnicode_FromStringAndSize(str.c_str(), str.length());
+	StringBuffer sb;
+	PrettyWriter pw(sb);
+	json.Accept(pw);
+	return PyUnicode_FromStringAndSize(sb.GetString(), sb.GetSize());
 }
 static PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 	const char* x = "";
@@ -439,37 +439,38 @@ static PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 		Player* p = PyEntity_AsPlayer(self);
 		if (!p)
 			return nullptr;
-		Json::Value json = toJson(x);
+		Document json(toJson(x));
+		//Document::AllocatorType& allocator = json.GetAllocator();
 
-		if (json.isMember("Inventory")) {
+		if (json.HasMember("Inventory")) {
 			const vector<ItemStack*>& items = p->getContainer()->getSlots();
-			Json::Value& inventory = json["Inventory"];
-			for (unsigned i = 0; i < inventory.size(); i++) {
+			Value& inventory = json["Inventory"];
+			for (unsigned i = 0; i < inventory.Size(); i++) {
 				items[i]->fromJson(inventory[i]);
 			}
 		}
 
-		if (json.isMember("EndChest")) {
+		if (json.HasMember("EndChest")) {
 			const vector<ItemStack*>& items = p->getEnderChestContainer()->getSlots();
-			Json::Value& endchest = json["EndChest"];
-			for (unsigned i = 0; i < endchest.size(); i++) {
+			Value& endchest = json["EndChest"];
+			for (unsigned i = 0; i < endchest.Size(); i++) {
 				items[i]->fromJson(endchest[i]);
 			}
 		}
 
-		if (json.isMember("Armor")) {
+		if (json.HasMember("Armor")) {
 			const vector<ItemStack*>& items = p->getArmorContainer()->getSlots();
-			Json::Value& armor = json["Armor"];
-			for (unsigned i = 0; i < armor.size(); i++) {
+			Value& armor = json["Armor"];
+			for (unsigned i = 0; i < armor.Size(); i++) {
 				items[i]->fromJson(armor[i]);
 			}
 		}
 
-		if (json.isMember("OffHand")) {
+		if (json.HasMember("OffHand")) {
 			p->getOffHand()->fromJson(json["OffHand"]);
 		}
 
-		if (json.isMember("Hand")) {
+		if (json.HasMember("Hand")) {
 			p->getSelectedItem()->fromJson(json["Hand"]);
 		}
 		p->sendInventroy();
@@ -665,19 +666,15 @@ static PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
 		if (!p)
 			return nullptr;
 		sendsetDisplayObjectivePacket(p, title);
-		Json::Value value = toJson(data);
-		if (value.isObject()) {
-			vector<ScorePacketInfo> info;
-			auto begin = value.begin();
-			auto end = value.end();
-			while (begin != end) {
-				ScorePacketInfo o(_scoreboard->createScoreBoardId(begin.name()),
-					begin->asInt(), begin.name());
+		Document json = toJson(data);
+		vector<ScorePacketInfo> info;
+		if (json.IsObject())
+			for (auto& x : json.GetObj()) {
+				ScorePacketInfo o(_scoreboard->createScoreBoardId(x.name.GetString()),
+					x.value.GetInt(), x.name.GetString());
 				info.push_back(o);
-				begin++;
 			}
-			sendSetScorePacket(p, 0, info);
-		}
+		sendSetScorePacket(p, 0, info);
 	}
 	Py_RETURN_NONE;
 }
@@ -832,7 +829,7 @@ HOOK(ServerNetworkHandler_ServerNetworkHandler, VA, "??0ServerNetworkHandler@@QE
 HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",//"?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",?setup@KillCommand@@SAXAEAVCommandRegistry@@@Z
 	VA _this) {
 	for (auto& cmd : _commands) {
-		SYMCALL<void, VA, const string&, const char*, char, char, char>("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
+		SymCall<void, VA, const string&, const char*, char, char, char>("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
 			_this, cmd.first, cmd.second.c_str(), 0, 0, 0x40);
 	}
 	original(_this);
@@ -940,10 +937,10 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 	//StructureTemplate st("tmp");
 	//StructureTemplate st2("tmp2");
 	//st.fillFromWorld(_this, bp, &ss);
-	//Json::Value v(toJson(st.save()));
+	//Value v(toJson(st.save()));
 	//print(v);
 	//st2.fromJson(v);
-	//Json::Value v2(toJson(st2.save()));
+	//Value v2(toJson(st2.save()));
 	//print(v2);
 	//st2.placeInWorld(_this, _level->getBlockPalette(), bp, &ss);
 	////st.placeInWorld(_this, _level->getBlockPalette(), bp, &ss);
@@ -1185,9 +1182,9 @@ HOOK(onLevelExplode, bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEB
 HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@@AEAVCommandBlockActor@@AEBVBlockPos@@_N@Z",
 	VA _this, BlockSource* a2, VA a3, BlockPos* bp, bool a5) {
 	//脉冲:0,重复:1,链:2
-	int mode = SYMCALL<int>("?getMode@CommandBlockActor@@QEBA?AW4CommandBlockMode@@AEAVBlockSource@@@Z", a3, a2);
+	int mode = SymCall<int>("?getMode@CommandBlockActor@@QEBA?AW4CommandBlockMode@@AEAVBlockSource@@@Z", a3, a2);
 	//无条件:0,有条件:1
-	bool condition = SYMCALL<bool>("?getConditionalMode@CommandBlockActor@@QEBA_NAEAVBlockSource@@@Z", a3, a2);
+	bool condition = SymCall<bool>("?getConditionalMode@CommandBlockActor@@QEBA_NAEAVBlockSource@@@Z", a3, a2);
 	string cmd = FETCH(string, a3 + 264);
 	string rawname = FETCH(string, a3 + 296);
 	bool res = EventCall(Event::onCommandBlockPerform,
@@ -1222,22 +1219,22 @@ HOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 	return original(p, slot, i);
 }
 HOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboardId@@AEBVObjective@@@Z",
-	const Scoreboard* _this, ScoreboardId* a2, Objective* a3) {
+	Scoreboard* _this, ScoreboardId* a1, Objective* a2) {
 	/*
 	原命令：
 	创建计分板时：/scoreboard objectives <add|remove> <objectivename> dummy <objectivedisplayname>
 	修改计分板时（此函数hook此处)：/scoreboard players <add|remove|set> <playersname> <objectivename> <playersnum>
 	*/
-	int scoreboardid = a2->id;
+	int scoreboardid = a1->id;
 	EventCall(Event::onScoreChanged,
 		Py_BuildValue("{s:i,s:i,s:s,s:s}",
 			"scoreboardid", scoreboardid,
-			"playersnum", a3->getPlayerScore(a2)->getCount(),
-			"objectivename", a3->getScoreName().c_str(),
-			"objectivedisname", a3->getScoreDisplayName().c_str()
+			"playersnum", a2->getPlayerScore(a1)->getCount(),
+			"objectivename", a2->getScoreName().c_str(),
+			"objectivedisname", a2->getScoreDisplayName().c_str()
 		)
 	);
-	original(_this, a2, a3);
+	original(_this, a1, a2);
 }
 HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@M@Z",
 	VA _this, BlockSource* a1, BlockPos* a2, Actor* p, VA a4) {
@@ -1284,6 +1281,13 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 	);
 	CheckResult(_this, bs, bp, a3, a4);
 }
+HOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NAEAVActor@@@Z",
+	VA _this, Actor* a1) {
+	bool res = EventCall(Event::onEndermanRandomTeleport,
+		PyEntity_FromEntity(a1)
+	);
+	CheckResult(_this, a1);
+}
 #pragma endregion
 #pragma region API Function
 //获取版本
@@ -1294,7 +1298,7 @@ static PyObject* PyAPI_getVersion(PyObject*, PyObject*) {
 static PyObject* PyAPI_logout(PyObject*, PyObject* args) {
 	const char* msg = "";
 	if (PyArg_ParseTuple(args, "s:logout", &msg)) {
-		SYMCALL<ostream&>("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
+		SymCall<ostream&>("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 			&cout, msg, strlen(msg));
 	}
 	Py_RETURN_NONE;
@@ -1388,7 +1392,7 @@ static PyObject* PyAPI_setServerMotd(PyObject*, PyObject* args) {
 	if (PyArg_ParseTuple(args, "s:setServerMotd", &n)) {
 		if (_server_network_handler) {
 			string name(n);
-			SYMCALL<VA>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
+			SymCall<VA>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
 				_server_network_handler, &name, true);
 		}
 		else
@@ -1447,8 +1451,11 @@ static PyObject* PyAPI_getStructure(PyObject*, PyObject* args) {
 		StructureSettings ss(&size, true, false);
 		StructureTemplate st("tmp");
 		st.fillFromWorld(bs, &start, &ss);
-		string str = toJson(st.save()).toStyledString();
-		return PyUnicode_FromStringAndSize(str.c_str(), str.length());
+
+		StringBuffer sb;
+		PrettyWriter pw(sb);
+		toJson(st.save()).Accept(pw);
+		return PyUnicode_FromStringAndSize(sb.GetString(), sb.GetSize());
 	}
 	Py_RETURN_NONE;
 }
@@ -1461,28 +1468,27 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 		if (!bs) {
 			PY_RETURN_ERROR("Unknown dimension ID");
 		}
-		Json::Value value = toJson(data);
-		if (!value["size9"].isArray()) {
+		Document json = toJson(data);
+		if (!json["size9"].IsArray()) {
 			cerr << "结构JSON错误" << endl;
 			Py_RETURN_NONE;
 		}
 		BlockPos size = {
-			value["size9"][0].asInt(),
-			value["size9"][1].asInt(),
-			value["size9"][2].asInt()
+			json["size9"][0].GetInt(),
+			json["size9"][1].GetInt(),
+			json["size9"][2].GetInt()
 		};
 		StructureSettings ss(&size, true, false);
 		StructureTemplate st("tmp");
-		st.fromJson(value);
+		st.fromJson(json);
 		st.placeInWorld(bs, _level->getBlockPalette(), &pos, &ss);
 		for (int x = 0; x != size.x; x++) {
 			for (int y = 0; y != size.y; y++) {
 				for (int z = 0; z != size.z; z++) {
-					BlockPos bp = { x,y,z };
+					BlockPos bp{ x,y,z };
 					bs->neighborChanged(&bp);
 				}
 			}
-
 		}
 	}
 	Py_RETURN_NONE;
@@ -1533,23 +1539,22 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 		//	t->deCompound();
 		//	delete t;
 		//}
-		//sizeof(Json::Value);
+		//sizeof(Value);
 		if (!filesystem::exists("plugins")) {
 			filesystem::create_directory("plugins");
 		}
 		if (!filesystem::exists("plugins/py")) {
 			filesystem::create_directory("plugins/py");
 		}
-
 		//将plugins/py加入模块搜索路径
 		Py_SetPath((Py_GetPath() + L";plugins/py"s).c_str());
-		//解释器初始化
+		//预初始化3.8+
 		//PyPreConfig cfg;
 		//PyPreConfig_InitPythonConfig(&cfg);
 		//cfg.utf8_mode = 1;
 		//cfg.configure_locale = 0;
 		//Py_PreInitialize(&cfg);
-		PyImport_AppendInittab("mc", PyAPI_init); //增加一个模块
+		PyImport_AppendInittab("mc", PyAPI_init);//增加一个模块
 		Py_Initialize();//初始化解释器
 		PyEval_InitThreads();//启用线程支持
 		filesystem::directory_iterator files("plugins/py");
@@ -1563,7 +1568,7 @@ BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 			}
 		}
 		PyEval_SaveThread();//释放当前线程
-		print("[BDSpyrunner] 1.4.4 loaded.");//\n感谢小枫云 http://ipyvps.com 的赞助.");
+		print("[BDSpyrunner] 1.4.5 loaded.");//\n感谢小枫云 http://ipyvps.com 的赞助.");
 	}
 	return TRUE;
 }
