@@ -2,9 +2,8 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define THREAD
 #pragma region Macro
-#define PY_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
+#define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
 #define CheckResult(...) if (!res) return 0; return original(__VA_ARGS__)
 #pragma endregion
 #pragma region Event
@@ -121,12 +120,8 @@ static unordered_map<Event, vector<PyObject*>> _functions;
 static vector<pair<string, string>> _commands;
 //共享数据
 static unordered_map<string, PyObject*> _share_data;
-//互斥锁
-//static mutex _lock;
-#ifdef THREAD
-static unordered_map<PyObject*, unsigned> _timeout;//延时执行
-#endif
-static int _damage;//伤害值
+//伤害
+static int _damage;
 #pragma endregion
 #pragma region Function Define
 //创建包
@@ -146,18 +141,16 @@ static bool isPlayer(void* ptr) {
 }
 //锁GIL调用函数
 static void safeCall(const function<void()>& fn) {
-	//lock_guard<mutex> lock(_lock);
-	int nHold = PyGILState_Check();   //检测当前线程是否拥有GIL
-	PyGILState_STATE gstate = PyGILState_LOCKED;
-	if (!nHold)
-		gstate = PyGILState_Ensure();   //如果没有GIL，则申请获取GIL
-	Py_BEGIN_ALLOW_THREADS;
-	Py_BLOCK_THREADS;
+	//检测当前线程是否拥有GIL
+	//if (!PyGILState_Check()) {
+	PyGILState_STATE gstate = PyGILState_Ensure();//如果没有GIL，则申请获取GIL
+	//Py_BEGIN_ALLOW_THREADS;
+	//Py_BLOCK_THREADS;
 	fn();
-	Py_UNBLOCK_THREADS;
-	Py_END_ALLOW_THREADS;
-	if (!nHold)
-		PyGILState_Release(gstate);    //释放当前线程的GIL
+	//Py_UNBLOCK_THREADS;
+	//Py_END_ALLOW_THREADS;
+	PyGILState_Release(gstate);//释放当前线程的GIL
+	//}
 }
 //事件回调
 static bool EventCall(Event e, PyObject* val) {
@@ -245,22 +238,21 @@ static void sendSetScorePacket(Player* p, char type, const vector<ScorePacketInf
 //玩家指针类型
 struct PyEntityObject {
 	PyObject_HEAD;
-	Actor* actor_;
+	Actor* actor;
 };
 static Actor* PyEntity_AsActor(PyObject* self) {
-	return ((PyEntityObject*)self)->actor_;
+	return ((PyEntityObject*)self)->actor;
 }
 static Player* PyEntity_AsPlayer(PyObject* self) {
-	if (isPlayer(((PyEntityObject*)self)->actor_))
-		return (Player*)((PyEntityObject*)self)->actor_;
+	if (isPlayer(((PyEntityObject*)self)->actor))
+		return (Player*)((PyEntityObject*)self)->actor;
 	else
-		PY_RETURN_ERROR("This entity is not player");
+		Py_RETURN_ERROR("This entity is not player");
 }
 
 //初始化
 static PyObject* PyEntity_New(PyTypeObject* type, PyObject*, PyObject*) {
-	PyEntityObject* self = (PyEntityObject*)type->tp_alloc(type, 0);
-	return (PyObject*)self;
+	return type->tp_alloc(type, 0);
 }
 //回收
 static void PyEntity_Dealloc(PyObject* obj) {
@@ -268,7 +260,7 @@ static void PyEntity_Dealloc(PyObject* obj) {
 }
 //哈希
 static Py_hash_t PyEntity_Hash(PyObject* self) {
-	return (Py_hash_t)((PyEntityObject*)self)->actor_;
+	return (Py_hash_t)((PyEntityObject*)self)->actor;
 }
 //比较
 static PyObject* PyEntity_RichCompare(PyObject* self, PyObject* other, int op) {
@@ -279,7 +271,7 @@ static PyObject* PyEntity_RichCompare(PyObject* self, PyObject* other, int op) {
 	case Py_LE:break;
 		//==
 	case Py_EQ:
-		if (((PyEntityObject*)self)->actor_ == ((PyEntityObject*)other)->actor_)
+		if (((PyEntityObject*)self)->actor == ((PyEntityObject*)other)->actor)
 			Py_RETURN_TRUE;
 		else
 			Py_RETURN_FALSE;
@@ -425,8 +417,8 @@ static PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
 		armor.PushBack(toJson(i->save()), allocator);
 	}
 
-	json["OffHand"] = toJson(p->getOffHand()->save()).GetObj();
-	json["Hand"] = toJson(p->getSelectedItem()->save()).GetObj();
+	json["OffHand"] = (Value&)toJson(p->getOffHand()->save());
+	json["Hand"] = (Value&)toJson(p->getSelectedItem()->save());
 
 	StringBuffer sb;
 	PrettyWriter pw(sb);
@@ -707,27 +699,27 @@ static PyObject* PyEntity_RemoveBossbar(PyObject* self, PyObject*) {
 
 //Entity方法
 static PyMethodDef PyEntity_Methods[]{
-	{"getAllItem", PyEntity_GetAllItem, 4, nullptr},
-	{"setAllItem", PyEntity_SetAllItem, 1, nullptr},
-	{"addItem", PyEntity_AddItem, 1, nullptr},
-	{"removeItem", PyEntity_RemoveItem, 1, nullptr},
-	{"teleport", PyEntity_Teleport, 1, nullptr},
-	{"setSize", PyEntity_SetSize, 1, nullptr},
-	{"sendTextPacket", PyEntity_SendTextPacket, 1, nullptr},
-	{"sendCommandPacket", PyEntity_SendCommandPacket, 1, nullptr},
-	{"resendAllChunks", PyEntity_ResendAllChunks, 4, nullptr},
-	{"disconnect", PyEntity_Disconnect, 1, nullptr},
-	{"getScore", PyEntity_GetScore, 1, nullptr},
-	{"modifyScore", PyEntity_ModifyScore, 1, nullptr},
-	{"addLevel", PyEntity_AddLevel, 1, nullptr},
-	{"transferServer", PyEntity_TransferServer, 1, nullptr},
-	{"sendCustomForm", PyEntity_SendCustomForm, 1, nullptr},
-	{"sendSimpleForm", PyEntity_SendSimpleForm, 1, nullptr},
-	{"sendModalForm", PyEntity_SendModalForm, 1, nullptr},
-	{"setSidebar", PyEntity_SetSidebar, 1, nullptr},
-	{"removeSidebar", PyEntity_RemoveSidebar, 4, nullptr},
-	{"setBossbar", PyEntity_SetBossbar, 1, nullptr},
-	{"removeBossbar", PyEntity_RemoveBossbar, 4, nullptr},
+	{"getAllItem", PyEntity_GetAllItem, METH_VARARGS, nullptr},
+	{"setAllItem", PyEntity_SetAllItem, METH_VARARGS, nullptr},
+	{"addItem", PyEntity_AddItem, METH_VARARGS, nullptr},
+	{"removeItem", PyEntity_RemoveItem, METH_VARARGS, nullptr},
+	{"teleport", PyEntity_Teleport, METH_VARARGS, nullptr},
+	{"setSize", PyEntity_SetSize, METH_VARARGS, nullptr},
+	{"sendTextPacket", PyEntity_SendTextPacket, METH_VARARGS, nullptr},
+	{"sendCommandPacket", PyEntity_SendCommandPacket, METH_VARARGS, nullptr},
+	{"resendAllChunks", PyEntity_ResendAllChunks, METH_NOARGS, nullptr},
+	{"disconnect", PyEntity_Disconnect, METH_VARARGS, nullptr},
+	{"getScore", PyEntity_GetScore, METH_VARARGS, nullptr},
+	{"modifyScore", PyEntity_ModifyScore, METH_VARARGS, nullptr},
+	{"addLevel", PyEntity_AddLevel, METH_VARARGS, nullptr},
+	{"transferServer", PyEntity_TransferServer, METH_VARARGS, nullptr},
+	{"sendCustomForm", PyEntity_SendCustomForm, METH_VARARGS, nullptr},
+	{"sendSimpleForm", PyEntity_SendSimpleForm, METH_VARARGS, nullptr},
+	{"sendModalForm", PyEntity_SendModalForm, METH_VARARGS, nullptr},
+	{"setSidebar", PyEntity_SetSidebar, METH_VARARGS, nullptr},
+	{"removeSidebar", PyEntity_RemoveSidebar, METH_NOARGS, nullptr},
+	{"setBossbar", PyEntity_SetBossbar, METH_VARARGS, nullptr},
+	{"removeBossbar", PyEntity_RemoveBossbar, METH_NOARGS, nullptr},
 	{nullptr}
 };
 //Entity类型
@@ -769,64 +761,54 @@ static PyTypeObject PyEntity_Type{
 	0,						/* tp_dictoffset */
 	nullptr,				/* tp_init */
 	nullptr,				/* tp_alloc */
-	PyEntity_New			/* tp_new */
+	PyEntity_New,			/* tp_new */
+	nullptr,				/* tp_free */
+	nullptr,				/* tp_is_gc */
+	nullptr,				/* tp_bases */
+	nullptr,				/* tp_mro */
+	nullptr,				/* tp_cache */
+	nullptr,				/* tp_subclasses */
+	nullptr,				/* tp_weaklist */
+	nullptr,				/* tp_del */
+	0,						/* tp_version_tag */
+	nullptr,				/* tp_finalize */
 };
 
 static PyObject* PyEntity_FromEntity(Actor* ptr) {
 	PyObject* obj;
-	safeCall([&] {
-		if (!PyType_Ready(&PyEntity_Type))
-			obj = PyObject_CallFunction((PyObject*)&PyEntity_Type, nullptr);
-		}
-	);
-	((PyEntityObject*)obj)->actor_ = ptr;
+	safeCall([&obj] {
+		obj = PyEntity_Type.tp_alloc(&PyEntity_Type, 0);
+		});
+	((PyEntityObject*)obj)->actor = ptr;
+	Py_INCREF(obj);
 	return obj;
 }
-
 #pragma endregion
 #pragma region Hook List
+#if 0
 HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	Level* _this) {
-	if (!_level)
-		_level = _this;
 	original(_this);
-#ifdef THREAD
-	if (!_timeout.empty()) {
-		for (auto& x : _timeout) {
-			//print(x.first, ' ', x.second);
-			//自减到0触发
-			if (!--x.second) {
-				safeCall([&x] {
-					//lock_guard<mutex> lock(_lock);
-					PyObject_CallFunction(x.first, nullptr);
-					PyErr_Print();
-					});
-				//调用之后如果仍为0移除指针
-				if (!x.second)
-					_timeout.erase(x.first);
-			}
-		}
-		////执行todos函数
-		//if (!_todos.empty()) {
-		//	for (int i = 0; i < _todos.size(); i++) {
-		//		_todos.front()();
-		//		_todos.pop();
-		//	}
-		//}
-	}
+}
 #endif
+HOOK(Level_Level, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEAVIEntityRegistryOwner@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
+	Level* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12) {
+	return _level = original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
 }
 HOOK(SPSCQueue, SPSCQueue*, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@QEAA@_K@Z",
 	SPSCQueue* _this) {
-	_command_queue = original(_this);
-	return _command_queue;
+	return _command_queue = original(_this);
 }
 HOOK(ServerNetworkHandler_ServerNetworkHandler, VA, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEAVLevel@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@Bedrock@@@Z",
 	ServerNetworkHandler* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13, VA a14, VA a15, VA a16, VA a17, VA a18, VA a19) {
 	_server_network_handler = _this;
 	return original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19);
 }
-HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",//"?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",?setup@KillCommand@@SAXAEAVCommandRegistry@@@Z
+HOOK(ServerScoreboard_, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnumRegistry@@PEAVLevelStorage@@@Z",
+	VA _this, VA a2, VA a3) {
+	return _scoreboard = original(_this, a2, a3);
+}
+HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
 	VA _this) {
 	for (auto& cmd : _commands) {
 		SymCall<void, VA, const string&, const char*, char, char, char>("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
@@ -834,18 +816,13 @@ HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVComm
 	}
 	original(_this);
 }
-HOOK(ServerScoreboard_, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnumRegistry@@PEAVLevelStorage@@@Z",
-	VA _this, VA a2, VA a3) {
-	_scoreboard = (Scoreboard*)original(_this, a2, a3);
-	return _scoreboard;
-}
 HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, VA size) {
 	if (&_this == &cout) {
 		wchar_t* wstr = new wchar_t[size];
 		MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str, -1, wstr, (int)size);
 		bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromWideChar(wstr, size));
-		delete wstr;
+		delete[] wstr;
 		if (!res)return _this;
 	}
 	return original(_this, str, size);
@@ -932,18 +909,20 @@ HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 }
 HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
 	BlockSource* _this, Actor* p, BlockPos* bp, ItemStack* a3, bool a4) {
-	//BlockPos size = { 5,5,5 };
-	//StructureSettings ss(&size, 0, 0);
-	//StructureTemplate st("tmp");
-	//StructureTemplate st2("tmp2");
-	//st.fillFromWorld(_this, bp, &ss);
-	//Value v(toJson(st.save()));
-	//print(v);
-	//st2.fromJson(v);
-	//Value v2(toJson(st2.save()));
+#if 0//测试获取结构
+	BlockPos size = { 5,5,5 };
+	StructureSettings ss(&size, 0, 0);
+	StructureTemplate st("tmp");
+	StructureTemplate st2("tmp2");
+	st.fillFromWorld(_this, bp, &ss);
+	Document v(toJson(st.save()));
+	st2.fromJson(v);
+	Document v2(toJson(st2.save()));
 	//print(v2);
-	//st2.placeInWorld(_this, _level->getBlockPalette(), bp, &ss);
-	////st.placeInWorld(_this, _level->getBlockPalette(), bp, &ss);
+	bp->y++;
+	st2.placeInWorld(_this, _level->getBlockPalette(), bp, &ss);
+	//st.placeInWorld(_this, _level->getBlockPalette(), bp, &ss);
+#endif
 	if (isPlayer(p)) {
 		BlockLegacy* bl = _this->getBlock(bp)->getBlockLegacy();
 		short bid = bl->getBlockItemID();
@@ -952,7 +931,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 			Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i]}",
 				"player", PyEntity_FromEntity(p),
 				"blockname", bn.c_str(),
-				"blockid", (int)bid,
+				"blockid", int(bid),
 				"position", bp->x, bp->y, bp->z
 			)
 		))
@@ -1084,12 +1063,14 @@ HOOK(onRespawn, void, "?respawn@Player@@UEAAXXZ",
 }
 HOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@000@Z",
 	VA _this, string& sender, string& target, string& msg, string& style) {
-	EventCall(Event::onChat, Py_BuildValue("{s:s,s:s,s:s,s:s}",
-		"sender", sender.c_str(),
-		"target", target.c_str(),
-		"msg", msg.c_str(),
-		"style", style.c_str()
-	));
+	EventCall(Event::onChat,
+		Py_BuildValue("{s:s,s:s,s:s,s:s}",
+			"sender", sender.c_str(),
+			"target", target.c_str(),
+			"msg", msg.c_str(),
+			"style", style.c_str()
+		)
+	);
 	original(_this, sender, target, msg, style);
 }
 HOOK(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVTextPacket@@@Z",
@@ -1292,7 +1273,7 @@ HOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NA
 #pragma region API Function
 //获取版本
 static PyObject* PyAPI_getVersion(PyObject*, PyObject*) {
-	return PyLong_FromLong(143);
+	return PyLong_FromLong(150);
 }
 //指令输出
 static PyObject* PyAPI_logout(PyObject*, PyObject* args) {
@@ -1310,35 +1291,20 @@ static PyObject* PyAPI_runcmd(PyObject*, PyObject* args) {
 		if (_command_queue)
 			onConsoleInput::original(_command_queue, cmd);
 		else
-			PY_RETURN_ERROR("Command queue is not initialized");
+			Py_RETURN_ERROR("Command queue is not initialized");
 	}
 	Py_RETURN_NONE;
 }
-#ifdef THREAD
-//延时执行一个函数
-static PyObject* PyAPI_setTimeout(PyObject*, PyObject* args) {
-	PyObject* func = nullptr;
-	unsigned time = 0;
-	if (PyArg_ParseTuple(args, "OI:setTimeout", &func, &time)) {
-		if (!PyFunction_Check(func)) {
-			PY_RETURN_ERROR("Parameter 1 is not callable");
-		}
-		//_timeout.emplace(func, time / 50);
-		_timeout[func] = time / 50;
-	}
-	Py_RETURN_NONE;
-}
-#endif
 //设置监听
 static PyObject* PyAPI_setListener(PyObject*, PyObject* args) {
 	const char* name = ""; PyObject* func;
 	if (PyArg_ParseTuple(args, "sO:setListener", &name, &func)) {
 		auto found = events.find(name);
 		if (!PyFunction_Check(func)) {
-			PY_RETURN_ERROR("Parameter 2 is not callable");
+			Py_RETURN_ERROR("Parameter 2 is not callable");
 		}
 		if (found == events.end()) {
-			PY_RETURN_ERROR("Invalid Listener key words");
+			Py_RETURN_ERROR("Invalid Listener key words");
 		}
 		_functions[found->second].push_back(func);
 	}
@@ -1357,7 +1323,7 @@ static PyObject* PyAPI_getShareData(PyObject*, PyObject* args) {
 	if (PyArg_ParseTuple(args, "s:getShareData", &index)) {
 		auto found = _share_data.find(index);
 		if (found == _share_data.end())
-			PY_RETURN_ERROR("This data does not exist");
+			Py_RETURN_ERROR("This data does not exist");
 		else
 			return found->second;
 	}
@@ -1388,15 +1354,14 @@ static PyObject* PyAPI_setDamage(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 static PyObject* PyAPI_setServerMotd(PyObject*, PyObject* args) {
-	const char* n;
-	if (PyArg_ParseTuple(args, "s:setServerMotd", &n)) {
+	const char* name = "";
+	if (PyArg_ParseTuple(args, "s:setServerMotd", &name)) {
 		if (_server_network_handler) {
-			string name(n);
-			SymCall<VA>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
-				_server_network_handler, &name, true);
+			SymCall<VA, ServerNetworkHandler*, const string&, bool>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
+				_server_network_handler, name, true);
 		}
 		else
-			PY_RETURN_ERROR("Server did not finish loading");
+			Py_RETURN_ERROR("Server did not finish loading");
 	}
 	Py_RETURN_NONE;
 }
@@ -1406,7 +1371,7 @@ static PyObject* PyAPI_getBlock(PyObject*, PyObject* args) {
 	if (PyArg_ParseTuple(args, "iiii:getBlock", &bp.x, &bp.y, &bp.z, &did)) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
-			PY_RETURN_ERROR("Unknown dimension ID");
+			Py_RETURN_ERROR("Unknown dimension ID");
 		}
 		auto bl = bs->getBlock(&bp)->getBlockLegacy();
 		return Py_BuildValue("{s:s:s:i}",
@@ -1422,7 +1387,7 @@ static PyObject* PyAPI_setBlock(PyObject*, PyObject* args) {
 	if (PyArg_ParseTuple(args, "siiii:setBlock", &name, &bp.x, &bp.y, &bp.z, &did)) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
-			PY_RETURN_ERROR("Unknown dimension ID");
+			Py_RETURN_ERROR("Unknown dimension ID");
 		}
 		bs->setBlock(name, bp);
 		Py_RETURN_NONE;
@@ -1437,7 +1402,7 @@ static PyObject* PyAPI_getStructure(PyObject*, PyObject* args) {
 		&pos2.x, &pos2.y, &pos2.z, &did)) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
-			PY_RETURN_ERROR("Unknown dimension ID");
+			Py_RETURN_ERROR("Unknown dimension ID");
 		}
 		BlockPos start = {
 			min(pos1.x,pos2.x),
@@ -1448,7 +1413,7 @@ static PyObject* PyAPI_getStructure(PyObject*, PyObject* args) {
 			max(pos1.y,pos2.y) - start.y,
 			max(pos1.z,pos2.z) - start.z
 		};
-		StructureSettings ss(&size, true, false);
+		StructureSettings ss(&size, false, false);
 		StructureTemplate st("tmp");
 		st.fillFromWorld(bs, &start, &ss);
 
@@ -1466,7 +1431,7 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 		&data, &pos.x, &pos.y, &pos.z, &did)) {
 		auto bs = _level->getBlockSource(did);
 		if (!bs) {
-			PY_RETURN_ERROR("Unknown dimension ID");
+			Py_RETURN_ERROR("Unknown dimension ID");
 		}
 		Document json = toJson(data);
 		if (!json["size9"].IsArray()) {
@@ -1495,30 +1460,27 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 }
 //模块方法列表
 static PyMethodDef PyAPI_Methods[]{
-	{"getVersion", PyAPI_getVersion, 4, nullptr},
-	{"logout", PyAPI_logout, 1, nullptr},
-	{"runcmd", PyAPI_runcmd, 1, nullptr},
-#ifdef THREAD
-	{"setTimeout", PyAPI_setTimeout, 1, nullptr},
-#endif
-	{"setListener", PyAPI_setListener, 1, nullptr},
-	{"setShareData", PyAPI_setShareData, 1, nullptr},
-	{"getShareData", PyAPI_getShareData, 1, nullptr},
-	{"setCommandDescription", PyAPI_setCommandDescription, 1, nullptr},
-	{"getPlayerList", PyAPI_getPlayerList, 4, nullptr},
-	{"setDamage", PyAPI_setDamage, 1, nullptr},
-	{"setServerMotd", PyAPI_setServerMotd, 1, nullptr},
-	{"getBlock", PyAPI_getBlock, 1, nullptr},
-	{"setBlock", PyAPI_setBlock, 1, nullptr},
-	{"getStructure", PyAPI_getStructure, 1, nullptr},
-	{"setStructure", PyAPI_setStructure, 1, nullptr},
+	{"getVersion", PyAPI_getVersion, METH_NOARGS, nullptr},
+	{"logout", PyAPI_logout, METH_VARARGS, nullptr},
+	{"runcmd", PyAPI_runcmd, METH_VARARGS, nullptr},
+	{"setListener", PyAPI_setListener, METH_VARARGS, nullptr},
+	{"setShareData", PyAPI_setShareData, METH_VARARGS, nullptr},
+	{"getShareData", PyAPI_getShareData, METH_VARARGS, nullptr},
+	{"setCommandDescription", PyAPI_setCommandDescription, METH_VARARGS, nullptr},
+	{"getPlayerList", PyAPI_getPlayerList, METH_NOARGS, nullptr},
+	{"setDamage", PyAPI_setDamage, METH_VARARGS, nullptr},
+	{"setServerMotd", PyAPI_setServerMotd, METH_VARARGS, nullptr},
+	{"getBlock", PyAPI_getBlock, METH_VARARGS, nullptr},
+	{"setBlock", PyAPI_setBlock, METH_VARARGS, nullptr},
+	{"getStructure", PyAPI_getStructure, METH_VARARGS, nullptr},
+	{"setStructure", PyAPI_setStructure, METH_VARARGS, nullptr},
 	{nullptr}
 };
 //模块定义
 static PyModuleDef PyAPI_Module{
 	PyModuleDef_HEAD_INIT,
 	"mc",
-	nullptr,
+	"include some bds methods.",
 	-1,
 	PyAPI_Methods,
 	nullptr,
@@ -1528,47 +1490,51 @@ static PyModuleDef PyAPI_Module{
 };
 //模块初始化
 static PyObject* PyAPI_init() {
-	return PyModule_Create(&PyAPI_Module);
+	if (PyType_Ready(&PyEntity_Type) < 0)
+		return nullptr;
+	PyObject* module = PyModule_Create(&PyAPI_Module);
+	PyModule_AddObject(module, "Entity", (PyObject*)&PyEntity_Type);
+	return module;
 }
 #pragma endregion
+//把Python初始化工作交给bds来做
+HOOK(BDS_Main, int, "main",
+	int argc, char* argv[], char* envp[]) {
+	if (!filesystem::exists("plugins")) {
+		filesystem::create_directory("plugins");
+	}
+	if (!filesystem::exists("plugins/py")) {
+		filesystem::create_directory("plugins/py");
+	}
+	//将plugins/py加入模块搜索路径
+	Py_SetPath((Py_GetPath() + L";plugins/py"s).c_str());
+	//预初始化3.8+
+	//PyPreConfig cfg;
+	//PyPreConfig_InitPythonConfig(&cfg);
+	//cfg.utf8_mode = 1;
+	//cfg.configure_locale = 0;
+	//Py_PreInitialize(&cfg);
+	PyImport_AppendInittab("mc", PyAPI_init);//增加一个模块
+	Py_Initialize();//初始化解释器
+	PyEval_InitThreads();//启用线程支持
+	filesystem::directory_iterator files("plugins/py");
+	for (auto& info : files) {
+		auto& path = info.path();
+		if (path.extension() == ".py" || path.extension() == ".pyd") {
+			const string& name = path.stem().u8string();
+			print("[BDSpyrunner] loading ", name);
+			PyImport_ImportModule(name.c_str());
+			PyErr_Print();
+		}
+	}
+	PyEval_SaveThread();//释放当前线程
+
+	// 执行 main 函数
+	return original(argc, argv, envp);
+}
 BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 	if (reason == 1) {
-		//while (1) {
-		//	Tag* t = toTag(toJson(R"({})"));
-		//	cout << toJson(t).toStyledString() << endl;
-		//	t->deCompound();
-		//	delete t;
-		//}
-		//sizeof(Value);
-		if (!filesystem::exists("plugins")) {
-			filesystem::create_directory("plugins");
-		}
-		if (!filesystem::exists("plugins/py")) {
-			filesystem::create_directory("plugins/py");
-		}
-		//将plugins/py加入模块搜索路径
-		Py_SetPath((Py_GetPath() + L";plugins/py"s).c_str());
-		//预初始化3.8+
-		//PyPreConfig cfg;
-		//PyPreConfig_InitPythonConfig(&cfg);
-		//cfg.utf8_mode = 1;
-		//cfg.configure_locale = 0;
-		//Py_PreInitialize(&cfg);
-		PyImport_AppendInittab("mc", PyAPI_init);//增加一个模块
-		Py_Initialize();//初始化解释器
-		PyEval_InitThreads();//启用线程支持
-		filesystem::directory_iterator files("plugins/py");
-		for (auto& info : files) {
-			auto& path = info.path();
-			if (path.extension() == ".py" || path.extension() == ".pyd") {
-				const string& name = path.stem().u8string();
-				print("[BDSpyrunner] loading ", name);
-				PyImport_ImportModule(name.c_str());
-				PyErr_Print();
-			}
-		}
-		PyEval_SaveThread();//释放当前线程
-		print("[BDSpyrunner] 1.4.5 loaded.");//\n感谢小枫云 http://ipyvps.com 的赞助.");
+		print("[BDSpyrunner] 1.5.0 loaded.");
 	}
 	return TRUE;
 }

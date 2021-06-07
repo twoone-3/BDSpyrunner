@@ -7,9 +7,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <queue>
 #include <thread>
-#include <mutex>
 #include <functional>
 #include <filesystem>
 #include <map>
@@ -18,6 +16,10 @@
 
 using std::string;
 using VA = unsigned long long;
+using uint8 = unsigned char;
+using uint16 = unsigned short;
+using uint32 = unsigned int;
+using uint64 = unsigned long long;
 
 #define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
 #define SYM(sym) GetServerSymbol(sym)
@@ -34,22 +36,10 @@ extern "C" {
 	_declspec(dllimport) int HookFunction(void*, void*, void*);
 	_declspec(dllimport) void* GetServerSymbol(const char*);
 }
-/// <summary>
-/// 打印数据
-/// </summary>
-/// <typeparam name="T">任意类型</typeparam>
-/// <param name="data">要打印的数据</param>
 template<class T>
 static void inline print(const T& data) {
 	cout << data << endl;
 }
-/// <summary>
-/// 打印数据
-/// </summary>
-/// <typeparam name="T"></typeparam>
-/// <typeparam name="...T2"></typeparam>
-/// <param name="data">要打印的数据</param>
-/// <param name="...other">下次打印的数据</param>
 template<class T, class... T2>
 static void inline print(const T& data, T2... other) {
 	cout << data;
@@ -66,8 +56,8 @@ static void inline print(const T& data, T2... other) {
 template<typename ret = void, typename... Args>
 static ret SymCall(const char* sym, Args... args) {
 	void* found = SYM(sym);
-	if (!found)
-		print("Failed to call ", sym);
+	//if (!found)
+	//	print("Failed to call ", sym);
 	return reinterpret_cast<ret(*)(Args...)>(found)(args...);
 }
 static void* SymHook(const char* sym, void* hook, void* org) {
@@ -79,27 +69,27 @@ static void* SymHook(const char* sym, void* hook, void* org) {
 }
 
 #pragma region NBT
-enum TagType : char {
+enum TagType {
 	End, Byte, Short, Int, Int64, Float, Double,
 	ByteArray, String, List, Compound, IntArray
 };
 struct TagMemoryChunk {
-	size_t cap_ = 0;
-	size_t size_ = 0;
-	unique_ptr<unsigned char[]> data_;
+	size_t capacity = 0;
+	size_t size = 0;
+	unique_ptr<uint8[]> data;
 
-	TagMemoryChunk(size_t size, unsigned char data[]) :cap_(size), size_(size), data_(data) {}
+	TagMemoryChunk(size_t size, uint8 data[]) :capacity(size), size(size), data(data) {}
 };
 //所有Tag的合体
 struct Tag {
-	void* _vtable;
-	char _this[24];
+	void* vtable;
+	char data[32];
 
 	void put(const string& key, const Tag* value) {
 		return SymCall("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
 			this, key, value);
 	}
-	void putByte(const string& key, unsigned char value) {
+	void putByte(const string& key, uint8 value) {
 		return SymCall("?putByte@CompoundTag@@QEAAAEAEV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@E@Z",
 			this, key, value);
 	}
@@ -149,7 +139,7 @@ struct Tag {
 	TagType getListType() {
 		return *((TagType*)this + 32);
 	}
-	auto& asByte() { return *(unsigned char*)((VA)this + 8); }
+	auto& asByte() { return *(uint8*)((VA)this + 8); }
 	auto& asShort() { return *(short*)((VA)this + 8); }
 	auto& asInt() { return *(int*)((VA)this + 8); }
 	auto& asInt64() { return *(long long*)((VA)this + 8); }
@@ -170,13 +160,13 @@ Tag* toTag(const Value&);
 Tag* ArraytoTag(const Value&);
 
 //新建tag
-Tag* newTag(TagType t) {
+static Tag* newTag(TagType t) {
 	Tag* tag;
 	SymCall("?newTag@Tag@@SA?AV?$unique_ptr@VTag@@U?$default_delete@VTag@@@std@@@std@@W4Type@1@@Z",
 		&tag, t);
 	return tag;
 }
-Document ListtoJson(Tag* t) {
+static Document ListtoJson(Tag* t) {
 	Document value(kArrayType);
 	Document::AllocatorType& allocator = value.GetAllocator();
 	for (auto& c : t->asList()) {
@@ -184,7 +174,7 @@ Document ListtoJson(Tag* t) {
 		case End:
 			break;
 		case Byte:
-			value.PushBack(Value(c->asByte()), allocator);
+			value.PushBack(c->asByte(), allocator);
 			break;
 		case Short:
 			value.PushBack(c->asShort(), allocator);
@@ -203,19 +193,19 @@ Document ListtoJson(Tag* t) {
 			break;
 		case ByteArray:break;
 		case String:
-			value.PushBack("", allocator);
+			value.PushBack({ c->asString(),allocator }, allocator);
 			break;
 		case List:
-			value.PushBack(ListtoJson(c).GetArray(), allocator);
+			value.PushBack(ListtoJson(c), allocator);
 			break;
 		case Compound:
-			value.PushBack(toJson(c).GetObj(), allocator);
+			value.PushBack(toJson(c), allocator);
 			break;
 		}
 	}
-	return move(value);
+	return value;
 }
-Document toJson(Tag* t) {
+static Document toJson(Tag* t) {
 	Document value(kObjectType);
 	Document::AllocatorType& allocator = value.GetAllocator();
 	for (auto& x : t->asCompound()) {
@@ -244,38 +234,40 @@ Document toJson(Tag* t) {
 			break;
 		case ByteArray:
 			son.SetArray();
-			for (size_t i = 0; i < x.second.asByteArray().size_; ++i)
-				son.PushBack(x.second.asByteArray().data_[i], allocator);
+			for (size_t i = 0; i < x.second.asByteArray().size; ++i)
+				son.PushBack(x.second.asByteArray().data[i], allocator);
 			break;
 		case String:
 			//Value 不能直接用 std::string 赋值
-			son.SetString(x.second.asString().c_str(),(SizeType)x.second.asString().length());
+			son = { x.second.asString(), allocator };
+			//son.SetString(x.second.asString().c_str(), (SizeType)x.second.asString().length());
 			break;
 		case List:
-			son = ListtoJson(&x.second).GetArray();
+			son = (Value&)ListtoJson(&x.second);//.GetArray();
 			break;
 		case Compound:
-			son = toJson(&x.second).GetObj();
+			son = (Value&)toJson(&x.second);
 			break;
 		case IntArray:
 			print("IntArrayTag");
 			break;
 		}
 	}
-	return move(value);
+	return value;
 }
-Tag* toTag(const Value& value) {
+static Tag* toTag(const Value& value) {
 	Tag* c = newTag(Compound);
 	for (auto& x : value.GetObj()) {
 		string key = x.name.GetString();
 		char& e = key.back();
-		int type = 0;
+		TagType type = End;
 		if (*(&e - 1) == '1' && e == '0') {
-			type = 10;
-			key.resize(key.length() - 2);
+			type = Compound;
+			key.pop_back();
+			key.pop_back();
 		}
 		else if (e >= '0' && e <= '9') {
-			type = e - '0';
+			type = TagType(e - '0');
 			key.pop_back();
 		}
 		else continue;
@@ -283,10 +275,10 @@ Tag* toTag(const Value& value) {
 		switch (type) {
 		case End:break;
 		case Byte:
-			c->putByte(key, (uint8_t)x.value.GetInt());
+			c->putByte(key, uint8(x.value.GetInt()));
 			break;
 		case Short:
-			c->putShort(key, (short)x.value.GetInt());
+			c->putShort(key, short(x.value.GetInt()));
 			break;
 		case Int:
 			c->putInt(key, x.value.GetInt());
@@ -303,7 +295,7 @@ Tag* toTag(const Value& value) {
 		case ByteArray:
 		{
 			SizeType size = x.value.Size();
-			unsigned char* data = new unsigned char[size];
+			uint8* data = new uint8[size];
 			for (unsigned i = 0; i < size; ++i)
 				data[i] = x.value.GetInt();
 			TagMemoryChunk tmc(size, data);
@@ -332,7 +324,7 @@ Tag* toTag(const Value& value) {
 	}
 	return c;
 }
-Tag* ArraytoTag(const Value& value) {
+static Tag* ArraytoTag(const Value& value) {
 	Tag* l = newTag(List);
 	for (auto& x : value.GetArray()) {
 		Type type = x.GetType();
@@ -352,18 +344,17 @@ Tag* ArraytoTag(const Value& value) {
 			break;
 		case rapidjson::kStringType:
 			t = newTag(String);
-			*(string*)t->_this = x.GetString();
+			*(string*)t->data = x.GetString();
 			break;
 		case rapidjson::kNumberType:
 			if (x.IsInt() || x.IsUint()) {
 				t = newTag(Int);
-				*(int*)t->_this = x.GetInt();
+				*(int*)t->data = x.GetInt();
 			}
 			else if (x.IsFloat() || x.IsDouble()) {
 				t = newTag(Double);
-				*(double*)t->_this = x.GetDouble();
+				*(double*)t->data = x.GetDouble();
 			}
-
 			break;
 		default:
 			break;
@@ -535,7 +526,7 @@ struct Container {
 		vector<ItemStack*> s;
 		SymCall<VA>("?getSlots@Container@@UEBA?BV?$vector@PEBVItemStack@@V?$allocator@PEBVItemStack@@@std@@@std@@XZ",
 			this, &s);
-		return move(s);
+		return s;
 	}
 	void clearItem(int slot, int num) {
 		SymCall("?removeItem@Container@@UEAAXHH@Z", this, slot, num);
@@ -654,7 +645,7 @@ struct Player : Mob {
 	}
 	//发送数据包
 	void sendPacket(VA pkt) {
-		return SymCall<void>("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z",
+	SymCall("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z",
 			this, pkt);
 	}
 	//根据地图信息获取玩家xuid
@@ -699,7 +690,7 @@ struct Player : Mob {
 		SymCall<VA>("?addItem@@YAXAEAVPlayer@@AEAVItemStack@@@Z", this, item);
 	}
 	//增加等级
-	void addLevel(const int level) {
+	void addLevel(int level) {
 		SymCall("?addLevels@Player@@UEAAXH@Z", this, level);
 	}
 	//获取当前选中的框位置
@@ -871,7 +862,7 @@ struct Level {
 			this, id, false);
 	}
 	const vector<Player*>& getAllPlayers() {
-		return FETCH(vector<Player*>, this + 112);
+		return FETCH(vector<Player*>, this + 112);//IDA
 	}
 	BlockPalette* getBlockPalette() {
 		return FETCH(BlockPalette*, this + 2072);

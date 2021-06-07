@@ -8,12 +8,14 @@ using namespace rapidjson;
 
 Document toJson(const char* str) {
 	Document doc;
-	return move(doc.Parse(str));
+	doc.Parse(str);
+	return doc;
 }
 
 Document toJson(const string& str) {
 	Document doc;
-	return move(doc.Parse(str));
+	doc.Parse(str);
+	return doc;
 }
 
 string toString(const Value& value) {
