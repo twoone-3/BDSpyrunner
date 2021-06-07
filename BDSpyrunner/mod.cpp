@@ -907,7 +907,23 @@ HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 	}
 	return original(_this, b, bp, a4, p, _bool);
 }
-HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
+HOOK(onDestroyBlock, bool, "?playerWillDestroy@BlockLegacy@@UEBA_NAEAVPlayer@@AEBVBlockPos@@AEBVBlock@@@Z",
+	BlockLegacy* _this, Player* p, BlockPos* bp, Block* b) {
+	short bid = _this->getBlockItemID();
+	string bn = _this->getBlockName();
+	if (!EventCall(Event::onDestroyBlock,
+		Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i]}",
+			"player", PyEntity_FromEntity(p),
+			"blockname", bn.c_str(),
+			"blockid", int(bid),
+			"position", bp->x, bp->y, bp->z
+		)
+	))
+		return false;
+	return original(_this, p, bp, b);
+}
+#if 0
+HOOK(onDestroyBlock2, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
 	BlockSource* _this, Actor* p, BlockPos* bp, ItemStack* a3, bool a4) {
 #if 0//测试获取结构
 	BlockPos size = { 5,5,5 };
@@ -939,6 +955,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 	}
 	return original(_this, p, bp, a3, a4);
 }
+#endif
 HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
 	bool res = EventCall(Event::onOpenChest,
@@ -1273,7 +1290,7 @@ HOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NA
 #pragma region API Function
 //获取版本
 static PyObject* PyAPI_getVersion(PyObject*, PyObject*) {
-	return PyLong_FromLong(150);
+	return PyLong_FromLong(151);
 }
 //指令输出
 static PyObject* PyAPI_logout(PyObject*, PyObject* args) {
@@ -1356,10 +1373,9 @@ static PyObject* PyAPI_setDamage(PyObject*, PyObject* args) {
 static PyObject* PyAPI_setServerMotd(PyObject*, PyObject* args) {
 	const char* name = "";
 	if (PyArg_ParseTuple(args, "s:setServerMotd", &name)) {
-		if (_server_network_handler) {
+		if (_server_network_handler) 
 			SymCall<VA, ServerNetworkHandler*, const string&, bool>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
 				_server_network_handler, name, true);
-		}
 		else
 			Py_RETURN_ERROR("Server did not finish loading");
 	}
@@ -1528,13 +1544,12 @@ HOOK(BDS_Main, int, "main",
 		}
 	}
 	PyEval_SaveThread();//释放当前线程
+		print("[BDSpyrunner] 1.5.1 loaded.");
 
 	// 执行 main 函数
 	return original(argc, argv, envp);
 }
+//dll入口函数
 BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
-	if (reason == 1) {
-		print("[BDSpyrunner] 1.5.0 loaded.");
-	}
 	return TRUE;
 }
