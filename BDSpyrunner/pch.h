@@ -4,7 +4,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <vector>
 #include <thread>
@@ -14,7 +13,8 @@
 #include <unordered_map>
 #include "json.h"
 
-using std::string;
+using namespace std;
+using namespace Json;
 using VA = unsigned long long;
 using uint8 = unsigned char;
 using uint16 = unsigned short;
@@ -55,21 +55,30 @@ static void inline print(const T& data, T2... other) {
 /// <returns>返回值</returns>
 template<typename ret = void, typename... Args>
 static ret SymCall(const char* sym, Args... args) {
-	void* found = SYM(sym);
-	//if (!found)
-	//	print("Failed to call ", sym);
-	return reinterpret_cast<ret(*)(Args...)>(found)(args...);
+	return reinterpret_cast<ret(*)(Args...)>(SYM(sym))(args...);
 }
 static void* SymHook(const char* sym, void* hook, void* org) {
 	void* found = SYM(sym);
-	if (!found)
+	if (found)
+		HookFunction(found, org, hook);
+	else
 		print("Failed to hook ", sym);
-	HookFunction(found, org, hook);
 	return org;
+}
+// 转换字符串为Json对象
+static Value toJson(const string& str) {
+	Value value;
+	CharReaderBuilder rb;
+	string errs;
+	CharReader* r(rb.newCharReader());
+	if (!r->parse(str.c_str(), str.c_str() + str.length(), &value, &errs)) {
+		print("JSON转换失败..", errs);
+	}
+	return value;
 }
 
 #pragma region NBT
-enum TagType {
+enum class TagType : uint8 {
 	End, Byte, Short, Int, Int64, Float, Double,
 	ByteArray, String, List, Compound, IntArray
 };
@@ -139,130 +148,130 @@ struct Tag {
 	TagType getListType() {
 		return *((TagType*)this + 32);
 	}
-	auto& asByte() { return *(uint8*)((VA)this + 8); }
-	auto& asShort() { return *(short*)((VA)this + 8); }
-	auto& asInt() { return *(int*)((VA)this + 8); }
-	auto& asInt64() { return *(long long*)((VA)this + 8); }
-	auto& asFloat() { return *(float*)((VA)this + 8); }
-	auto& asDouble() { return *(double*)((VA)this + 8); }
-	const char* asCString() { return *(const char**)((VA)this + 8); }
-	auto& asString() { return *(string*)((VA)this + 8); }
-	auto& asByteArray() { return *(TagMemoryChunk*)((VA)this + 8); }
+	auto& asByte() { return *(uint8*)data; }
+	auto& asShort() { return *(short*)data; }
+	auto& asInt() { return *(int*)data; }
+	auto& asInt64() { return *(long long*)data; }
+	auto& asFloat() { return *(float*)data; }
+	auto& asDouble() { return *(double*)data; }
+	const char* asCString() { return *(const char**)data; }
+	auto& asString() { return *(string*)data; }
+	auto& asByteArray() { return *(TagMemoryChunk*)data; }
 	auto asListTag() { return (Tag*)this; }
-	auto& asList() { return *(vector<Tag*>*)((VA)this + 8); }
-	auto& asCompound() { return *(map<string, Tag>*)((VA)this + 8); }
+	auto& asList() { return *(vector<Tag*>*)data; }
+	auto& asCompound() { return *(map<string, Tag>*)data; }
 };
 
-Tag* newTag(TagType);
-Document ListtoJson(Tag*);
-Document toJson(Tag*);
-Tag* toTag(const Value&);
-Tag* ArraytoTag(const Value&);
+static Tag* newTag(TagType);
+static Value ListtoJson(Tag*);
+static Value toJson(Tag*);
+static Tag* toTag(const Value&);
+static Tag* ArraytoTag(const Value&);
 
 //新建tag
-static Tag* newTag(TagType t) {
+Tag* newTag(TagType t) {
 	Tag* tag;
 	SymCall("?newTag@Tag@@SA?AV?$unique_ptr@VTag@@U?$default_delete@VTag@@@std@@@std@@W4Type@1@@Z",
 		&tag, t);
 	return tag;
 }
-static Document ListtoJson(Tag* t) {
-	Document value(kArrayType);
-	Document::AllocatorType& allocator = value.GetAllocator();
+Value ListtoJson(Tag* t) {
+	Value value(arrayValue);
 	for (auto& c : t->asList()) {
 		switch (t->getListType()) {
-		case End:
+		case TagType::End:
 			break;
-		case Byte:
-			value.PushBack(c->asByte(), allocator);
+		case TagType::Byte:
+			value.append(c->asByte());
 			break;
-		case Short:
-			value.PushBack(c->asShort(), allocator);
+		case TagType::Short:
+			value.append(c->asShort());
 			break;
-		case Int:
-			value.PushBack(c->asInt(), allocator);
+		case TagType::Int:
+			value.append(c->asInt());
 			break;
-		case Int64:
-			value.PushBack(c->asInt64(), allocator);
+		case TagType::Int64:
+			value.append(c->asInt64());
 			break;
-		case Float:
-			value.PushBack(c->asFloat(), allocator);
+		case TagType::Float:
+			value.append(c->asFloat());
 			break;
-		case Double:
-			value.PushBack(c->asDouble(), allocator);
+		case TagType::Double:
+			value.append(c->asDouble());
 			break;
-		case ByteArray:break;
-		case String:
-			value.PushBack({ c->asString(),allocator }, allocator);
+		case TagType::ByteArray:
 			break;
-		case List:
-			value.PushBack(ListtoJson(c), allocator);
+		case TagType::String:
+			value.append(c->asString());
 			break;
-		case Compound:
-			value.PushBack(toJson(c), allocator);
+		case TagType::List:
+			value.append(ListtoJson(c));
+			break;
+		case TagType::Compound:
+			value.append(toJson(c));
 			break;
 		}
 	}
 	return value;
 }
-static Document toJson(Tag* t) {
-	Document value(kObjectType);
-	Document::AllocatorType& allocator = value.GetAllocator();
+Value toJson(Tag* t) {
+	Value value(objectValue);
 	for (auto& x : t->asCompound()) {
 		TagType type = x.second.getVariantType();
-		Value& son = value[x.first + to_string(type)];
+		Value& son = value[x.first + to_string(int(type))];
 		switch (type) {
-		case End:
+		case TagType::End:
 			break;
-		case Byte:
+		case TagType::Byte:
 			son = x.second.asByte();
 			break;
-		case Short:
+		case TagType::Short:
 			son = x.second.asShort();
 			break;
-		case Int:
+		case TagType::Int:
 			son = x.second.asInt();
 			break;
-		case Int64:
+		case TagType::Int64:
 			son = x.second.asInt64();
 			break;
-		case Float:
+		case TagType::Float:
 			son = x.second.asFloat();
 			break;
-		case Double:
+		case TagType::Double:
 			son = x.second.asDouble();
 			break;
-		case ByteArray:
-			son.SetArray();
+		case TagType::ByteArray:
+			son = arrayValue;
 			for (size_t i = 0; i < x.second.asByteArray().size; ++i)
-				son.PushBack(x.second.asByteArray().data[i], allocator);
+				son.append(x.second.asByteArray().data[i]);
 			break;
-		case String:
-			//Value 不能直接用 std::string 赋值
-			son = { x.second.asString(), allocator };
-			//son.SetString(x.second.asString().c_str(), (SizeType)x.second.asString().length());
+		case TagType::String:
+			son = x.second.asString();
 			break;
-		case List:
-			son = (Value&)ListtoJson(&x.second);//.GetArray();
+		case TagType::List:
+			son = ListtoJson(&x.second);
 			break;
-		case Compound:
-			son = (Value&)toJson(&x.second);
+		case TagType::Compound:
+			son = toJson(&x.second);
 			break;
-		case IntArray:
+		case TagType::IntArray:
 			print("IntArrayTag");
+			break;
+		default:
 			break;
 		}
 	}
 	return value;
 }
-static Tag* toTag(const Value& value) {
-	Tag* c = newTag(Compound);
-	for (auto& x : value.GetObj()) {
-		string key = x.name.GetString();
+Tag* toTag(const Value& value) {
+	Tag* c = newTag(TagType::Compound);
+	auto begin = value.begin();
+	while (begin != value.end()) {
+		string key = begin.name();
 		char& e = key.back();
-		TagType type = End;
+		TagType type;
 		if (*(&e - 1) == '1' && e == '0') {
-			type = Compound;
+			type = TagType::Compound;
 			key.pop_back();
 			key.pop_back();
 		}
@@ -272,96 +281,99 @@ static Tag* toTag(const Value& value) {
 		}
 		else continue;
 		//cout << key << " - " << type << endl;
-		switch (type) {
-		case End:break;
-		case Byte:
-			c->putByte(key, uint8(x.value.GetInt()));
+		switch (type){
+		case TagType::End:
 			break;
-		case Short:
-			c->putShort(key, short(x.value.GetInt()));
+		case TagType::Byte:
+			c->putByte(key, uint8(begin->asInt()));
 			break;
-		case Int:
-			c->putInt(key, x.value.GetInt());
+		case TagType::Short:
+			c->putShort(key, short(begin->asInt()));
 			break;
-		case Int64:
-			c->putInt64(key, x.value.GetInt64());
+		case TagType::Int:
+			c->putInt(key, begin->asInt());
 			break;
-		case Float:
-			c->putFloat(key, x.value.GetFloat());
+		case TagType::Int64:
+			c->putInt64(key, begin->asInt64());
 			break;
-		case Double:
-			c->putFloat(key, (float)x.value.GetDouble());
+		case TagType::Float:
+			c->putFloat(key, begin->asFloat());
 			break;
-		case ByteArray:
+		case TagType::Double:
+			c->putFloat(key, float(begin->asDouble()));
+			break;
+		case TagType::ByteArray:
 		{
-			SizeType size = x.value.Size();
-			uint8* data = new uint8[size];
+			size_t size = begin->size();
+			unsigned char* data = new unsigned char[size];
 			for (unsigned i = 0; i < size; ++i)
-				data[i] = x.value.GetInt();
+				data[i] = (unsigned char)begin->operator[](i).asInt();
 			TagMemoryChunk tmc(size, data);
 			c->putByteArray(key, tmc);
 			break;
 		}
-		case String:
-			c->putString(key, x.value.GetString());
+		case TagType::String:
+			c->putString(key, begin->asString());
 			break;
-		case List:
+		case TagType::List:
 		{
-			Tag* lt = ArraytoTag(x.value);
+			Tag* lt = ArraytoTag(*begin);
 			c->put(key, lt);
 			lt->deList();
 			delete lt;
 			break;
 		}
-		case Compound:
+		case TagType::Compound:
 		{
-			Tag* t = toTag(x.value);
+			Tag* t = toTag(*begin);
 			c->putCompound(key, t);
 			//delete t;
 			break;
 		}
-		}
-	}
-	return c;
-}
-static Tag* ArraytoTag(const Value& value) {
-	Tag* l = newTag(List);
-	for (auto& x : value.GetArray()) {
-		Type type = x.GetType();
-		Tag* t = nullptr;
-		switch (type) {
-		case rapidjson::kNullType:
-			break;
-		case rapidjson::kFalseType:
-			break;
-		case rapidjson::kTrueType:
-			break;
-		case rapidjson::kObjectType:
-			t = toTag(x);
-			break;
-		case rapidjson::kArrayType:
-			t = ArraytoTag(x);
-			break;
-		case rapidjson::kStringType:
-			t = newTag(String);
-			*(string*)t->data = x.GetString();
-			break;
-		case rapidjson::kNumberType:
-			if (x.IsInt() || x.IsUint()) {
-				t = newTag(Int);
-				*(int*)t->data = x.GetInt();
-			}
-			else if (x.IsFloat() || x.IsDouble()) {
-				t = newTag(Double);
-				*(double*)t->data = x.GetDouble();
-			}
+		case TagType::IntArray:
 			break;
 		default:
 			break;
 		}
-		l->add(t);
+		begin++;
 	}
-	return l;
+	return c;
+}
+Tag* ArraytoTag(const Value& value) {
+	Tag* list = newTag(TagType::List);
+	Tag* tag = nullptr;
+	for (auto& x : value) {
+		ValueType type = x.type();
+		switch (type) {
+		case Json::nullValue:
+			break;
+		case Json::intValue:
+		case Json::uintValue:
+			tag = newTag(TagType::Int);
+			*(int*)tag->data = x.asInt();
+			break;
+		case Json::realValue:
+			tag = newTag(TagType::Double);
+			*(double*)tag->data = x.asDouble();
+			break;
+		case Json::stringValue:
+			tag = newTag(TagType::String);
+			*(string*)tag->data = x.asString();
+			break;
+		case Json::booleanValue:
+			break;
+		case Json::arrayValue:
+			tag = ArraytoTag(x);
+			break;
+		case Json::objectValue:
+			tag = toTag(x);
+			break;
+		default:
+			break;
+		}
+		list->add(tag);
+	}
+	return list;
 }
 #pragma endregion
 #pragma region Math
@@ -616,7 +628,7 @@ struct Actor {
 		return SymCall<ItemStack*>("?getOffhandSlot@Actor@@QEBAAEBVItemStack@@XZ", this);
 	}
 	Tag* save() {
-		Tag* t = newTag(Compound);
+		Tag* t = newTag(TagType::Compound);
 		SymCall("?save@Actor@@UEAA_NAEAVCompoundTag@@@Z", this, t);
 		return t;
 	}
@@ -645,7 +657,7 @@ struct Player : Mob {
 	}
 	//发送数据包
 	void sendPacket(VA pkt) {
-	SymCall("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z",
+		SymCall("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z",
 			this, pkt);
 	}
 	//根据地图信息获取玩家xuid
@@ -861,8 +873,8 @@ struct Level {
 		return SymCall<Actor*>("?fetchEntity@Level@@UEBAPEAVActor@@UActorUniqueID@@_N@Z",
 			this, id, false);
 	}
-	const vector<Player*>& getAllPlayers() {
-		return FETCH(vector<Player*>, this + 112);//IDA
+	vector<Player*> getAllPlayers() {
+		return FETCH(vector<Player*>, this + 112);//IDA Level::forEachPlayer
 	}
 	BlockPalette* getBlockPalette() {
 		return FETCH(BlockPalette*, this + 2072);
@@ -880,7 +892,7 @@ struct string_span {
 	size_t len;
 	const char* str;
 	string_span(const char* s) : len(strlen(s)), str(s) {}
-	string_span(const std::string& s) : len(s.length()), str(s.c_str()) {}
+	string_span(const string& s) : len(s.length()), str(s.c_str()) {}
 };
 struct StructureSettings {
 	char _this[96];
