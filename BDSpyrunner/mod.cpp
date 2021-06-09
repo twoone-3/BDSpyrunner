@@ -2,8 +2,10 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.5.3"
-#define VERSION_NUMBER 153
+#define VERSION_STRING "1.5.4"
+#define VERSION_NUMBER 154
+#define PLUGIN_PATH "plugins/py"
+#define MODULE_NAME "mc"
 
 #pragma region Macro
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
@@ -128,7 +130,7 @@ static int _damage;
 #pragma endregion
 #pragma region Function Define
 //创建包
-static inline VA createPacket(int type) {
+static VA createPacket(int type) {
 	VA pkt[2];
 	SymCall("?createPacket@MinecraftPackets@@SA?AV?$shared_ptr@VPacket@@@std@@W4MinecraftPacketIds@@@Z",
 		pkt, type);
@@ -243,12 +245,13 @@ struct PyEntity {
 	PyObject_HEAD;
 	Actor* actor;
 };
+extern PyTypeObject PyEntity_Type;
 static Actor* PyEntity_AsActor(PyObject* self) {
-	return ((PyEntity*)self)->actor;
+	return reinterpret_cast<PyEntity*>(self)->actor;
 }
 static Player* PyEntity_AsPlayer(PyObject* self) {
-	if (isPlayer(((PyEntity*)self)->actor))
-		return (Player*)((PyEntity*)self)->actor;
+	if (isPlayer(reinterpret_cast<PyEntity*>(self)->actor))
+		return (Player*)reinterpret_cast<PyEntity*>(self)->actor;
 	else
 		Py_RETURN_ERROR("This entity is not player");
 }
@@ -257,6 +260,17 @@ static Player* PyEntity_AsPlayer(PyObject* self) {
 static PyObject* PyEntity_New(PyTypeObject* type, PyObject*, PyObject*) {
 	return type->tp_alloc(type, 0);
 }
+//构造函数
+static int PyEntity_Init(PyObject* self, PyObject* args, PyObject*) {
+	PyEntity* other;
+	if (!PyArg_ParseTuple(args, "O", &other)) {
+		if (Py_TYPE(other) == &PyEntity_Type) {
+			reinterpret_cast<PyEntity*>(self)->actor = other->actor;
+			return 0;
+		}
+	}
+	return -1;
+}
 //回收
 static void PyEntity_Dealloc(PyObject* obj) {
 	Py_TYPE(obj)->tp_free(obj);
@@ -264,7 +278,7 @@ static void PyEntity_Dealloc(PyObject* obj) {
 //转字符串
 static PyObject* PyEntity_Str(PyObject* self) {
 	string name = PyEntity_AsActor(self)->getNameTag();
-	return PyUnicode_FromStringAndSize(name.c_str(),name.length());
+	return PyUnicode_FromStringAndSize(name.c_str(), name.length());
 }
 //哈希
 static Py_hash_t PyEntity_Hash(PyObject* self) {
@@ -742,7 +756,7 @@ static PyTypeObject PyEntity_Type{
 	nullptr,				/* tp_as_mapping */
 	PyEntity_Hash,			/* tp_hash */
 	nullptr,				/* tp_call */
-	PyEntity_Str,				/* tp_str */
+	PyEntity_Str,			/* tp_str */
 	nullptr,				/* tp_getattro */
 	nullptr,				/* tp_setattro */
 	nullptr,				/* tp_as_buffer */
@@ -762,7 +776,7 @@ static PyTypeObject PyEntity_Type{
 	nullptr,				/* tp_descr_get */
 	nullptr,				/* tp_descr_set */
 	0,						/* tp_dictoffset */
-	nullptr,				/* tp_init */
+	PyEntity_Init,			/* tp_init */
 	nullptr,				/* tp_alloc */
 	PyEntity_New,			/* tp_new */
 	nullptr,				/* tp_free */
@@ -1408,11 +1422,12 @@ static PyObject* PyAPI_getStructure(PyObject*, PyObject* args) {
 		if (!bs) {
 			Py_RETURN_ERROR("Unknown dimension ID");
 		}
-		BlockPos start = {
+		BlockPos start{
 			min(pos1.x,pos2.x),
 			min(pos1.y,pos2.y),
-			min(pos1.z,pos2.z) };
-		BlockPos size = {
+			min(pos1.z,pos2.z)
+		};
+		BlockPos size{
 			max(pos1.x,pos2.x) - start.x,
 			max(pos1.y,pos2.y) - start.y,
 			max(pos1.z,pos2.z) - start.z
@@ -1431,7 +1446,7 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 	BlockPos pos; int did;
 	if (PyArg_ParseTuple(args, "siiii:setStructure",
 		&data, &pos.x, &pos.y, &pos.z, &did)) {
-		auto bs = _level->getBlockSource(did);
+		BlockSource* bs = _level->getBlockSource(did);
 		if (!bs) {
 			Py_RETURN_ERROR("Unknown dimension ID");
 		}
@@ -1440,7 +1455,7 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 			cerr << "结构JSON错误" << endl;
 			Py_RETURN_NONE;
 		}
-		BlockPos size = {
+		BlockPos size{
 			json["size9"][0].asInt(),
 			json["size9"][1].asInt(),
 			json["size9"][2].asInt()
@@ -1449,10 +1464,10 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 		StructureTemplate st("tmp");
 		st.fromJson(json);
 		st.placeInWorld(bs, _level->getBlockPalette(), &pos, &ss);
-		for (int x = 0; x != size.x; x++) {
-			for (int y = 0; y != size.y; y++) {
-				for (int z = 0; z != size.z; z++) {
-					BlockPos bp{ x,y,z };
+		for (unsigned x = 0; x != size.x; ++x) {
+			for (unsigned y = 0; y != size.y; ++y) {
+				for (unsigned z = 0; z != size.z; ++z) {
+					BlockPos bp{ int(x),int(y),int(z) };
 					bs->neighborChanged(&bp);
 				}
 			}
@@ -1481,8 +1496,8 @@ static PyMethodDef PyAPI_Methods[]{
 //模块定义
 static PyModuleDef PyAPI_Module{
 	PyModuleDef_HEAD_INIT,
-	"mc",
-	"include some bds methods.",
+	MODULE_NAME,
+	"some api functions.",
 	-1,
 	PyAPI_Methods,
 	nullptr,
@@ -1502,26 +1517,21 @@ static PyObject* PyAPI_init() {
 //把Python初始化工作交给bds来做
 HOOK(BDS_Main, int, "main",
 	int argc, char* argv[], char* envp[]) {
-	if (!filesystem::exists("plugins")) {
-		filesystem::create_directory("plugins");
-	}
-	if (!filesystem::exists("plugins/py")) {
-		filesystem::create_directory("plugins/py");
-	}
+	using namespace filesystem;
+	create_directories(PLUGIN_PATH);
 	//将plugins/py加入模块搜索路径
-	Py_SetPath((Py_GetPath() + L";plugins/py"s).c_str());
-	//预初始化3.8+
-	//PyPreConfig cfg;
-	//PyPreConfig_InitPythonConfig(&cfg);
-	//cfg.utf8_mode = 1;
-	//cfg.configure_locale = 0;
-	//Py_PreInitialize(&cfg);
-	PyImport_AppendInittab("mc", PyAPI_init);//增加一个模块
+	Py_SetPath((wstring(Py_GetPath()) + L";" PLUGIN_PATH).c_str());
+	/*预初始化3.8+
+	PyPreConfig cfg;
+	PyPreConfig_InitPythonConfig(&cfg);
+	cfg.utf8_mode = 1;
+	cfg.configure_locale = 0;
+	Py_PreInitialize(&cfg);*/
+	PyImport_AppendInittab(MODULE_NAME, PyAPI_init);//增加一个模块
 	Py_Initialize();//初始化解释器
 	PyEval_InitThreads();//启用线程支持
-	filesystem::directory_iterator files("plugins/py");
-	for (auto& info : files) {
-		auto& path = info.path();
+	for (const directory_entry& info : directory_iterator(PLUGIN_PATH)) {
+		const path& path = info;
 		if (path.extension() == ".py" || path.extension() == ".pyd") {
 			const string& name = path.stem().u8string();
 			print("[BDSpyrunner] loading ", name);
@@ -1535,7 +1545,6 @@ HOOK(BDS_Main, int, "main",
 	// 执行 main 函数
 	return original(argc, argv, envp);
 }
-//dll入口函数
 BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
 	//Tag* t = toTag(toJson(R"({"bcy1":3,"str8":"string"})"));
 	//print(toString(toJson(t)));

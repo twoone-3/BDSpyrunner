@@ -2,6 +2,7 @@
 //#pragma warning(disable:4996)
 #pragma execution_character_set("utf-8")
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #include <iostream>
 #include <string>
@@ -9,17 +10,12 @@
 #include <thread>
 #include <functional>
 #include <filesystem>
-#include <map>
 #include <unordered_map>
 #include "json/json.h"
 
 using namespace std;
 using namespace Json;
 using VA = unsigned long long;
-using uint8 = unsigned char;
-using uint16 = unsigned short;
-using uint32 = unsigned int;
-using uint64 = unsigned long long;
 
 #define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
 #define SYM(sym) GetServerSymbol(sym)
@@ -32,10 +28,12 @@ struct name {							\
 name::fn name::original = *reinterpret_cast<name::fn*>(SymHook(sym, name::_hook, &name::original)); \
 ret name::_hook(__VA_ARGS__)
 
-extern "C" {
-	_declspec(dllimport) int HookFunction(void*, void*, void*);
-	_declspec(dllimport) void* GetServerSymbol(const char*);
-}
+//提供Detours的api
+extern "C" _declspec(dllimport)
+int HookFunction(void*, void*, void*);
+//获取符号
+extern "C" _declspec(dllimport)
+void* GetServerSymbol(const char*);
 //输出
 template<class T>
 static void inline print(const T& data) {
@@ -51,18 +49,14 @@ static void inline print(const T& data, T2... other) {
 template<typename ret = void, typename... Args>
 static ret SymCall(const char* sym, Args... args) {
 	void* found = SYM(sym);
-	if (!found) {
+	if (!found)
 		print("Failed to call ", sym);
-		exit(1);
-	}
 	return reinterpret_cast<ret(*)(Args...)>(found)(args...);
 }
 static void* SymHook(const char* sym, void* hook, void* org) {
 	void* found = SYM(sym);
-	if (!found) {
+	if (!found)
 		print("Failed to hook ", sym);
-		exit(1);
-	}
 	HookFunction(found, org, hook);
 	return org;
 }
@@ -80,16 +74,16 @@ static Value toJson(const string& str) {
 }
 
 #pragma region NBT
-enum class TagType : uint8 {
+enum class TagType : uint8_t {
 	End, Byte, Short, Int, Int64, Float, Double,
 	ByteArray, String, List, Compound, IntArray
 };
 struct TagMemoryChunk {
 	size_t capacity = 0;
 	size_t size = 0;
-	unique_ptr<uint8[]> data;
+	unique_ptr<uint8_t[]> data;
 
-	TagMemoryChunk(size_t size, uint8 data[]) :capacity(size), size(size), data(data) {}
+	TagMemoryChunk(size_t size, uint8_t data[]) :capacity(size), size(size), data(data) {}
 };
 //所有Tag的合体
 struct Tag {
@@ -100,7 +94,7 @@ struct Tag {
 		return SymCall("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
 			this, key, value);
 	}
-	void putByte(const string& key, uint8 value) {
+	void putByte(const string& key, uint8_t value) {
 		return SymCall("?putByte@CompoundTag@@QEAAAEAEV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@E@Z",
 			this, key, value);
 	}
@@ -150,7 +144,7 @@ struct Tag {
 	TagType getListType() {
 		return *((TagType*)this + 32);
 	}
-	auto& asByte() { return *(uint8*)data; }
+	auto& asByte() { return *(uint8_t*)data; }
 	auto& asShort() { return *(short*)data; }
 	auto& asInt() { return *(int*)data; }
 	auto& asInt64() { return *(long long*)data; }
@@ -257,7 +251,6 @@ Value toJson(Tag* t) {
 			son = toJson(&x.second);
 			break;
 		case TagType::IntArray:
-			print("IntArrayTag");
 			break;
 		default:
 			break;
@@ -287,7 +280,7 @@ Tag* toTag(const Value& value) {
 		case TagType::End:
 			break;
 		case TagType::Byte:
-			c->putByte(key, uint8(begin->asInt()));
+			c->putByte(key, uint8_t(begin->asInt()));
 			break;
 		case TagType::Short:
 			c->putShort(key, short(begin->asInt()));
@@ -304,12 +297,11 @@ Tag* toTag(const Value& value) {
 		case TagType::Double:
 			c->putFloat(key, float(begin->asDouble()));
 			break;
-		case TagType::ByteArray:
-		{
+		case TagType::ByteArray:{
 			size_t size = begin->size();
-			unsigned char* data = new unsigned char[size];
+			uint8_t* data = new uint8_t[size];
 			for (unsigned i = 0; i < size; ++i)
-				data[i] = (unsigned char)begin->operator[](i).asInt();
+				data[i] = uint8_t(begin->operator[](i).asInt());
 			TagMemoryChunk tmc(size, data);
 			c->putByteArray(key, tmc);
 			break;
@@ -317,16 +309,14 @@ Tag* toTag(const Value& value) {
 		case TagType::String:
 			c->putString(key, begin->asString());
 			break;
-		case TagType::List:
-		{
-			Tag* lt = ArraytoTag(*begin);
-			c->put(key, lt);
-			lt->deList();
-			delete lt;
+		case TagType::List:{
+			Tag* list = ArraytoTag(*begin);
+			c->put(key, list);
+			list->deList();
+			delete list;
 			break;
 		}
-		case TagType::Compound:
-		{
+		case TagType::Compound:{
 			Tag* t = toTag(*begin);
 			c->putCompound(key, t);
 			//delete t;
@@ -347,27 +337,27 @@ Tag* ArraytoTag(const Value& value) {
 	for (auto& x : value) {
 		ValueType type = x.type();
 		switch (type) {
-		case Json::nullValue:
+		case nullValue:
 			break;
-		case Json::intValue:
-		case Json::uintValue:
+		case intValue:
+		case uintValue:
 			tag = newTag(TagType::Int);
-			*(int*)tag->data = x.asInt();
+			FETCH(int,tag->data) = x.asInt();
 			break;
-		case Json::realValue:
+		case realValue:
 			tag = newTag(TagType::Double);
-			*(double*)tag->data = x.asDouble();
+			FETCH(double,tag->data) = x.asDouble();
 			break;
-		case Json::stringValue:
+		case stringValue:
 			tag = newTag(TagType::String);
-			*(string*)tag->data = x.asString();
+			FETCH(string,tag->data) = x.asString();
 			break;
-		case Json::booleanValue:
+		case booleanValue:
 			break;
-		case Json::arrayValue:
+		case arrayValue:
 			tag = ArraytoTag(x);
 			break;
-		case Json::objectValue:
+		case objectValue:
 			tag = toTag(x);
 			break;
 		default:
@@ -500,13 +490,13 @@ struct ItemStack {
 		return FETCH(char, this + 34) == 0;
 	}
 	Tag* getNetworkUserData() {
-		Tag* ct;
+		Tag* t=nullptr;
 		SymCall("?getNetworkUserData@ItemStackBase@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
-			this, &ct);
-		return ct;
+			this, &t);
+		return t;
 	}
 	Tag* save() {
-		Tag* t = 0;
+		Tag* t = nullptr;
 		SymCall("?save@ItemStackBase@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
 			this, &t);
 		return t;
@@ -516,7 +506,7 @@ struct ItemStack {
 			this, t);
 	}
 	bool getFromId(short id, short aux, char count) {
-		memcpy(this, SYM("?EMPTY_ITEM@ItemStack@@2V1@B"), 0x90);
+		memcpy(this, SYM("?EMPTY_ITEM@ItemStack@@2V1@B"), sizeof(ItemStack));
 		bool ret = SymCall<bool>("?_setItem@ItemStackBase@@IEAA_NH@Z", this, id);
 		mCount = count;
 		mAuxValue = aux;
@@ -533,7 +523,6 @@ struct ItemStack {
 		delete t;
 	}
 };
-static_assert(sizeof(ItemStack) == 0x90);
 struct Container {
 	//获取容器内所有物品
 	vector<ItemStack*> getSlots() {
@@ -859,7 +848,7 @@ struct Level {
 			this, did);
 		if (!d)
 			return nullptr;
-		return FETCH(BlockSource*, d + 128);//IDA Level::tickEntities 120
+		return FETCH(BlockSource*, d + 96);//IDA Level::tickEntities 120
 	}
 	Scoreboard* getScoreBoard() {
 		return FETCH(Scoreboard*, this + 8600);//IDA Level::getScoreboard
