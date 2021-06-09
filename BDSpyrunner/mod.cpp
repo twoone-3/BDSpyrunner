@@ -2,8 +2,8 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.5.4"
-#define VERSION_NUMBER 154
+#define VERSION_STRING "1.5.5"
+#define VERSION_NUMBER 155
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
 
@@ -421,7 +421,7 @@ static PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
 	Value json(objectValue);
 
 	Value& inventory = json["Inventory"];
-	for (auto& i : p->getContainer()->getSlots()) {
+	for (auto& i : p->getInventory()->getSlots()) {
 		inventory.append(toJson(i->save()));
 	}
 
@@ -451,7 +451,7 @@ static PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 		//Value::AllocatorType& allocator = json.GetAllocator();
 
 		if (json.isMember("Inventory")) {
-			const vector<ItemStack*>& items = p->getContainer()->getSlots();
+			const vector<ItemStack*>& items = p->getInventory()->getSlots();
 			Value& inventory = json["Inventory"];
 			for (unsigned i = 0; i < inventory.size(); i++) {
 				items[i]->fromJson(inventory[i]);
@@ -505,7 +505,7 @@ static PyObject* PyEntity_RemoveItem(PyObject* self, PyObject* args) {
 		Player* p = PyEntity_AsPlayer(self);
 		if (!p)
 			return nullptr;
-		p->getContainer()->clearItem(slot, num);
+		p->getInventory()->clearItem(slot, num);
 		p->sendInventroy();
 	}
 	Py_RETURN_NONE;

@@ -668,19 +668,16 @@ struct Player : Mob {
 		//IDA ServerPlayer::setPermissions 34
 	}
 	//获取背包
-	Container* getContainer() {
-		return FETCH(Container*, FETCH(VA, this + 3040) + 176);
+	Container* getInventory() {
+		return FETCH(Container*, FETCH(VA, this + 3208) + 176);//IDA Player::getInventory
 	}
 	//获取装备容器
 	Container* getArmorContainer() {
-		return FETCH(Container*, this + 1512);
-	}
-	VA getContainerManager() {
-		return VA(this + 3192);	//IDA Player::setContainerManager 16
+		return FETCH(Container*, this + 1648);//IDA Actor::_setArmorContainer 11
 	}
 	//获取末影箱
 	Container* getEnderChestContainer() {
-		return FETCH(Container*, this + 4176);//IDA ReplaceItemCommand::execute 1038
+		return FETCH(Container*, this + 4360);//IDA ReplaceItemCommand::execute 1086 
 	}
 	//设置一个装备
 	VA setArmor(int i, ItemStack* item) {
@@ -708,7 +705,7 @@ struct Player : Mob {
 	}
 	//获取背包物品
 	ItemStack* getInventoryItem(int slot) {
-		return getContainer()->getSlots()[slot];
+		return getInventory()->getSlots()[slot];
 	}
 	//获取游戏时命令权限
 	char getPermissions() {
