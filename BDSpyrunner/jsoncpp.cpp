@@ -5299,7 +5299,7 @@ void StreamWriterBuilder::setDefaults(Json::Value* settings) {
   (*settings)["dropNullPlaceholders"] = false;
   (*settings)["useSpecialFloats"] = false;
   (*settings)["emitUTF8"] = false;
-  (*settings)["precision"] = 17;
+  (*settings)["precision"] = 9;
   (*settings)["precisionType"] = "significant";
   //! [StreamWriterBuilderDefaults]
 }

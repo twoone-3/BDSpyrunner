@@ -339,11 +339,10 @@ static PyObject* PyEntity_GetXuid(PyObject* self, void*) {
 //获取坐标
 static PyObject* PyEntity_GetPos(PyObject* self, void*) {
 	Vec3* pos = PyEntity_AsActor(self)->getPos();
-	PyObject* list = PyList_New(3);
-	PyList_SetItem(list, 0, PyFloat_FromDouble(pos->x));
-	PyList_SetItem(list, 1, PyFloat_FromDouble(pos->y));
-	PyList_SetItem(list, 2, PyFloat_FromDouble(pos->z));
-	return list;
+	PyObject* x = PyFloat_FromDouble(pos->x);
+	PyObject* y = PyFloat_FromDouble(pos->y);
+	PyObject* z = PyFloat_FromDouble(pos->z);
+	return PyTuple_Pack(3, x, y, z);
 }
 //获取维度ID
 static PyObject* PyEntity_GetDimensionId(PyObject* self, void*) {
@@ -837,7 +836,7 @@ HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std
 	ostream& _this, const char* str, VA size) {
 	if (&_this == &cout) {
 		wchar_t* wstr = new wchar_t[size];
-		MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str, -1, wstr, (int)size);
+		MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str, -1, wstr, int(size));
 		bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromWideChar(wstr, size));
 		delete[] wstr;
 		if (!res)return _this;
@@ -924,7 +923,6 @@ HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 	}
 	return original(_this, b, bp, a4, p, _bool);
 }
-#if 1
 HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
 	BlockSource* _this, Actor* p, BlockPos* bp, ItemStack* a3, bool a4) {
 #if 0//测试获取结构
@@ -957,7 +955,6 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 	}
 	return original(_this, p, bp, a3, a4);
 }
-#endif
 HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
 	bool res = EventCall(Event::onOpenChest,
@@ -1546,8 +1543,8 @@ HOOK(BDS_Main, int, "main",
 	return original(argc, argv, envp);
 }
 BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
-	//Tag* t = toTag(toJson(R"({"bcy1":3,"str8":"string"})"));
-	//print(toString(toJson(t)));
+	//Tag* t = toTag(toJson(R"({"bcy5":0.123456789,"str8":"string"})"));
+	//print(toJson(t));
 	//t->deCompound();
 	//delete t;
 	return TRUE;

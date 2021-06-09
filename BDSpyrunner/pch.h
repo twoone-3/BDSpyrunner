@@ -36,12 +36,12 @@ extern "C" _declspec(dllimport)
 void* GetServerSymbol(const char*);
 //输出
 template<class T>
-static void inline print(const T& data) {
+static void print(const T& data) {
 	cout << data << endl;
 }
 //输出
 template<class T, class... T2>
-static void inline print(const T& data, T2... other) {
+static void print(const T& data, T2... other) {
 	cout << data;
 	print(other...);
 }
@@ -61,10 +61,11 @@ static void* SymHook(const char* sym, void* hook, void* org) {
 	return org;
 }
 
-//转换字符串为Json对象
+//转换字符串为json
 static Value toJson(const string& str) {
 	Value value;
 	CharReaderBuilder rb;
+	rb.strictMode(&rb.settings_);
 	string errs;
 	CharReader* r(rb.newCharReader());
 	if (!r->parse(str.c_str(), str.c_str() + str.length(), &value, &errs)) {
