@@ -11,7 +11,7 @@
 #include <filesystem>
 #include <map>
 #include <unordered_map>
-#include "json.h"
+#include "json/json.h"
 
 using namespace std;
 using namespace Json;
@@ -36,36 +36,38 @@ extern "C" {
 	_declspec(dllimport) int HookFunction(void*, void*, void*);
 	_declspec(dllimport) void* GetServerSymbol(const char*);
 }
+//输出
 template<class T>
 static void inline print(const T& data) {
 	cout << data << endl;
 }
+//输出
 template<class T, class... T2>
 static void inline print(const T& data, T2... other) {
 	cout << data;
 	print(other...);
 }
-/// <summary>
-/// 调用一个函数
-/// </summary>
-/// <typeparam name="ret">返回类型</typeparam>
-/// <typeparam name="...Args">参数类型</typeparam>
-/// <param name="sym">符号</param>
-/// <param name="...args">参数列表</param>
-/// <returns>返回值</returns>
+//调用一个函数
 template<typename ret = void, typename... Args>
 static ret SymCall(const char* sym, Args... args) {
-	return reinterpret_cast<ret(*)(Args...)>(SYM(sym))(args...);
+	void* found = SYM(sym);
+	if (!found) {
+		print("Failed to call ", sym);
+		exit(1);
+	}
+	return reinterpret_cast<ret(*)(Args...)>(found)(args...);
 }
 static void* SymHook(const char* sym, void* hook, void* org) {
 	void* found = SYM(sym);
-	if (found)
-		HookFunction(found, org, hook);
-	else
+	if (!found) {
 		print("Failed to hook ", sym);
+		exit(1);
+	}
+	HookFunction(found, org, hook);
 	return org;
 }
-// 转换字符串为Json对象
+
+//转换字符串为Json对象
 static Value toJson(const string& str) {
 	Value value;
 	CharReaderBuilder rb;
@@ -94,7 +96,7 @@ struct Tag {
 	void* vtable;
 	char data[32];
 
-	void put(const string& key, const Tag* value) {
+	void put(const string& key, Tag* value) {
 		return SymCall("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
 			this, key, value);
 	}
@@ -281,7 +283,7 @@ Tag* toTag(const Value& value) {
 		}
 		else continue;
 		//cout << key << " - " << type << endl;
-		switch (type){
+		switch (type) {
 		case TagType::End:
 			break;
 		case TagType::Byte:
@@ -414,7 +416,7 @@ struct BlockLegacy {
 		if (v3 < 0x100) {
 			return v3;
 		}
-		return (short)(255 - v3);
+		return short(255 - v3);
 	}
 };
 struct Block {
@@ -557,11 +559,11 @@ struct Actor {
 	}
 	//获取生物当前所在坐标
 	Vec3* getPos() {
-		return (Vec3*)(this + 1220);//IDA Actor::getPos
+		return (Vec3*)(this + 1268);//IDA Actor::getPos
 	}
 	//获取生物之前所在坐标
 	Vec3* getPosOld() {
-		return (Vec3*)(this + 1232);//IDA Actor::getPosOld
+		return (Vec3*)(this + 1280);//IDA Actor::getPosOld
 	}
 	//是否已移除
 	bool isRemoved() {
@@ -569,11 +571,11 @@ struct Actor {
 	}
 	//是否悬空
 	bool isStand() {//IDA MovePlayerPacket::MovePlayerPacket 30
-		return FETCH(bool, this + 448);
+		return FETCH(bool, this + 480);
 	}
 	//取方块源
 	BlockSource* getBlockSource() {
-		return FETCH(BlockSource*, this + 840);
+		return FETCH(BlockSource*, this + 872);//IDA Actor::getRegion
 	}
 	ItemStack* getArmor(int slot) {
 		return SymCall<ItemStack*>("?getArmor@Actor@@UEBAAEBVItemStack@@W4ArmorSlot@@@Z",
@@ -599,8 +601,8 @@ struct Actor {
 		return SymCall<VA>("?_sendDirtyActorData@Actor@@QEAAXXZ", this);
 	}
 	//获取地图信息
-	struct Level* getLevel() {//IDA Mob::die 143
-		return FETCH(Level*, this + 856);
+	struct Level* getLevel() {
+		return FETCH(Level*, this + 888);// IDA Actor::getLevel
 	}
 	VA getAttribute() {
 		return FETCH(VA, this + 1144);
@@ -649,10 +651,10 @@ struct Mob : Actor {
 	}
 };
 struct Player : Mob {
-	string getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 217
+	string getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 		string p;
 		SymCall<string&>("?asString@UUID@mce@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
-			this + 2832, &p);
+			this + 3000, &p);
 		return p;
 	}
 	//发送数据包
@@ -663,7 +665,7 @@ struct Player : Mob {
 	//根据地图信息获取玩家xuid
 	string& getXuid() {
 		return SymCall<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
-			getLevel(), this + 2832);
+			getLevel(), this + 3000);
 	}
 	//重设服务器玩家名
 	void setName(const string& name) {
@@ -671,8 +673,9 @@ struct Player : Mob {
 			this, &name);
 	}
 	//获取网络标识符
-	VA getNetId() {
-		return (VA)this + 2544;//IDA ServerPlayer::setPermissions 34
+	VA getClientId() {
+		return VA(this + 2712);//IDA Player::getClientId
+		//IDA ServerPlayer::setPermissions 34
 	}
 	//获取背包
 	Container* getContainer() {
@@ -683,7 +686,7 @@ struct Player : Mob {
 		return FETCH(Container*, this + 1512);
 	}
 	VA getContainerManager() {
-		return (VA)this + 3024;	//IDA Player::setContainerManager 18
+		return VA(this + 3192);	//IDA Player::setContainerManager 16
 	}
 	//获取末影箱
 	Container* getEnderChestContainer() {
@@ -706,8 +709,8 @@ struct Player : Mob {
 		SymCall("?addLevels@Player@@UEAAXH@Z", this, level);
 	}
 	//获取当前选中的框位置
-	int getSelectedItemSlot() {//IDA Player::getSelectedItem 12
-		return FETCH(unsigned, FETCH(VA, this + 3040) + 16);
+	int getSelectedItemSlot() {
+		return FETCH(unsigned, FETCH(VA, this + 3208) + 16);//IDA Player::getSelectedItemSlot
 	}
 	//获取当前物品
 	ItemStack* getSelectedItem() {
@@ -718,8 +721,8 @@ struct Player : Mob {
 		return getContainer()->getSlots()[slot];
 	}
 	//获取游戏时命令权限
-	char getPermissions() {//IDA ServerPlayer::setPermissions 17
-		return FETCH(char, FETCH(char*, this + 2224));
+	char getPermissions() {
+		return *FETCH(char*, this + 2376);//IDA ServerPlayer::setPermissions 22
 	}
 	//设置游戏时命令权限
 	void setPermissions(char m) {
@@ -728,12 +731,12 @@ struct Player : Mob {
 	}
 	//获取游戏时游玩权限
 	char getPermissionLevel() {//IDA Abilities::setPlayerPermissions ?
-		return FETCH(char, FETCH(char*, this + 2224) + 1);
+		return FETCH(char, FETCH(char*, this + 2376) + 1);
 	}
 	//设置游戏时游玩权限
 	void setPermissionLevel(char m) {
 		SymCall("?setPlayerPermissions@Abilities@@QEAAXW4PlayerPermissionLevel@@@Z",
-			this + 2224, m);
+			this + 2376, m);
 	}
 	//发送背包
 	void sendInventroy() {
@@ -854,11 +857,12 @@ struct Level {
 	BlockSource* getBlockSource(int did) {
 		VA d = SymCall<VA>("?getDimension@Level@@UEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
 			this, did);
-		if (!d)return 0;
-		return FETCH(BlockSource*, d + 96);//IDA Level::tickEntities 120
+		if (!d)
+			return nullptr;
+		return FETCH(BlockSource*, d + 128);//IDA Level::tickEntities 120
 	}
-	Scoreboard* getScoreBoard() {//IDA Level::removeEntityReferences
-		return FETCH(Scoreboard*, this + 8464);
+	Scoreboard* getScoreBoard() {
+		return FETCH(Scoreboard*, this + 8600);//IDA Level::getScoreboard
 	}
 	unsigned getSeed() {
 		return SymCall<unsigned>("?getSeed@Level@@UEAAIXZ", this);

@@ -2,8 +2,8 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.5.2"
-#define VERSION_NUMBER 152
+#define VERSION_STRING "1.5.3"
+#define VERSION_NUMBER 153
 
 #pragma region Macro
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
@@ -210,7 +210,7 @@ static void sendCommandRequestPacket(Player* p, const string& cmd) {
 	VA pkt = createPacket(77);
 	FETCH(string, pkt + 48) = cmd;
 	SymCall<VA>("?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
-		_server_network_handler, p->getNetId(), pkt);
+		_server_network_handler, p->getClientId(), pkt);
 	//p->sendPacket(pkt);
 }
 static void sendBossEventPacket(Player* p, string name, float per, int eventtype) {
@@ -237,18 +237,18 @@ static void sendSetScorePacket(Player* p, char type, const vector<ScorePacketInf
 	p->sendPacket(pkt);
 }
 #pragma endregion
-#pragma region PyEntityObject
+#pragma region PyEntity
 //玩家指针类型
-struct PyEntityObject {
+struct PyEntity {
 	PyObject_HEAD;
 	Actor* actor;
 };
 static Actor* PyEntity_AsActor(PyObject* self) {
-	return ((PyEntityObject*)self)->actor;
+	return ((PyEntity*)self)->actor;
 }
 static Player* PyEntity_AsPlayer(PyObject* self) {
-	if (isPlayer(((PyEntityObject*)self)->actor))
-		return (Player*)((PyEntityObject*)self)->actor;
+	if (isPlayer(((PyEntity*)self)->actor))
+		return (Player*)((PyEntity*)self)->actor;
 	else
 		Py_RETURN_ERROR("This entity is not player");
 }
@@ -261,9 +261,14 @@ static PyObject* PyEntity_New(PyTypeObject* type, PyObject*, PyObject*) {
 static void PyEntity_Dealloc(PyObject* obj) {
 	Py_TYPE(obj)->tp_free(obj);
 }
+//转字符串
+static PyObject* PyEntity_Str(PyObject* self) {
+	string name = PyEntity_AsActor(self)->getNameTag();
+	return PyUnicode_FromStringAndSize(name.c_str(),name.length());
+}
 //哈希
 static Py_hash_t PyEntity_Hash(PyObject* self) {
-	return (Py_hash_t)((PyEntityObject*)self)->actor;
+	return Py_hash_t(PyEntity_AsActor(self));
 }
 //比较
 static PyObject* PyEntity_RichCompare(PyObject* self, PyObject* other, int op) {
@@ -274,7 +279,7 @@ static PyObject* PyEntity_RichCompare(PyObject* self, PyObject* other, int op) {
 	case Py_LE:break;
 		//==
 	case Py_EQ:
-		if (((PyEntityObject*)self)->actor == ((PyEntityObject*)other)->actor)
+		if (PyEntity_AsActor(self) == PyEntity_AsActor(other))
 			Py_RETURN_TRUE;
 		else
 			Py_RETURN_FALSE;
@@ -723,8 +728,8 @@ static PyMethodDef PyEntity_Methods[]{
 //Entity类型
 static PyTypeObject PyEntity_Type{
 	PyVarObject_HEAD_INIT(nullptr, 0)
-	"EntityObject",			/* tp_name */
-	sizeof(PyEntityObject),	/* tp_basicsize */
+	"Entity",				/* tp_name */
+	sizeof(PyEntity),		/* tp_basicsize */
 	0,						/* tp_itemsize */
 	PyEntity_Dealloc,		/* tp_dealloc */
 	nullptr,				/* tp_print */
@@ -737,7 +742,7 @@ static PyTypeObject PyEntity_Type{
 	nullptr,				/* tp_as_mapping */
 	PyEntity_Hash,			/* tp_hash */
 	nullptr,				/* tp_call */
-	nullptr,				/* tp_str */
+	PyEntity_Str,				/* tp_str */
 	nullptr,				/* tp_getattro */
 	nullptr,				/* tp_setattro */
 	nullptr,				/* tp_as_buffer */
@@ -777,8 +782,8 @@ static PyObject* PyEntity_FromEntity(Actor* ptr) {
 	safeCall([&obj] {
 		obj = PyEntity_Type.tp_alloc(&PyEntity_Type, 0);
 		});
-	((PyEntityObject*)obj)->actor = ptr;
-	Py_INCREF(obj);
+	((PyEntity*)obj)->actor = ptr;
+	//Py_INCREF(obj);
 	return obj;
 }
 #pragma endregion
@@ -789,7 +794,7 @@ HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	original(_this);
 }
 #endif
-HOOK(Level_Level, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEAVIEntityRegistryOwner@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
+HOOK(Level_Level, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
 	Level* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12) {
 	return _level = original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
 }
@@ -854,8 +859,6 @@ HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifi
 	ServerNetworkHandler* _this, VA id,/*SetLocalPlayerAsInitializedPacket*/ VA pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		Tag* t = p->getSelectedItem()->save();
-		print(toJson(t));
 		EventCall(Event::onPlayerJoin, PyEntity_FromEntity(p));
 	}
 	original(_this, id, pkt);
