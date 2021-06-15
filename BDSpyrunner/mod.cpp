@@ -2,8 +2,8 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.5.6"
-#define VERSION_NUMBER 156
+#define VERSION_STRING "1.5.7"
+#define VERSION_NUMBER 157
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
 
@@ -125,6 +125,8 @@ static unordered_map<Event, vector<PyObject*>> _functions;
 static vector<pair<string, string>> _commands;
 //共享数据
 static unordered_map<string, PyObject*> _share_data;
+//玩家列表
+static vector<Player*> _players;
 //伤害
 static int _damage;
 #pragma endregion
@@ -138,11 +140,17 @@ static VA createPacket(int type) {
 }
 //是否为玩家
 static bool isPlayer(void* ptr) {
-	for (auto& p : _level->getAllPlayers()) {
+	for (auto p : _players) {
 		if (ptr == p)
 			return true;
 	}
 	return false;
+}
+//转宽字符
+static wstring CharToWchar(const string& str) {
+	wstring wstr(str.length(), '\0');
+	mbstowcs(wstr.data(), str.c_str(), str.length());
+	return wstr;
 }
 //锁GIL调用函数
 static void safeCall(const function<void()>& fn) {
@@ -835,10 +843,8 @@ HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVComm
 HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, VA size) {
 	if (&_this == &cout) {
-		wchar_t* wstr = new wchar_t[size];
-		MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str, -1, wstr, int(size));
-		bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromWideChar(wstr, size));
-		delete[] wstr;
+		wstring wstr = CharToWchar(str);
+		bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length()));
 		if (!res)return _this;
 	}
 	return original(_this, str, size);
@@ -858,20 +864,19 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 		return 0;
 	}
 	if (debug) {
-		safeCall([&cmd] {
-			PyRun_SimpleString(cmd.c_str());
-			}
-		);
+		safeCall([&cmd] {PyRun_SimpleString(cmd.c_str()); });
 		cout << '>';
 		return 0;
 	}
-	bool res = EventCall(Event::onConsoleInput, PyUnicode_FromStringAndSize(cmd.c_str(), cmd.length()));
+	wstring wstr = CharToWchar(cmd);
+	bool res = EventCall(Event::onConsoleInput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length()));
 	CheckResult(_this, cmd);
 }
 HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVSetLocalPlayerAsInitializedPacket@@@Z",
 	ServerNetworkHandler* _this, VA id,/*SetLocalPlayerAsInitializedPacket*/ VA pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
+		_players.push_back(p);
 		EventCall(Event::onPlayerJoin, PyEntity_FromEntity(p));
 	}
 	original(_this, id, pkt);
@@ -879,6 +884,12 @@ HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifi
 HOOK(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
 	VA _this, Player* p, char v3) {
 	EventCall(Event::onPlayerLeft, PyEntity_FromEntity(p));
+	for (auto it = _players.begin(); it!= _players.end(); it++){
+		if (*it == p) {
+			_players.erase(it);
+			break;
+		}
+	}
 	return original(_this, p, v3);
 }
 HOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@EAEBVVec3@@PEBVBlock@@@Z",
@@ -947,7 +958,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 			Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i]}",
 				"player", PyEntity_FromEntity(p),
 				"blockname", bn.c_str(),
-				"blockid", int(bid),
+				"blockid", static_cast<int>(bid),
 				"position", bp->x, bp->y, bp->z
 			)
 		))
@@ -1356,7 +1367,7 @@ static PyObject* PyAPI_setCommandDescription(PyObject*, PyObject* args) {
 }
 static PyObject* PyAPI_getPlayerList(PyObject*, PyObject*) {
 	PyObject* list = PyList_New(0);
-	for (Player* p : _level->getAllPlayers()) {
+	for (Player* p : _players) {
 		PyList_Append(list, PyEntity_FromEntity(p));
 	}
 	return list;
@@ -1391,7 +1402,7 @@ static PyObject* PyAPI_getBlock(PyObject*, PyObject* args) {
 		auto bl = bs->getBlock(&bp)->getBlockLegacy();
 		return Py_BuildValue("{s:s:s:i}",
 			"blockname", bl->getBlockName().c_str(),
-			"blockid", (int)bl->getBlockItemID()
+			"blockid", static_cast<int>(bl->getBlockItemID())
 		);
 	}
 	Py_RETURN_NONE;
@@ -1464,7 +1475,7 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 		for (unsigned x = 0; x != size.x; ++x) {
 			for (unsigned y = 0; y != size.y; ++y) {
 				for (unsigned z = 0; z != size.z; ++z) {
-					BlockPos bp{ int(x),int(y),int(z) };
+					BlockPos bp{ static_cast<int>(x),static_cast<int>(y),static_cast<int>(z) };
 					bs->neighborChanged(&bp);
 				}
 			}
@@ -1507,7 +1518,7 @@ static PyObject* PyAPI_init() {
 	if (PyType_Ready(&PyEntity_Type) < 0)
 		return nullptr;
 	PyObject* module = PyModule_Create(&PyAPI_Module);
-	PyModule_AddObject(module, "Entity", (PyObject*)&PyEntity_Type);
+	PyModule_AddObject(module, "Entity", reinterpret_cast<PyObject*>(&PyEntity_Type));
 	return module;
 }
 #pragma endregion
@@ -1515,7 +1526,8 @@ static PyObject* PyAPI_init() {
 HOOK(BDS_Main, int, "main",
 	int argc, char* argv[], char* envp[]) {
 	using namespace filesystem;
-	create_directories(PLUGIN_PATH);
+	if (!exists(PLUGIN_PATH))
+		create_directories(PLUGIN_PATH);
 	//将plugins/py加入模块搜索路径
 	Py_SetPath((wstring(Py_GetPath()) + L";" PLUGIN_PATH).c_str());
 	/*预初始化3.8+

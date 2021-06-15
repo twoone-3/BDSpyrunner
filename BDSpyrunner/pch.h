@@ -1,5 +1,5 @@
 ﻿#pragma once
-//#pragma warning(disable:4996)
+#pragma warning(disable:4996)
 #pragma execution_character_set("utf-8")
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -134,18 +134,16 @@ struct Tag {
 	TagType getListType() {
 		return *((TagType*)this + 32);
 	}
-	auto& asByte() { return *(uint8_t*)data; }
-	auto& asShort() { return *(short*)data; }
-	auto& asInt() { return *(int*)data; }
-	auto& asInt64() { return *(long long*)data; }
-	auto& asFloat() { return *(float*)data; }
-	auto& asDouble() { return *(double*)data; }
-	const char* asCString() { return *(const char**)data; }
-	auto& asString() { return *(string*)data; }
-	auto& asByteArray() { return *(TagMemoryChunk*)data; }
-	auto asListTag() { return (Tag*)this; }
-	auto& asList() { return *(vector<Tag*>*)data; }
-	auto& asCompound() { return *(map<string, Tag>*)data; }
+	auto& asByte() { return *reinterpret_cast<uint8_t*>(data); }
+	auto& asShort() { return *reinterpret_cast<short*>(data); }
+	auto& asInt() { return *reinterpret_cast<int*>(data); }
+	auto& asInt64() { return *reinterpret_cast<long long*>(data); }
+	auto& asFloat() { return *reinterpret_cast<float*>(data); }
+	auto& asDouble() { return *reinterpret_cast<double*>(data); }
+	auto& asString() { return *reinterpret_cast<string*>(data); }
+	auto& asByteArray() { return *reinterpret_cast<TagMemoryChunk*>(data); }
+	auto& asList() { return *reinterpret_cast<vector<Tag*>*>(data); }
+	auto& asCompound() { return *reinterpret_cast<map<string, Tag>*>(data); }
 };
 
 static Tag* newTag(TagType);
@@ -527,6 +525,20 @@ struct Container {
 };
 #pragma endregion
 #pragma region Actor
+struct MobEffectInstance {
+	char fill[28];
+
+	Tag* save() {
+		Tag* t;
+		SymCall("?save@MobEffectInstance@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
+			this, &t);
+		return t;
+	}
+	void load(Tag* t) {
+		SymCall("?load@MobEffectInstance@@SA?AV1@AEBVCompoundTag@@@Z",
+			this, t);
+	}
+};
 struct Actor {
 	//获取生物名称信息
 	string getNameTag() {
@@ -562,7 +574,7 @@ struct Actor {
 	}
 	//获取实体类型
 	unsigned getEntityTypeId() {
-		return FETCH(unsigned, this + 968);
+		return SymCall<unsigned>("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ", this);
 	}
 	//获取查询用ID
 	VA getUniqueID() {
@@ -581,10 +593,7 @@ struct Actor {
 	}
 	//获取地图信息
 	struct Level* getLevel() {
-		return FETCH(Level*, this + 888);// IDA Actor::getLevel
-	}
-	VA getAttribute() {
-		return FETCH(VA, this + 1144);
+		return SymCall<Level*>("?getLevel@Actor@@QEBAAEBVLevel@@XZ", this);
 	}
 	//添加一个状态
 	VA addEffect(VA ef) {
@@ -621,13 +630,12 @@ struct Actor {
 	bool isSneaking() {
 		return SymCall<bool>("?isSneaking@Actor@@QEBA_NXZ", this);
 	}
+	//获取状态列表
+	auto getAllEffects() {
+		return SymCall<vector<MobEffectInstance>*>("?getAllEffects@Actor@@QEBAAEBV?$vector@VMobEffectInstance@@V?$allocator@VMobEffectInstance@@@std@@@std@@XZ", this);
+	}
 };
 struct Mob : Actor {
-	struct MobEffectInstance { char fill[0x1C]; };
-	//获取状态列表
-	auto getEffects() {	//IDA Mob::addAdditionalSaveData 84
-		return (vector<MobEffectInstance>*)((VA*)this + 190);
-	}
 };
 struct Player : Mob {
 	string getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
@@ -773,11 +781,11 @@ struct ScorePacketInfo {
 };
 struct Objective {
 	//获取计分板名称
-	auto getScoreName() {
+	string getScoreName() {
 		return FETCH(string, this + 64);
 	}
 	//获取计分板展示名称
-	auto getScoreDisplayName() {
+	string getScoreDisplayName() {
 		return FETCH(string, this + 96);
 	}
 	auto createScoreboardId(Player* player) {
@@ -790,7 +798,7 @@ struct Objective {
 	}
 };
 struct Scoreboard {
-	auto getObjective(string str) {
+	Objective* getObjective(string str) {
 		return SymCall<Objective*>("?getObjective@Scoreboard@@QEBAPEAVObjective@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z", this, &str);
 	}
 	auto getScoreboardId(const string& str) {
@@ -857,7 +865,7 @@ struct Level {
 		return FETCH(vector<Player*>, this + 112);//IDA Level::forEachPlayer
 	}
 	BlockPalette* getBlockPalette() {
-		return FETCH(BlockPalette*, this + 2072);
+		return FETCH(BlockPalette*, this + 2120);
 	}
 };
 struct ServerNetworkHandler {
