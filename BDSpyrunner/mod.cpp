@@ -2,8 +2,8 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.5.5"
-#define VERSION_NUMBER 155
+#define VERSION_STRING "1.5.6"
+#define VERSION_NUMBER 156
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
 
@@ -146,16 +146,17 @@ static bool isPlayer(void* ptr) {
 }
 //锁GIL调用函数
 static void safeCall(const function<void()>& fn) {
-	//检测当前线程是否拥有GIL
-	//if (!PyGILState_Check()) {
-	PyGILState_STATE gstate = PyGILState_Ensure();//如果没有GIL，则申请获取GIL
-	//Py_BEGIN_ALLOW_THREADS;
-	//Py_BLOCK_THREADS;
+	int nHold = PyGILState_Check();   //检测当前线程是否拥有GIL
+	PyGILState_STATE gstate = PyGILState_LOCKED;
+	if (!nHold)
+		gstate = PyGILState_Ensure();//如果没有GIL，则申请获取GIL
+	Py_BEGIN_ALLOW_THREADS;
+	Py_BLOCK_THREADS;
 	fn();
-	//Py_UNBLOCK_THREADS;
-	//Py_END_ALLOW_THREADS;
-	PyGILState_Release(gstate);//释放当前线程的GIL
-	//}
+	Py_UNBLOCK_THREADS;
+	Py_END_ALLOW_THREADS;
+	if (!nHold)
+		PyGILState_Release(gstate);//释放当前线程的GIL
 }
 //事件回调
 static bool EventCall(Event e, PyObject* val) {
@@ -182,10 +183,9 @@ static bool EventCall(Event e, PyObject* val) {
 }
 //Packet相关封装
 static int sendModalFormRequestPacket(Player* p, const string& str) {
-	static int id = 0;
-	id = 255 + id * 127;
+	static unsigned id = 0;
 	VA pkt = createPacket(100);
-	FETCH(unsigned, pkt + 48) = id;
+	FETCH(unsigned, pkt + 48) = ++id;
 	FETCH(string, pkt + 56) = str;
 	p->sendPacket(pkt);
 	return id;
@@ -1361,7 +1361,7 @@ static PyObject* PyAPI_getPlayerList(PyObject*, PyObject*) {
 	}
 	return list;
 }
-//修改生物受伤的伤害值!
+//修改生物受伤的伤害值
 static PyObject* PyAPI_setDamage(PyObject*, PyObject* args) {
 	int real;
 	if (PyArg_ParseTuple(args, "i:setDamage", &real)) {
@@ -1528,16 +1528,16 @@ HOOK(BDS_Main, int, "main",
 	Py_Initialize();//初始化解释器
 	PyEval_InitThreads();//启用线程支持
 	for (const directory_entry& info : directory_iterator(PLUGIN_PATH)) {
-		const path& path = info;
+		const path& path = info.operator const std::filesystem::path & ();
 		if (path.extension() == ".py" || path.extension() == ".pyd") {
 			const string& name = path.stem().u8string();
-			print("[BDSpyrunner] loading ", name);
+			cout << "[BDSpyrunner] loading " << name << endl;
 			PyImport_ImportModule(name.c_str());
 			PyErr_Print();
 		}
 	}
 	PyEval_SaveThread();//释放当前线程
-	print("[BDSpyrunner] " VERSION_STRING " loaded.");
+	cout << "[BDSpyrunner] " VERSION_STRING " loaded." << endl;
 
 	// 执行 main 函数
 	return original(argc, argv, envp);

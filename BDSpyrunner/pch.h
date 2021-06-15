@@ -34,29 +34,18 @@ int HookFunction(void*, void*, void*);
 //获取符号
 extern "C" _declspec(dllimport)
 void* GetServerSymbol(const char*);
-//输出
-template<class T>
-static void print(const T& data) {
-	cout << data << endl;
-}
-//输出
-template<class T, class... T2>
-static void print(const T& data, T2... other) {
-	cout << data;
-	print(other...);
-}
 //调用一个函数
 template<typename ret = void, typename... Args>
 static ret SymCall(const char* sym, Args... args) {
 	void* found = SYM(sym);
 	if (!found)
-		print("Failed to call ", sym);
+		cerr << "Failed to call " << sym << endl;
 	return reinterpret_cast<ret(*)(Args...)>(found)(args...);
 }
 static void* SymHook(const char* sym, void* hook, void* org) {
 	void* found = SYM(sym);
 	if (!found)
-		print("Failed to hook ", sym);
+		cerr << "Failed to hook " << sym << endl;
 	HookFunction(found, org, hook);
 	return org;
 }
@@ -69,7 +58,7 @@ static Value toJson(const string& str) {
 	string errs;
 	CharReader* r(rb.newCharReader());
 	if (!r->parse(str.c_str(), str.c_str() + str.length(), &value, &errs)) {
-		print("JSON转换失败..", errs);
+		cerr << "JSON转换失败 " << errs << endl;
 	}
 	return value;
 }
@@ -298,7 +287,7 @@ Tag* toTag(const Value& value) {
 		case TagType::Double:
 			c->putFloat(key, float(begin->asDouble()));
 			break;
-		case TagType::ByteArray:{
+		case TagType::ByteArray: {
 			size_t size = begin->size();
 			uint8_t* data = new uint8_t[size];
 			for (unsigned i = 0; i < size; ++i)
@@ -310,14 +299,14 @@ Tag* toTag(const Value& value) {
 		case TagType::String:
 			c->putString(key, begin->asString());
 			break;
-		case TagType::List:{
+		case TagType::List: {
 			Tag* list = ArraytoTag(*begin);
 			c->put(key, list);
 			list->deList();
 			delete list;
 			break;
 		}
-		case TagType::Compound:{
+		case TagType::Compound: {
 			Tag* t = toTag(*begin);
 			c->putCompound(key, t);
 			//delete t;
@@ -343,15 +332,15 @@ Tag* ArraytoTag(const Value& value) {
 		case intValue:
 		case uintValue:
 			tag = newTag(TagType::Int);
-			FETCH(int,tag->data) = x.asInt();
+			FETCH(int, tag->data) = x.asInt();
 			break;
 		case realValue:
 			tag = newTag(TagType::Double);
-			FETCH(double,tag->data) = x.asDouble();
+			FETCH(double, tag->data) = x.asDouble();
 			break;
 		case stringValue:
 			tag = newTag(TagType::String);
-			FETCH(string,tag->data) = x.asString();
+			FETCH(string, tag->data) = x.asString();
 			break;
 		case booleanValue:
 			break;
@@ -491,7 +480,7 @@ struct ItemStack {
 		return FETCH(char, this + 34) == 0;
 	}
 	Tag* getNetworkUserData() {
-		Tag* t=nullptr;
+		Tag* t = nullptr;
 		SymCall("?getNetworkUserData@ItemStackBase@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
 			this, &t);
 		return t;
