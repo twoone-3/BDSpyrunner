@@ -28,10 +28,10 @@ struct name {							\
 name::fn name::original = *reinterpret_cast<name::fn*>(SymHook(sym, name::_hook, &name::original)); \
 ret name::_hook(__VA_ARGS__)
 
-//提供Detours的api
+//提供Detours
 extern "C" _declspec(dllimport)
 int HookFunction(void*, void*, void*);
-//获取符号
+//获取符
 extern "C" _declspec(dllimport)
 void* GetServerSymbol(const char*);
 //调用一个函数
@@ -546,15 +546,21 @@ struct Actor {
 	}
 	//获取生物当前所处维度ID
 	int getDimensionId() {
-		return FETCH(int, this + 236);//IDA Actor::getDimensionId
+		int did;
+		SymCall("?getDimensionId@Actor@@UEBA?AV?$AutomaticID@VDimension@@H@@XZ",
+			this,&did);
+		return did;
+		//return FETCH(int, this + 236);//IDA Actor::getDimensionId
 	}
 	//获取生物当前所在坐标
 	Vec3* getPos() {
-		return (Vec3*)(this + 1268);//IDA Actor::getPos
+		return SymCall<Vec3*>("?getPos@Actor@@UEBAAEBVVec3@@XZ", this);
+		//return (Vec3*)(this + 1268);//IDA Actor::getPos
 	}
 	//获取生物之前所在坐标
 	Vec3* getPosOld() {
-		return (Vec3*)(this + 1280);//IDA Actor::getPosOld
+		return SymCall<Vec3*>("?getPosOld@Actor@@UEBAAEBVVec3@@XZ", this);
+		//return (Vec3*)(this + 1280);//IDA Actor::getPosOld
 	}
 	//是否已移除
 	bool isRemoved() {
@@ -565,8 +571,9 @@ struct Actor {
 		return FETCH(bool, this + 480);
 	}
 	//取方块源
-	BlockSource* getBlockSource() {
-		return FETCH(BlockSource*, this + 872);//IDA Actor::getRegion
+	BlockSource* getRegion() {
+		return SymCall<BlockSource*>("?getRegion@Actor@@QEBAAEAVBlockSource@@XZ", this);
+		//return FETCH(BlockSource*, this + 872);//IDA Actor::getRegion
 	}
 	ItemStack* getArmor(int slot) {
 		return SymCall<ItemStack*>("?getArmor@Actor@@UEBAAEBVItemStack@@W4ArmorSlot@@@Z",
@@ -635,8 +642,7 @@ struct Actor {
 		return SymCall<vector<MobEffectInstance>*>("?getAllEffects@Actor@@QEBAAEBV?$vector@VMobEffectInstance@@V?$allocator@VMobEffectInstance@@@std@@@std@@XZ", this);
 	}
 };
-struct Mob : Actor {
-};
+struct Mob : Actor {};
 struct Player : Mob {
 	string getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 		string p;
@@ -836,6 +842,7 @@ struct Scoreboard {
 };
 #pragma endregion
 #pragma region Level
+struct SPSCQueue;
 struct Level {
 	//获取方块源 没这个维度返回空指针
 	BlockSource* getBlockSource(int did) {
@@ -860,6 +867,10 @@ struct Level {
 	Actor* fetchEntity(VA id) {
 		return SymCall<Actor*>("?fetchEntity@Level@@UEBAPEAVActor@@UActorUniqueID@@_N@Z",
 			this, id, false);
+	}
+	Player* getPlayerByXuid(const string& xuid) {
+		return SymCall<Player*>("?getPlayerByXuid@Level@@UEBAPEAVPlayer@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
+			this, &xuid);
 	}
 	vector<Player*> getAllPlayers() {
 		return FETCH(vector<Player*>, this + 112);//IDA Level::forEachPlayer

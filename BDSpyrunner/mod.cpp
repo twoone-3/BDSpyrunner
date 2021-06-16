@@ -2,8 +2,8 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.5.7"
-#define VERSION_NUMBER 157
+#define VERSION_STRING "1.5.8"
+#define VERSION_NUMBER 158
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
 
@@ -112,7 +112,7 @@ static const unordered_map<string, Event> events{
 #pragma endregion
 #pragma region Global variable
 //指令队列
-static struct SPSCQueue* _command_queue = nullptr;
+static SPSCQueue* _command_queue = nullptr;
 //网络处理
 static ServerNetworkHandler* _server_network_handler = nullptr;
 //世界
@@ -125,8 +125,6 @@ static unordered_map<Event, vector<PyObject*>> _functions;
 static vector<pair<string, string>> _commands;
 //共享数据
 static unordered_map<string, PyObject*> _share_data;
-//玩家列表
-static vector<Player*> _players;
 //伤害
 static int _damage;
 #pragma endregion
@@ -140,7 +138,7 @@ static VA createPacket(int type) {
 }
 //是否为玩家
 static bool isPlayer(void* ptr) {
-	for (auto p : _players) {
+	for (auto p : _level->getAllPlayers()) {
 		if (ptr == p)
 			return true;
 	}
@@ -259,7 +257,7 @@ static Actor* PyEntity_AsActor(PyObject* self) {
 }
 static Player* PyEntity_AsPlayer(PyObject* self) {
 	if (isPlayer(reinterpret_cast<PyEntity*>(self)->actor))
-		return (Player*)reinterpret_cast<PyEntity*>(self)->actor;
+		return reinterpret_cast<Player*>(reinterpret_cast<PyEntity*>(self)->actor);
 	else
 		Py_RETURN_ERROR("This entity is not player");
 }
@@ -290,7 +288,7 @@ static PyObject* PyEntity_Str(PyObject* self) {
 }
 //哈希
 static Py_hash_t PyEntity_Hash(PyObject* self) {
-	return Py_hash_t(PyEntity_AsActor(self));
+	return reinterpret_cast<Py_hash_t>(PyEntity_AsActor(self));
 }
 //比较
 static PyObject* PyEntity_RichCompare(PyObject* self, PyObject* other, int op) {
@@ -318,7 +316,8 @@ static PyObject* PyEntity_RichCompare(PyObject* self, PyObject* other, int op) {
 
 //获取名字
 static PyObject* PyEntity_GetName(PyObject* self, void*) {
-	return PyUnicode_FromString(PyEntity_AsActor(self)->getNameTag().c_str());
+	string name = PyEntity_AsActor(self)->getNameTag();
+	return PyUnicode_FromStringAndSize(name.c_str(), name.length());
 }
 static int PyEntity_SetName(PyObject* self, PyObject* arg, void*) {
 	if (PyUnicode_Check(arg)) {
@@ -800,11 +799,8 @@ static PyTypeObject PyEntity_Type{
 
 static PyObject* PyEntity_FromEntity(Actor* ptr) {
 	PyObject* obj;
-	safeCall([&obj] {
-		obj = PyEntity_Type.tp_alloc(&PyEntity_Type, 0);
-		});
-	((PyEntity*)obj)->actor = ptr;
-	//Py_INCREF(obj);
+	safeCall([&obj] {obj = PyEntity_Type.tp_alloc(&PyEntity_Type, 0); });
+	reinterpret_cast<PyEntity*>(obj)->actor = ptr;
 	return obj;
 }
 #pragma endregion
@@ -815,20 +811,20 @@ HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	original(_this);
 }
 #endif
-HOOK(Level_Level, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
+HOOK(Level_construct, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
 	Level* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12) {
 	return _level = original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
 }
-HOOK(SPSCQueue, SPSCQueue*, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@QEAA@_K@Z",
+HOOK(SPSCQueue_construct, SPSCQueue*, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@QEAA@_K@Z",
 	SPSCQueue* _this) {
 	return _command_queue = original(_this);
 }
-HOOK(ServerNetworkHandler_ServerNetworkHandler, VA, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEAVLevel@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@Bedrock@@@Z",
+HOOK(ServerNetworkHandler_construct, VA, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEAVLevel@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@Bedrock@@@Z",
 	ServerNetworkHandler* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13, VA a14, VA a15, VA a16, VA a17, VA a18, VA a19) {
 	_server_network_handler = _this;
 	return original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19);
 }
-HOOK(ServerScoreboard_, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnumRegistry@@PEAVLevelStorage@@@Z",
+HOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnumRegistry@@PEAVLevelStorage@@@Z",
 	VA _this, VA a2, VA a3) {
 	return _scoreboard = original(_this, a2, a3);
 }
@@ -876,7 +872,6 @@ HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifi
 	ServerNetworkHandler* _this, VA id,/*SetLocalPlayerAsInitializedPacket*/ VA pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		_players.push_back(p);
 		EventCall(Event::onPlayerJoin, PyEntity_FromEntity(p));
 	}
 	original(_this, id, pkt);
@@ -884,12 +879,6 @@ HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifi
 HOOK(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
 	VA _this, Player* p, char v3) {
 	EventCall(Event::onPlayerLeft, PyEntity_FromEntity(p));
-	for (auto it = _players.begin(); it!= _players.end(); it++){
-		if (*it == p) {
-			_players.erase(it);
-			break;
-		}
-	}
 	return original(_this, p, v3);
 }
 HOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@EAEBVVec3@@PEBVBlock@@@Z",
@@ -963,7 +952,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 			)
 		))
 			return false;
-	}
+}
 	return original(_this, p, bp, a3, a4);
 }
 HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
@@ -1009,17 +998,16 @@ HOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	original(_this, p);
 }
 HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEAAXH@Z",
-	VA a1, VA slot) {
-	Actor* v3 = FETCH(Actor*, a1 + 208);//IDA LevelContainerModel::_getContainer line 15 25
-	BlockSource* bs = v3->getBlockSource();
-	BlockPos* bp = (BlockPos*)(a1 + 216);
+	VA _this, unsigned slot) {
+	Player* p = FETCH(Player*, _this + 208);//IDA LevelContainerModel::_getContainer line 15 25 v3
+	BlockSource* bs = p->getRegion();
+	BlockPos* bp = reinterpret_cast<BlockPos*>(_this + 216);
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
 	short bid = bl->getBlockItemID();
 	if (bid == 54 || bid == 130 || bid == 146 || bid == -203 || bid == 205 || bid == 218) {	//非箱子、桶、潜影盒的情况不作处理
-		VA v5 = (*(VA(**)(VA))(*(VA*)a1 + 160))(a1);
+		VA v5 = (*reinterpret_cast<VA(**)(VA)>(FETCH(VA, _this) + 160))(_this);
 		if (v5) {
-			ItemStack* i = (ItemStack*)(*(VA(**)(VA, VA))(*(VA*)v5 + 40))(v5, slot);
-			Player* p = FETCH(Player*, a1 + 208);
+			ItemStack* i = (*reinterpret_cast<ItemStack * (**)(VA, VA)>(FETCH(VA, v5) + 40))(v5, slot);
 			EventCall(Event::onContainerChange,
 				Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i],s:i,s:i,s:s,s:i,s:i}",
 					"player", PyEntity_FromEntity(p),
@@ -1035,7 +1023,7 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 			);
 		}
 	}
-	original(a1, slot);
+	original(_this, slot);
 }
 HOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@@Z",
 	Player* p, Actor* a) {
@@ -1342,6 +1330,7 @@ static PyObject* PyAPI_setShareData(PyObject*, PyObject* args) {
 	const char* index = ""; PyObject* data;
 	if (PyArg_ParseTuple(args, "sO:setShareData", &index, &data)) {
 		_share_data.emplace(index, data);
+		cerr << "share data 不推荐使用的API，建议改用import来共享数据" << endl;
 	}
 	Py_RETURN_NONE;
 }
@@ -1365,18 +1354,25 @@ static PyObject* PyAPI_setCommandDescription(PyObject*, PyObject* args) {
 	}
 	Py_RETURN_NONE;
 }
+//获取玩家
+static PyObject* PyAPI_getPlayerByXuid(PyObject*, PyObject* args) {
+	const char* xuid = "";
+	if (PyArg_ParseTuple(args, "s:getPlayerByXuid", &xuid)) {
+		Player* p = _level->getPlayerByXuid(xuid);
+		return PyEntity_FromEntity(p);
+	}
+	Py_RETURN_NONE;
+}
 static PyObject* PyAPI_getPlayerList(PyObject*, PyObject*) {
 	PyObject* list = PyList_New(0);
-	for (Player* p : _players) {
+	for (Player* p : _level->getAllPlayers()) {
 		PyList_Append(list, PyEntity_FromEntity(p));
 	}
 	return list;
 }
 //修改生物受伤的伤害值
 static PyObject* PyAPI_setDamage(PyObject*, PyObject* args) {
-	int real;
-	if (PyArg_ParseTuple(args, "i:setDamage", &real)) {
-		_damage = real;
+	if (PyArg_ParseTuple(args, "i:setDamage", &_damage)) {
 	}
 	Py_RETURN_NONE;
 }
@@ -1492,6 +1488,7 @@ static PyMethodDef PyAPI_Methods[]{
 	{"setShareData", PyAPI_setShareData, METH_VARARGS, nullptr},
 	{"getShareData", PyAPI_getShareData, METH_VARARGS, nullptr},
 	{"setCommandDescription", PyAPI_setCommandDescription, METH_VARARGS, nullptr},
+	{"getPlayerByXuid", PyAPI_getPlayerByXuid, METH_VARARGS, nullptr},
 	{"getPlayerList", PyAPI_getPlayerList, METH_NOARGS, nullptr},
 	{"setDamage", PyAPI_setDamage, METH_VARARGS, nullptr},
 	{"setServerMotd", PyAPI_setServerMotd, METH_VARARGS, nullptr},
