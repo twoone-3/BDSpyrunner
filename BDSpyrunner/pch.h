@@ -389,12 +389,14 @@ struct BlockLegacy {
 	string getBlockName() {
 		return FETCH(string, this + 128);
 	}
-	short getBlockItemID() {//IDA Item::beginCreativeGroup(,Block*,) 18~22
-		short v3 = FETCH(short, this + 328);
-		if (v3 < 0x100) {
-			return v3;
-		}
-		return short(255 - v3);
+	short getBlockItemID() {
+		return SymCall<short>("?getBlockItemId@BlockLegacy@@QEBAFXZ", this);
+		//IDA Item::beginCreativeGroup(,Block*,) 18~22
+		//short v3 = FETCH(short, this + 328);
+		//if (v3 < 0x100) {
+		//	return v3;
+		//}
+		//return short(255 - v3);
 	}
 };
 struct Block {
@@ -407,7 +409,7 @@ struct BlockActor {
 		return FETCH(Block*, this + 16);
 	}
 	BlockPos* getPosition() {//IDA BlockActor::BlockActor 18~20
-		return (BlockPos*)(this + 44);
+		return reinterpret_cast<BlockPos*>(this + 44);
 	}
 };
 struct BlockSource {
@@ -427,8 +429,13 @@ struct BlockSource {
 		SymCall("?updateNeighborsAt@BlockSource@@QEAAXAEBVBlockPos@@@Z",
 			this, pos);
 	}
-	int getDimensionId() {	//IDA Dimension::onBlockChanged 42
-		return FETCH(int, FETCH(VA, this + 32) + 216);
+	int getDimensionId() {
+		int did;
+		SymCall<int>("?getDimensionId@BlockSource@@QEBA?AV?$AutomaticID@VDimension@@H@@XZ",
+			this, &did);
+		return did;
+		//IDA Dimension::onBlockChanged 42
+		//return FETCH(int, FETCH(VA, this + 32) + 216);
 	}
 };
 #pragma endregion
@@ -548,7 +555,7 @@ struct Actor {
 	int getDimensionId() {
 		int did;
 		SymCall("?getDimensionId@Actor@@UEBA?AV?$AutomaticID@VDimension@@H@@XZ",
-			this,&did);
+			this, &did);
 		return did;
 		//return FETCH(int, this + 236);//IDA Actor::getDimensionId
 	}
@@ -667,12 +674,13 @@ struct Player : Mob {
 	}
 	//获取网络标识符
 	VA getClientId() {
-		return VA(this + 2712);//IDA Player::getClientId
+		return SymCall<VA>("?getClientId@Player@@QEBAAEBVNetworkIdentifier@@XZ", this);
 		//IDA ServerPlayer::setPermissions 34
 	}
 	//获取背包
 	Container* getInventory() {
-		return FETCH(Container*, FETCH(VA, this + 3208) + 176);//IDA Player::getInventory
+		return SymCall<Container*>("?getInventory@Player@@QEAAAEAVContainer@@XZ",this);
+		//return FETCH(Container*, FETCH(VA, this + 3208) + 176);//IDA Player::getInventory
 	}
 	//获取装备容器
 	Container* getArmorContainer() {
@@ -700,7 +708,8 @@ struct Player : Mob {
 	}
 	//获取当前选中的框位置
 	int getSelectedItemSlot() {
-		return FETCH(unsigned, FETCH(VA, this + 3208) + 16);//IDA Player::getSelectedItemSlot
+		return SymCall<int>("?getSelectedItemSlot@Player@@QEBAHXZ", this);
+		//return FETCH(unsigned, FETCH(VA, this + 3208) + 16);//IDA Player::getSelectedItemSlot
 	}
 	//获取当前物品
 	ItemStack* getSelectedItem() {

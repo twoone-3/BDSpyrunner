@@ -2,8 +2,8 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.5.8"
-#define VERSION_NUMBER 158
+#define VERSION_STRING "1.5.9"
+#define VERSION_NUMBER 159
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
 
@@ -129,6 +129,14 @@ static unordered_map<string, PyObject*> _share_data;
 static int _damage;
 #pragma endregion
 #pragma region Function Define
+//检查版本号
+bool checkBDSVersion(const char* str) {
+	string version;
+	SymCall<string&>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+		&version);
+	//cout << version << endl;
+	return version == str;
+}
 //创建包
 static VA createPacket(int type) {
 	VA pkt[2];
@@ -865,8 +873,10 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 		return 0;
 	}
 	wstring wstr = CharToWchar(cmd);
-	bool res = EventCall(Event::onConsoleInput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length()));
-	CheckResult(_this, cmd);
+	if (EventCall(Event::onConsoleInput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length())))
+		return original(_this, cmd);
+	else
+		return false;
 }
 HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVSetLocalPlayerAsInitializedPacket@@@Z",
 	ServerNetworkHandler* _this, VA id,/*SetLocalPlayerAsInitializedPacket*/ VA pkt) {
@@ -952,7 +962,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 			)
 		))
 			return false;
-}
+	}
 	return original(_this, p, bp, a3, a4);
 }
 HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
@@ -1512,8 +1522,6 @@ static PyModuleDef PyAPI_Module{
 };
 //模块初始化
 static PyObject* PyAPI_init() {
-	if (PyType_Ready(&PyEntity_Type) < 0)
-		return nullptr;
 	PyObject* module = PyModule_Create(&PyAPI_Module);
 	PyModule_AddObject(module, "Entity", reinterpret_cast<PyObject*>(&PyEntity_Type));
 	return module;
@@ -1523,6 +1531,8 @@ static PyObject* PyAPI_init() {
 HOOK(BDS_Main, int, "main",
 	int argc, char* argv[], char* envp[]) {
 	using namespace filesystem;
+	if (!checkBDSVersion("1.17.2.01"))
+		cerr << "Inappropriate version" << endl;
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
 	//将plugins/py加入模块搜索路径
@@ -1535,6 +1545,8 @@ HOOK(BDS_Main, int, "main",
 	Py_PreInitialize(&cfg);*/
 	PyImport_AppendInittab(MODULE_NAME, PyAPI_init);//增加一个模块
 	Py_Initialize();//初始化解释器
+	if (PyType_Ready(&PyEntity_Type) < 0)
+		cerr << "Falid to prepare class 'Entity'." << endl;
 	PyEval_InitThreads();//启用线程支持
 	for (const directory_entry& info : directory_iterator(PLUGIN_PATH)) {
 		const path& path = info.operator const std::filesystem::path & ();
