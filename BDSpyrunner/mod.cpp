@@ -2,10 +2,10 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.5.9"
-#define VERSION_NUMBER 159
-#define PLUGIN_PATH "plugins/py"
-#define MODULE_NAME "mc"
+constexpr auto VERSION_STRING = "1.5.10";
+constexpr auto VERSION_NUMBER = 200;
+constexpr auto PLUGIN_PATH = L"plugins/py";
+constexpr auto MODULE_NAME = "mc";
 
 #pragma region Macro
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
@@ -111,6 +111,7 @@ static const unordered_map<string, Event> events{
 };
 #pragma endregion
 #pragma region Global variable
+namespace {
 //指令队列
 static SPSCQueue* _command_queue = nullptr;
 //网络处理
@@ -127,6 +128,7 @@ static vector<pair<string, string>> _commands;
 static unordered_map<string, PyObject*> _share_data;
 //伤害
 static int _damage;
+}
 #pragma endregion
 #pragma region Function Define
 //检查版本号
@@ -261,7 +263,12 @@ struct PyEntity {
 };
 extern PyTypeObject PyEntity_Type;
 static Actor* PyEntity_AsActor(PyObject* self) {
-	return reinterpret_cast<PyEntity*>(self)->actor;
+	Actor* a = reinterpret_cast<PyEntity*>(self)->actor;
+	if (a)
+		return a;
+	else
+		Py_RETURN_ERROR("This entity is not available");
+	return nullptr;
 }
 static Player* PyEntity_AsPlayer(PyObject* self) {
 	if (isPlayer(reinterpret_cast<PyEntity*>(self)->actor))
@@ -1340,9 +1347,8 @@ static PyObject* PyAPI_setShareData(PyObject*, PyObject* args) {
 	const char* index = ""; PyObject* data;
 	if (PyArg_ParseTuple(args, "sO:setShareData", &index, &data)) {
 		_share_data.emplace(index, data);
-		cerr << "share data 不推荐使用的API，建议改用import来共享数据" << endl;
 	}
-	Py_RETURN_NONE;
+	Py_RETURN_ERROR("share data 不推荐使用的API，建议改用import来共享数据");
 }
 static PyObject* PyAPI_getShareData(PyObject*, PyObject* args) {
 	const char* index = "";
@@ -1353,7 +1359,7 @@ static PyObject* PyAPI_getShareData(PyObject*, PyObject* args) {
 		else
 			return found->second;
 	}
-	Py_RETURN_NONE;
+	Py_RETURN_ERROR("share data 不推荐使用的API，建议改用import来共享数据");
 }
 //设置指令说明
 static PyObject* PyAPI_setCommandDescription(PyObject*, PyObject* args) {
@@ -1369,6 +1375,8 @@ static PyObject* PyAPI_getPlayerByXuid(PyObject*, PyObject* args) {
 	const char* xuid = "";
 	if (PyArg_ParseTuple(args, "s:getPlayerByXuid", &xuid)) {
 		Player* p = _level->getPlayerByXuid(xuid);
+		if (!p)
+			Py_RETURN_ERROR("Failed to find player");
 		return PyEntity_FromEntity(p);
 	}
 	Py_RETURN_NONE;
@@ -1401,14 +1409,13 @@ static PyObject* PyAPI_setServerMotd(PyObject*, PyObject* args) {
 static PyObject* PyAPI_getBlock(PyObject*, PyObject* args) {
 	BlockPos bp; int did;
 	if (PyArg_ParseTuple(args, "iiii:getBlock", &bp.x, &bp.y, &bp.z, &did)) {
-		auto bs = _level->getBlockSource(did);
-		if (!bs) {
+		BlockSource* bs = _level->getBlockSource(did);
+		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
-		}
-		auto bl = bs->getBlock(&bp)->getBlockLegacy();
+		BlockLegacy* bl = bs->getBlock(&bp)->getBlockLegacy();
 		return Py_BuildValue("{s:s:s:i}",
 			"blockname", bl->getBlockName().c_str(),
-			"blockid", static_cast<int>(bl->getBlockItemID())
+			"blockid", bl->getBlockItemID()
 		);
 	}
 	Py_RETURN_NONE;
@@ -1417,12 +1424,13 @@ static PyObject* PyAPI_setBlock(PyObject*, PyObject* args) {
 	const char* name = "";
 	BlockPos bp; int did;
 	if (PyArg_ParseTuple(args, "siiii:setBlock", &name, &bp.x, &bp.y, &bp.z, &did)) {
-		auto bs = _level->getBlockSource(did);
-		if (!bs) {
+		BlockSource* bs = _level->getBlockSource(did);
+		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
-		}
-		bs->setBlock(name, bp);
-		Py_RETURN_NONE;
+		Block* b = *reinterpret_cast<Block**>(SYM((string("?m") + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()));
+		if (!b)
+			Py_RETURN_ERROR("Unknown Block");
+		bs->setBlock(b, &bp);
 	}
 	Py_RETURN_NONE;
 }
@@ -1432,10 +1440,9 @@ static PyObject* PyAPI_getStructure(PyObject*, PyObject* args) {
 	if (PyArg_ParseTuple(args, "iiiiiii:getStructure",
 		&pos1.x, &pos1.y, &pos1.z,
 		&pos2.x, &pos2.y, &pos2.z, &did)) {
-		auto bs = _level->getBlockSource(did);
-		if (!bs) {
+		BlockSource* bs = _level->getBlockSource(did);
+		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
-		}
 		BlockPos start{
 			min(pos1.x,pos2.x),
 			min(pos1.y,pos2.y),
@@ -1461,18 +1468,16 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 	if (PyArg_ParseTuple(args, "siiii:setStructure",
 		&data, &pos.x, &pos.y, &pos.z, &did)) {
 		BlockSource* bs = _level->getBlockSource(did);
-		if (!bs) {
+		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
-		}
 		Value json = toJson(data);
-		if (!json["size9"].isArray()) {
-			cerr << "结构JSON错误" << endl;
-			Py_RETURN_NONE;
-		}
+		Value& arr = json["size9"];
+		if (!arr.isArray())
+			Py_RETURN_ERROR("Invalid json string");
 		BlockPos size{
-			json["size9"][0].asInt(),
-			json["size9"][1].asInt(),
-			json["size9"][2].asInt()
+			arr[0].asInt(),
+			arr[1].asInt(),
+			arr[2].asInt()
 		};
 		StructureSettings ss(&size, true, false);
 		StructureTemplate st("tmp");
@@ -1512,7 +1517,7 @@ static PyMethodDef PyAPI_Methods[]{
 static PyModuleDef PyAPI_Module{
 	PyModuleDef_HEAD_INIT,
 	MODULE_NAME,
-	"some api functions.",
+	"API functions",
 	-1,
 	PyAPI_Methods,
 	nullptr,
@@ -1531,12 +1536,13 @@ static PyObject* PyAPI_init() {
 HOOK(BDS_Main, int, "main",
 	int argc, char* argv[], char* envp[]) {
 	using namespace filesystem;
+	cout << "[BDSpyrunner] " << VERSION_STRING << " loaded." << endl;
 	if (!checkBDSVersion("1.17.2.01"))
 		cerr << "Inappropriate version" << endl;
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
 	//将plugins/py加入模块搜索路径
-	Py_SetPath((wstring(Py_GetPath()) + L";" PLUGIN_PATH).c_str());
+	Py_SetPath((wstring(Py_GetPath()) + L';' + PLUGIN_PATH).c_str());
 	/*预初始化3.8+
 	PyPreConfig cfg;
 	PyPreConfig_InitPythonConfig(&cfg);
@@ -1558,7 +1564,6 @@ HOOK(BDS_Main, int, "main",
 		}
 	}
 	PyEval_SaveThread();//释放当前线程
-	cout << "[BDSpyrunner] " VERSION_STRING " loaded." << endl;
 
 	// 执行 main 函数
 	return original(argc, argv, envp);

@@ -417,9 +417,9 @@ struct BlockSource {
 		return SymCall<Block*>("?getBlock@BlockSource@@QEBAAEBVBlock@@AEBVBlockPos@@@Z",
 			this, bp);
 	}
-	bool setBlock(const string& name, const BlockPos& bp) {
+	bool setBlock(Block* b, BlockPos* bp) {
 		return SymCall<bool>("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z",
-			this, &bp, *(Block**)GetServerSymbol(("?m" + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()), 3, nullptr);
+			this, bp, b, 3, nullptr);
 	}
 	void neighborChanged(const BlockPos* pos) {
 		SymCall("?neighborChanged@BlockSource@@QEAAXAEBVBlockPos@@0@Z",
@@ -912,7 +912,7 @@ struct StructureSettings {
 		FETCH(BlockPos, _this + 48) = { 0,0,0 };
 	}
 	~StructureSettings() {
-		((string*)this)->~basic_string();
+		reinterpret_cast<string*>(this)->~basic_string();
 	}
 };
 #if 0
