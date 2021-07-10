@@ -34,6 +34,7 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
         cp -a D:/a/BDSpyrunner/test/bdxcore_mod/*.dll D:/out
+        cp -a D:/a/BDSpyrunner/test/bdxcore_mod/*.pdb D:/out
       shell: bash
 
     - name: Upload artifact
