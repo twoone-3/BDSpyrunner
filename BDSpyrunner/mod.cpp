@@ -2,7 +2,7 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-constexpr auto VERSION_STRING = "1.5.10";
+constexpr auto VERSION_STRING = "1.5.12_test_by_fishing_05007";
 constexpr auto VERSION_NUMBER = 200;
 constexpr auto PLUGIN_PATH = L"plugins/py";
 constexpr auto MODULE_NAME = "mc";
@@ -112,22 +112,22 @@ static const unordered_map<string, Event> events{
 #pragma endregion
 #pragma region Global variable
 namespace {
-//指令队列
-static SPSCQueue* _command_queue = nullptr;
-//网络处理
-static ServerNetworkHandler* _server_network_handler = nullptr;
-//世界
-static Level* _level = nullptr;
-//计分板
-static Scoreboard* _scoreboard = nullptr;
-//Py函数表
-static unordered_map<Event, vector<PyObject*>> _functions;
-//注册命令
-static vector<pair<string, string>> _commands;
-//共享数据
-static unordered_map<string, PyObject*> _share_data;
-//伤害
-static int _damage;
+	//指令队列
+	static SPSCQueue* _command_queue = nullptr;
+	//网络处理
+	static ServerNetworkHandler* _server_network_handler = nullptr;
+	//世界
+	static Level* _level = nullptr;
+	//计分板
+	static Scoreboard* _scoreboard = nullptr;
+	//Py函数表
+	static unordered_map<Event, vector<PyObject*>> _functions;
+	//注册命令
+	static vector<pair<string, string>> _commands;
+	//共享数据
+	static unordered_map<string, PyObject*> _share_data;
+	//伤害
+	static int _damage;
 }
 #pragma endregion
 #pragma region Function Define
@@ -416,6 +416,20 @@ static int PyEntity_SetPermissions(PyObject* self, PyObject* arg, void*) {
 	}
 	return PyErr_BadArgument(), -1;
 }
+//获取设备id
+static PyObject* PyEntity_GetDeviceId(PyObject* self, void*) {
+	Player* p = PyEntity_AsPlayer(self);
+	if (!p)
+		return nullptr;
+	return PyUnicode_FromStringAndSize(p->getDeviceId().c_str(), p->getDeviceId().length());
+}
+//获取设备类型
+static PyObject* PyEntity_GetDeviceOS(PyObject* self, void*) {
+	Player* p = PyEntity_AsPlayer(self);
+	if (!p)
+		return nullptr;
+	return PyLong_FromLong(p->getDeviceOS());
+}
 
 //获取属性方法
 static PyGetSetDef PyEntity_GetSet[]{
@@ -432,6 +446,8 @@ static PyGetSetDef PyEntity_GetSet[]{
 	{"health", PyEntity_GetHealth, nullptr, nullptr},
 	{"maxhealth", PyEntity_GetMaxHealth, nullptr, nullptr},
 	{"perm", PyEntity_GetPermissions, PyEntity_SetPermissions, nullptr},
+	{"deviceId", PyEntity_GetDeviceId, nullptr, nullptr},
+	{"deviceOS", PyEntity_GetDeviceOS, nullptr, nullptr},
 	{nullptr}
 };
 
@@ -826,18 +842,18 @@ HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	original(_this);
 }
 #endif
-HOOK(Level_construct, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
-	Level* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12) {
-	return _level = original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
+HOOK(Level_construct, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$WeakRefT@UEntityRefTraits@@@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
+	Level* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13) {
+	return _level = original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13);
 }
 HOOK(SPSCQueue_construct, SPSCQueue*, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@QEAA@_K@Z",
 	SPSCQueue* _this) {
 	return _command_queue = original(_this);
 }
-HOOK(ServerNetworkHandler_construct, VA, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEAVLevel@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@Bedrock@@@Z",
-	ServerNetworkHandler* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13, VA a14, VA a15, VA a16, VA a17, VA a18, VA a19) {
+HOOK(ServerNetworkHandler_construct, VA, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEBV?$NonOwnerPointer@VILevel@@@Bedrock@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@3@@Z",
+	ServerNetworkHandler* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13, VA a14, VA a15, VA a16, VA a17, VA a18, VA a19, VA a20) {
 	_server_network_handler = _this;
-	return original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19);
+	return original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20);
 }
 HOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnumRegistry@@PEAVLevelStorage@@@Z",
 	VA _this, VA a2, VA a3) {
@@ -1042,15 +1058,15 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 	}
 	original(_this, slot);
 }
-HOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@@Z",
-	Player* p, Actor* a) {
+HOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
+	Player* p, Actor* a, struct ActorDamageCause* c) {
 	bool res = EventCall(Event::onPlayerAttack,
 		Py_BuildValue("{s:O,s:O}",
 			"player", PyEntity_FromEntity(p),
 			"actor", PyEntity_FromEntity(a)
 		)
 	);
-	CheckResult(p, a);
+	CheckResult(p, a, c);
 }
 HOOK(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@AEAVChangeDimensionRequest@@@Z",
 	VA _this, Player* p, VA req) {
@@ -1525,6 +1541,8 @@ static PyModuleDef PyAPI_Module{
 	nullptr,
 	nullptr
 };
+
+
 //模块初始化
 static PyObject* PyAPI_init() {
 	PyObject* module = PyModule_Create(&PyAPI_Module);
@@ -1537,8 +1555,8 @@ HOOK(BDS_Main, int, "main",
 	int argc, char* argv[], char* envp[]) {
 	using namespace filesystem;
 	cout << "[BDSpyrunner] " << VERSION_STRING << " loaded." << endl;
-	if (!checkBDSVersion("1.17.2.01"))
-		cerr << "Inappropriate version" << endl;
+	if (!checkBDSVersion("1.17.10.04"))
+		cerr << "error: inappropriate version" << endl;
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
 	//将plugins/py加入模块搜索路径

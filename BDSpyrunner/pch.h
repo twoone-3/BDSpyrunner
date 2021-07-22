@@ -737,6 +737,14 @@ struct Player : Mob {
 		SymCall("?setPlayerPermissions@Abilities@@QEAAXW4PlayerPermissionLevel@@@Z",
 			this + 2376, m);
 	}
+	//获取设备id
+	const std::string& getDeviceId() {
+		return FETCH(std::string, (char *)this + 8352); //IDA Player::Player  v13 + 8352
+	}
+	//获取设备系统类型
+	int getDeviceOS() {
+		return FETCH(int, this + 2368);	//IDA ServerNetworkHandler::createNewPlayer  ConnectionRequest::getDeviceOS
+	}
 	//发送背包
 	void sendInventroy() {
 		SymCall("?sendInventory@ServerPlayer@@UEAAX_N@Z",
