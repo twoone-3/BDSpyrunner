@@ -2,17 +2,17 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-constexpr auto VERSION_STRING = "1.5.12_test_by_fishing_05007";
-constexpr auto VERSION_NUMBER = 200;
-constexpr auto PLUGIN_PATH = L"plugins/py";
-constexpr auto MODULE_NAME = "mc";
+#define VERSION_STRING "1.6.0"
+#define VERSION_NUMBER 201
+#define PLUGIN_PATH "plugins/py"
+#define MODULE_NAME "mc"
 
 #pragma region Macro
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
 #define CheckResult(...) if (!res) return 0; return original(__VA_ARGS__)
 #pragma endregion
-#pragma region Event
-enum class Event {
+#pragma region EventCode
+enum class EventCode {
 	None,
 	onConsoleInput,
 	onConsoleOutput,
@@ -46,92 +46,97 @@ enum class Event {
 	onPistonPush,
 	onEndermanRandomTeleport,
 };
-static const unordered_map<string, Event> events{
-{"后台输入",Event::onConsoleInput},
-{"后台输出",Event::onConsoleOutput},
-{"选择表单",Event::onSelectForm},
-{"使用物品",Event::onUseItem},
-{"放置方块",Event::onPlaceBlock},
-{"破坏方块",Event::onDestroyBlock},
-{"打开箱子",Event::onOpenChest},
-{"打开木桶",Event::onOpenBarrel},
-{"关闭箱子",Event::onCloseChest},
-{"关闭木桶",Event::onCloseBarrel},
-{"放入取出",Event::onContainerChange},
-{"切换维度",Event::onChangeDimension},
-{"生物死亡",Event::onMobDie},
-{"生物受伤",Event::onMobHurt},
-{"玩家重生",Event::onRespawn},
-{"聊天消息",Event::onChat},
-{"输入文本",Event::onInputText},
-{"更新命令方块",Event::onCommandBlockUpdate},
-{"输入指令",Event::onInputCommand},
-{"命令方块执行",Event::onCommandBlockPerform},
-{"加入游戏",Event::onPlayerJoin},
-{"离开游戏",Event::onPlayerLeft},
-{"玩家攻击",Event::onPlayerAttack},
-{"世界爆炸",Event::onLevelExplode},
-{"玩家穿戴",Event::onSetArmor},
-{"耕地破坏",Event::onFallBlockTransform},
-{"使用重生锚",Event::onUseRespawnAnchorBlock},
-{"计分板改变",Event::onScoreChanged},
-{"玩家移动",Event::onMove},
-{"活塞推动",Event::onPistonPush},
-{"onConsoleInput",Event::onConsoleInput},
-{"onConsoleOutput",Event::onConsoleOutput},
-{"onSelectForm",Event::onSelectForm},
-{"onUseItem",Event::onUseItem},
-{"onPlaceBlock",Event::onPlaceBlock},
-{"onDestroyBlock",Event::onDestroyBlock},
-{"onOpenChest",Event::onOpenChest},
-{"onOpenBarrel",Event::onOpenBarrel},
-{"onCloseChest",Event::onCloseChest},
-{"onCloseBarrel",Event::onCloseBarrel},
-{"onContainerChange",Event::onContainerChange},
-{"onChangeDimension",Event::onChangeDimension},
-{"onMobDie",Event::onMobDie},
-{"onMobHurt",Event::onMobHurt},
-{"onRespawn",Event::onRespawn},
-{"onChat",Event::onChat},
-{"onInputText",Event::onInputText},
-{"onCommandBlockUpdate",Event::onCommandBlockUpdate},
-{"onInputCommand",Event::onInputCommand},
-{"onCommandBlockPerform",Event::onCommandBlockPerform},
-{"onPlayerJoin",Event::onPlayerJoin},
-{"onPlayerLeft",Event::onPlayerLeft},
-{"onPlayerAttack",Event::onPlayerAttack},
-{"onLevelExplode",Event::onLevelExplode},
-{"onSetArmor",Event::onSetArmor},
-{"onFallBlockTransform",Event::onFallBlockTransform},
-{"onUseRespawnAnchorBlock",Event::onUseRespawnAnchorBlock},
-{"onScoreChanged",Event::onScoreChanged},
-{"onMove",Event::onMove},
-{"onPistonPush",Event::onPistonPush},
-{"onEndermanRandomTeleport",Event::onEndermanRandomTeleport},
+static const unordered_map<string, EventCode> events{
+{"后台输入",EventCode::onConsoleInput},
+{"后台输出",EventCode::onConsoleOutput},
+{"选择表单",EventCode::onSelectForm},
+{"使用物品",EventCode::onUseItem},
+{"放置方块",EventCode::onPlaceBlock},
+{"破坏方块",EventCode::onDestroyBlock},
+{"打开箱子",EventCode::onOpenChest},
+{"打开木桶",EventCode::onOpenBarrel},
+{"关闭箱子",EventCode::onCloseChest},
+{"关闭木桶",EventCode::onCloseBarrel},
+{"放入取出",EventCode::onContainerChange},
+{"切换维度",EventCode::onChangeDimension},
+{"生物死亡",EventCode::onMobDie},
+{"生物受伤",EventCode::onMobHurt},
+{"玩家重生",EventCode::onRespawn},
+{"聊天消息",EventCode::onChat},
+{"输入文本",EventCode::onInputText},
+{"更新命令方块",EventCode::onCommandBlockUpdate},
+{"输入指令",EventCode::onInputCommand},
+{"命令方块执行",EventCode::onCommandBlockPerform},
+{"加入游戏",EventCode::onPlayerJoin},
+{"离开游戏",EventCode::onPlayerLeft},
+{"玩家攻击",EventCode::onPlayerAttack},
+{"世界爆炸",EventCode::onLevelExplode},
+{"玩家穿戴",EventCode::onSetArmor},
+{"耕地破坏",EventCode::onFallBlockTransform},
+{"使用重生锚",EventCode::onUseRespawnAnchorBlock},
+{"计分板改变",EventCode::onScoreChanged},
+{"玩家移动",EventCode::onMove},
+{"活塞推动",EventCode::onPistonPush},
+{"onConsoleInput",EventCode::onConsoleInput},
+{"onConsoleOutput",EventCode::onConsoleOutput},
+{"onSelectForm",EventCode::onSelectForm},
+{"onUseItem",EventCode::onUseItem},
+{"onPlaceBlock",EventCode::onPlaceBlock},
+{"onDestroyBlock",EventCode::onDestroyBlock},
+{"onOpenChest",EventCode::onOpenChest},
+{"onOpenBarrel",EventCode::onOpenBarrel},
+{"onCloseChest",EventCode::onCloseChest},
+{"onCloseBarrel",EventCode::onCloseBarrel},
+{"onContainerChange",EventCode::onContainerChange},
+{"onChangeDimension",EventCode::onChangeDimension},
+{"onMobDie",EventCode::onMobDie},
+{"onMobHurt",EventCode::onMobHurt},
+{"onRespawn",EventCode::onRespawn},
+{"onChat",EventCode::onChat},
+{"onInputText",EventCode::onInputText},
+{"onCommandBlockUpdate",EventCode::onCommandBlockUpdate},
+{"onInputCommand",EventCode::onInputCommand},
+{"onCommandBlockPerform",EventCode::onCommandBlockPerform},
+{"onPlayerJoin",EventCode::onPlayerJoin},
+{"onPlayerLeft",EventCode::onPlayerLeft},
+{"onPlayerAttack",EventCode::onPlayerAttack},
+{"onLevelExplode",EventCode::onLevelExplode},
+{"onSetArmor",EventCode::onSetArmor},
+{"onFallBlockTransform",EventCode::onFallBlockTransform},
+{"onUseRespawnAnchorBlock",EventCode::onUseRespawnAnchorBlock},
+{"onScoreChanged",EventCode::onScoreChanged},
+{"onMove",EventCode::onMove},
+{"onPistonPush",EventCode::onPistonPush},
+{"onEndermanRandomTeleport",EventCode::onEndermanRandomTeleport},
 };
 #pragma endregion
 #pragma region Global variable
 namespace {
-	//指令队列
-	static SPSCQueue* _command_queue = nullptr;
-	//网络处理
-	static ServerNetworkHandler* _server_network_handler = nullptr;
-	//世界
-	static Level* _level = nullptr;
-	//计分板
-	static Scoreboard* _scoreboard = nullptr;
-	//Py函数表
-	static unordered_map<Event, vector<PyObject*>> _functions;
-	//注册命令
-	static vector<pair<string, string>> _commands;
-	//共享数据
-	static unordered_map<string, PyObject*> _share_data;
-	//伤害
-	static int _damage;
+//指令队列
+static SPSCQueue* _command_queue = nullptr;
+//网络处理
+static ServerNetworkHandler* _server_network_handler = nullptr;
+//世界
+static Level* _level = nullptr;
+//计分板
+static Scoreboard* _scoreboard = nullptr;
+//Py函数表
+static unordered_map<EventCode, vector<PyObject*>> _functions;
+//注册命令
+static vector<pair<string, string>> _commands;
+//共享数据
+static unordered_map<string, PyObject*> _share_data;
+//伤害
+static int _damage;
 }
 #pragma endregion
 #pragma region Function Define
-//检查版本号
+//注入时事件
+static void init();
+BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
+	return TRUE;
+}
+//检查版本
 bool checkBDSVersion(const char* str) {
 	string version;
 	SymCall<string&>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
@@ -175,7 +180,7 @@ static void safeCall(const function<void()>& fn) {
 		PyGILState_Release(gstate);//释放当前线程的GIL
 }
 //事件回调
-static bool EventCall(Event e, PyObject* val) {
+static bool EventCodeCall(EventCode e, PyObject* val) {
 	bool result = true;
 	safeCall([&] {
 		vector<PyObject*>& List = _functions[e];
@@ -198,7 +203,7 @@ static bool EventCall(Event e, PyObject* val) {
 	return result;
 }
 //Packet相关封装
-static int sendModalFormRequestPacket(Player* p, const string& str) {
+static unsigned sendModalFormRequestPacket(Player* p, const string& str) {
 	static unsigned id = 0;
 	VA pkt = createPacket(100);
 	FETCH(unsigned, pkt + 48) = ++id;
@@ -231,7 +236,7 @@ static void sendCommandRequestPacket(Player* p, const string& cmd) {
 		_server_network_handler, p->getClientId(), pkt);
 	//p->sendPacket(pkt);
 }
-static void sendBossEventPacket(Player* p, string name, float per, int eventtype) {
+static void sendBossEventCodePacket(Player* p, string name, float per, int eventtype) {
 	VA pkt = createPacket(74);
 	FETCH(VA, pkt + 56) = FETCH(VA, pkt + 64) = FETCH(VA, p->getUniqueID());
 	FETCH(int, pkt + 72) = eventtype;//0显示,1更新,2隐藏,
@@ -559,18 +564,6 @@ static PyObject* PyEntity_Teleport(PyObject* self, PyObject* args) {
 	}
 	Py_RETURN_NONE;
 }
-//设置实体大小
-static PyObject* PyEntity_SetSize(PyObject* self, PyObject* args) {
-	float length;
-	float high;
-	if (PyArg_ParseTuple(args, "ff:setSize", &length, &high)) {
-		Player* p = PyEntity_AsPlayer(self);
-		if (!p)
-			return nullptr;
-		p->setSize(length, high);
-	}
-	Py_RETURN_NONE;
-}
 //发送数据包
 static PyObject* PyEntity_SendTextPacket(PyObject* self, PyObject* args) {
 	const char* msg = "";
@@ -739,7 +732,7 @@ static PyObject* PyEntity_SetBossbar(PyObject* self, PyObject* args) {
 		Player* p = PyEntity_AsPlayer(self);
 		if (!p)
 			return nullptr;
-		sendBossEventPacket(p, name, per, 0);
+		sendBossEventCodePacket(p, name, per, 0);
 	}
 	Py_RETURN_NONE;
 }
@@ -747,7 +740,7 @@ static PyObject* PyEntity_RemoveBossbar(PyObject* self, PyObject*) {
 	Player* p = PyEntity_AsPlayer(self);
 	if (!p)
 		return nullptr;
-	sendBossEventPacket(p, "", 0, 2);
+	sendBossEventCodePacket(p, "", 0, 2);
 	Py_RETURN_NONE;
 }
 
@@ -758,7 +751,6 @@ static PyMethodDef PyEntity_Methods[]{
 	{"addItem", PyEntity_AddItem, METH_VARARGS, nullptr},
 	{"removeItem", PyEntity_RemoveItem, METH_VARARGS, nullptr},
 	{"teleport", PyEntity_Teleport, METH_VARARGS, nullptr},
-	{"setSize", PyEntity_SetSize, METH_VARARGS, nullptr},
 	{"sendTextPacket", PyEntity_SendTextPacket, METH_VARARGS, nullptr},
 	{"sendCommandPacket", PyEntity_SendCommandPacket, METH_VARARGS, nullptr},
 	{"resendAllChunks", PyEntity_ResendAllChunks, METH_NOARGS, nullptr},
@@ -842,6 +834,12 @@ HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	original(_this);
 }
 #endif
+HOOK(BDS_Main, int, "main",
+	int argc, char* argv[], char* envp[]) {
+	init();
+	// 执行 main 函数
+	return original(argc, argv, envp);
+}
 HOOK(Level_construct, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$WeakRefT@UEntityRefTraits@@@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
 	Level* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13) {
 	return _level = original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13);
@@ -861,9 +859,9 @@ HOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VComman
 }
 HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
 	VA _this) {
-	for (auto& cmd : _commands) {
-		SymCall<void, VA, const string&, const char*, char, char, char>("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
-			_this, cmd.first, cmd.second.c_str(), 0, 0, 0x40);
+	for (auto& [cmd, des] : _commands) {
+		SymCall("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
+			_this, &cmd, des.c_str(), 0, 0, 64);
 	}
 	original(_this);
 }
@@ -871,7 +869,7 @@ HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std
 	ostream& _this, const char* str, VA size) {
 	if (&_this == &cout) {
 		wstring wstr = CharToWchar(str);
-		bool res = EventCall(Event::onConsoleOutput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length()));
+		bool res = EventCodeCall(EventCode::onConsoleOutput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length()));
 		if (!res)return _this;
 	}
 	return original(_this, str, size);
@@ -896,7 +894,7 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 		return 0;
 	}
 	wstring wstr = CharToWchar(cmd);
-	if (EventCall(Event::onConsoleInput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length())))
+	if (EventCodeCall(EventCode::onConsoleInput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length())))
 		return original(_this, cmd);
 	else
 		return false;
@@ -905,13 +903,13 @@ HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifi
 	ServerNetworkHandler* _this, VA id,/*SetLocalPlayerAsInitializedPacket*/ VA pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		EventCall(Event::onPlayerJoin, PyEntity_FromEntity(p));
+		EventCodeCall(EventCode::onPlayerJoin, PyEntity_FromEntity(p));
 	}
 	original(_this, id, pkt);
 }
 HOOK(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
 	VA _this, Player* p, char v3) {
-	EventCall(Event::onPlayerLeft, PyEntity_FromEntity(p));
+	EventCodeCall(EventCode::onPlayerLeft, PyEntity_FromEntity(p));
 	return original(_this, p, v3);
 }
 HOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@EAEBVVec3@@PEBVBlock@@@Z",
@@ -923,7 +921,7 @@ HOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@E
 	BlockLegacy* bl = b->getBlockLegacy();
 	short bid = bl->getBlockItemID();
 	string bn = bl->getBlockName();
-	if (EventCall(Event::onUseItem,
+	if (EventCodeCall(EventCode::onUseItem,
 		Py_BuildValue("{s:O,s:i,s:i,s:s,s:s,s:i,s:[i,i,i]}",
 			"player", PyEntity_FromEntity(p),
 			"itemid", iid,
@@ -944,7 +942,7 @@ HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 		BlockLegacy* bl = b->getBlockLegacy();
 		short bid = bl->getBlockItemID();
 		string bn = bl->getBlockName();
-		if (!EventCall(Event::onPlaceBlock,
+		if (!EventCodeCall(EventCode::onPlaceBlock,
 			Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i]}",
 				"player", PyEntity_FromEntity(p),
 				"blockname", bn.c_str(),
@@ -976,7 +974,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 		BlockLegacy* bl = _this->getBlock(bp)->getBlockLegacy();
 		short bid = bl->getBlockItemID();
 		string bn = bl->getBlockName();
-		if (!EventCall(Event::onDestroyBlock,
+		if (!EventCodeCall(EventCode::onDestroyBlock,
 			Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i]}",
 				"player", PyEntity_FromEntity(p),
 				"blockname", bn.c_str(),
@@ -990,7 +988,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 }
 HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
-	bool res = EventCall(Event::onOpenChest,
+	bool res = EventCodeCall(EventCode::onOpenChest,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
 			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
@@ -1000,7 +998,7 @@ HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 }
 HOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
-	bool res = EventCall(Event::onOpenBarrel,
+	bool res = EventCodeCall(EventCode::onOpenBarrel,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
 			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
@@ -1011,7 +1009,7 @@ HOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z"
 HOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	VA _this, Player* p) {
 	auto bp = (BlockPos*)(_this - 204);
-	EventCall(Event::onCloseChest,
+	EventCodeCall(EventCode::onCloseChest,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
 			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
@@ -1022,7 +1020,7 @@ HOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 HOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	VA _this, Player* p) {
 	auto bp = (BlockPos*)(_this - 204);
-	EventCall(Event::onCloseBarrel,
+	EventCodeCall(EventCode::onCloseBarrel,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
 			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
@@ -1041,7 +1039,7 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 		VA v5 = (*reinterpret_cast<VA(**)(VA)>(FETCH(VA, _this) + 160))(_this);
 		if (v5) {
 			ItemStack* i = (*reinterpret_cast<ItemStack * (**)(VA, VA)>(FETCH(VA, v5) + 40))(v5, slot);
-			EventCall(Event::onContainerChange,
+			EventCodeCall(EventCode::onContainerChange,
 				Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i],s:i,s:i,s:s,s:i,s:i}",
 					"player", PyEntity_FromEntity(p),
 					"blockname", bl->getBlockName().c_str(),
@@ -1060,7 +1058,7 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 }
 HOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
 	Player* p, Actor* a, struct ActorDamageCause* c) {
-	bool res = EventCall(Event::onPlayerAttack,
+	bool res = EventCodeCall(EventCode::onPlayerAttack,
 		Py_BuildValue("{s:O,s:O}",
 			"player", PyEntity_FromEntity(p),
 			"actor", PyEntity_FromEntity(a)
@@ -1072,7 +1070,7 @@ HOOK(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@
 	VA _this, Player* p, VA req) {
 	bool result = original(_this, p, req);
 	if (result) {
-		EventCall(Event::onChangeDimension, PyEntity_FromEntity(p));
+		EventCodeCall(EventCode::onChangeDimension, PyEntity_FromEntity(p));
 	}
 	return result;
 }
@@ -1080,7 +1078,7 @@ HOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	Mob* _this, VA dmsg) {
 	char v72;
 	Actor* sa = _this->getLevel()->fetchEntity(*(VA*)((*(VA(__fastcall**)(VA, char*))(*(VA*)dmsg + 64))(dmsg, &v72)));
-	bool res = EventCall(Event::onMobDie,
+	bool res = EventCodeCall(EventCode::onMobDie,
 		Py_BuildValue("{s:I,s:O,s:O}",
 			"dmcase", FETCH(unsigned, dmsg + 8),
 			"actor1", PyEntity_FromEntity(_this),
@@ -1094,7 +1092,7 @@ HOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 	_damage = a3;//将生物受伤的值设置为可调整
 	char v72;
 	Actor* sa = _this->getLevel()->fetchEntity(*(VA*)((*(VA(__fastcall**)(VA, char*))(*(VA*)dmsg + 64))(dmsg, &v72)));
-	bool res = EventCall(Event::onMobHurt,
+	bool res = EventCodeCall(EventCode::onMobHurt,
 		Py_BuildValue("{s:i,s:O,s:O,s:i}",
 			"dmcase", FETCH(unsigned, dmsg + 8),
 			"actor1", PyEntity_FromEntity(_this),
@@ -1106,12 +1104,12 @@ HOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 }
 HOOK(onRespawn, void, "?respawn@Player@@UEAAXXZ",
 	Player* p) {
-	EventCall(Event::onRespawn, PyEntity_FromEntity(p));
+	EventCodeCall(EventCode::onRespawn, PyEntity_FromEntity(p));
 	original(p);
 }
 HOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@000@Z",
 	VA _this, string& sender, string& target, string& msg, string& style) {
-	EventCall(Event::onChat,
+	EventCodeCall(EventCode::onChat,
 		Py_BuildValue("{s:s,s:s,s:s,s:s}",
 			"sender", sender.c_str(),
 			"target", target.c_str(),
@@ -1124,23 +1122,24 @@ HOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_
 HOOK(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVTextPacket@@@Z",
 	ServerNetworkHandler* _this, VA id, /*TextPacket*/VA pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
+	bool res = true;
 	if (p) {
 		const string& msg = FETCH(string, pkt + 88);
-		bool res = EventCall(Event::onInputText,
+		res = EventCodeCall(EventCode::onInputText,
 			Py_BuildValue("{s:O,s:s}",
 				"player", PyEntity_FromEntity(p),
 				"msg", msg.c_str()
 			)
 		);
-		if (res)original(_this, id, pkt);
 	}
+	if (res)original(_this, id, pkt);
 }
 HOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
 	ServerNetworkHandler* _this, VA id, /*CommandRequestPacket*/VA pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
 		const string& cmd = FETCH(string, pkt + 48);
-		bool res = EventCall(Event::onInputCommand,
+		bool res = EventCodeCall(EventCode::onInputCommand,
 			Py_BuildValue("{s:O,s:s}",
 				"player", PyEntity_FromEntity(p),
 				"cmd", cmd.c_str()
@@ -1157,7 +1156,7 @@ HOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormRe
 		unsigned fid = FETCH(unsigned, pkt + 48);
 		string data = FETCH(string, pkt + 56);
 		if (data.back() == '\n')data.pop_back();
-		EventCall(Event::onSelectForm,
+		EventCodeCall(EventCode::onSelectForm,
 			Py_BuildValue("{s:O,s:s,s:I}",
 				"player", PyEntity_FromEntity(p),
 				"selected", data.c_str(),
@@ -1180,7 +1179,7 @@ HOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 		auto output = FETCH(string, pkt + 104);
 		auto rawname = FETCH(string, pkt + 136);
 		auto delay = FETCH(int, pkt + 168);
-		res = EventCall(Event::onCommandBlockUpdate,
+		res = EventCodeCall(EventCode::onCommandBlockUpdate,
 			Py_BuildValue("{s:O,s:i,s:i,s:i,s:s,s:s,s:s,s:i,s:[i,i,i]}",
 				"player", PyEntity_FromEntity(p),
 				"mode", mode,
@@ -1198,7 +1197,7 @@ HOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 }
 HOOK(onLevelExplode, bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
 	Level* _this, BlockSource* bs, Actor* a3, Vec3 pos, float a5, bool a6, bool a7, float a8, bool a9) {
-	bool res = EventCall(Event::onLevelExplode,
+	bool res = EventCodeCall(EventCode::onLevelExplode,
 		Py_BuildValue("{s:O,s:[f,f,f],s:i,s:f}",
 			"actor", PyEntity_FromEntity(a3),
 			"position", pos.x, pos.y, pos.z,
@@ -1216,7 +1215,7 @@ HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@
 	bool condition = SymCall<bool>("?getConditionalMode@CommandBlockActor@@QEBA_NAEAVBlockSource@@@Z", a3, a2);
 	string cmd = FETCH(string, a3 + 264);
 	string rawname = FETCH(string, a3 + 296);
-	bool res = EventCall(Event::onCommandBlockPerform,
+	bool res = EventCodeCall(EventCode::onCommandBlockPerform,
 		Py_BuildValue("{s:i,s:b,s:s,s:s,s:[i,i,i]}",
 			"mode", mode,
 			"condition", condition,
@@ -1229,12 +1228,12 @@ HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@
 }
 HOOK(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
 	VA _this, Player* p, char a3, int a4, int a5) {
-	EventCall(Event::onMove, PyEntity_FromEntity(p));
+	EventCodeCall(EventCode::onMove, PyEntity_FromEntity(p));
 	original(_this, p, a3, a4, a5);
 }
 HOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 	Player* p, unsigned slot, ItemStack* i) {
-	if (!EventCall(Event::onSetArmor,
+	if (!EventCodeCall(EventCode::onSetArmor,
 		Py_BuildValue("{s:O,s:i,s:i,s:s,s:i,s:i}",
 			"player", PyEntity_FromEntity(p),
 			"itemid", i->getId(),
@@ -1255,7 +1254,7 @@ HOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboar
 	修改计分板时（此函数hook此处)：/scoreboard players <add|remove|set> <playersname> <objectivename> <playersnum>
 	*/
 	int scoreboardid = a1->id;
-	EventCall(Event::onScoreChanged,
+	EventCodeCall(EventCode::onScoreChanged,
 		Py_BuildValue("{s:i,s:i,s:s,s:s}",
 			"scoreboardid", scoreboardid,
 			"playersnum", a2->getPlayerScore(a1)->getCount(),
@@ -1268,7 +1267,7 @@ HOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboar
 HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@M@Z",
 	VA _this, BlockSource* a1, BlockPos* a2, Actor* p, VA a4) {
 	if (isPlayer(p)) {
-		if (!EventCall(Event::onFallBlockTransform,
+		if (!EventCodeCall(EventCode::onFallBlockTransform,
 			Py_BuildValue("{s:O,s:[i,i,i],s:i}",
 				"player", PyEntity_FromEntity(p),
 				"position", a2->x, a2->y, a2->z,
@@ -1282,7 +1281,7 @@ HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSour
 HOOK(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPlayer@@AEBVBlockPos@@AEAVBlockSource@@AEAVLevel@@@Z",
 	Player* p, BlockPos* a2, BlockSource* a3, Level* a4) {
 	if (isPlayer(p)) {
-		if (!EventCall(Event::onUseRespawnAnchorBlock,
+		if (!EventCodeCall(EventCode::onUseRespawnAnchorBlock,
 			Py_BuildValue("{s:O,s:[i,i,i],s:i}",
 				"player", PyEntity_FromEntity(p),
 				"position", a2->x, a2->y, a2->z,
@@ -1299,7 +1298,7 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 	string bn = blg->getBlockName();
 	short bid = blg->getBlockItemID();
 	BlockPos* bp2 = _this->getPosition();
-	bool res = EventCall(Event::onPistonPush,
+	bool res = EventCodeCall(EventCode::onPistonPush,
 		Py_BuildValue("{s:s,s:i,s:[i,i,i],s:[i,i,i],s:i}",
 			"blockname", bn.c_str(),
 			"blockid", bid,
@@ -1312,7 +1311,7 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 }
 HOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NAEAVActor@@@Z",
 	VA _this, Actor* a1) {
-	bool res = EventCall(Event::onEndermanRandomTeleport,
+	bool res = EventCodeCall(EventCode::onEndermanRandomTeleport,
 		PyEntity_FromEntity(a1)
 	);
 	CheckResult(_this, a1);
@@ -1542,7 +1541,6 @@ static PyModuleDef PyAPI_Module{
 	nullptr
 };
 
-
 //模块初始化
 static PyObject* PyAPI_init() {
 	PyObject* module = PyModule_Create(&PyAPI_Module);
@@ -1550,17 +1548,19 @@ static PyObject* PyAPI_init() {
 	return module;
 }
 #pragma endregion
-//把Python初始化工作交给bds来做
-HOOK(BDS_Main, int, "main",
-	int argc, char* argv[], char* envp[]) {
+void init() {
+	//Tag* t = toTag(toJson(R"({"bcy5":0.123456789,"str8":"string"})"));
+	//print(toJson(t));
+	//t->deCompound();
+	//delete t;
 	using namespace filesystem;
-	cout << "[BDSpyrunner] " << VERSION_STRING << " loaded." << endl;
-	if (!checkBDSVersion("1.17.10.04"))
-		cerr << "error: inappropriate version" << endl;
+	cout << "[BDSpyrunner] " VERSION_STRING " loaded." << endl;
+	//if (!checkBDSVersion("1.17.10.04"))
+	//	cerr << "error: inappropriate version" << endl;
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
 	//将plugins/py加入模块搜索路径
-	Py_SetPath((wstring(Py_GetPath()) + L';' + PLUGIN_PATH).c_str());
+	Py_SetPath((wstring(Py_GetPath()) + L";" PLUGIN_PATH).c_str());
 	/*预初始化3.8+
 	PyPreConfig cfg;
 	PyPreConfig_InitPythonConfig(&cfg);
@@ -1573,7 +1573,7 @@ HOOK(BDS_Main, int, "main",
 		cerr << "Falid to prepare class 'Entity'." << endl;
 	PyEval_InitThreads();//启用线程支持
 	for (const directory_entry& info : directory_iterator(PLUGIN_PATH)) {
-		const path& path = info.operator const std::filesystem::path & ();
+		const path& path = info;
 		if (path.extension() == ".py" || path.extension() == ".pyd") {
 			const string& name = path.stem().u8string();
 			cout << "[BDSpyrunner] loading " << name << endl;
@@ -1582,14 +1582,4 @@ HOOK(BDS_Main, int, "main",
 		}
 	}
 	PyEval_SaveThread();//释放当前线程
-
-	// 执行 main 函数
-	return original(argc, argv, envp);
-}
-BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
-	//Tag* t = toTag(toJson(R"({"bcy5":0.123456789,"str8":"string"})"));
-	//print(toJson(t));
-	//t->deCompound();
-	//delete t;
-	return TRUE;
 }

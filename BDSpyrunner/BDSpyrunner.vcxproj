@@ -100,11 +100,17 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>..\..\test\bdxcore_mod\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
+    <PublicIncludeDirectories>
+    </PublicIncludeDirectories>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\..\test\bdxcore_mod\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
+    <PublicIncludeDirectories>
+    </PublicIncludeDirectories>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
