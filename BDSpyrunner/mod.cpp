@@ -1,24 +1,14 @@
 ﻿#include "pch.h"
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
-#include "Command.h"
-//#include "dyncall/dyncall.h"
-//#include "dyncall/dyncall_callback.h"
 
-#define VERSION_STRING "1.6.1"
-#define VERSION_NUMBER 202
+#define VERSION_STRING "1.6.2"
+#define VERSION_NUMBER 203
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
 
-bool onTestCommand(CommandOrigin const& ori, CommandOutput& outp, const string& str, const string& str2) {
-	outp.addMessage(str);
-	outp.addMessage(str2);
-	return true;
-}
-
 #pragma region Macro
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
-#define CheckResult(...) if (!res) return 0; return original(__VA_ARGS__)
 #pragma endregion
 #pragma region EventCode
 enum class EventCode {
@@ -55,6 +45,7 @@ enum class EventCode {
 	onPistonPush,
 	onEndermanRandomTeleport,
 };
+//不推荐中文！
 static const unordered_map<string, EventCode> events{
 {"后台输入",EventCode::onConsoleInput},
 {"后台输出",EventCode::onConsoleOutput},
@@ -127,8 +118,6 @@ static SPSCQueue* _command_queue = nullptr;
 static ServerNetworkHandler* _server_network_handler = nullptr;
 //世界
 static Level* _level = nullptr;
-//命令注册
-CommandRegistry* CmdRegGlobal = nullptr;
 //计分板
 static Scoreboard* _scoreboard = nullptr;
 //Py函数表
@@ -139,15 +128,6 @@ static vector<pair<string, string>> _commands;
 static unordered_map<string, PyObject*> _share_data;
 //伤害
 static int _damage;
-unordered_map<string, void*> parse_ptr = {
-	{typeid(CommandMessage).name(),SYM("??$parse@VCommandMessage@@@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
-	{typeid(string).name(),SYM("??$parse@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
-	//{typeid(bool).name(),SYM("??$parse@_N@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
-	{typeid(float).name(), SYM("??$parse@M@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
-	{typeid(int).name(),SYM("??$parse@H@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
-	{typeid(CommandSelector<Actor>).name(),SYM("??$parse@V?$CommandSelector@VActor@@@@@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
-	{typeid(CommandSelector<Player>).name(),SYM("??$parse@V?$CommandSelector@VPlayer@@@@@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")}
-};
 }
 #pragma endregion
 #pragma region Function Define
@@ -200,7 +180,7 @@ static void safeCall(const function<void()>& fn) {
 		PyGILState_Release(gstate);//释放当前线程的GIL
 }
 //事件回调
-static bool EventCodeCall(EventCode e, PyObject* val) {
+static bool EventCallBack(EventCode e, PyObject* val) {
 	bool result = true;
 	safeCall([&] {
 		vector<PyObject*>& List = _functions[e];
@@ -413,7 +393,7 @@ static PyObject* PyEntity_GetTypeName(PyObject* self, void*) {
 }
 //获取nbt数据
 static PyObject* PyEntity_GetNBTInfo(PyObject* self, void*) {
-	string str = toJson(PyEntity_AsActor(self)->save()).toStyledString();
+	string str = CompoundTagtoJson(PyEntity_AsActor(self)->save()).dump(4);
 	return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 }
 //获取生命值
@@ -481,27 +461,27 @@ static PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
 	Player* p = PyEntity_AsPlayer(self);
 	if (!p)
 		return nullptr;
-	Value json(objectValue);
+	json value;
 
-	Value& inventory = json["Inventory"];
+	json& inventory = value["Inventory"];
 	for (auto& i : p->getInventory()->getSlots()) {
-		inventory.append(toJson(i->save()));
+		inventory.push_back(CompoundTagtoJson(i->save()));
 	}
 
-	Value& endchest = json["EndChest"];
+	json& endchest = value["EndChest"];
 	for (auto& i : p->getEnderChestContainer()->getSlots()) {
-		endchest.append(toJson(i->save()));
+		endchest.push_back(CompoundTagtoJson(i->save()));
 	}
 
-	Value& armor = json["Armor"];
+	json& armor = value["Armor"];
 	for (auto& i : p->getArmorContainer()->getSlots()) {
-		armor.append(toJson(i->save()));
+		armor.push_back(CompoundTagtoJson(i->save()));
 	}
 
-	json["OffHand"] = toJson(p->getOffHand()->save());
-	json["Hand"] = toJson(p->getSelectedItem()->save());
+	value["OffHand"] = CompoundTagtoJson(p->getOffHand()->save());
+	value["Hand"] = CompoundTagtoJson(p->getSelectedItem()->save());
 
-	string str = json.toStyledString();
+	string str = value.dump(4);
 	return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 }
 static PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
@@ -510,34 +490,34 @@ static PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 		Player* p = PyEntity_AsPlayer(self);
 		if (!p)
 			return nullptr;
-		Value json(toJson(x));
+		json value(StringtoJson(x));
 
-		if (json.isMember("Inventory")) {
+		if (value.contains("Inventory")) {
 			const vector<ItemStack*>& items = p->getInventory()->getSlots();
-			Value& inventory = json["Inventory"];
+			json& inventory = value["Inventory"];
 			for (unsigned i = 0; i < inventory.size(); i++) {
 				items[i]->fromJson(inventory[i]);
 			}
 		}
 
-		if (json.isMember("EndChest")) {
+		if (value.contains("EndChest")) {
 			const vector<ItemStack*>& items = p->getEnderChestContainer()->getSlots();
-			Value& endchest = json["EndChest"];
+			json& endchest = value["EndChest"];
 			for (unsigned i = 0; i < endchest.size(); i++) {
 				items[i]->fromJson(endchest[i]);
 			}
 		}
 
-		if (json.isMember("Armor")) {
+		if (value.contains("Armor")) {
 			const vector<ItemStack*>& items = p->getArmorContainer()->getSlots();
-			Value& armor = json["Armor"];
+			json& armor = value["Armor"];
 			for (unsigned i = 0; i < armor.size(); i++) {
 				items[i]->fromJson(armor[i]);
 			}
 		}
 
-		if (json.isMember("OffHand")) {
-			p->getOffHand()->fromJson(json["OffHand"]);
+		if (value.contains("OffHand")) {
+			p->getOffHand()->fromJson(value["OffHand"]);
 		}
 		p->sendInventroy();
 	}
@@ -549,7 +529,7 @@ static PyObject* PyEntity_SetHand(PyObject* self, PyObject* args) {
 		Player* p = PyEntity_AsPlayer(self);
 		if (!p)
 			return nullptr;
-		Value json(toJson(x));
+		json json(StringtoJson(x));
 		p->getSelectedItem()->fromJson(json);
 		p->sendInventroy();
 	}
@@ -563,7 +543,7 @@ static PyObject* PyEntity_AddItem(PyObject* self, PyObject* args) {
 		if (!p)
 			return nullptr;
 		ItemStack i;
-		i.fromJson(toJson(x));
+		i.fromJson(StringtoJson(x));
 		p->addItem(&i);
 		p->sendInventroy();
 	}
@@ -732,12 +712,12 @@ static PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
 		if (!p)
 			return nullptr;
 		sendsetDisplayObjectivePacket(p, title);
-		Value json = toJson(data);
+		json value = StringtoJson(data);
 		vector<ScorePacketInfo> info;
-		if (json.isObject())
-			for (auto& x : json.getMemberNames()) {
-				ScorePacketInfo o(_scoreboard->createScoreBoardId(x),
-					json[x].asInt(), x);
+		if (value.is_object())
+			for (auto& [key, val] : value.items()) {
+				ScorePacketInfo o(_scoreboard->createScoreBoardId(key),
+					val.get<int>(), key);
 				info.push_back(o);
 			}
 		sendSetScorePacket(p, 0, info);
@@ -770,6 +750,35 @@ static PyObject* PyEntity_RemoveBossbar(PyObject* self, PyObject*) {
 	sendBossEventCodePacket(p, "", 0, 2);
 	Py_RETURN_NONE;
 }
+//标签
+static PyObject* PyEntity_AddTag(PyObject* self, PyObject* args) {
+	const char* tag = "";
+	if (PyArg_ParseTuple(args, "s:addTag", &tag)) {
+		Actor* a = PyEntity_AsActor(self);
+		if (!a)
+			return nullptr;
+		a->addTag(tag);
+	}
+	Py_RETURN_NONE;
+}
+static PyObject* PyEntity_RemoveTag(PyObject* self, PyObject* args) {
+	const char* tag = "";
+	if (PyArg_ParseTuple(args, "s:removeTag", &tag)) {
+		Actor* a = PyEntity_AsActor(self);
+		if (!a)
+			return nullptr;
+		a->removeTag(tag);
+	}
+	Py_RETURN_NONE;
+}
+static PyObject* PyEntity_GetTags(PyObject* self, PyObject*) {
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	string tags = a->getTags();
+	return PyUnicode_FromStringAndSize(tags.c_str(), tags.length());
+	Py_RETURN_NONE;
+}
 
 //Entity方法
 static PyMethodDef PyEntity_Methods[]{
@@ -794,6 +803,9 @@ static PyMethodDef PyEntity_Methods[]{
 	{"removeSidebar", PyEntity_RemoveSidebar, METH_NOARGS, nullptr},
 	{"setBossbar", PyEntity_SetBossbar, METH_VARARGS, nullptr},
 	{"removeBossbar", PyEntity_RemoveBossbar, METH_NOARGS, nullptr},
+	{"addTag", PyEntity_AddTag, METH_VARARGS, nullptr},
+	{"removeTag", PyEntity_RemoveTag, METH_VARARGS, nullptr},
+	{"getTags", PyEntity_GetTags, METH_NOARGS, nullptr},
 	{nullptr}
 };
 //Entity类型
@@ -886,25 +898,18 @@ HOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VComman
 	return _scoreboard = original(_this, a2, a3);
 }
 HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
-	CommandRegistry* _this) {
-	CmdRegGlobal = _this;
+	VA _this) {
 	for (auto& [cmd, des] : _commands) {
 		SymCall("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
 			_this, &cmd, des.c_str(), 0, 0, 0x80);
-		//MakeOverload none((struct ddd*)0, cmd, onTestCommand, "msg1", "msg2");
-}
-	//CmdOverload(pland, onTestCommand, "input");//重载指令
+	}
 	original(_this);
-}
-HOOK(CommandSelectorBase_isExpansionAllowed, bool, "?isExpansionAllowed@CommandSelectorBase@@AEBA_NAEBVCommandOrigin@@@Z",
-	CommandSelectorBase* _this, CommandOrigin* a2) {
-	return true;
 }
 HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, VA size) {
 	if (&_this == &cout) {
 		wstring wstr = CharToWchar(str);
-		bool res = EventCodeCall(EventCode::onConsoleOutput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length()));
+		bool res = EventCallBack(EventCode::onConsoleOutput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length()));
 		if (!res)return _this;
 	}
 	return original(_this, str, size);
@@ -929,7 +934,7 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 		return 0;
 	}
 	wstring wstr = CharToWchar(cmd);
-	if (EventCodeCall(EventCode::onConsoleInput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length())))
+	if (EventCallBack(EventCode::onConsoleInput, PyUnicode_FromWideChar(wstr.c_str(), wstr.length())))
 		return original(_this, cmd);
 	else
 		return false;
@@ -938,25 +943,25 @@ HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifi
 	ServerNetworkHandler* _this, VA id,/*SetLocalPlayerAsInitializedPacket*/ VA pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		EventCodeCall(EventCode::onPlayerJoin, PyEntity_FromEntity(p));
+		EventCallBack(EventCode::onPlayerJoin, PyEntity_FromEntity(p));
 	}
 	original(_this, id, pkt);
 }
 HOOK(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
 	VA _this, Player* p, char v3) {
-	EventCodeCall(EventCode::onPlayerLeft, PyEntity_FromEntity(p));
+	EventCallBack(EventCode::onPlayerLeft, PyEntity_FromEntity(p));
 	return original(_this, p, v3);
 }
 HOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@EAEBVVec3@@PEBVBlock@@@Z",
 	VA _this, ItemStack* item, BlockPos* bp, char a4, VA a5, Block* b) {
 	Player* p = FETCH(Player*, _this + 8);
 	short iid = item->getId();
-	short iaux = item->mAuxValue;
+	short iaux = item->mAuxjson;
 	string iname = item->getName();
 	BlockLegacy* bl = b->getBlockLegacy();
 	short bid = bl->getBlockItemID();
 	string bn = bl->getBlockName();
-	if (EventCodeCall(EventCode::onUseItem,
+	if (EventCallBack(EventCode::onUseItem,
 		Py_BuildValue("{s:O,s:i,s:i,s:s,s:s,s:i,s:[i,i,i]}",
 			"player", PyEntity_FromEntity(p),
 			"itemid", iid,
@@ -977,7 +982,7 @@ HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 		BlockLegacy* bl = b->getBlockLegacy();
 		short bid = bl->getBlockItemID();
 		string bn = bl->getBlockName();
-		if (!EventCodeCall(EventCode::onPlaceBlock,
+		if (!EventCallBack(EventCode::onPlaceBlock,
 			Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i]}",
 				"player", PyEntity_FromEntity(p),
 				"blockname", bn.c_str(),
@@ -997,9 +1002,9 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 	StructureTemplate st("tmp");
 	StructureTemplate st2("tmp2");
 	st.fillFromWorld(_this, bp, &ss);
-	Value v(toJson(st.save()));
+	json v(toJson(st.save()));
 	st2.fromJson(v);
-	Value v2(toJson(st2.save()));
+	json v2(toJson(st2.save()));
 	//print(v2);
 	bp->y++;
 	st2.placeInWorld(_this, _level->getBlockPalette(), bp, &ss);
@@ -1009,7 +1014,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 		BlockLegacy* bl = _this->getBlock(bp)->getBlockLegacy();
 		short bid = bl->getBlockItemID();
 		string bn = bl->getBlockName();
-		if (!EventCodeCall(EventCode::onDestroyBlock,
+		if (!EventCallBack(EventCode::onDestroyBlock,
 			Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i]}",
 				"player", PyEntity_FromEntity(p),
 				"blockname", bn.c_str(),
@@ -1023,28 +1028,30 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 }
 HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
-	bool res = EventCodeCall(EventCode::onOpenChest,
+	if (EventCallBack(EventCode::onOpenChest,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
 			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
 		)
-	);
-	CheckResult(_this, p, bp);
+	))
+		return original(_this, p, bp);
+	return false;
 }
 HOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	VA _this, Player* p, BlockPos* bp) {
-	bool res = EventCodeCall(EventCode::onOpenBarrel,
+	if (EventCallBack(EventCode::onOpenBarrel,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
 			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
 		)
-	);
-	CheckResult(_this, p, bp);
+	))
+		return original(_this, p, bp);
+	return false;
 }
 HOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	VA _this, Player* p) {
 	auto bp = (BlockPos*)(_this - 204);
-	EventCodeCall(EventCode::onCloseChest,
+	EventCallBack(EventCode::onCloseChest,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
 			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
@@ -1055,7 +1062,7 @@ HOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 HOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	VA _this, Player* p) {
 	auto bp = (BlockPos*)(_this - 204);
-	EventCodeCall(EventCode::onCloseBarrel,
+	EventCallBack(EventCode::onCloseBarrel,
 		Py_BuildValue("{s:O,s:[i,i,i]}",
 			"player", PyEntity_FromEntity(p),
 			"position", bp->x, bp->y, bp->z
@@ -1074,7 +1081,7 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 		VA v5 = (*reinterpret_cast<VA(**)(VA)>(FETCH(VA, _this) + 160))(_this);
 		if (v5) {
 			ItemStack* i = (*reinterpret_cast<ItemStack * (**)(VA, VA)>(FETCH(VA, v5) + 40))(v5, slot);
-			EventCodeCall(EventCode::onContainerChange,
+			EventCallBack(EventCode::onContainerChange,
 				Py_BuildValue("{s:O,s:s,s:i,s:[i,i,i],s:i,s:i,s:s,s:i,s:i}",
 					"player", PyEntity_FromEntity(p),
 					"blockname", bl->getBlockName().c_str(),
@@ -1083,7 +1090,7 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 					"itemid", i->getId(),
 					"itemcount", i->mCount,
 					"itemname", i->getName().c_str(),
-					"itemaux", i->mAuxValue,
+					"itemaux", i->mAuxjson,
 					"slot", slot
 				)
 			);
@@ -1093,19 +1100,20 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 }
 HOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
 	Player* p, Actor* a, struct ActorDamageCause* c) {
-	bool res = EventCodeCall(EventCode::onPlayerAttack,
+	if (EventCallBack(EventCode::onPlayerAttack,
 		Py_BuildValue("{s:O,s:O}",
 			"player", PyEntity_FromEntity(p),
 			"actor", PyEntity_FromEntity(a)
 		)
-	);
-	CheckResult(p, a, c);
+	))
+		return original(p, a, c);
+	return false;
 }
 HOOK(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@AEAVChangeDimensionRequest@@@Z",
 	VA _this, Player* p, VA req) {
 	bool result = original(_this, p, req);
 	if (result) {
-		EventCodeCall(EventCode::onChangeDimension, PyEntity_FromEntity(p));
+		EventCallBack(EventCode::onChangeDimension, PyEntity_FromEntity(p));
 	}
 	return result;
 }
@@ -1113,7 +1121,7 @@ HOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	Mob* _this, VA dmsg) {
 	char v72;
 	Actor* sa = _this->getLevel()->fetchEntity(*(VA*)((*(VA(__fastcall**)(VA, char*))(*(VA*)dmsg + 64))(dmsg, &v72)));
-	bool res = EventCodeCall(EventCode::onMobDie,
+	bool res = EventCallBack(EventCode::onMobDie,
 		Py_BuildValue("{s:I,s:O,s:O}",
 			"dmcase", FETCH(unsigned, dmsg + 8),
 			"actor1", PyEntity_FromEntity(_this),
@@ -1127,24 +1135,25 @@ HOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 	_damage = a3;//将生物受伤的值设置为可调整
 	char v72;
 	Actor* sa = _this->getLevel()->fetchEntity(*(VA*)((*(VA(__fastcall**)(VA, char*))(*(VA*)dmsg + 64))(dmsg, &v72)));
-	bool res = EventCodeCall(EventCode::onMobHurt,
+	if (EventCallBack(EventCode::onMobHurt,
 		Py_BuildValue("{s:i,s:O,s:O,s:i}",
 			"dmcase", FETCH(unsigned, dmsg + 8),
 			"actor1", PyEntity_FromEntity(_this),
 			"actor2", PyEntity_FromEntity(sa),//可能为0
 			"damage", a3
 		)
-	);
-	CheckResult(_this, dmsg, _damage, a4, a5);
+	))
+		return original(_this, dmsg, _damage, a4, a5);
+	return false;
 }
 HOOK(onRespawn, void, "?respawn@Player@@UEAAXXZ",
 	Player* p) {
-	EventCodeCall(EventCode::onRespawn, PyEntity_FromEntity(p));
+	EventCallBack(EventCode::onRespawn, PyEntity_FromEntity(p));
 	original(p);
 }
 HOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@000@Z",
 	VA _this, string& sender, string& target, string& msg, string& style) {
-	EventCodeCall(EventCode::onChat,
+	EventCallBack(EventCode::onChat,
 		Py_BuildValue("{s:s,s:s,s:s,s:s}",
 			"sender", sender.c_str(),
 			"target", target.c_str(),
@@ -1160,7 +1169,7 @@ HOOK(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifie
 	bool res = true;
 	if (p) {
 		const string& msg = FETCH(string, pkt + 88);
-		res = EventCodeCall(EventCode::onInputText,
+		res = EventCallBack(EventCode::onInputText,
 			Py_BuildValue("{s:O,s:s}",
 				"player", PyEntity_FromEntity(p),
 				"msg", msg.c_str()
@@ -1174,7 +1183,7 @@ HOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdenti
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
 		const string& cmd = FETCH(string, pkt + 48);
-		bool res = EventCodeCall(EventCode::onInputCommand,
+		bool res = EventCallBack(EventCode::onInputCommand,
 			Py_BuildValue("{s:O,s:s}",
 				"player", PyEntity_FromEntity(p),
 				"cmd", cmd.c_str()
@@ -1191,7 +1200,7 @@ HOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormRe
 		unsigned fid = FETCH(unsigned, pkt + 48);
 		string data = FETCH(string, pkt + 56);
 		if (data.back() == '\n')data.pop_back();
-		EventCodeCall(EventCode::onSelectForm,
+		EventCallBack(EventCode::onSelectForm,
 			Py_BuildValue("{s:O,s:s,s:I}",
 				"player", PyEntity_FromEntity(p),
 				"selected", data.c_str(),
@@ -1214,7 +1223,7 @@ HOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 		auto output = FETCH(string, pkt + 104);
 		auto rawname = FETCH(string, pkt + 136);
 		auto delay = FETCH(int, pkt + 168);
-		res = EventCodeCall(EventCode::onCommandBlockUpdate,
+		res = EventCallBack(EventCode::onCommandBlockUpdate,
 			Py_BuildValue("{s:O,s:i,s:i,s:i,s:s,s:s,s:s,s:i,s:[i,i,i]}",
 				"player", PyEntity_FromEntity(p),
 				"mode", mode,
@@ -1232,15 +1241,16 @@ HOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 }
 HOOK(onLevelExplode, bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
 	Level* _this, BlockSource* bs, Actor* a3, Vec3 pos, float a5, bool a6, bool a7, float a8, bool a9) {
-	bool res = EventCodeCall(EventCode::onLevelExplode,
+	if (EventCallBack(EventCode::onLevelExplode,
 		Py_BuildValue("{s:O,s:[f,f,f],s:i,s:f}",
 			"actor", PyEntity_FromEntity(a3),
 			"position", pos.x, pos.y, pos.z,
 			"dimensionid", bs->getDimensionId(),
 			"power", a5
 		)
-	);
-	CheckResult(_this, bs, a3, pos, a5, a6, a7, a8, a9);
+	))
+		return original(_this, bs, a3, pos, a5, a6, a7, a8, a9);
+	return false;
 }
 HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@@AEAVCommandBlockActor@@AEBVBlockPos@@_N@Z",
 	VA _this, BlockSource* a2, VA a3, BlockPos* bp, bool a5) {
@@ -1250,7 +1260,7 @@ HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@
 	bool condition = SymCall<bool>("?getConditionalMode@CommandBlockActor@@QEBA_NAEAVBlockSource@@@Z", a3, a2);
 	string cmd = FETCH(string, a3 + 264);
 	string rawname = FETCH(string, a3 + 296);
-	bool res = EventCodeCall(EventCode::onCommandBlockPerform,
+	if (EventCallBack(EventCode::onCommandBlockPerform,
 		Py_BuildValue("{s:i,s:b,s:s,s:s,s:[i,i,i]}",
 			"mode", mode,
 			"condition", condition,
@@ -1258,23 +1268,24 @@ HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@
 			"rawname", rawname.c_str(),
 			"position", bp->x, bp->y, bp->z
 		)
-	);
-	CheckResult(_this, a2, a3, bp, a5);
+	))
+		return original(_this, a2, a3, bp, a5);
+	return false;
 }
 HOOK(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
 	VA _this, Player* p, char a3, int a4, int a5) {
-	EventCodeCall(EventCode::onMove, PyEntity_FromEntity(p));
+	EventCallBack(EventCode::onMove, PyEntity_FromEntity(p));
 	original(_this, p, a3, a4, a5);
 }
 HOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 	Player* p, unsigned slot, ItemStack* i) {
-	if (!EventCodeCall(EventCode::onSetArmor,
+	if (!EventCallBack(EventCode::onSetArmor,
 		Py_BuildValue("{s:O,s:i,s:i,s:s,s:i,s:i}",
 			"player", PyEntity_FromEntity(p),
 			"itemid", i->getId(),
 			"itemcount", i->mCount,
 			"itemname", i->getName().c_str(),
-			"itemaux", i->mAuxValue,
+			"itemaux", i->mAuxjson,
 			"slot", slot
 		)
 	))
@@ -1289,7 +1300,7 @@ HOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboar
 	修改计分板时（此函数hook此处)：/scoreboard players <add|remove|set> <playersname> <objectivename> <playersnum>
 	*/
 	int scoreboardid = a1->id;
-	EventCodeCall(EventCode::onScoreChanged,
+	EventCallBack(EventCode::onScoreChanged,
 		Py_BuildValue("{s:i,s:i,s:s,s:s}",
 			"scoreboardid", scoreboardid,
 			"playersnum", a2->getPlayerScore(a1)->getCount(),
@@ -1302,7 +1313,7 @@ HOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboar
 HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@M@Z",
 	VA _this, BlockSource* a1, BlockPos* a2, Actor* p, VA a4) {
 	if (isPlayer(p)) {
-		if (!EventCodeCall(EventCode::onFallBlockTransform,
+		if (!EventCallBack(EventCode::onFallBlockTransform,
 			Py_BuildValue("{s:O,s:[i,i,i],s:i}",
 				"player", PyEntity_FromEntity(p),
 				"position", a2->x, a2->y, a2->z,
@@ -1316,7 +1327,7 @@ HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSour
 HOOK(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPlayer@@AEBVBlockPos@@AEAVBlockSource@@AEAVLevel@@@Z",
 	Player* p, BlockPos* a2, BlockSource* a3, Level* a4) {
 	if (isPlayer(p)) {
-		if (!EventCodeCall(EventCode::onUseRespawnAnchorBlock,
+		if (!EventCallBack(EventCode::onUseRespawnAnchorBlock,
 			Py_BuildValue("{s:O,s:[i,i,i],s:i}",
 				"player", PyEntity_FromEntity(p),
 				"position", a2->x, a2->y, a2->z,
@@ -1333,7 +1344,7 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 	string bn = blg->getBlockName();
 	short bid = blg->getBlockItemID();
 	BlockPos* bp2 = _this->getPosition();
-	bool res = EventCodeCall(EventCode::onPistonPush,
+	if (EventCallBack(EventCode::onPistonPush,
 		Py_BuildValue("{s:s,s:i,s:[i,i,i],s:[i,i,i],s:i}",
 			"blockname", bn.c_str(),
 			"blockid", bid,
@@ -1341,15 +1352,17 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 			"pistonpos", bp2->x, bp2->y, bp2->z,
 			"dimensionid", bs->getDimensionId()
 		)
-	);
-	CheckResult(_this, bs, bp, a3, a4);
+	))
+		return original(_this, bs, bp, a3, a4);
+	return false;
 }
 HOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NAEAVActor@@@Z",
 	VA _this, Actor* a1) {
-	bool res = EventCodeCall(EventCode::onEndermanRandomTeleport,
+	if (EventCallBack(EventCode::onEndermanRandomTeleport,
 		PyEntity_FromEntity(a1)
-	);
-	CheckResult(_this, a1);
+	))
+		return original(_this, a1);
+	return false;
 }
 #pragma endregion
 #pragma region API Function
@@ -1507,7 +1520,7 @@ static PyObject* PyAPI_getStructure(PyObject*, PyObject* args) {
 		StructureTemplate st("tmp");
 		st.fillFromWorld(bs, &start, &ss);
 
-		string str = toJson(st.save()).toStyledString();
+		string str = CompoundTagtoJson(st.save()).dump(4);
 		return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 	}
 	Py_RETURN_NONE;
@@ -1520,18 +1533,18 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 		BlockSource* bs = _level->getBlockSource(did);
 		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
-		Value json = toJson(data);
-		Value& arr = json["size9"];
-		if (!arr.isArray())
+		json value = StringtoJson(data);
+		json& arr = value["size9"];
+		if (!arr.is_array())
 			Py_RETURN_ERROR("Invalid json string");
 		BlockPos size{
-			arr[0].asInt(),
-			arr[1].asInt(),
-			arr[2].asInt()
+			arr[0].get<int>(),
+			arr[1].get<int>(),
+			arr[2].get<int>()
 		};
 		StructureSettings ss(&size, true, false);
 		StructureTemplate st("tmp");
-		st.fromJson(json);
+		st.fromJson(value);
 		st.placeInWorld(bs, _level->getBlockPalette(), &pos, &ss);
 		for (unsigned x = 0; x != size.x; ++x) {
 			for (unsigned y = 0; y != size.y; ++y) {
@@ -1586,6 +1599,7 @@ static PyObject* PyAPI_init() {
 void init() {
 	using namespace filesystem;
 	cout << "[BDSpyrunner] " VERSION_STRING " loaded." << endl;
+	//如果目录不存在创建目录
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
 	//将plugins/py加入模块搜索路径

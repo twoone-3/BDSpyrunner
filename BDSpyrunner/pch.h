@@ -11,10 +11,11 @@
 #include <functional>
 #include <filesystem>
 #include <unordered_map>
-#include "json/json.h"
+#include "json.hpp"
 
 using namespace std;
-using namespace Json;
+using namespace nlohmann;
+using JsonType = json::value_t;
 using VA = unsigned long long;
 
 #define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
@@ -51,16 +52,14 @@ static void* SymHook(const char* sym, void* hook, void* org) {
 }
 
 //转换字符串为json
-static Value toJson(const string& str) {
-	Value value;
-	CharReaderBuilder rb;
-	rb.strictMode(&rb.settings_);
-	string errs;
-	CharReader* r(rb.newCharReader());
-	if (!r->parse(str.c_str(), str.c_str() + str.length(), &value, &errs)) {
-		cerr << "JSON转换失败 " << errs << endl;
+static json StringtoJson(string_view str) {
+	try {
+		return json::parse(str);
 	}
-	return value;
+	catch (const exception& e) {
+		cerr << e.what() << endl;
+		return nullptr;
+	}
 }
 
 #pragma region NBT
@@ -147,10 +146,10 @@ struct Tag {
 };
 
 static Tag* newTag(TagType);
-static Value ListtoJson(Tag*);
-static Value toJson(Tag*);
-static Tag* toTag(const Value&);
-static Tag* ArraytoTag(const Value&);
+static json ListtoJson(Tag*);
+static json CompoundTagtoJson(Tag*);
+static Tag* ObjecttoTag(const json&);
+static Tag* ArraytoTag(const json&);
 
 //新建tag
 Tag* newTag(TagType t) {
@@ -159,50 +158,51 @@ Tag* newTag(TagType t) {
 		&tag, t);
 	return tag;
 }
-Value ListtoJson(Tag* t) {
-	Value value(arrayValue);
+json ListtoJson(Tag* t) {
+	json value(JsonType::array);
 	for (auto& c : t->asList()) {
 		switch (t->getListType()) {
 		case TagType::End:
 			break;
 		case TagType::Byte:
-			value.append(c->asByte());
+			value.push_back(c->asByte());
 			break;
 		case TagType::Short:
-			value.append(c->asShort());
+			value.push_back(c->asShort());
 			break;
 		case TagType::Int:
-			value.append(c->asInt());
+			value.push_back(c->asInt());
 			break;
 		case TagType::Int64:
-			value.append(c->asInt64());
+			value.push_back(c->asInt64());
 			break;
 		case TagType::Float:
-			value.append(c->asFloat());
+			value.push_back(c->asFloat());
 			break;
 		case TagType::Double:
-			value.append(c->asDouble());
+			value.push_back(c->asDouble());
 			break;
 		case TagType::ByteArray:
+
 			break;
 		case TagType::String:
-			value.append(c->asString());
+			value.push_back(c->asString());
 			break;
 		case TagType::List:
-			value.append(ListtoJson(c));
+			value.push_back(ListtoJson(c));
 			break;
 		case TagType::Compound:
-			value.append(toJson(c));
+			value.push_back(CompoundTagtoJson(c));
 			break;
 		}
 	}
 	return value;
 }
-Value toJson(Tag* t) {
-	Value value(objectValue);
+json CompoundTagtoJson(Tag* t) {
+	json value;
 	for (auto& x : t->asCompound()) {
 		TagType type = x.second.getVariantType();
-		Value& son = value[x.first + to_string(int(type))];
+		json& son = value[x.first + to_string(int(type))];
 		switch (type) {
 		case TagType::End:
 			break;
@@ -225,9 +225,8 @@ Value toJson(Tag* t) {
 			son = x.second.asDouble();
 			break;
 		case TagType::ByteArray:
-			son = arrayValue;
 			for (size_t i = 0; i < x.second.asByteArray().size; ++i)
-				son.append(x.second.asByteArray().data[i]);
+				son.push_back(x.second.asByteArray().data[i]);
 			break;
 		case TagType::String:
 			son = x.second.asString();
@@ -236,7 +235,7 @@ Value toJson(Tag* t) {
 			son = ListtoJson(&x.second);
 			break;
 		case TagType::Compound:
-			son = toJson(&x.second);
+			son = CompoundTagtoJson(&x.second);
 			break;
 		case TagType::IntArray:
 			break;
@@ -246,21 +245,20 @@ Value toJson(Tag* t) {
 	}
 	return value;
 }
-Tag* toTag(const Value& value) {
+Tag* ObjecttoTag(const json& value) {
 	Tag* c = newTag(TagType::Compound);
-	auto begin = value.begin();
-	while (begin != value.end()) {
-		string key = begin.name();
-		char& e = key.back();
+	for (auto& [key, value] : value.items()) {
+		string new_key = key;
+		char& e = new_key.back();
 		TagType type;
 		if (*(&e - 1) == '1' && e == '0') {
 			type = TagType::Compound;
-			key.pop_back();
-			key.pop_back();
+			new_key.pop_back();
+			new_key.pop_back();
 		}
 		else if (e >= '0' && e <= '9') {
 			type = TagType(e - '0');
-			key.pop_back();
+			new_key.pop_back();
 		}
 		else continue;
 		//cout << key << " - " << type << endl;
@@ -268,45 +266,45 @@ Tag* toTag(const Value& value) {
 		case TagType::End:
 			break;
 		case TagType::Byte:
-			c->putByte(key, uint8_t(begin->asInt()));
+			c->putByte(new_key, (value.get<uint8_t>()));
 			break;
 		case TagType::Short:
-			c->putShort(key, short(begin->asInt()));
+			c->putShort(new_key, (value.get<short>()));
 			break;
 		case TagType::Int:
-			c->putInt(key, begin->asInt());
+			c->putInt(new_key, value.get<int>());
 			break;
 		case TagType::Int64:
-			c->putInt64(key, begin->asInt64());
+			c->putInt64(new_key, value.get<long long>());
 			break;
 		case TagType::Float:
-			c->putFloat(key, begin->asFloat());
+			c->putFloat(new_key, value.get<float>());
 			break;
 		case TagType::Double:
-			c->putFloat(key, float(begin->asDouble()));
+			c->putFloat(new_key, (value.get<float>()));
 			break;
 		case TagType::ByteArray: {
-			size_t size = begin->size();
+			size_t size = value.size();
 			uint8_t* data = new uint8_t[size];
 			for (unsigned i = 0; i < size; ++i)
-				data[i] = uint8_t(begin->operator[](i).asInt());
+				data[i] = uint8_t(value[i].get<int>());
 			TagMemoryChunk tmc(size, data);
-			c->putByteArray(key, tmc);
+			c->putByteArray(new_key, tmc);
 			break;
 		}
 		case TagType::String:
-			c->putString(key, begin->asString());
+			c->putString(new_key, value.get<string>());
 			break;
 		case TagType::List: {
-			Tag* list = ArraytoTag(*begin);
-			c->put(key, list);
+			Tag* list = ArraytoTag(value);
+			c->put(new_key, list);
 			list->deList();
 			delete list;
 			break;
 		}
 		case TagType::Compound: {
-			Tag* t = toTag(*begin);
-			c->putCompound(key, t);
+			Tag* t = ObjecttoTag(value);
+			c->putCompound(new_key, t);
 			//delete t;
 			break;
 		}
@@ -315,38 +313,40 @@ Tag* toTag(const Value& value) {
 		default:
 			break;
 		}
-		begin++;
 	}
 	return c;
 }
-Tag* ArraytoTag(const Value& value) {
+Tag* ArraytoTag(const json& value) {
 	Tag* list = newTag(TagType::List);
 	Tag* tag = nullptr;
 	for (auto& x : value) {
-		ValueType type = x.type();
-		switch (type) {
-		case nullValue:
+		switch (x) {
+		case JsonType::null:
 			break;
-		case intValue:
-		case uintValue:
-			tag = newTag(TagType::Int);
-			FETCH(int, tag->data) = x.asInt();
+		case JsonType::object:
+			tag = ObjecttoTag(x);
 			break;
-		case realValue:
-			tag = newTag(TagType::Double);
-			FETCH(double, tag->data) = x.asDouble();
-			break;
-		case stringValue:
-			tag = newTag(TagType::String);
-			FETCH(string, tag->data) = x.asString();
-			break;
-		case booleanValue:
-			break;
-		case arrayValue:
+		case JsonType::array:
 			tag = ArraytoTag(x);
 			break;
-		case objectValue:
-			tag = toTag(x);
+		case JsonType::string:
+			tag = newTag(TagType::String);
+			FETCH(string, tag->data) = x.get<string>();
+			break;
+		case JsonType::boolean:
+			break;
+		case JsonType::number_integer:
+		case JsonType::number_unsigned:
+			tag = newTag(TagType::Int);
+			FETCH(int, tag->data) = x.get<int>();
+			break;
+		case JsonType::number_float:
+			tag = newTag(TagType::Double);
+			FETCH(double, tag->data) = x.get<double>();
+			break;
+		case JsonType::binary:
+			break;
+		case JsonType::discarded:
 			break;
 		default:
 			break;
@@ -446,7 +446,7 @@ struct ItemStack {
 	Item* mItem;
 	Tag* mUserData;
 	Block* mBlock;
-	short mAuxValue;
+	short mAuxjson;
 	char mCount;
 	bool mValid;
 	VA mPickupTime;
@@ -463,8 +463,8 @@ struct ItemStack {
 	short getId() {
 		return SymCall<short>("?getId@ItemStackBase@@QEBAFXZ", this);
 	}
-	short getDamageValue() {
-		return SymCall<short>("?getDamageValue@ItemStackBase@@QEBAFXZ", this);
+	short getDamagejson() {
+		return SymCall<short>("?getDamagejson@ItemStackBase@@QEBAFXZ", this);
 	}
 	//取物品名称
 	string getName() {
@@ -504,15 +504,15 @@ struct ItemStack {
 		memcpy(this, SYM("?EMPTY_ITEM@ItemStack@@2V1@B"), sizeof(ItemStack));
 		bool ret = SymCall<bool>("?_setItem@ItemStackBase@@IEAA_NH@Z", this, id);
 		mCount = count;
-		mAuxValue = aux;
+		mAuxjson = aux;
 		mValid = true;
 		return ret;
 	}
 	Item* getItem() {
 		return SymCall<Item*>("?getItem@ItemStackBase@@QEBAPEBVItem@@XZ", this);
 	}
-	void fromJson(const Value& value) {
-		Tag* t = toTag(value);
+	void fromJson(const json& value) {
+		Tag* t = ObjecttoTag(value);
 		fromTag(t);
 		t->deCompound();
 		delete t;
@@ -648,6 +648,23 @@ struct Actor {
 	auto getAllEffects() {
 		return SymCall<vector<MobEffectInstance>*>("?getAllEffects@Actor@@QEBAAEBV?$vector@VMobEffectInstance@@V?$allocator@VMobEffectInstance@@@std@@@std@@XZ", this);
 	}
+	//新增标签
+	bool addTag(const string& str) {
+		return SymCall<bool>("?addTag@Actor@@QEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
+			this, &str);
+	}
+	//移除标签
+	bool removeTag(const string& str) {
+		return SymCall<bool>("?removeTag@Actor@@QEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
+			this, &str);
+	}
+	//获取标签
+	string getTags() {
+		string str;
+		SymCall<string&>("?getTags@Actor@@QEBA?BV?$span@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0?0@gsl@@XZ",
+			this, &str);
+		return str;
+	}
 };
 struct Mob : Actor {};
 struct Player : Mob {
@@ -679,7 +696,7 @@ struct Player : Mob {
 	}
 	//获取背包
 	Container* getInventory() {
-		return SymCall<Container*>("?getInventory@Player@@QEAAAEAVContainer@@XZ",this);
+		return SymCall<Container*>("?getInventory@Player@@QEAAAEAVContainer@@XZ", this);
 		//return FETCH(Container*, FETCH(VA, this + 3208) + 176);//IDA Player::getInventory
 	}
 	//获取装备容器
@@ -739,7 +756,7 @@ struct Player : Mob {
 	}
 	//获取设备id
 	const std::string& getDeviceId() {
-		return FETCH(std::string, (char *)this + 8352); //IDA Player::Player  v13 + 8352
+		return FETCH(std::string, (char*)this + 8352); //IDA Player::Player  v13 + 8352
 	}
 	//获取设备系统类型
 	int getDeviceOS() {
@@ -940,7 +957,7 @@ struct StructureTemplate {
 	StructureTemplate(const string_span& s) {
 		SymCall("??0StructureTemplate@@QEAA@V?$basic_string_span@$$CBD$0?0@gsl@@@Z",
 			this, s);
-	}
+}
 	~StructureTemplate() {
 		SymCall("??1StructureTemplate@@QEAA@XZ", this);
 	}
@@ -954,8 +971,8 @@ struct StructureTemplate {
 		SymCall<bool>("?load@StructureTemplateData@@QEAA_NAEBVCompoundTag@@@Z",
 			_this + 32, t);
 	}
-	void fromJson(const Value& value) {
-		Tag* t = toTag(value);
+	void fromJson(const json& value) {
+		Tag* t = ObjecttoTag(value);
 		load(t);
 		t->deCompound();
 		delete t;
