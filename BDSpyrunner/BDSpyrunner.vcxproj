@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="chakra.lib" />
-    <Library Include="python37.lib" />
+    <Library Include="lib\chakra.lib" />
+    <Library Include="lib\python37.lib" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="jsoncpp.cpp">

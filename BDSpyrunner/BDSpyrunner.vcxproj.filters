@@ -15,10 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="chakra.lib">
+    <Library Include="lib\chakra.lib">
       <Filter>资源文件</Filter>
     </Library>
-    <Library Include="python37.lib">
+    <Library Include="lib\python37.lib">
       <Filter>资源文件</Filter>
     </Library>
   </ItemGroup>

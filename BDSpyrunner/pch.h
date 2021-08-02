@@ -800,7 +800,6 @@ struct ScorePacketInfo {
 	ScorePacketInfo(ScoreboardId* s, unsigned num, const string& fake) :
 		sid(*s), score(num), fake_name(fake) {
 	}
-
 };
 struct Objective {
 	//获取计分板名称

@@ -1,11 +1,20 @@
 ﻿#include "pch.h"
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
+#include "Command.h"
+//#include "dyncall/dyncall.h"
+//#include "dyncall/dyncall_callback.h"
 
-#define VERSION_STRING "1.6.0"
-#define VERSION_NUMBER 201
+#define VERSION_STRING "1.6.1"
+#define VERSION_NUMBER 202
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
+
+bool onTestCommand(CommandOrigin const& ori, CommandOutput& outp, const string& str, const string& str2) {
+	outp.addMessage(str);
+	outp.addMessage(str2);
+	return true;
+}
 
 #pragma region Macro
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
@@ -118,6 +127,8 @@ static SPSCQueue* _command_queue = nullptr;
 static ServerNetworkHandler* _server_network_handler = nullptr;
 //世界
 static Level* _level = nullptr;
+//命令注册
+CommandRegistry* CmdRegGlobal = nullptr;
 //计分板
 static Scoreboard* _scoreboard = nullptr;
 //Py函数表
@@ -128,6 +139,15 @@ static vector<pair<string, string>> _commands;
 static unordered_map<string, PyObject*> _share_data;
 //伤害
 static int _damage;
+unordered_map<string, void*> parse_ptr = {
+	{typeid(CommandMessage).name(),SYM("??$parse@VCommandMessage@@@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
+	{typeid(string).name(),SYM("??$parse@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
+	//{typeid(bool).name(),SYM("??$parse@_N@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
+	{typeid(float).name(), SYM("??$parse@M@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
+	{typeid(int).name(),SYM("??$parse@H@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
+	{typeid(CommandSelector<Actor>).name(),SYM("??$parse@V?$CommandSelector@VActor@@@@@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")},
+	{typeid(CommandSelector<Player>).name(),SYM("??$parse@V?$CommandSelector@VPlayer@@@@@CommandRegistry@@AEBA_NPEAXAEBUParseToken@0@AEBVCommandOrigin@@HAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@4@@Z")}
+};
 }
 #pragma endregion
 #pragma region Function Define
@@ -451,8 +471,8 @@ static PyGetSetDef PyEntity_GetSet[]{
 	{"health", PyEntity_GetHealth, nullptr, nullptr},
 	{"maxhealth", PyEntity_GetMaxHealth, nullptr, nullptr},
 	{"perm", PyEntity_GetPermissions, PyEntity_SetPermissions, nullptr},
-	{"deviceId", PyEntity_GetDeviceId, nullptr, nullptr},
-	{"deviceOS", PyEntity_GetDeviceOS, nullptr, nullptr},
+	{"deviceid", PyEntity_GetDeviceId, nullptr, nullptr},
+	{"deviceos", PyEntity_GetDeviceOS, nullptr, nullptr},
 	{nullptr}
 };
 
@@ -491,7 +511,6 @@ static PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 		if (!p)
 			return nullptr;
 		Value json(toJson(x));
-		//Value::AllocatorType& allocator = json.GetAllocator();
 
 		if (json.isMember("Inventory")) {
 			const vector<ItemStack*>& items = p->getInventory()->getSlots();
@@ -520,10 +539,18 @@ static PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 		if (json.isMember("OffHand")) {
 			p->getOffHand()->fromJson(json["OffHand"]);
 		}
-
-		if (json.isMember("Hand")) {
-			p->getSelectedItem()->fromJson(json["Hand"]);
-		}
+		p->sendInventroy();
+	}
+	Py_RETURN_NONE;
+}
+static PyObject* PyEntity_SetHand(PyObject* self, PyObject* args) {
+	const char* x = "";
+	if (PyArg_ParseTuple(args, "s:setHand", &x)) {
+		Player* p = PyEntity_AsPlayer(self);
+		if (!p)
+			return nullptr;
+		Value json(toJson(x));
+		p->getSelectedItem()->fromJson(json);
 		p->sendInventroy();
 	}
 	Py_RETURN_NONE;
@@ -748,6 +775,7 @@ static PyObject* PyEntity_RemoveBossbar(PyObject* self, PyObject*) {
 static PyMethodDef PyEntity_Methods[]{
 	{"getAllItem", PyEntity_GetAllItem, METH_VARARGS, nullptr},
 	{"setAllItem", PyEntity_SetAllItem, METH_VARARGS, nullptr},
+	{"setHand", PyEntity_SetHand, METH_VARARGS, nullptr},
 	{"addItem", PyEntity_AddItem, METH_VARARGS, nullptr},
 	{"removeItem", PyEntity_RemoveItem, METH_VARARGS, nullptr},
 	{"teleport", PyEntity_Teleport, METH_VARARGS, nullptr},
@@ -858,12 +886,19 @@ HOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VComman
 	return _scoreboard = original(_this, a2, a3);
 }
 HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
-	VA _this) {
+	CommandRegistry* _this) {
+	CmdRegGlobal = _this;
 	for (auto& [cmd, des] : _commands) {
 		SymCall("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
-			_this, &cmd, des.c_str(), 0, 0, 64);
-	}
+			_this, &cmd, des.c_str(), 0, 0, 0x80);
+		//MakeOverload none((struct ddd*)0, cmd, onTestCommand, "msg1", "msg2");
+}
+	//CmdOverload(pland, onTestCommand, "input");//重载指令
 	original(_this);
+}
+HOOK(CommandSelectorBase_isExpansionAllowed, bool, "?isExpansionAllowed@CommandSelectorBase@@AEBA_NAEBVCommandOrigin@@@Z",
+	CommandSelectorBase* _this, CommandOrigin* a2) {
+	return true;
 }
 HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, VA size) {
@@ -1549,24 +1584,19 @@ static PyObject* PyAPI_init() {
 }
 #pragma endregion
 void init() {
-	//Tag* t = toTag(toJson(R"({"bcy5":0.123456789,"str8":"string"})"));
-	//print(toJson(t));
-	//t->deCompound();
-	//delete t;
 	using namespace filesystem;
 	cout << "[BDSpyrunner] " VERSION_STRING " loaded." << endl;
-	//if (!checkBDSVersion("1.17.10.04"))
-	//	cerr << "error: inappropriate version" << endl;
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
 	//将plugins/py加入模块搜索路径
-	Py_SetPath((wstring(Py_GetPath()) + L";" PLUGIN_PATH).c_str());
-	/*预初始化3.8+
-	PyPreConfig cfg;
-	PyPreConfig_InitPythonConfig(&cfg);
-	cfg.utf8_mode = 1;
-	cfg.configure_locale = 0;
-	Py_PreInitialize(&cfg);*/
+	Py_SetPath((PLUGIN_PATH L";" + wstring(Py_GetPath())).c_str());
+#pragma region 预初始化3.8+
+	//PyPreConfig cfg;
+	//PyPreConfig_InitPythonConfig(&cfg);
+	//cfg.utf8_mode = 1;
+	//cfg.configure_locale = 0;
+	//Py_PreInitialize(&cfg);
+#pragma endregion
 	PyImport_AppendInittab(MODULE_NAME, PyAPI_init);//增加一个模块
 	Py_Initialize();//初始化解释器
 	if (PyType_Ready(&PyEntity_Type) < 0)
