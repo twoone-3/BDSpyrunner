@@ -2,14 +2,12 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.6.2"
-#define VERSION_NUMBER 203
+#define VERSION_STRING "1.6.3"
+#define VERSION_NUMBER 204
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
-
-#pragma region Macro
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
-#pragma endregion
+
 #pragma region EventCode
 enum class EventCode {
 	None,
@@ -118,14 +116,14 @@ static SPSCQueue* _command_queue = nullptr;
 static ServerNetworkHandler* _server_network_handler = nullptr;
 //世界
 static Level* _level = nullptr;
+//网络
+static RakPeer* _rak_peer = nullptr;
 //计分板
 static Scoreboard* _scoreboard = nullptr;
 //Py函数表
 static unordered_map<EventCode, vector<PyObject*>> _functions;
 //注册命令
 static vector<pair<string, string>> _commands;
-//共享数据
-static unordered_map<string, PyObject*> _share_data;
 //伤害
 static int _damage;
 }
@@ -133,7 +131,7 @@ static int _damage;
 #pragma region Function Define
 //注入时事件
 static void init();
-BOOL WINAPI DllMain(HMODULE, DWORD reason, LPVOID) {
+BOOL WINAPI DllMain(HMODULE, DWORD, LPVOID) {
 	return TRUE;
 }
 //检查版本
@@ -161,8 +159,10 @@ static bool isPlayer(void* ptr) {
 }
 //转宽字符
 static wstring CharToWchar(const string& str) {
-	wstring wstr(str.length(), '\0');
-	mbstowcs(wstr.data(), str.c_str(), str.length());
+	int len = MultiByteToWideChar(CP_ACP, 0, str.c_str(), static_cast<int>(str.length()), NULL, 0);
+	wstring wstr;
+	wstr.resize(len + 1);
+	MultiByteToWideChar(CP_ACP, 0, str.c_str(), static_cast<int>(str.length()), wstr.data(), len);
 	return wstr;
 }
 //锁GIL调用函数
@@ -268,12 +268,10 @@ struct PyEntity {
 };
 extern PyTypeObject PyEntity_Type;
 static Actor* PyEntity_AsActor(PyObject* self) {
-	Actor* a = reinterpret_cast<PyEntity*>(self)->actor;
-	if (a)
-		return a;
+	if (reinterpret_cast<PyEntity*>(self)->actor)
+		return reinterpret_cast<PyEntity*>(self)->actor;
 	else
 		Py_RETURN_ERROR("This entity is not available");
-	return nullptr;
 }
 static Player* PyEntity_AsPlayer(PyObject* self) {
 	if (isPlayer(reinterpret_cast<PyEntity*>(self)->actor))
@@ -303,7 +301,10 @@ static void PyEntity_Dealloc(PyObject* obj) {
 }
 //转字符串
 static PyObject* PyEntity_Str(PyObject* self) {
-	string name = PyEntity_AsActor(self)->getNameTag();
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	string name = a->getNameTag();
 	return PyUnicode_FromStringAndSize(name.c_str(), name.length());
 }
 //哈希
@@ -336,7 +337,10 @@ static PyObject* PyEntity_RichCompare(PyObject* self, PyObject* other, int op) {
 
 //获取名字
 static PyObject* PyEntity_GetName(PyObject* self, void*) {
-	string name = PyEntity_AsActor(self)->getNameTag();
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	string name = a->getNameTag();
 	return PyUnicode_FromStringAndSize(name.c_str(), name.length());
 }
 static int PyEntity_SetName(PyObject* self, PyObject* arg, void*) {
@@ -365,7 +369,10 @@ static PyObject* PyEntity_GetXuid(PyObject* self, void*) {
 }
 //获取坐标
 static PyObject* PyEntity_GetPos(PyObject* self, void*) {
-	Vec3* pos = PyEntity_AsActor(self)->getPos();
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	Vec3* pos = a->getPos();
 	PyObject* x = PyFloat_FromDouble(pos->x);
 	PyObject* y = PyFloat_FromDouble(pos->y);
 	PyObject* z = PyFloat_FromDouble(pos->z);
@@ -373,36 +380,60 @@ static PyObject* PyEntity_GetPos(PyObject* self, void*) {
 }
 //获取维度ID
 static PyObject* PyEntity_GetDimensionId(PyObject* self, void*) {
-	return PyLong_FromLong(PyEntity_AsActor(self)->getDimensionId());
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	return PyLong_FromLong(a->getDimensionId());
 }
 //是否着地
 static PyObject* PyEntity_GetIsStand(PyObject* self, void*) {
-	return PyBool_FromLong(PyEntity_AsActor(self)->isStand());
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	return PyBool_FromLong(a->isStand());
 }
 //是否潜行
 static PyObject* PyEntity_GetIsSneaking(PyObject* self, void*) {
-	return PyBool_FromLong(PyEntity_AsActor(self)->isSneaking());
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	return PyBool_FromLong(a->isSneaking());
 }
 //获取类型
 static PyObject* PyEntity_GetTypeID(PyObject* self, void*) {
-	return PyLong_FromLong(PyEntity_AsActor(self)->getEntityTypeId());
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	return PyLong_FromLong(a->getEntityTypeId());
 }
 //获取类型字符串
 static PyObject* PyEntity_GetTypeName(PyObject* self, void*) {
-	return PyUnicode_FromString(PyEntity_AsActor(self)->getEntityTypeName().c_str());
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	return PyUnicode_FromString(a->getEntityTypeName().c_str());
 }
 //获取nbt数据
 static PyObject* PyEntity_GetNBTInfo(PyObject* self, void*) {
-	string str = CompoundTagtoJson(PyEntity_AsActor(self)->save()).dump(4);
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	string str = CompoundTagtoJson(a->save()).dump(4);
 	return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 }
 //获取生命值
 static PyObject* PyEntity_GetHealth(PyObject* self, void*) {
-	return PyLong_FromLong(PyEntity_AsActor(self)->getHealth());
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	return PyLong_FromLong(a->getHealth());
 }
 //获取最大生命值
 static PyObject* PyEntity_GetMaxHealth(PyObject* self, void*) {
-	return PyLong_FromLong(PyEntity_AsActor(self)->getMaxHealth());
+	Actor* a = PyEntity_AsActor(self);
+	if (!a)
+		return nullptr;
+	return PyLong_FromLong(a->getMaxHealth());
 }
 //获取权限
 static PyObject* PyEntity_GetPermissions(PyObject* self, void*) {
@@ -426,7 +457,8 @@ static PyObject* PyEntity_GetDeviceId(PyObject* self, void*) {
 	Player* p = PyEntity_AsPlayer(self);
 	if (!p)
 		return nullptr;
-	return PyUnicode_FromStringAndSize(p->getDeviceId().c_str(), p->getDeviceId().length());
+	string str = p->getDeviceId();
+	return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 }
 //获取设备类型
 static PyObject* PyEntity_GetDeviceOS(PyObject* self, void*) {
@@ -434,6 +466,14 @@ static PyObject* PyEntity_GetDeviceOS(PyObject* self, void*) {
 	if (!p)
 		return nullptr;
 	return PyLong_FromLong(p->getDeviceOS());
+}
+//获取IP
+static PyObject* PyEntity_GetIP(PyObject* self, void*) {
+	Player* p = PyEntity_AsPlayer(self);
+	if (!p)
+		return nullptr;
+	string str = _rak_peer->getSystemAddress(p->getClientId()).toString();
+	return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 }
 
 //获取属性方法
@@ -453,6 +493,7 @@ static PyGetSetDef PyEntity_GetSet[]{
 	{"perm", PyEntity_GetPermissions, PyEntity_SetPermissions, nullptr},
 	{"deviceid", PyEntity_GetDeviceId, nullptr, nullptr},
 	{"deviceos", PyEntity_GetDeviceOS, nullptr, nullptr},
+	{"ip", PyEntity_GetIP, nullptr, nullptr},
 	{nullptr}
 };
 
@@ -775,13 +816,16 @@ static PyObject* PyEntity_GetTags(PyObject* self, PyObject*) {
 	Actor* a = PyEntity_AsActor(self);
 	if (!a)
 		return nullptr;
-	string tags = a->getTags();
-	return PyUnicode_FromStringAndSize(tags.c_str(), tags.length());
-	Py_RETURN_NONE;
+	span<string> tags = a->getTags();
+	PyObject* list = PyList_New(0);
+	for (size_t i = 0; i < tags.size; i++) {
+		PyList_Append(list, PyUnicode_FromString(tags.data[i].c_str()));
+	}
+	return list;
 }
 
 //Entity方法
-static PyMethodDef PyEntity_Methods[]{
+PyMethodDef PyEntity_Methods[]{
 	{"getAllItem", PyEntity_GetAllItem, METH_VARARGS, nullptr},
 	{"setAllItem", PyEntity_SetAllItem, METH_VARARGS, nullptr},
 	{"setHand", PyEntity_SetHand, METH_VARARGS, nullptr},
@@ -809,7 +853,7 @@ static PyMethodDef PyEntity_Methods[]{
 	{nullptr}
 };
 //Entity类型
-static PyTypeObject PyEntity_Type{
+PyTypeObject PyEntity_Type{
 	PyVarObject_HEAD_INIT(nullptr, 0)
 	"Entity",				/* tp_name */
 	sizeof(PyEntity),		/* tp_basicsize */
@@ -888,6 +932,10 @@ HOOK(SPSCQueue_construct, SPSCQueue*, "??0?$SPSCQueue@V?$basic_string@DU?$char_t
 	SPSCQueue* _this) {
 	return _command_queue = original(_this);
 }
+HOOK(RakPeer_construct, RakPeer*, "??0RakPeer@RakNet@@QEAA@XZ",
+	RakPeer* _this) {
+	return _rak_peer = original(_this);
+}
 HOOK(ServerNetworkHandler_construct, VA, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEBV?$NonOwnerPointer@VILevel@@@Bedrock@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@3@@Z",
 	ServerNetworkHandler* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13, VA a14, VA a15, VA a16, VA a17, VA a18, VA a19, VA a20) {
 	_server_network_handler = _this;
@@ -916,8 +964,13 @@ HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std
 }
 HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 	SPSCQueue* _this, const string& cmd) {
-	//是否开启debug模式
+	//debug模式（不推荐使用）
 	static bool debug = false;
+	if (debug) {
+		safeCall([&cmd] {PyRun_SimpleString(cmd.c_str()); });
+		cout << '>';
+		return 0;
+	}
 	if (cmd == "pydebug") {
 		if (debug) {
 			debug = false;
@@ -926,11 +979,6 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 			debug = true;
 			cout << '>';
 		}
-		return 0;
-	}
-	if (debug) {
-		safeCall([&cmd] {PyRun_SimpleString(cmd.c_str()); });
-		cout << '>';
 		return 0;
 	}
 	wstring wstr = CharToWchar(cmd);
@@ -1405,25 +1453,6 @@ static PyObject* PyAPI_setListener(PyObject*, PyObject* args) {
 	}
 	Py_RETURN_NONE;
 }
-//共享数据
-static PyObject* PyAPI_setShareData(PyObject*, PyObject* args) {
-	const char* index = ""; PyObject* data;
-	if (PyArg_ParseTuple(args, "sO:setShareData", &index, &data)) {
-		_share_data.emplace(index, data);
-	}
-	Py_RETURN_ERROR("share data 不推荐使用的API，建议改用import来共享数据");
-}
-static PyObject* PyAPI_getShareData(PyObject*, PyObject* args) {
-	const char* index = "";
-	if (PyArg_ParseTuple(args, "s:getShareData", &index)) {
-		auto found = _share_data.find(index);
-		if (found == _share_data.end())
-			Py_RETURN_ERROR("This data does not exist");
-		else
-			return found->second;
-	}
-	Py_RETURN_ERROR("share data 不推荐使用的API，建议改用import来共享数据");
-}
 //设置指令说明
 static PyObject* PyAPI_setCommandDescription(PyObject*, PyObject* args) {
 	const char* cmd = "";
@@ -1446,6 +1475,8 @@ static PyObject* PyAPI_getPlayerByXuid(PyObject*, PyObject* args) {
 }
 static PyObject* PyAPI_getPlayerList(PyObject*, PyObject*) {
 	PyObject* list = PyList_New(0);
+	if (!_level)
+		Py_RETURN_ERROR("Level is not set");
 	for (Player* p : _level->getAllPlayers()) {
 		PyList_Append(list, PyEntity_FromEntity(p));
 	}
@@ -1546,10 +1577,10 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 		StructureTemplate st("tmp");
 		st.fromJson(value);
 		st.placeInWorld(bs, _level->getBlockPalette(), &pos, &ss);
-		for (unsigned x = 0; x != size.x; ++x) {
-			for (unsigned y = 0; y != size.y; ++y) {
-				for (unsigned z = 0; z != size.z; ++z) {
-					BlockPos bp{ static_cast<int>(x),static_cast<int>(y),static_cast<int>(z) };
+		for (int x = 0; x != size.x; ++x) {
+			for (int y = 0; y != size.y; ++y) {
+				for (int z = 0; z != size.z; ++z) {
+					BlockPos bp{ x,y,z };
 					bs->neighborChanged(&bp);
 				}
 			}
@@ -1563,8 +1594,6 @@ static PyMethodDef PyAPI_Methods[]{
 	{"logout", PyAPI_logout, METH_VARARGS, nullptr},
 	{"runcmd", PyAPI_runcmd, METH_VARARGS, nullptr},
 	{"setListener", PyAPI_setListener, METH_VARARGS, nullptr},
-	{"setShareData", PyAPI_setShareData, METH_VARARGS, nullptr},
-	{"getShareData", PyAPI_getShareData, METH_VARARGS, nullptr},
 	{"setCommandDescription", PyAPI_setCommandDescription, METH_VARARGS, nullptr},
 	{"getPlayerByXuid", PyAPI_getPlayerByXuid, METH_VARARGS, nullptr},
 	{"getPlayerList", PyAPI_getPlayerList, METH_NOARGS, nullptr},
@@ -1596,9 +1625,10 @@ static PyObject* PyAPI_init() {
 	return module;
 }
 #pragma endregion
+
 void init() {
-	using namespace filesystem;
-	cout << "[BDSpyrunner] " VERSION_STRING " loaded." << endl;
+	using namespace std::filesystem;
+	INFO(VERSION_STRING " loaded.");
 	//如果目录不存在创建目录
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
@@ -1614,13 +1644,13 @@ void init() {
 	PyImport_AppendInittab(MODULE_NAME, PyAPI_init);//增加一个模块
 	Py_Initialize();//初始化解释器
 	if (PyType_Ready(&PyEntity_Type) < 0)
-		cerr << "Falid to prepare class 'Entity'." << endl;
+		ERR("Falid to prepare class 'Entity'");
 	PyEval_InitThreads();//启用线程支持
 	for (const directory_entry& info : directory_iterator(PLUGIN_PATH)) {
 		const path& path = info;
 		if (path.extension() == ".py" || path.extension() == ".pyd") {
 			const string& name = path.stem().u8string();
-			cout << "[BDSpyrunner] loading " << name << endl;
+			INFO("loading " << name);
 			PyImport_ImportModule(name.c_str());
 			PyErr_Print();
 		}

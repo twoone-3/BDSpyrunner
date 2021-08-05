@@ -2,7 +2,6 @@
 #pragma warning(disable:4996)
 #pragma execution_character_set("utf-8")
 #define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
 #include <windows.h>
 #include <iostream>
 #include <string>
@@ -13,22 +12,36 @@
 #include <unordered_map>
 #include "json.hpp"
 
-using namespace std;
-using namespace nlohmann;
+using std::string;
+using std::wstring;
+using std::string_view;
+using std::vector;
+using std::pair;
+using std::map;
+using std::unordered_map;
+using std::function;
+using std::unique_ptr;
+using std::exception;
+using std::ostream;
+using std::cout;
+using std::cerr;
+using std::endl;
+using nlohmann::json;
 using JsonType = json::value_t;
 using VA = unsigned long long;
 
+#define INFO(str) cout << "[BDSpyrunner] " << str << endl
+#define ERR(str) cerr << "[BDSpyrunner] " << str << endl
 #define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
-#define SYM(sym) GetServerSymbol(sym)
+#define SYM GetServerSymbol
 #define HOOK(name, ret, sym, ...)		\
 struct name {							\
-	typedef ret(*fn)(__VA_ARGS__);		\
-	static ret _hook(__VA_ARGS__);		\
-	static fn original;					\
+	using func = ret(__VA_ARGS__);		\
+	static func _hook;					\
+	static func* original;				\
 };										\
-name::fn name::original = *reinterpret_cast<name::fn*>(SymHook(sym, name::_hook, &name::original)); \
+name::func* name::original = *reinterpret_cast<name::func**>(SymHook(sym, name::_hook, &name::original)); \
 ret name::_hook(__VA_ARGS__)
-
 //提供Detours
 extern "C" _declspec(dllimport)
 int HookFunction(void*, void*, void*);
@@ -40,13 +53,13 @@ template<typename ret = void, typename... Args>
 static ret SymCall(const char* sym, Args... args) {
 	void* found = SYM(sym);
 	if (!found)
-		cerr << "Failed to call " << sym << endl;
+		ERR("Failed to call " << sym);
 	return reinterpret_cast<ret(*)(Args...)>(found)(args...);
 }
 static void* SymHook(const char* sym, void* hook, void* org) {
 	void* found = SYM(sym);
 	if (!found)
-		cerr << "Failed to hook " << sym << endl;
+		ERR("Failed to hook " << sym);
 	HookFunction(found, org, hook);
 	return org;
 }
@@ -57,11 +70,60 @@ static json StringtoJson(string_view str) {
 		return json::parse(str);
 	}
 	catch (const exception& e) {
-		cerr << e.what() << endl;
+		ERR(e.what());
 		return nullptr;
 	}
 }
 
+//数组观察者
+template <typename T>
+struct span {
+	size_t size;
+	T* data;
+};
+//string_span
+template <>
+struct span<char> {
+	size_t len;
+	const char* str;
+	span(const char* s) : len(strlen(s)), str(s) {}
+	span(const string& s) : len(s.length()), str(s.c_str()) {}
+};
+struct NetworkIdentifier {
+	//空白
+	string getAddress() {
+		string str;
+		SymCall<string&>("?getAddress@NetworkIdentifier@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+			this, &str);
+		return str;
+	}
+	string toString() {
+		string str;
+		SymCall<string&>("?toString@NetworkIdentifier@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+			this, &str);
+		return str;
+	}
+};
+struct SystemAddress {
+	char _this[132];
+	SystemAddress() {
+		//SymCall("??0SystemAddress@RakNet@@QEAA@XZ", this);
+	}
+	string toString() {
+		char buf[256];
+		SymCall("?ToString@SystemAddress@RakNet@@QEBAX_NPEADD@Z",
+			this, true, buf, ':');
+		return buf;
+	}
+};
+struct RakPeer {
+	SystemAddress getSystemAddress(NetworkIdentifier* ni) {
+		SystemAddress sa;
+		SymCall<SystemAddress&>("?GetSystemAddressFromGuid@RakPeer@RakNet@@UEBA?AUSystemAddress@2@URakNetGUID@2@@Z",
+			this, &sa, ni);
+		return sa;
+	}
+};
 #pragma region NBT
 enum class TagType : uint8_t {
 	End, Byte, Short, Int, Int64, Float, Double,
@@ -202,7 +264,7 @@ json CompoundTagtoJson(Tag* t) {
 	json value;
 	for (auto& x : t->asCompound()) {
 		TagType type = x.second.getVariantType();
-		json& son = value[x.first + to_string(int(type))];
+		json& son = value[x.first + std::to_string(static_cast<uint32_t>(type))];
 		switch (type) {
 		case TagType::End:
 			break;
@@ -247,7 +309,7 @@ json CompoundTagtoJson(Tag* t) {
 }
 Tag* ObjecttoTag(const json& value) {
 	Tag* c = newTag(TagType::Compound);
-	for (auto& [key, value] : value.items()) {
+	for (auto& [key, val] : value.items()) {
 		string new_key = key;
 		char& e = new_key.back();
 		TagType type;
@@ -266,44 +328,44 @@ Tag* ObjecttoTag(const json& value) {
 		case TagType::End:
 			break;
 		case TagType::Byte:
-			c->putByte(new_key, (value.get<uint8_t>()));
+			c->putByte(new_key, val.get<uint8_t>());
 			break;
 		case TagType::Short:
-			c->putShort(new_key, (value.get<short>()));
+			c->putShort(new_key, val.get<short>());
 			break;
 		case TagType::Int:
-			c->putInt(new_key, value.get<int>());
+			c->putInt(new_key, val.get<int>());
 			break;
 		case TagType::Int64:
-			c->putInt64(new_key, value.get<long long>());
+			c->putInt64(new_key, val.get<long long>());
 			break;
 		case TagType::Float:
-			c->putFloat(new_key, value.get<float>());
+			c->putFloat(new_key, val.get<float>());
 			break;
 		case TagType::Double:
-			c->putFloat(new_key, (value.get<float>()));
+			c->putFloat(new_key, (val.get<float>()));
 			break;
 		case TagType::ByteArray: {
-			size_t size = value.size();
+			size_t size = val.size();
 			uint8_t* data = new uint8_t[size];
 			for (unsigned i = 0; i < size; ++i)
-				data[i] = uint8_t(value[i].get<int>());
+				data[i] = uint8_t(val[i].get<int>());
 			TagMemoryChunk tmc(size, data);
 			c->putByteArray(new_key, tmc);
 			break;
 		}
 		case TagType::String:
-			c->putString(new_key, value.get<string>());
+			c->putString(new_key, val.get<string>());
 			break;
 		case TagType::List: {
-			Tag* list = ArraytoTag(value);
+			Tag* list = ArraytoTag(val);
 			c->put(new_key, list);
 			list->deList();
 			delete list;
 			break;
 		}
 		case TagType::Compound: {
-			Tag* t = ObjecttoTag(value);
+			Tag* t = ObjecttoTag(val);
 			c->putCompound(new_key, t);
 			//delete t;
 			break;
@@ -648,6 +710,14 @@ struct Actor {
 	auto getAllEffects() {
 		return SymCall<vector<MobEffectInstance>*>("?getAllEffects@Actor@@QEBAAEBV?$vector@VMobEffectInstance@@V?$allocator@VMobEffectInstance@@@std@@@std@@XZ", this);
 	}
+	//传送
+	void teleport(Vec3* target, int did) {
+		char mem[128];
+		SymCall("?computeTarget@TeleportCommand@@SA?AVTeleportTarget@@AEAVActor@@VVec3@@PEAV4@V?$AutomaticID@VDimension@@H@@VRelativeFloat@@4H@Z",
+			&mem, this, target, 0, did, 0, 0, 15);
+		SymCall("?applyTarget@TeleportCommand@@SAXAEAVActor@@VTeleportTarget@@@Z",
+			this, &mem);
+	}
 	//新增标签
 	bool addTag(const string& str) {
 		return SymCall<bool>("?addTag@Actor@@QEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
@@ -659,11 +729,11 @@ struct Actor {
 			this, &str);
 	}
 	//获取标签
-	string getTags() {
-		string str;
-		SymCall<string&>("?getTags@Actor@@QEBA?BV?$span@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0?0@gsl@@XZ",
-			this, &str);
-		return str;
+	span<string> getTags() {
+		span<string> tags;
+		SymCall<span<string>&>("?getTags@Actor@@QEBA?BV?$span@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0?0@gsl@@XZ",
+			this, &tags);
+		return tags;
 	}
 };
 struct Mob : Actor {};
@@ -690,8 +760,9 @@ struct Player : Mob {
 			this, &name);
 	}
 	//获取网络标识符
-	VA getClientId() {
-		return SymCall<VA>("?getClientId@Player@@QEBAAEBVNetworkIdentifier@@XZ", this);
+	NetworkIdentifier* getClientId() {
+		return SymCall<NetworkIdentifier*>("?getClientId@Player@@QEBAAEBVNetworkIdentifier@@XZ",
+			this);
 		//IDA ServerPlayer::setPermissions 34
 	}
 	//获取背包
@@ -755,8 +826,8 @@ struct Player : Mob {
 			this + 2376, m);
 	}
 	//获取设备id
-	const std::string& getDeviceId() {
-		return FETCH(std::string, (char*)this + 8352); //IDA Player::Player  v13 + 8352
+	string getDeviceId() {
+		return FETCH(string, this + 8352); //IDA Player::Player  v13 + 8352
 	}
 	//获取设备系统类型
 	int getDeviceOS() {
@@ -775,14 +846,6 @@ struct Player : Mob {
 	//void disconnect() {
 	//	SymCall("?disconnect@ServerPlayer@@QEAAXXZ",this);
 	//}
-	//传送
-	void teleport(Vec3* target, int did) {
-		char mem[128];
-		SymCall("?computeTarget@TeleportCommand@@SA?AVTeleportTarget@@AEAVActor@@VVec3@@PEAV4@V?$AutomaticID@VDimension@@H@@VRelativeFloat@@4H@Z",
-			&mem, this, target, 0, did, 0, 0, 15);
-		SymCall("?applyTarget@TeleportCommand@@SAXAEAVActor@@VTeleportTarget@@@Z",
-			this, &mem);
-	}
 };
 #pragma endregion
 #pragma region ScoreBoard
@@ -920,12 +983,6 @@ struct ServerNetworkHandler {
 };
 #pragma endregion
 #pragma region Structure
-struct string_span {
-	size_t len;
-	const char* str;
-	string_span(const char* s) : len(strlen(s)), str(s) {}
-	string_span(const string& s) : len(s.length()), str(s.c_str()) {}
-};
 struct StructureSettings {
 	char _this[96];
 	StructureSettings(BlockPos* size, bool IgnoreEntities, bool IgnoreBlocks) {
@@ -954,10 +1011,10 @@ struct StructureDataLoadHelper {
 #endif
 struct StructureTemplate {
 	char _this[216];
-	StructureTemplate(const string_span& s) {
+	StructureTemplate(const span<char>& s) {
 		SymCall("??0StructureTemplate@@QEAA@V?$basic_string_span@$$CBD$0?0@gsl@@@Z",
 			this, s);
-}
+	}
 	~StructureTemplate() {
 		SymCall("??1StructureTemplate@@QEAA@XZ", this);
 	}
@@ -987,3 +1044,4 @@ struct StructureTemplate {
 	}
 };
 #pragma endregion
+
