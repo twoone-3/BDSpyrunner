@@ -2,18 +2,11 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.6.3"
-#define VERSION_NUMBER 204
+#define VERSION_STRING "1.6.4"
+#define VERSION_NUMBER 205
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
-
-constexpr size_t Hash(const char* s) {
-	unsigned h = 0;
-	for (; *s; ++s)
-		h = 5 * h + *s;
-	return size_t(h);
-}
 
 #pragma region EventCode
 enum class EventCode {
@@ -941,7 +934,9 @@ HOOK(SPSCQueue_construct, SPSCQueue*, "??0?$SPSCQueue@V?$basic_string@DU?$char_t
 }
 HOOK(RakPeer_construct, RakPeer*, "??0RakPeer@RakNet@@QEAA@XZ",
 	RakPeer* _this) {
-	return _rak_peer = original(_this);
+	if (_rak_peer == nullptr)
+		return _rak_peer = original(_this);
+	return original(_this);
 }
 HOOK(ServerNetworkHandler_construct, VA, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEBV?$NonOwnerPointer@VILevel@@@Bedrock@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@3@@Z",
 	ServerNetworkHandler* _this, VA a1, VA a2, VA a3, VA a4, VA a5, VA a6, VA a7, VA a8, VA a9, VA a10, VA a11, VA a12, VA a13, VA a14, VA a15, VA a16, VA a17, VA a18, VA a19, VA a20) {
@@ -1595,6 +1590,20 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 	}
 	Py_RETURN_NONE;
 }
+//产生爆炸
+static PyObject* PyAPI_explode(PyObject*, PyObject* args) {
+	Vec3 pos; int did;
+	float power; bool destroy;
+	float range; bool fire;
+	if (PyArg_ParseTuple(args, "fffifbfb:explode",
+		&pos.x, &pos.y, &pos.z, &did, &power, &destroy, &range, &fire)) {
+		BlockSource* bs = _level->getBlockSource(did);
+		if (!bs)
+			Py_RETURN_ERROR("Unknown dimension ID");
+		onLevelExplode::original(_level, bs, nullptr, pos, power, true, destroy, range, true);
+	}
+	Py_RETURN_NONE;
+}
 //模块方法列表
 static PyMethodDef PyAPI_Methods[]{
 	{"getVersion", PyAPI_getVersion, METH_NOARGS, nullptr},
@@ -1610,6 +1619,7 @@ static PyMethodDef PyAPI_Methods[]{
 	{"setBlock", PyAPI_setBlock, METH_VARARGS, nullptr},
 	{"getStructure", PyAPI_getStructure, METH_VARARGS, nullptr},
 	{"setStructure", PyAPI_setStructure, METH_VARARGS, nullptr},
+	{"explode", PyAPI_explode, METH_VARARGS, nullptr},
 	{nullptr}
 };
 //模块定义

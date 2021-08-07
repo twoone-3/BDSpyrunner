@@ -1,5 +1,5 @@
 ﻿#pragma once
-#pragma warning(disable:4996)
+//#pragma warning(disable:4996)
 #pragma execution_character_set("utf-8")
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include "json.hpp"
 
+#pragma region using
 using std::string;
 using std::wstring;
 using std::string_view;
@@ -29,11 +30,13 @@ using std::endl;
 using nlohmann::json;
 using JsonType = json::value_t;
 using VA = unsigned long long;
-
+#pragma endregion
+#pragma region utils
 #define INFO(str) cout << "[BDSpyrunner] " << str << endl
 #define ERR(str) cerr << "[BDSpyrunner] " << str << endl
 #define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
 #define SYM GetServerSymbol
+//制作一个钩子
 #define HOOK(name, ret, sym, ...)		\
 struct name {							\
 	using func = ret(__VA_ARGS__);		\
@@ -45,7 +48,7 @@ ret name::_hook(__VA_ARGS__)
 //提供Detours
 extern "C" _declspec(dllimport)
 int HookFunction(void*, void*, void*);
-//获取符
+//获取符号
 extern "C" _declspec(dllimport)
 void* GetServerSymbol(const char*);
 //调用一个函数
@@ -63,7 +66,13 @@ static void* SymHook(const char* sym, void* hook, void* org) {
 	HookFunction(found, org, hook);
 	return org;
 }
-
+//哈希
+constexpr size_t Hash(const char* s) {
+	unsigned h = 0;
+	for (; *s; ++s)
+		h = 5 * h + *s;
+	return size_t(h);
+}
 //转换字符串为json
 static json StringtoJson(string_view str) {
 	try {
@@ -74,7 +83,8 @@ static json StringtoJson(string_view str) {
 		return nullptr;
 	}
 }
-
+#pragma endregion
+#pragma region span
 //数组观察者
 template <typename T>
 struct span {
@@ -89,6 +99,8 @@ struct span<char> {
 	span(const char* s) : len(strlen(s)), str(s) {}
 	span(const string& s) : len(s.length()), str(s.c_str()) {}
 };
+#pragma endregion
+#pragma region NetWork
 struct NetworkIdentifier {
 	//空白
 	string getAddress() {
@@ -107,13 +119,11 @@ struct NetworkIdentifier {
 struct SystemAddress {
 	char _this[132];
 	SystemAddress() {
-		//SymCall("??0SystemAddress@RakNet@@QEAA@XZ", this);
+		SymCall("??0SystemAddress@RakNet@@QEAA@XZ", this);
 	}
 	string toString() {
-		char buf[256];
-		SymCall("?ToString@SystemAddress@RakNet@@QEBAX_NPEADD@Z",
-			this, true, buf, ':');
-		return buf;
+		return SymCall<const char*>("?ToString@SystemAddress@RakNet@@QEBAPEBD_ND@Z",
+			this, true, ':');
 	}
 };
 struct RakPeer {
@@ -124,6 +134,13 @@ struct RakPeer {
 		return sa;
 	}
 };
+struct ServerNetworkHandler {
+	struct Player* _getServerPlayer(VA id, VA pkt) {
+		return SymCall<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
+			this, id, FETCH(char, pkt + 16));
+	}
+};
+#pragma endregion
 #pragma region NBT
 enum class TagType : uint8_t {
 	End, Byte, Short, Int, Int64, Float, Double,
@@ -975,12 +992,6 @@ struct Level {
 		return FETCH(BlockPalette*, this + 2120);
 	}
 };
-struct ServerNetworkHandler {
-	Player* _getServerPlayer(VA id, VA pkt) {
-		return SymCall<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
-			this, id, FETCH(char, pkt + 16));
-	}
-};
 #pragma endregion
 #pragma region Structure
 struct StructureSettings {
@@ -1044,4 +1055,3 @@ struct StructureTemplate {
 	}
 };
 #pragma endregion
-

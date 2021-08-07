@@ -1,4 +1,4 @@
-![logo](logo.png)<br>
+# BDSpyrunner
 ![](https://img.shields.io/github/license/twoone-3/BDSpyrunner)
 ![](https://img.shields.io/github/downloads/twoone-3/BDSpyrunner/total)
 ![](https://img.shields.io/github/v/release/twoone-3/BDSpyrunner)
