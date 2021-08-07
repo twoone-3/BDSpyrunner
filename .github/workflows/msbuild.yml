@@ -1,6 +1,8 @@
-name: MSBuild
 
-on: [push]
+on:
+  push:
+    tags:
+      - 'v*' # such as v1.6.2
 
 env:
   SOLUTION_FILE_PATH: .
@@ -12,7 +14,8 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v1
@@ -23,52 +26,11 @@ jobs:
 
       - name: Build
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: msbuild ./BDSpyrunner.sln -property:Configuration=Release
+        run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
 
-      - name: MkDirs
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: |
-          mkdir D:/out
-
-      - name: Copy Out Files
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: |
-          cp -a D:/a/BDSpyrunner/test/bdxcore_mod/*.dll D:/out
-          cp -a D:/a/BDSpyrunner/test/bdxcore_mod/*.pdb D:/out
-        shell: bash
-
-      - name: package
-        if: startsWith(github.event.ref, 'refs/tags/v')
-        shell: pwsh
-        run: Compress-Archive -Path D:/out/* out.zip
-
-      - name: Create Release
-        if: startsWith(github.event.ref, 'refs/tags/v')
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PYR_PUBLISH }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          body: ""
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        if: startsWith(github.event.ref, 'refs/tags/v')
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PYR_PUBLISH }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./out.zip
-          asset_name: BDSpyrunner.zip
-          asset_content_type: application/zip
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v1.0.0
-        with:
-          name: BDSpyrunner
-          path: D:/out
+      - name: GH Release
+        uses: softprops/action-gh-release@v0.1.7
+        whth:
+          files: |
+            ./out/BDSpyrunner.dll
+            ./out/BDSpyrunner.pdb

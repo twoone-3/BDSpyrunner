@@ -8,6 +8,13 @@
 #define MODULE_NAME "mc"
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
 
+constexpr size_t Hash(const char* s) {
+	unsigned h = 0;
+	for (; *s; ++s)
+		h = 5 * h + *s;
+	return size_t(h);
+}
+
 #pragma region EventCode
 enum class EventCode {
 	None,
