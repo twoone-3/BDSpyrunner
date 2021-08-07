@@ -1,12 +1,9 @@
-
 on:
   push:
-    tags:
-      - 'v*' # such as v1.6.2
+    tags: v*
 
 env:
   SOLUTION_FILE_PATH: .
-  Platform: X64
   BUILD_CONFIGURATION: Release
 
 jobs:
