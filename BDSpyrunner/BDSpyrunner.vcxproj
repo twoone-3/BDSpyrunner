@@ -33,6 +33,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\.github\workflows\msbuild.yml" />
     <None Include="..\README.md" />
     <None Include="cpp.hint" />
   </ItemGroup>
@@ -96,7 +97,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>../out/</OutDir>
+    <OutDir>..\..\test\bdxcore_mod\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <PublicIncludeDirectories>
     </PublicIncludeDirectories>
@@ -104,7 +105,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>../out/</OutDir>
+    <OutDir>..\..\test\bdxcore_mod\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <PublicIncludeDirectories>
     </PublicIncludeDirectories>
@@ -163,7 +164,8 @@
       <EnableUAC>false</EnableUAC>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(SolutionDir)out\ $(SolutionDir)..\test\bdxcore_mod\ /B /Y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -189,7 +191,8 @@
       <EnableUAC>false</EnableUAC>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(SolutionDir)out\ $(SolutionDir)..\test\bdxcore_mod\ /B /Y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -24,5 +24,4 @@ jobs:
         uses: softprops/action-gh-release@v0.1.7
         with:
           files: |
-            ./out/BDSpyrunner.dll
-            ./out/BDSpyrunner.pdb
+            ../test/bdxcore_mod/
