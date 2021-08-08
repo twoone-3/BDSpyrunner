@@ -2,7 +2,7 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.6.4"
+#define VERSION_STRING "1.6.5"
 #define VERSION_NUMBER 205
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
@@ -271,13 +271,13 @@ static Actor* PyEntity_AsActor(PyObject* self) {
 	if (reinterpret_cast<PyEntity*>(self)->actor)
 		return reinterpret_cast<PyEntity*>(self)->actor;
 	else
-		Py_RETURN_ERROR("This entity is not available");
+		Py_RETURN_ERROR("This entity pointer is nullptr");
 }
 static Player* PyEntity_AsPlayer(PyObject* self) {
 	if (isPlayer(reinterpret_cast<PyEntity*>(self)->actor))
 		return reinterpret_cast<Player*>(reinterpret_cast<PyEntity*>(self)->actor);
 	else
-		Py_RETURN_ERROR("This entity is not player");
+		Py_RETURN_ERROR("This entity pointer is nullptr or is not player pointer");
 }
 
 //初始化
@@ -1433,10 +1433,9 @@ static PyObject* PyAPI_logout(PyObject*, PyObject* args) {
 static PyObject* PyAPI_runcmd(PyObject*, PyObject* args) {
 	const char* cmd = "";
 	if (PyArg_ParseTuple(args, "s:runcmd", &cmd)) {
-		if (_command_queue)
-			onConsoleInput::original(_command_queue, cmd);
-		else
+		if (!_command_queue)
 			Py_RETURN_ERROR("Command queue is not initialized");
+		onConsoleInput::original(_command_queue, cmd);
 	}
 	Py_RETURN_NONE;
 }
