@@ -29,7 +29,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="json.hpp" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>

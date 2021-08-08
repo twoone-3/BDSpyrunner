@@ -1599,7 +1599,7 @@ static PyObject* PyAPI_explode(PyObject*, PyObject* args) {
 		BlockSource* bs = _level->getBlockSource(did);
 		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
-		onLevelExplode::original(_level, bs, nullptr, pos, power, true, destroy, range, true);
+		onLevelExplode::original(_level, bs, nullptr, pos, power, fire, destroy, range, true);
 	}
 	Py_RETURN_NONE;
 }
@@ -1649,7 +1649,9 @@ void init() {
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
 	//将plugins/py加入模块搜索路径
-	Py_SetPath((PLUGIN_PATH L";" + wstring(Py_GetPath())).c_str());
+	wstring py_path(PLUGIN_PATH L";");
+	py_path += Py_GetPath();
+	Py_SetPath(py_path.c_str());
 #pragma region 预初始化3.8+
 	//PyPreConfig cfg;
 	//PyPreConfig_InitPythonConfig(&cfg);
@@ -1667,7 +1669,7 @@ void init() {
 		if (path.extension() == ".py" || path.extension() == ".pyd") {
 			const string& name = path.stem().u8string();
 			INFO("loading " << name);
-			PyImport_ImportModule(name.c_str());
+			PyImport_Import(PyUnicode_FromStringAndSize(name.c_str(), name.length()));
 			PyErr_Print();
 		}
 	}

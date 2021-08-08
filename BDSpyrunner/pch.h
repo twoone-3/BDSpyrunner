@@ -22,7 +22,6 @@ using std::map;
 using std::unordered_map;
 using std::function;
 using std::unique_ptr;
-using std::exception;
 using std::ostream;
 using std::cout;
 using std::cerr;
@@ -71,14 +70,14 @@ constexpr size_t Hash(const char* s) {
 	unsigned h = 0;
 	for (; *s; ++s)
 		h = 5 * h + *s;
-	return size_t(h);
+	return static_cast<size_t>(h);
 }
 //转换字符串为json
 static json StringtoJson(string_view str) {
 	try {
 		return json::parse(str);
 	}
-	catch (const exception& e) {
+	catch (const json::exception& e) {
 		ERR(e.what());
 		return nullptr;
 	}
