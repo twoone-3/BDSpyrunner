@@ -2,13 +2,12 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.6.6"
-#define VERSION_NUMBER 206
+#define VERSION_STRING "1.6.7"
+#define VERSION_NUMBER 207
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
 
-static_assert(sizeof(Actor) == 1);
 #pragma region EventCode
 enum class EventCode {
 	None,
@@ -990,11 +989,6 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 	SPSCQueue* _this, const string& cmd) {
 	//debug模式（不推荐使用）
 	static bool debug = false;
-	if (debug) {
-		safeCall([&cmd] {PyRun_SimpleString(cmd.c_str()); });
-		cout << '>';
-		return 0;
-	}
 	if (cmd == "pydebug") {
 		if (debug) {
 			debug = false;
@@ -1003,6 +997,11 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 			debug = true;
 			cout << '>';
 		}
+		return 0;
+	}
+	if (debug) {
+		safeCall([&cmd] {PyRun_SimpleString(cmd.c_str()); });
+		cout << '>';
 		return 0;
 	}
 	wstring wstr = CharToWchar(cmd);
@@ -1095,7 +1094,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 			)
 		))
 			return false;
-}
+	}
 	return original(_this, p, bp, a3, a4);
 }
 HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
@@ -1690,19 +1689,26 @@ void init() {
 	//cfg.configure_locale = 0;
 	//Py_PreInitialize(&cfg);
 #pragma endregion
-	PyImport_AppendInittab(MODULE_NAME, PyAPI_init);//增加一个模块
-	Py_Initialize();//初始化解释器
+//增加一个模块
+	PyImport_AppendInittab(MODULE_NAME, PyAPI_init);
+	//初始化解释器
+	Py_Initialize();
 	if (PyType_Ready(&PyEntity_Type) < 0)
 		ERR("Falid to prepare class 'Entity'");
-	PyEval_InitThreads();//启用线程支持
+	//启用线程支持
+	PyEval_InitThreads();
 	for (const directory_entry& info : directory_iterator(PLUGIN_PATH)) {
-		const path& path = info;
-		if (path.extension() == ".py" || path.extension() == ".pyd") {
-			const string& name = path.stem().u8string();
+		//whether the file is py
+		if (info.path().extension() == ".py") {
+			const string& name = info.path().stem().u8string();
+			//ignore files starting with '_'
+			if (name.front() == '_')
+				continue;
 			INFO("loading " << name);
 			PyImport_Import(PyUnicode_FromStringAndSize(name.c_str(), name.length()));
 			PyErr_Print();
 		}
 	}
-	PyEval_SaveThread();//释放当前线程
+	//释放当前线程
+	PyEval_SaveThread();
 }
