@@ -1255,7 +1255,8 @@ HOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdenti
 	if (p) {
 		const string& cmd = FETCH(string, pkt + 48);
 		auto data = _commands.find(cmd.c_str() + 1);
-		if (data != _commands.end()) {
+		//如果有这条命令且回调函数不为nullptr
+		if (data != _commands.end() && data->second.second) {
 			safeCall([&] {
 				PyObject_CallFunction(data->second.second, "O", PyEntity_FromEntity(p));
 				PyErr_Print();
