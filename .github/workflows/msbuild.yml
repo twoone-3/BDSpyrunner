@@ -21,6 +21,6 @@ jobs:
         run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
 
       - name: Release
-        uses: softprops/action-gh-release@v0.1.7
+        uses: softprops/action-gh-release@v0.1.12
         with:
-          files: ../test/bdxcore_mod/*
+          files: ../BDS/bdxcore_mod/*

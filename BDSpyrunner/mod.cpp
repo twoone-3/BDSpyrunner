@@ -2,12 +2,13 @@
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
-#define VERSION_STRING "1.6.5"
-#define VERSION_NUMBER 205
+#define VERSION_STRING "1.6.6"
+#define VERSION_NUMBER 206
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
 
+static_assert(sizeof(Actor) == 1);
 #pragma region EventCode
 enum class EventCode {
 	None,
@@ -123,7 +124,7 @@ static Scoreboard* _scoreboard = nullptr;
 //Py函数表
 static unordered_map<EventCode, vector<PyObject*>> _functions;
 //注册命令
-static vector<pair<string, string>> _commands;
+static unordered_map<string, pair<const char*, PyObject*>> _commands;
 //伤害
 static int _damage;
 }
@@ -183,17 +184,11 @@ static void safeCall(const function<void()>& fn) {
 static bool EventCallBack(EventCode e, PyObject* val) {
 	bool result = true;
 	safeCall([&] {
-		vector<PyObject*>& List = _functions[e];
-		if (!List.empty()) {
-			for (PyObject* fn : List) {
-				//if (val) {
+		vector<PyObject*>& list = _functions[e];
+		if (!list.empty()) {
+			for (PyObject* fn : list) {
 				if (PyObject_CallFunction(fn, "O", val) == Py_False)
 					result = false;
-				//}
-				//else {
-				//	if (_PyObject_CallNoArg(fn) == Py_False)
-				//		result = false;
-				//}
 				PyErr_Print();
 			}
 		}
@@ -428,12 +423,32 @@ static PyObject* PyEntity_GetHealth(PyObject* self, void*) {
 		return nullptr;
 	return PyLong_FromLong(a->getHealth());
 }
+static int PyEntity_SetHealth(PyObject* self, PyObject* arg, void*) {
+	if (PyLong_Check(arg)) {
+		Actor* a = PyEntity_AsActor(self);
+		if (!a)
+			return -1;
+		a->setHealth(PyLong_AsLong(arg));
+		return 0;
+	}
+	return PyErr_BadArgument(), -1;
+}
 //获取最大生命值
 static PyObject* PyEntity_GetMaxHealth(PyObject* self, void*) {
 	Actor* a = PyEntity_AsActor(self);
 	if (!a)
 		return nullptr;
 	return PyLong_FromLong(a->getMaxHealth());
+}
+static int PyEntity_SetMaxHealth(PyObject* self, PyObject* arg, void*) {
+	if (PyLong_Check(arg)) {
+		Actor* a = PyEntity_AsActor(self);
+		if (!a)
+			return -1;
+		a->setMaxHealth(PyLong_AsLong(arg));
+		return 0;
+	}
+	return PyErr_BadArgument(), -1;
 }
 //获取权限
 static PyObject* PyEntity_GetPermissions(PyObject* self, void*) {
@@ -488,8 +503,8 @@ static PyGetSetDef PyEntity_GetSet[]{
 	{"typeid", PyEntity_GetTypeID, nullptr, nullptr},
 	{"typename", PyEntity_GetTypeName, nullptr, nullptr},
 	{"nbt", PyEntity_GetNBTInfo, nullptr, nullptr},
-	{"health", PyEntity_GetHealth, nullptr, nullptr},
-	{"maxhealth", PyEntity_GetMaxHealth, nullptr, nullptr},
+	{"health", PyEntity_GetHealth, PyEntity_SetHealth, nullptr},
+	{"maxhealth", PyEntity_GetMaxHealth, PyEntity_SetMaxHealth, nullptr},
 	{"perm", PyEntity_GetPermissions, PyEntity_SetPermissions, nullptr},
 	{"deviceid", PyEntity_GetDeviceId, nullptr, nullptr},
 	{"deviceos", PyEntity_GetDeviceOS, nullptr, nullptr},
@@ -913,6 +928,13 @@ static PyObject* PyEntity_FromEntity(Actor* ptr) {
 #pragma endregion
 #pragma region Hook List
 #if 0
+HOOK(Actor_load, bool, "?load@Actor@@UEAA_NAEBVCompoundTag@@AEAVDataLoadHelper@@@Z",
+	Actor* _this, Tag* tag, struct DataLoadHelper* data) {
+	//cout << CompoundTagtoJson(tag).dump(4) << endl;
+	//cout << data << endl;
+
+	return original(_this, tag, data);
+}
 HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 	Level* _this) {
 	original(_this);
@@ -951,7 +973,7 @@ HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVComm
 	VA _this) {
 	for (auto& [cmd, des] : _commands) {
 		SymCall("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
-			_this, &cmd, des.c_str(), 0, 0, 0x80);
+			_this, &cmd, des.first, 0, 0, 0x80);
 	}
 	original(_this);
 }
@@ -1073,7 +1095,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 			)
 		))
 			return false;
-	}
+}
 	return original(_this, p, bp, a3, a4);
 }
 HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
@@ -1233,6 +1255,14 @@ HOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdenti
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
 		const string& cmd = FETCH(string, pkt + 48);
+		auto data = _commands.find(cmd.c_str() + 1);
+		if (data != _commands.end()) {
+			safeCall([&] {
+				PyObject_CallFunction(data->second.second, "O", PyEntity_FromEntity(p));
+				PyErr_Print();
+				});
+			return;
+		}
 		bool res = EventCallBack(EventCode::onInputCommand,
 			Py_BuildValue("{s:O,s:s}",
 				"player", PyEntity_FromEntity(p),
@@ -1458,8 +1488,9 @@ static PyObject* PyAPI_setListener(PyObject*, PyObject* args) {
 static PyObject* PyAPI_setCommandDescription(PyObject*, PyObject* args) {
 	const char* cmd = "";
 	const char* des = "";
-	if (PyArg_ParseTuple(args, "ss:setCommandDescription", &cmd, &des)) {
-		_commands.push_back({ cmd, des });
+	PyObject* callback = nullptr;
+	if (PyArg_ParseTuple(args, "ss|O:setCommandDescription", &cmd, &des, &callback)) {
+		_commands.insert({ cmd, { des, callback } });
 	}
 	Py_RETURN_NONE;
 }

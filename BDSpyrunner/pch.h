@@ -50,6 +50,14 @@ int HookFunction(void*, void*, void*);
 //获取符号
 extern "C" _declspec(dllimport)
 void* GetServerSymbol(const char*);
+//调用一个虚函数
+//_this:类地址
+//off:偏移量
+//剩下的参数就不用传this了
+template<typename ret = void, typename... Args>
+static ret VirtualCall(VA off, void* _this, Args... args) {
+	return (*reinterpret_cast<ret(**)(void*, Args...)>(*reinterpret_cast<VA*>(_this) + off))(_this, args...);
+}
 //调用一个函数
 template<typename ret = void, typename... Args>
 static ret SymCall(const char* sym, Args... args) {
@@ -666,7 +674,8 @@ struct Actor {
 	}
 	//获取实体类型
 	unsigned getEntityTypeId() {
-		return SymCall<unsigned>("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ", this);
+		return VirtualCall<unsigned>(0x520, this);
+		//return SymCall<unsigned>("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ", this);
 	}
 	//获取查询用ID
 	VA getUniqueID() {
@@ -698,11 +707,16 @@ struct Actor {
 	int getMaxHealth() {
 		return SymCall<int>("?getMaxHealth@Actor@@QEBAHXZ", this);
 	}
-	void setHealth(int value, int max) {
-		VA hattr = ((*(VA(__fastcall**)(Actor*, void*))(*(VA*)this + 1552))(
-			this, SYM("?HEALTH@SharedAttributes@@2VAttribute@@B")));
+	void setHealth(int value) {
+		VA hattr = (*reinterpret_cast<VA(**)(Actor*, void*)>(*(VA*)this + 1552))
+			(this, SYM("?HEALTH@SharedAttributes@@2VAttribute@@B"));
 		FETCH(int, hattr + 132) = value;
-		FETCH(int, hattr + 128) = max;
+		//SymCall("?_setDirty@AttributeInstance@@AEAAXXZ", hattr);
+	}
+	void setMaxHealth(int value) {
+		VA hattr = (*reinterpret_cast<VA(**)(Actor*, void*)>(*(VA*)this + 1552))
+			(this, SYM("?HEALTH@SharedAttributes@@2VAttribute@@B"));
+		FETCH(int, hattr + 128) = value;
 		//SymCall("?_setDirty@AttributeInstance@@AEAAXXZ", hattr);
 	}
 	//获取副手
