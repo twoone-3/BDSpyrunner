@@ -1,5 +1,5 @@
 ﻿#include "pch.h"
-#define PY_SSIZE_T_CLEAN
+//#define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
 #define VERSION_STRING "1.6.7"
