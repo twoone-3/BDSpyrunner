@@ -1,49 +1,91 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="源文件">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="头文件">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="资源文件">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
-    <Filter Include="其他">
-      <UniqueIdentifier>{41314392-9b6a-49b9-a350-5ca40b1313af}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="lib\chakra.lib">
-      <Filter>资源文件</Filter>
-    </Library>
-    <Library Include="lib\python37.lib">
-      <Filter>资源文件</Filter>
-    </Library>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="mod.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="mod.cpp" />
+    <ClCompile Include="BDS\Actor.cpp">
+      <Filter>BDS</Filter>
+    </ClCompile>
+    <ClCompile Include="BDS\Block.cpp">
+      <Filter>BDS</Filter>
+    </ClCompile>
+    <ClCompile Include="BDS\ItemStack.cpp">
+      <Filter>BDS</Filter>
+    </ClCompile>
+    <ClCompile Include="BDS\Level.cpp">
+      <Filter>BDS</Filter>
+    </ClCompile>
+    <ClCompile Include="BDS\NetWork.cpp">
+      <Filter>BDS</Filter>
+    </ClCompile>
+    <ClCompile Include="BDS\ScoreBoard.cpp">
+      <Filter>BDS</Filter>
+    </ClCompile>
+    <ClCompile Include="BDS\Structure.cpp">
+      <Filter>BDS</Filter>
+    </ClCompile>
+    <ClCompile Include="BDS\Tag.cpp">
+      <Filter>BDS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h">
-      <Filter>头文件</Filter>
+    <Library Include="lib\chakra.lib">
+      <Filter>lib</Filter>
+    </Library>
+    <Library Include="lib\python37.lib">
+      <Filter>lib</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="tool.h" />
+    <ClInclude Include="BDS\Actor.h">
+      <Filter>BDS</Filter>
+    </ClInclude>
+    <ClInclude Include="BDS\Block.h">
+      <Filter>BDS</Filter>
+    </ClInclude>
+    <ClInclude Include="BDS\ItemStack.h">
+      <Filter>BDS</Filter>
+    </ClInclude>
+    <ClInclude Include="BDS\Level.h">
+      <Filter>BDS</Filter>
+    </ClInclude>
+    <ClInclude Include="BDS\Math.h">
+      <Filter>BDS</Filter>
+    </ClInclude>
+    <ClInclude Include="BDS\NetWork.h">
+      <Filter>BDS</Filter>
+    </ClInclude>
+    <ClInclude Include="BDS\ScoreBoard.h">
+      <Filter>BDS</Filter>
+    </ClInclude>
+    <ClInclude Include="BDS\span.h">
+      <Filter>BDS</Filter>
+    </ClInclude>
+    <ClInclude Include="BDS\Structure.h">
+      <Filter>BDS</Filter>
+    </ClInclude>
+    <ClInclude Include="BDS\Tag.h">
+      <Filter>BDS</Filter>
+    </ClInclude>
+    <ClInclude Include="json.hpp">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="BDS\BDS.h">
+      <Filter>BDS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="cpp.hint">
-      <Filter>其他</Filter>
-    </None>
-    <None Include="..\.github\workflows\msbuild.yml">
-      <Filter>其他</Filter>
-    </None>
-    <None Include="..\README.md">
-      <Filter>其他</Filter>
-    </None>
+    <None Include="cpp.hint" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="BDS">
+      <UniqueIdentifier>{cfc7543d-cc07-4687-8192-48b321575f19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib">
+      <UniqueIdentifier>{237bf3e8-b292-4ca0-b55a-d5f6832b0cb0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="json">
+      <UniqueIdentifier>{6563aec4-809e-4c5c-ae93-b1ca44e3f489}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
