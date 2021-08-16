@@ -135,46 +135,51 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\Users\Administrator\Desktop\BDSpyrunner\BDSpyrunner\Header File;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BDS\Actor.cpp" />
-    <ClCompile Include="BDS\Block.cpp" />
-    <ClCompile Include="BDS\ItemStack.cpp" />
-    <ClCompile Include="BDS\Level.cpp" />
-    <ClCompile Include="BDS\NetWork.cpp" />
-    <ClCompile Include="BDS\ScoreBoard.cpp" />
-    <ClCompile Include="BDS\Structure.cpp" />
-    <ClCompile Include="BDS\Tag.cpp" />
-    <ClCompile Include="mod.cpp" />
+    <ClCompile Include="Source File\Actor.cpp" />
+    <ClCompile Include="Source File\Block.cpp" />
+    <ClCompile Include="Source File\ItemStack.cpp" />
+    <ClCompile Include="Source File\Level.cpp" />
+    <ClCompile Include="Source File\NetWork.cpp" />
+    <ClCompile Include="Source File\ScoreBoard.cpp" />
+    <ClCompile Include="Source File\Structure.cpp" />
+    <ClCompile Include="Source File\Tag.cpp" />
+    <ClCompile Include="Source File\mod.cpp" />
+    <ClCompile Include="Source File\PyEntity.cpp" />
+    <ClCompile Include="Source File\tool.cpp" />
+    <ClCompile Include="Source File\global.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="lib\chakra.lib" />
-    <Library Include="lib\python37.lib" />
+    <Library Include="Library File\chakra.lib" />
+    <Library Include="Library File\python37.lib" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BDS\Actor.h" />
-    <ClInclude Include="BDS\Block.h" />
-    <ClInclude Include="BDS\ItemStack.h" />
-    <ClInclude Include="BDS\Level.h" />
-    <ClInclude Include="BDS\Math.h" />
-    <ClInclude Include="BDS\NetWork.h" />
-    <ClInclude Include="BDS\ScoreBoard.h" />
-    <ClInclude Include="BDS\span.h" />
-    <ClInclude Include="BDS\Structure.h" />
-    <ClInclude Include="BDS\Tag.h" />
-    <ClInclude Include="BDS\BDS.h" />
-    <ClInclude Include="json.hpp" />
-    <ClInclude Include="tool.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="cpp.hint" />
+    <ClInclude Include="Header File\Actor.h" />
+    <ClInclude Include="Header File\Block.h" />
+    <ClInclude Include="Header File\ItemStack.h" />
+    <ClInclude Include="Header File\Level.h" />
+    <ClInclude Include="Header File\Position.h" />
+    <ClInclude Include="Header File\NetWork.h" />
+    <ClInclude Include="Header File\ScoreBoard.h" />
+    <ClInclude Include="Header File\span.h" />
+    <ClInclude Include="Header File\Structure.h" />
+    <ClInclude Include="Header File\Tag.h" />
+    <ClInclude Include="Header File\Event.h" />
+    <ClInclude Include="Header File\global.h" />
+    <ClInclude Include="Header File\json.hpp" />
+    <ClInclude Include="Header File\PyEntity.h" />
+    <ClInclude Include="Header File\tool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
