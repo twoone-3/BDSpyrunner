@@ -1,5 +1,5 @@
 #pragma once
-#include "../tool.h"
+#include <string>
 //数组观察者
 template <typename T>
 struct span {
@@ -12,6 +12,6 @@ struct span<char> {
 	size_t len;
 	const char* str;
 	span(const char* s) : len(strlen(s)), str(s) {}
-	span(const string& s) : len(s.length()), str(s.c_str()) {}
+	span(const std::string& s) : len(s.length()), str(s.c_str()) {}
 };
 

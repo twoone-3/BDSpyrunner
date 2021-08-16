@@ -1,6 +1,6 @@
 #pragma once
-#include "../tool.h"
-#include "Math.h"
+#include "json.hpp"
+#include "Position.h"
 #include "span.h"
 
 struct Tag;
@@ -30,7 +30,7 @@ struct StructureTemplate {
 	~StructureTemplate();
 	Tag* save();
 	void load(Tag* t);
-	void fromJson(const json& value);
+	void fromJson(const Json& value);
 	void fillFromWorld(BlockSource* a2, BlockPos* a3, StructureSettings* a4);
 	void placeInWorld(BlockSource* a2, BlockPalette* a3, BlockPos* a4, StructureSettings* a5);
 };

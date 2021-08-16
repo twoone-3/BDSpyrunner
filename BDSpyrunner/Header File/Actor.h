@@ -1,6 +1,7 @@
 #pragma once
-#include "../tool.h"
-#include "Math.h"
+#include <vector>
+#include "tool.h"
+#include "Position.h"
 #include "span.h"
 
 struct BlockSource;
@@ -9,9 +10,10 @@ struct Level;
 struct Tag;
 struct NetworkIdentifier;
 struct Container;
+struct ScorePacketInfo;
 struct Actor {
 	//获取生物名称信息
-	string getNameTag();
+	std::string getNameTag();
 	//获取生物当前所处维度ID
 	int getDimensionId();
 	//获取生物当前所在坐标
@@ -30,7 +32,7 @@ struct Actor {
 	//获取查询用ID
 	VA getUniqueID();
 	//获取实体类型
-	string getEntityTypeName();
+	std::string getEntityTypeName();
 	//更新属性
 	VA updateAttrs();
 	//获取地图信息
@@ -54,21 +56,19 @@ struct Actor {
 	//传送
 	void teleport(Vec3* target, int did);
 	//新增标签
-	bool addTag(const string& str);
+	bool addTag(const std::string& str);
 	//移除标签
-	bool removeTag(const string& str);
+	bool removeTag(const std::string& str);
 	//获取标签
-	span<string> getTags();
+	span<std::string> getTags();
 };
 struct Mob : Actor {};
 struct Player : Mob {
-	string getUuid();
-	//发送数据包
-	void sendPacket(VA pkt);
+	std::string getUuid();
 	//根据地图信息获取玩家xuid
-	string& getXuid();
+	std::string& getXuid();
 	//重设服务器玩家名
-	void setName(const string& name);
+	void setName(const std::string& name);
 	//获取网络标识符
 	NetworkIdentifier* getClientId();
 	//获取背包
@@ -100,15 +100,21 @@ struct Player : Mob {
 	//设置游戏时游玩权限
 	void setPermissionLevel(char m);
 	//获取设备id
-	string getDeviceId();
+	std::string getDeviceId();
 	//获取设备系统类型
 	int getDeviceOS();
 	//发送背包
 	void sendInventroy();
 	//刷新区块
 	void resendAllChunks();
-	//断开连接
-	//void disconnect() {
-	//	SymCall("?disconnect@ServerPlayer@@QEAAXXZ",this);
-	//}
+	//发送数据包
+	void sendPacket(VA pkt);
+	unsigned sendModalFormRequestPacket(const std::string& str);
+	void sendTransferPacket(const std::string& address, short port);
+	void sendDisconnectPacket(const std::string& msg);
+	void sendTextPacket(int mode, const std::string& msg);
+	void sendCommandRequestPacket(const std::string& cmd);
+	void sendBossEventCodePacket(std::string name, float per, int eventtype);
+	void sendsetDisplayObjectivePacket(const std::string& title, const std::string& name = "name");
+	void sendSetScorePacket(char type, const std::vector<ScorePacketInfo>& slot);
 };

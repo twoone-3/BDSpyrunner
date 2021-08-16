@@ -1,10 +1,9 @@
 #pragma once
-#include "../tool.h"
-#include "Math.h"
+#include "Position.h"
 
 struct BlockPalette {};
 struct BlockLegacy {
-	string getBlockName();
+	std::string getBlockName();
 	short getBlockItemID();
 };
 struct Block {

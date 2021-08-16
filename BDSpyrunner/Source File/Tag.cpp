@@ -1,92 +1,93 @@
-#include "Tag.h"
+#include <Tag.h>
+#include <tool.h>
 
-inline TagMemoryChunk::TagMemoryChunk(size_t size, uint8_t data[]) :capacity(size), size(size), data(data) {}
+TagMemoryChunk::TagMemoryChunk(size_t size, uint8_t data[]) :capacity(size), size(size), data(data) {}
 
-inline void Tag::put(const string& key, Tag* value) {
+void Tag::put(const std::string& key, Tag* value) {
 	return SymCall("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
 		this, key, value);
 }
 
-inline void Tag::putByte(const string& key, uint8_t value) {
+void Tag::putByte(const std::string& key, uint8_t value) {
 	return SymCall("?putByte@CompoundTag@@QEAAAEAEV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@E@Z",
 		this, key, value);
 }
 
-inline void Tag::putShort(const string& key, short value) {
+void Tag::putShort(const std::string& key, short value) {
 	return SymCall("?putShort@CompoundTag@@QEAAAEAFV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@F@Z",
 		this, key, value);
 }
 
-inline void Tag::putString(const string& key, const string& value) {
+void Tag::putString(const std::string& key, const std::string& value) {
 	return SymCall("?putString@CompoundTag@@QEAAAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V23@0@Z",
 		this, key, value);
 }
 
-inline void Tag::putInt(const string& key, int value) {
+void Tag::putInt(const std::string& key, int value) {
 	return SymCall("?putInt@CompoundTag@@QEAAAEAHV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@H@Z",
 		this, key, value);
 }
 
-inline void Tag::putInt64(const string& key, long long value) {
+void Tag::putInt64(const std::string& key, long long value) {
 	return SymCall("?putInt64@CompoundTag@@QEAAAEA_JV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_J@Z",
 		this, key, value);
 }
 
-inline void Tag::putFloat(const string& key, float value) {
+void Tag::putFloat(const std::string& key, float value) {
 	return SymCall("?putFloat@CompoundTag@@QEAAAEAMV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@M@Z",
 		this, key, value);
 }
 
-inline void Tag::putByteArray(const string& key, const TagMemoryChunk& value) {
+void Tag::putByteArray(const std::string& key, const TagMemoryChunk& value) {
 	return SymCall("?putByteArray@CompoundTag@@QEAAAEAUTagMemoryChunk@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U2@@Z",
 		this, key, &value);
 }
 
-inline void Tag::putCompound(const string& key, const Tag* value) {
+void Tag::putCompound(const std::string& key, const Tag* value) {
 	return SymCall("?putCompound@CompoundTag@@QEAAPEAV1@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@3@@Z",
 		this, key, &value);
 }
 
-inline void Tag::add(Tag* t) {
+void Tag::add(Tag* t) {
 	SymCall("?add@ListTag@@QEAAXV?$unique_ptr@VTag@@U?$default_delete@VTag@@@std@@@std@@@Z",
 		this, &t);
 }
 
-inline void Tag::deleteCompound() {
+void Tag::deleteCompound() {
 	SymCall("??1CompoundTag@@UEAA@XZ", this);
 }
 
-inline void Tag::deleteList() {
+void Tag::deleteList() {
 	SymCall("??1ListTag@@UEAA@XZ", this);
 }
 
-inline TagType Tag::getVariantType() {
+TagType Tag::getVariantType() {
 	return *((TagType*)this + 40);
 }
 
-inline TagType Tag::getListType() {
+TagType Tag::getListType() {
 	return *((TagType*)this + 32);
 }
 
-inline auto& Tag::asByte() { return *reinterpret_cast<uint8_t*>(data); }
+auto& Tag::asByte() { return *reinterpret_cast<uint8_t*>(data); }
 
-inline auto& Tag::asShort() { return *reinterpret_cast<short*>(data); }
+auto& Tag::asShort() { return *reinterpret_cast<short*>(data); }
 
-inline auto& Tag::asInt() { return *reinterpret_cast<int*>(data); }
+auto& Tag::asInt() { return *reinterpret_cast<int*>(data); }
 
-inline auto& Tag::asInt64() { return *reinterpret_cast<long long*>(data); }
+auto& Tag::asInt64() { return *reinterpret_cast<long long*>(data); }
 
-inline auto& Tag::asFloat() { return *reinterpret_cast<float*>(data); }
+auto& Tag::asFloat() { return *reinterpret_cast<float*>(data); }
 
-inline auto& Tag::asDouble() { return *reinterpret_cast<double*>(data); }
+auto& Tag::asDouble() { return *reinterpret_cast<double*>(data); }
 
-inline auto& Tag::asString() { return *reinterpret_cast<string*>(data); }
+auto& Tag::asString() { return *reinterpret_cast<std::string*>(data); }
 
-inline auto& Tag::asByteArray() { return *reinterpret_cast<TagMemoryChunk*>(data); }
+auto& Tag::asByteArray() { return *reinterpret_cast<TagMemoryChunk*>(data); }
 
-inline auto& Tag::asList() { return *reinterpret_cast<vector<Tag*>*>(data); }
+auto& Tag::asList() { return *reinterpret_cast<std::vector<Tag*>*>(data); }
 
-inline auto& Tag::asCompound() { return *reinterpret_cast<map<string, Tag>*>(data); }
+auto& Tag::asCompound() { return *reinterpret_cast<std::map<std::string, Tag>*>(data); }
 
 Tag* newTag(TagType t) {
 	Tag* tag;
@@ -95,8 +96,8 @@ Tag* newTag(TagType t) {
 	return tag;
 }
 
-json ListtoJson(Tag* t) {
-	json value(JsonType::array);
+Json ListtoJson(Tag* t) {
+	Json value(JsonType::array);
 	for (auto& c : t->asList()) {
 		switch (t->getListType()) {
 		case TagType::End:
@@ -136,11 +137,11 @@ json ListtoJson(Tag* t) {
 	return value;
 }
 
-json CompoundTagtoJson(Tag* t) {
-	json value;
+Json CompoundTagtoJson(Tag* t) {
+	Json value;
 	for (auto& x : t->asCompound()) {
 		TagType type = x.second.getVariantType();
-		json& son = value[x.first + std::to_string(static_cast<uint32_t>(type))];
+		Json& son = value[x.first + std::to_string(static_cast<uint32_t>(type))];
 		switch (type) {
 		case TagType::End:
 			break;
@@ -184,10 +185,10 @@ json CompoundTagtoJson(Tag* t) {
 	return value;
 }
 
-Tag* ObjecttoTag(const json& value) {
+Tag* ObjecttoTag(const Json& value) {
 	Tag* c = newTag(TagType::Compound);
 	for (auto& [key, val] : value.items()) {
-		string new_key = key;
+		std::string new_key = key;
 		char& e = new_key.back();
 		TagType type;
 		if (*(&e - 1) == '1' && e == '0') {
@@ -232,7 +233,7 @@ Tag* ObjecttoTag(const json& value) {
 			break;
 		}
 		case TagType::String:
-			c->putString(new_key, val.get<string>());
+			c->putString(new_key, val.get<std::string>());
 			break;
 		case TagType::List: {
 			Tag* list = ArraytoTag(val);
@@ -256,7 +257,7 @@ Tag* ObjecttoTag(const json& value) {
 	return c;
 }
 
-Tag* ArraytoTag(const json& value) {
+Tag* ArraytoTag(const Json& value) {
 	Tag* list = newTag(TagType::List);
 	Tag* tag = nullptr;
 	for (auto& x : value) {
@@ -271,7 +272,7 @@ Tag* ArraytoTag(const json& value) {
 			break;
 		case JsonType::string:
 			tag = newTag(TagType::String);
-			FETCH(string, tag->data) = x.get<string>();
+			FETCH(std::string, tag->data) = x.get<std::string>();
 			break;
 		case JsonType::boolean:
 			break;

@@ -1,14 +1,15 @@
 #pragma once
-#include "../tool.h"
+#include <string>
+#include <tool.h>
 
 struct NetworkIdentifier {
-	string getAddress();
-	string toString();
+	std::string getAddress();
+	std::string toString();
 };
 struct SystemAddress {
 	char _this[132];
 	SystemAddress();
-	string toString();
+	std::string toString();
 };
 struct RakPeer {
 	SystemAddress getSystemAddress(NetworkIdentifier* ni);

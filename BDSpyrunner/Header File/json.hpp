@@ -23853,5 +23853,9 @@ inline nlohmann::json::json_pointer operator "" _json_pointer(const char* s, std
 #undef JSON_HEDLEY_FALL_THROUGH
 
 
+using Json = nlohmann::json;
+using JsonType = Json::value_t;
+
+Json StringtoJson(std::string_view);
 
 #endif  // INCLUDE_NLOHMANN_JSON_HPP_
