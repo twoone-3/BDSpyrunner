@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Source File\Actor.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="Source File\Block.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="Source File\global.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="Source File\ItemStack.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="Source File\Level.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="Source File\mod.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="Source File\NetWork.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="Source File\PyEntity.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="Source File\ScoreBoard.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="Source File\Structure.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="Source File\Tag.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+    <ClCompile Include="Source File\tool.cpp">
+      <Filter>Source File</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="Library File\chakra.lib">
+      <Filter>Library File</Filter>
+    </Library>
+    <Library Include="Library File\python37.lib">
+      <Filter>Library File</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Header File\Actor.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\Block.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\ItemStack.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\Level.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\Position.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\span.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\ScoreBoard.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\NetWork.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\Structure.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\Tag.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\Event.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\global.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\json.hpp">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\PyEntity.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="Header File\tool.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header File">
+      <UniqueIdentifier>{5344babd-73af-4410-a71d-3d15cb644d42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source File">
+      <UniqueIdentifier>{54af7cd2-1b5b-42e0-9c29-4f37b6fe7ad4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library File">
+      <UniqueIdentifier>{237bf3e8-b292-4ca0-b55a-d5f6832b0cb0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
