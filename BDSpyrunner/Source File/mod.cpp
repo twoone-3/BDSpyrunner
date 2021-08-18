@@ -21,6 +21,12 @@
 
 using namespace std;
 #pragma region Function Define
+//Py函数表
+static unordered_map<EventCode, vector<PyObject*>> g_callback_functions;
+//注册命令
+static unordered_map<string, pair<string, PyObject*>> g_commands;
+//伤害
+static int g_damage = 0;
 //注入时事件
 static void init();
 Json StringtoJson(string_view str) {
@@ -591,14 +597,14 @@ static PyObject* PyAPI_runcmd(PyObject*, PyObject* args) {
 static PyObject* PyAPI_setListener(PyObject*, PyObject* args) {
 	const char* name = ""; PyObject* func;
 	if (PyArg_ParseTuple(args, "sO:setListener", &name, &func)) {
-		auto found = events.find(name);
+		auto it = events.find(name);
 		if (!PyFunction_Check(func)) {
 			Py_RETURN_ERROR("Parameter 2 is not callable");
 		}
-		if (found == events.end()) {
+		if (it == events.end()) {
 			Py_RETURN_ERROR("Invalid Listener key words");
 		}
-		g_callback_functions[found->second].push_back(func);
+		g_callback_functions[it->second].push_back(func);
 	}
 	Py_RETURN_NONE;
 }
@@ -608,7 +614,7 @@ static PyObject* PyAPI_setCommandDescription(PyObject*, PyObject* args) {
 	const char* des = "";
 	PyObject* callback = nullptr;
 	if (PyArg_ParseTuple(args, "ss|O:setCommandDescription", &cmd, &des, &callback)) {
-		g_commands.insert({ cmd, { des, callback } });
+		g_commands[cmd] = { des, callback };
 	}
 	Py_RETURN_NONE;
 }
@@ -634,8 +640,7 @@ static PyObject* PyAPI_getPlayerList(PyObject*, PyObject*) {
 }
 //修改生物受伤的伤害值
 static PyObject* PyAPI_setDamage(PyObject*, PyObject* args) {
-	if (PyArg_ParseTuple(args, "i:setDamage", &g_damage)) {
-	}
+	PyArg_ParseTuple(args, "i:setDamage", &g_damage);
 	Py_RETURN_NONE;
 }
 static PyObject* PyAPI_setServerMotd(PyObject*, PyObject* args) {
@@ -701,8 +706,7 @@ static PyObject* PyAPI_getStructure(PyObject*, PyObject* args) {
 		StructureTemplate st("tmp");
 		st.fillFromWorld(bs, &start, &ss);
 
-		string str = CompoundTagtoJson(st.save()).dump(4);
-		return PyUnicode_FromStringAndSize(str.c_str(), str.length());
+		return toPyUnicode(CompoundTagtoJson(st.save()).dump(4));
 	}
 	Py_RETURN_NONE;
 }
@@ -840,7 +844,7 @@ void init() {
 			if (name.front() == '_')
 				continue;
 			cout << "[BDSpyrunner] loading " << name << endl;
-			PyImport_Import(PyUnicode_FromStringAndSize(name.c_str(), name.length()));
+			PyImport_Import(toPyUnicode(name));
 			PyErr_Print();
 		}
 	}

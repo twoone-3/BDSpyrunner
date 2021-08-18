@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
@@ -14,6 +15,8 @@
 	Py_END_ALLOW_THREADS;\
 	if (!_has_gil)PyGILState_Release(_gil_state)
 
+//转换std::string为PyUnicode
+PyObject* toPyUnicode(const std::string&);
 struct Actor;
 struct Player;
 // 实体类型

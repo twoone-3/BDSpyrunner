@@ -14,6 +14,10 @@ struct ScorePacketInfo;
 struct Actor {
 	//获取生物名称信息
 	std::string getNameTag();
+	//设置生物名称信息
+	void setNameTag(const std::string&);
+	//设置生物名称是否可见
+	void setNameTagVisible(bool visible);
 	//获取生物当前所处维度ID
 	int getDimensionId();
 	//获取生物当前所在坐标
@@ -67,8 +71,6 @@ struct Player : Mob {
 	std::string getUuid();
 	//根据地图信息获取玩家xuid
 	std::string& getXuid();
-	//重设服务器玩家名
-	void setName(const std::string& name);
 	//获取网络标识符
 	NetworkIdentifier* getClientId();
 	//获取背包

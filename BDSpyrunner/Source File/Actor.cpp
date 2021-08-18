@@ -9,6 +9,18 @@ string Actor::getNameTag() {
 	return SymCall<string&>("?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ", this);
 }
 
+//设置生物名称信息
+
+void Actor::setNameTag(const std::string&name) {
+	VirtualCall(0x1F8, this, &name);
+}
+
+//设置生物名称是否可见
+
+void Actor::setNameTagVisible(bool visible) {
+	SymCall("?setNameTagVisible@Actor@@UEAAX_N@Z", this, visible);
+}
+
 //获取生物当前所处维度ID
 
 int Actor::getDimensionId() {
@@ -199,13 +211,6 @@ string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 string& Player::getXuid() {
 	return SymCall<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
 		getLevel(), this + 3000);
-}
-
-//重设服务器玩家名
-
-void Player::setName(const string& name) {
-	SymCall("?setName@Player@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
-		this, &name);
 }
 
 //获取网络标识符
