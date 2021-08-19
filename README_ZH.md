@@ -15,7 +15,6 @@
 2. 将dll放入 `./plugins`文件夹,运行BDS,会自动生成py文件夹,如果看到`[BDSpyrunner] x.x.x loaded.`,则pyr加载成功了
 7. 将插件放入 `./plugins/py`,再次运行BDS,就可以正常使用了
 # 文档
-* [API接口](https://github.com/twoone-3/BDSpyrunner/wiki/API)
-* [监听器](https://github.com/twoone-3/BDSpyrunner/wiki/Listener)
+* [Wiki](https://github.com/twoone-3/BDSpyrunner/wiki/)
 # 联系我们
 QQ 群 : 1167270197

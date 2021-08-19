@@ -15,7 +15,6 @@ It greatly reduces the threshold for plug-in development and effectively simplif
 2. Put the dll into the `./plugins` folder, run BDS, the py folder will be automatically generated, if you see `[BDSpyrunner] x.x.x loaded.`, the pyr has been loaded successfully.
 7. Put the plug-in into `./plugins/py`, run BDS again, you can use it normally.
 # Documents
-* [API](https://github.com/twoone-3/BDSpyrunner/wiki/API)
-* [Listener](https://github.com/twoone-3/BDSpyrunner/wiki/Listener)
+* [Wiki](https://github.com/twoone-3/BDSpyrunner/wiki/)
 # Contact us
 QQ group : 1167270197
