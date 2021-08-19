@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include <string>
+#include <stdint.h>
 
 enum class EventCode {
 	None,
@@ -35,6 +36,16 @@ enum class EventCode {
 	onMove,
 	onPistonPush,
 	onEndermanRandomTeleport,
+	onServerStarted,
+	onDropItem,
+	onTakeItem,
+	onRide,
+	onUseFrameBlock,
+	onJump,
+	onSneak,
+	onBlockInteracted,
+	onFireSpread,
+	onBlockExploded
 };
 
 const std::unordered_map<std::string, EventCode> events{
@@ -69,4 +80,14 @@ const std::unordered_map<std::string, EventCode> events{
 {"onMove",EventCode::onMove},
 {"onPistonPush",EventCode::onPistonPush},
 {"onEndermanRandomTeleport",EventCode::onEndermanRandomTeleport},
+{"onServerStarted",EventCode::onServerStarted},
+{"onDropItem",EventCode::onDropItem},
+{"onTakeItem",EventCode::onTakeItem},
+{"onRide",EventCode::onRide},
+{"onUseFrameBlock",EventCode::onUseFrameBlock},
+{"onJump",EventCode::onJump},
+{"onSneak",EventCode::onSneak},
+{"onBlockInteracted",EventCode::onBlockInteracted},
+{"onFireSpread",EventCode::onFireSpread},
+{"onBlockExploded",EventCode::onBlockExploded}
 };

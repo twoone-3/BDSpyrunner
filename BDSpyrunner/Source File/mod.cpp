@@ -568,6 +568,141 @@ HOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NA
 		return original(_this, a1);
 	return false;
 }
+
+HOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
+	void* a) {
+	if (EventCallBack(EventCode::onServerStarted,
+		"b",
+		true
+	))
+		original(a);
+}
+
+
+HOOK(onDropItem, bool, "?drop@Player@@UEAA_NAEBVItemStack@@_N@Z",
+	Player* _this, ItemStack* a2, bool a3) {
+	if (EventCallBack(EventCode::onDropItem,
+		"{s:O,s:i,s:i,s:s,s:i}",
+		"player", PyEntity_FromEntity(_this),
+		"itemid", a2->getId(),
+		"itemcount", a2->getCount(),
+		"itemname", a2->getName().c_str(),
+		"itemaux", a2->getAuxValue()
+	))
+		return original(_this, a2, a3);
+	return false;
+}
+
+HOOK(onTakeItem, bool, "?take@Player@@QEAA_NAEAVActor@@HH@Z",
+	Player* _this, Actor* actor, int a2, int a3) {
+	if (EventCallBack(EventCode::onTakeItem,
+		"{s:O,s:O}",
+		"player", PyEntity_FromEntity(_this),
+		"actor", PyEntity_FromEntity(actor)
+	))
+		return original(_this, actor, a2, a3);
+	return false;
+}
+
+HOOK(onRide, bool, "?canAddRider@Actor@@UEBA_NAEAV1@@Z",
+	Actor* a1, Actor* a2) {
+	if (EventCallBack(EventCode::onRide,
+		"{s:O,s:O}",
+		"actor1", PyEntity_FromEntity(a1),
+		"actor2", PyEntity_FromEntity(a2)
+	))
+		return original(a1, a2);
+	return false;
+}
+
+HOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
+	void* _this, Player* a2, BlockPos* a3) {
+	if (EventCallBack(EventCode::onUseFrameBlock,
+		"{s:O,s:[i,i,i],s:i}",
+		"player", PyEntity_FromEntity(a2),
+		"blockpos", a3->x, a3->y, a3->z,
+		"dimensionid", a2->getDimensionId()
+	))
+		return original(_this, a2, a3);
+	return false;
+}
+
+HOOK(onUseFrameBlocka, bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBlockPos@@@Z",
+	void* _this, Player* a2, BlockPos* a3) {
+	if (EventCallBack(EventCode::onUseFrameBlock,
+		"{s:O,s:[i,i,i],s:i}",
+		"player", PyEntity_FromEntity(a2),
+		"blockpos", a3->x, a3->y, a3->z,
+		"dimensionid", a2->getDimensionId()
+	))
+		return original(_this, a2, a3);
+	return false;
+}
+
+HOOK(onJump, void, "?jumpFromGround@Player@@UEAAXXZ",
+	Player* pl) {
+	if (EventCallBack(EventCode::onJump,
+		"O",
+		PyEntity_FromEntity(pl)
+	))
+		return;
+	return original(pl);
+}
+
+HOOK(onSneak, void, "?sendActorSneakChanged@ActorEventCoordinator@@QEAAXAEAVActor@@_N@Z",
+	Player* pl) {
+	if (EventCallBack(EventCode::onSneak,
+		"O",
+		PyEntity_FromEntity(pl)
+	))
+		return;
+	return original(pl);
+}
+
+
+HOOK(onFireSpread, bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@AEBVBlockPos@@@Z",
+	void* _this, BlockSource* bs, BlockPos* bp) {
+	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
+	if (EventCallBack(EventCode::onFireSpread,
+		"{s:[i,i,i],s:s,s:i,s:i}",
+		"blockpos", bp->x, bp->y, bp->z,
+		"blockname", bl->getBlockName().c_str(),
+		"blockid", bl->getBlockItemID(),
+		"dimensionid", bs->getDimensionId()
+	))
+		return original(_this, bs, bp);
+}
+
+HOOK(onBlockInteracted, void, "?onBlockInteractedWith@VanillaServerGameplayEventListener@@UEAA?AW4EventResult@@AEAVPlayer@@AEBVBlockPos@@@Z",
+	void* _this, Player* pl, BlockPos* bp) {
+	BlockSource* bs = g_level->getBlockSource(pl->getDimensionId());
+	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
+	if (EventCallBack(EventCode::onBlockInteracted,
+		"{s:O,s:[i,i,i],s:s,s:i,s:i}",
+		"player", PyEntity_FromEntity(pl),
+		"blockpos", bp->x, bp->y, bp->z,
+		"blockname", bl->getBlockName().c_str(),
+		"blockid", bl->getBlockItemID(),
+		"dimensionid", bs->getDimensionId()
+	))
+		return original(_this, pl, bp);
+}
+
+
+HOOK(onBlockExploded, void , "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@@Z",
+	Block* _this, BlockSource* bs, BlockPos* bp, Actor* actor){
+	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
+	if (EventCallBack(EventCode::onBlockExploded,
+		"{s:O,s:[i,i,i],s:s,s:i,s:i}",
+		"actor", PyEntity_FromEntity(actor),
+		"blockpos", bp->x, bp->y, bp->z,
+		"blockname", bl->getBlockName().c_str(),
+		"blockid", bl->getBlockItemID(),
+		"dimensionid", bs->getDimensionId()
+	))
+		return original(_this,bs, bp,actor);
+}
+
 #pragma endregion
 #pragma region API Function
 //获取版本

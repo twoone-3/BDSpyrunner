@@ -341,6 +341,22 @@ void Player::sendPacket(uintptr_t pkt) {
 		this, pkt);
 }
 
+//使玩家客户端崩溃
+bool Player::crash() {
+	uintptr_t pkt = createPacket(58);
+	FETCH(int, pkt + 14) = 0;
+	FETCH(int, pkt + 15) = 0;
+	FETCH(bool, pkt + 48) = 1;
+	sendPacket(pkt);
+	return true;
+}
+
+//杀死实体
+bool Actor::kill() {
+	SymCall("?kill@Mob@@UEAAXXZ", this);
+	return true;
+}
+
 unsigned Player::sendModalFormRequestPacket(const string& str) {
 	static unsigned id = 0;
 	uintptr_t pkt = createPacket(100);
