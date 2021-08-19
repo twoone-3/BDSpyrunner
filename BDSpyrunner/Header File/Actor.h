@@ -65,8 +65,8 @@ struct Actor {
 	bool removeTag(const std::string& str);
 	//获取标签
 	span<std::string> getTags();
-	//自杀
-	bool kill();
+	//杀死实体
+	void kill();
 };
 struct Mob : Actor {};
 struct Player : Mob {
@@ -112,7 +112,7 @@ struct Player : Mob {
 	//刷新区块
 	void resendAllChunks();
 	//崩溃客户端
-	bool crash();
+	void crash();
 	//发送数据包
 	void sendPacket(uintptr_t pkt);
 	unsigned sendModalFormRequestPacket(const std::string& str);

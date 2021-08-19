@@ -14,8 +14,9 @@
 #include <Tag.h>
 #include <Event.h>
 
-#define VERSION_STRING "1.6.9"
-#define VERSION_NUMBER 209
+#define VERSION_1 1
+#define VERSION_2 7
+#define VERSION_3 0
 #define PLUGIN_PATH "plugins/py"
 #define MODULE_NAME "mc"
 
@@ -92,29 +93,35 @@ HOOK(BDS_Main, int, "main",
 	// 执行 main 函数
 	return original(argc, argv, envp);
 }
+
 HOOK(Level_construct, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$WeakRefT@UEntityRefTraits@@@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
 	Level* _this, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5, uintptr_t a6, uintptr_t a7, uintptr_t a8, uintptr_t a9, uintptr_t a10, uintptr_t a11, uintptr_t a12, uintptr_t a13) {
 	return g_level = original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13);
 }
+
 HOOK(SPSCQueue_construct, SPSCQueue*, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@QEAA@_K@Z",
 	SPSCQueue* _this) {
 	return g_command_queue = original(_this);
 }
+
 HOOK(RakPeer_construct, RakPeer*, "??0RakPeer@RakNet@@QEAA@XZ",
 	RakPeer* _this) {
 	if (g_rak_peer == nullptr)
 		return g_rak_peer = original(_this);
 	return original(_this);
 }
+
 HOOK(ServerNetworkHandler_construct, uintptr_t, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEBV?$NonOwnerPointer@VILevel@@@Bedrock@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@3@@Z",
 	ServerNetworkHandler* _this, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5, uintptr_t a6, uintptr_t a7, uintptr_t a8, uintptr_t a9, uintptr_t a10, uintptr_t a11, uintptr_t a12, uintptr_t a13, uintptr_t a14, uintptr_t a15, uintptr_t a16, uintptr_t a17, uintptr_t a18, uintptr_t a19, uintptr_t a20) {
 	g_server_network_handler = _this;
 	return original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20);
 }
+
 HOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnumRegistry@@PEAVLevelStorage@@@Z",
 	uintptr_t _this, uintptr_t a2, uintptr_t a3) {
 	return g_scoreboard = original(_this, a2, a3);
 }
+
 HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
 	uintptr_t _this) {
 	for (auto& [cmd, des] : g_commands) {
@@ -123,6 +130,7 @@ HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVComm
 	}
 	original(_this);
 }
+
 HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, uintptr_t size) {
 	if (&_this == &cout) {
@@ -132,6 +140,7 @@ HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std
 	}
 	return original(_this, str, size);
 }
+
 HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 	SPSCQueue* _this, const string& cmd) {
 	//debug模式（不推荐使用）
@@ -159,6 +168,7 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 	else
 		return false;
 }
+
 HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVSetLocalPlayerAsInitializedPacket@@@Z",
 	ServerNetworkHandler* _this, uintptr_t id,/*SetLocalPlayerAsInitializedPacket*/ uintptr_t pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
@@ -167,11 +177,13 @@ HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifi
 	}
 	original(_this, id, pkt);
 }
+
 HOOK(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
 	uintptr_t _this, Player* p, char v3) {
 	EventCallBack(EventCode::onPlayerLeft, "O", PyEntity_FromEntity(p));
 	return original(_this, p, v3);
 }
+
 HOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@EAEBVVec3@@PEBVBlock@@@Z",
 	uintptr_t _this, ItemStack* item, BlockPos* bp, char a4, uintptr_t a5, Block* b) {
 	Player* p = FETCH(Player*, _this + 8);
@@ -195,6 +207,7 @@ HOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@E
 	else
 		return false;
 }
+
 HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@EPEAVActor@@_N@Z",
 	BlockSource* _this, Block* b, BlockPos* bp, unsigned char a4, Actor* p, bool _bool) {
 	if (isPlayer(p)) {
@@ -212,6 +225,7 @@ HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 	}
 	return original(_this, b, bp, a4, p, _bool);
 }
+
 HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
 	BlockSource* _this, Actor* p, BlockPos* bp, ItemStack* a3, bool a4) {
 #if 0//测试获取结构
@@ -243,6 +257,7 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 	}
 	return original(_this, p, bp, a3, a4);
 }
+
 HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* p, BlockPos* bp) {
 	if (EventCallBack(EventCode::onOpenChest,
@@ -253,6 +268,7 @@ HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 		return original(_this, p, bp);
 	return false;
 }
+
 HOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* p, BlockPos* bp) {
 	if (EventCallBack(EventCode::onOpenBarrel,
@@ -263,6 +279,7 @@ HOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z"
 		return original(_this, p, bp);
 	return false;
 }
+
 HOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	uintptr_t _this, Player* p) {
 	auto bp = (BlockPos*)(_this - 204);
@@ -273,6 +290,7 @@ HOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	);
 	original(_this, p);
 }
+
 HOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	uintptr_t _this, Player* p) {
 	auto bp = (BlockPos*)(_this - 204);
@@ -283,6 +301,7 @@ HOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	);
 	original(_this, p);
 }
+
 HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEAAXH@Z",
 	uintptr_t _this, unsigned slot) {
 	Player* p = FETCH(Player*, _this + 208);//IDA LevelContainerModel::_getContainer line 15 25 v3
@@ -310,6 +329,7 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 	}
 	original(_this, slot);
 }
+
 HOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
 	Player* p, Actor* a, struct ActorDamageCause* c) {
 	if (EventCallBack(EventCode::onPlayerAttack,
@@ -320,6 +340,7 @@ HOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z
 		return original(p, a, c);
 	return false;
 }
+
 HOOK(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@AEAVChangeDimensionRequest@@@Z",
 	uintptr_t _this, Player* p, uintptr_t req) {
 	bool result = original(_this, p, req);
@@ -328,6 +349,7 @@ HOOK(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@
 	}
 	return result;
 }
+
 HOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	Mob* _this, uintptr_t dmsg) {
 	char v72;
@@ -340,6 +362,7 @@ HOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	);
 	if (res) original(_this, dmsg);
 }
+
 HOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 	Mob* _this, uintptr_t dmsg, int a3, bool a4, bool a5) {
 	g_damage = a3;//将生物受伤的值设置为可调整
@@ -355,11 +378,13 @@ HOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 		return original(_this, dmsg, g_damage, a4, a5);
 	return false;
 }
+
 HOOK(onRespawn, void, "?respawn@Player@@UEAAXXZ",
 	Player* p) {
 	EventCallBack(EventCode::onRespawn, "O", PyEntity_FromEntity(p));
 	original(p);
 }
+
 HOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@000@Z",
 	uintptr_t _this, string& sender, string& target, string& msg, string& style) {
 	EventCallBack(EventCode::onChat,
@@ -371,6 +396,7 @@ HOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_
 	);
 	original(_this, sender, target, msg, style);
 }
+
 HOOK(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVTextPacket@@@Z",
 	ServerNetworkHandler* _this, uintptr_t id, /*TextPacket*/uintptr_t pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
@@ -385,6 +411,7 @@ HOOK(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifie
 	}
 	if (res)original(_this, id, pkt);
 }
+
 HOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
 	ServerNetworkHandler* _this, uintptr_t id, /*CommandRequestPacket*/uintptr_t pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
@@ -407,6 +434,7 @@ HOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdenti
 		if (res)original(_this, id, pkt);
 	}
 }
+
 HOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormResponsePacket@@$0A@@@UEBAXAEBVNetworkIdentifier@@AEAVNetEventCallback@@AEAV?$shared_ptr@VPacket@@@std@@@Z",
 	uintptr_t _this, uintptr_t id, ServerNetworkHandler* handle,/*ModalFormResponsePacket*/uintptr_t* ppkt) {
 	uintptr_t pkt = *ppkt;
@@ -424,6 +452,7 @@ HOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormRe
 	}
 	original(_this, id, handle, ppkt);
 }
+
 HOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandBlockUpdatePacket@@@Z",
 	ServerNetworkHandler* _this, uintptr_t id, /*CommandBlockUpdatePacket*/uintptr_t pkt) {
 	bool res = true;
@@ -452,6 +481,7 @@ HOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 	}
 	if (res)original(_this, id, pkt);
 }
+
 HOOK(onLevelExplode, bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
 	Level* _this, BlockSource* bs, Actor* a3, Vec3 pos, float a5, bool a6, bool a7, float a8, bool a9) {
 	if (EventCallBack(EventCode::onLevelExplode,
@@ -464,6 +494,7 @@ HOOK(onLevelExplode, bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEB
 		return original(_this, bs, a3, pos, a5, a6, a7, a8, a9);
 	return false;
 }
+
 HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@@AEAVCommandBlockActor@@AEBVBlockPos@@_N@Z",
 	uintptr_t _this, BlockSource* a2, uintptr_t a3, BlockPos* bp, bool a5) {
 	//脉冲:0,重复:1,链:2
@@ -483,11 +514,13 @@ HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@
 		return original(_this, a2, a3, bp, a5);
 	return false;
 }
+
 HOOK(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
 	EventCallBack(EventCode::onMove, "O", PyEntity_FromEntity(p));
 	original(_this, p, a3, a4, a5);
 }
+
 HOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 	Player* p, unsigned slot, ItemStack* i) {
 	if (!EventCallBack(EventCode::onSetArmor,
@@ -502,6 +535,7 @@ HOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 		return;
 	return original(p, slot, i);
 }
+
 HOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboardId@@AEBVObjective@@@Z",
 	Scoreboard* _this, ScoreboardId* a1, Objective* a2) {
 	/*
@@ -519,6 +553,7 @@ HOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboar
 	);
 	original(_this, a1, a2);
 }
+
 HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@M@Z",
 	uintptr_t _this, BlockSource* a1, BlockPos* a2, Actor* p, uintptr_t a4) {
 	if (isPlayer(p)) {
@@ -532,6 +567,7 @@ HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSour
 	}
 	original(_this, a1, a2, p, a4);
 }
+
 HOOK(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPlayer@@AEBVBlockPos@@AEAVBlockSource@@AEAVLevel@@@Z",
 	Player* p, BlockPos* a2, BlockSource* a3, Level* a4) {
 	if (isPlayer(p)) {
@@ -545,6 +581,7 @@ HOOK(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPl
 	}
 	return original(p, a2, a3, a4);
 }
+
 HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBlockSource@@AEBVBlockPos@@EE@Z",
 	BlockActor* _this, BlockSource* bs, BlockPos* bp, unsigned a3, unsigned a4) {
 	BlockLegacy* blg = bs->getBlock(bp)->getBlockLegacy();
@@ -562,6 +599,7 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 		return original(_this, bs, bp, a3, a4);
 	return false;
 }
+
 HOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NAEAVActor@@@Z",
 	uintptr_t _this, Actor* a1) {
 	if (EventCallBack(EventCode::onEndermanRandomTeleport, "O", PyEntity_FromEntity(a1)))
@@ -570,14 +608,10 @@ HOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NA
 }
 
 HOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
-	void* a) {
-	if (EventCallBack(EventCode::onServerStarted,
-		"b",
-		true
-	))
-		original(a);
+	void* _this) {
+	EventCallBack(EventCode::onServerStarted, nullptr);
+	original(_this);
 }
-
 
 HOOK(onDropItem, bool, "?drop@Player@@UEAA_NAEBVItemStack@@_N@Z",
 	Player* _this, ItemStack* a2, bool a3) {
@@ -640,25 +674,16 @@ HOOK(onUseFrameBlocka, bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBloc
 }
 
 HOOK(onJump, void, "?jumpFromGround@Player@@UEAAXXZ",
-	Player* pl) {
-	if (EventCallBack(EventCode::onJump,
-		"O",
-		PyEntity_FromEntity(pl)
-	))
-		return;
-	return original(pl);
+	Player* _this) {
+	if (EventCallBack(EventCode::onJump, "O", PyEntity_FromEntity(_this)))
+		return original(_this);
 }
 
 HOOK(onSneak, void, "?sendActorSneakChanged@ActorEventCoordinator@@QEAAXAEAVActor@@_N@Z",
-	Player* pl) {
-	if (EventCallBack(EventCode::onSneak,
-		"O",
-		PyEntity_FromEntity(pl)
-	))
-		return;
-	return original(pl);
+	Player* _this) {
+	if (EventCallBack(EventCode::onSneak, "O", PyEntity_FromEntity(_this)))
+		return original(_this);
 }
-
 
 HOOK(onFireSpread, bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@AEBVBlockPos@@@Z",
 	void* _this, BlockSource* bs, BlockPos* bp) {
@@ -671,6 +696,7 @@ HOOK(onFireSpread, bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@A
 		"dimensionid", bs->getDimensionId()
 	))
 		return original(_this, bs, bp);
+	return false;
 }
 
 HOOK(onBlockInteracted, void, "?onBlockInteractedWith@VanillaServerGameplayEventListener@@UEAA?AW4EventResult@@AEAVPlayer@@AEBVBlockPos@@@Z",
@@ -688,9 +714,8 @@ HOOK(onBlockInteracted, void, "?onBlockInteractedWith@VanillaServerGameplayEvent
 		return original(_this, pl, bp);
 }
 
-
-HOOK(onBlockExploded, void , "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@@Z",
-	Block* _this, BlockSource* bs, BlockPos* bp, Actor* actor){
+HOOK(onBlockExploded, void, "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@@Z",
+	Block* _this, BlockSource* bs, BlockPos* bp, Actor* actor) {
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
 	if (EventCallBack(EventCode::onBlockExploded,
 		"{s:O,s:[i,i,i],s:s,s:i,s:i}",
@@ -700,14 +725,28 @@ HOOK(onBlockExploded, void , "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlock
 		"blockid", bl->getBlockItemID(),
 		"dimensionid", bs->getDimensionId()
 	))
-		return original(_this,bs, bp,actor);
+		return original(_this, bs, bp, actor);
 }
 
 #pragma endregion
 #pragma region API Function
-//获取版本
+//最小版本要求
+static PyObject* PyAPI_minVersionRequire(PyObject*, PyObject* args) {
+	int v1, v2, v3;
+	if (PyArg_ParseTuple(args, "iii:minVersionRequire", &v1, &v2, &v3)) {
+		if (v1 < VERSION_1)
+			Py_RETURN_ERROR("The plug-in version does not meet the minimum requirements");
+		if (v2 < VERSION_2)
+			Py_RETURN_ERROR("The plug-in version does not meet the minimum requirements");
+		if (v3 < VERSION_3)
+			Py_RETURN_ERROR("The plug-in version does not meet the minimum requirements");
+	}
+	Py_RETURN_NONE;
+}
+//获取版本（摒弃）
 static PyObject* PyAPI_getVersion(PyObject*, PyObject*) {
-	return PyLong_FromLong(VERSION_NUMBER);
+	cerr << __FUNCTION__ << "被摒弃的函数，使用minVersionRequire来代替" << endl;
+	return PyLong_FromLong(209);
 }
 //指令输出
 static PyObject* PyAPI_logout(PyObject*, PyObject* args) {
@@ -907,6 +946,7 @@ static PyObject* PyAPI_spawnItem(PyObject*, PyObject* args) {
 }
 //模块方法列表
 static PyMethodDef PyAPI_Methods[]{
+	{"minVersionRequire", PyAPI_minVersionRequire, METH_VARARGS, nullptr},
 	{"getVersion", PyAPI_getVersion, METH_NOARGS, nullptr},
 	{"logout", PyAPI_logout, METH_VARARGS, nullptr},
 	{"runcmd", PyAPI_runcmd, METH_VARARGS, nullptr},
@@ -940,13 +980,14 @@ static PyModuleDef PyAPI_Module{
 //模块初始化
 static PyObject* PyAPI_init() {
 	PyObject* module = PyModule_Create(&PyAPI_Module);
+	PyModule_AddObject(module, "Entity", reinterpret_cast<PyObject*>(&PyEntity_Type));
 	return module;
 }
 #pragma endregion
 
 void init() {
 	using namespace filesystem;
-	cout << "[BDSpyrunner] " VERSION_STRING " loaded." << endl;
+	cout << "[BDSpyrunner] " << VERSION_1 << '.' << VERSION_2 << '.' << VERSION_3 << " loaded." << endl;
 	//如果目录不存在创建目录
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);

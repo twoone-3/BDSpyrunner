@@ -613,7 +613,8 @@ PyObject* PyEntity_Crash(PyObject* self, PyObject*) {
 	Player* p = PyEntity_AsPlayer(self);
 	if (!p)
 		return nullptr;
-	return PyBool_FromLong(p->crash());
+	p->crash();
+	Py_RETURN_NONE;
 }
 
 //杀死实体
@@ -621,7 +622,8 @@ PyObject* PyEntity_Kill(PyObject* self, PyObject*) {
 	Actor* a = PyEntity_AsActor(self);
 	if (!a)
 		return nullptr;
-	return PyBool_FromLong(a->kill());
+	a->kill();
+	Py_RETURN_NONE;
 }
 
 PyObject* PyEntity_FromEntity(Actor* ptr) {
@@ -632,7 +634,6 @@ PyObject* PyEntity_FromEntity(Actor* ptr) {
 	reinterpret_cast<PyEntity*>(obj)->actor = ptr;
 	return obj;
 }
-
 
 //获取属性方法
 PyGetSetDef PyEntity_GetSet[]{
@@ -680,8 +681,8 @@ PyMethodDef PyEntity_Methods[]{
 	{"addTag", PyEntity_AddTag, METH_VARARGS, nullptr},
 	{"removeTag", PyEntity_RemoveTag, METH_VARARGS, nullptr},
 	{"getTags", PyEntity_GetTags, METH_NOARGS, nullptr},
-	{"crash",PyEntity_Crash,METH_NOARGS,nullptr},
-	{"kill",PyEntity_Kill,METH_NOARGS,nullptr},
+	{"crash", PyEntity_Crash, METH_NOARGS, nullptr},
+	{"kill", PyEntity_Kill, METH_NOARGS, nullptr},
 	{nullptr}
 };
 //Entity类型

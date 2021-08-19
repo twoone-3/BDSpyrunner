@@ -197,14 +197,16 @@ span<string> Actor::getTags() {
 	return tags;
 }
 
+void Actor::kill() {
+	SymCall("?kill@Mob@@UEAAXXZ", this);
+}
+
 string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 	string p;
 	SymCall<string&>("?asString@UUID@mce@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 		this + 3000, &p);
 	return p;
 }
-
-//发送数据包
 
 //根据地图信息获取玩家xuid
 
@@ -342,19 +344,12 @@ void Player::sendPacket(uintptr_t pkt) {
 }
 
 //使玩家客户端崩溃
-bool Player::crash() {
+void Player::crash() {
 	uintptr_t pkt = createPacket(58);
 	FETCH(int, pkt + 14) = 0;
 	FETCH(int, pkt + 15) = 0;
 	FETCH(bool, pkt + 48) = 1;
 	sendPacket(pkt);
-	return true;
-}
-
-//杀死实体
-bool Actor::kill() {
-	SymCall("?kill@Mob@@UEAAXXZ", this);
-	return true;
 }
 
 unsigned Player::sendModalFormRequestPacket(const string& str) {
