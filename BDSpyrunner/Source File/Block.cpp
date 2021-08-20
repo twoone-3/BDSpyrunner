@@ -33,6 +33,11 @@ Block* BlockSource::getBlock(const BlockPos* bp) {
 		this, bp);
 }
 
+BlockActor* BlockSource::getBlockEntity(const BlockPos* bp) {
+	return SymCall<BlockActor*>("?getBlockEntity@BlockSource@@QEAAPEAVBlockActor@@AEBVBlockPos@@@Z",
+		this, bp);
+}
+
 bool BlockSource::setBlock(Block* b, BlockPos* bp) {
 	return SymCall<bool>("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z",
 		this, bp, b, 3, nullptr);

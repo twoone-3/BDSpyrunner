@@ -16,7 +16,7 @@
 
 constexpr auto VERSION_1 = 1;
 constexpr auto VERSION_2 = 7;
-constexpr auto VERSION_3 = 1;
+constexpr auto VERSION_3 = 2;
 constexpr auto PLUGIN_PATH = L"plugins/py";
 constexpr auto MODULE_NAME = "mc";
 
@@ -715,7 +715,7 @@ HOOK(onBlockInteracted, void, "?onBlockInteractedWith@VanillaServerGameplayEvent
 	))
 		return original(_this, pl, bp);
 }
-//方块爆炸（未测试）
+//方块被爆炸破坏（未测试）
 HOOK(onBlockExploded, void, "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@@Z",
 	Block* _this, BlockSource* bs, BlockPos* bp, Actor* actor) {
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
@@ -729,7 +729,24 @@ HOOK(onBlockExploded, void, "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockP
 	))
 		return original(_this, bs, bp, actor);
 }
-
+//方块侧面放触发，点击牌子触发
+HOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
+	uintptr_t _this, Player* a1, BlockPos* a2) {
+	BlockSource* bs = a1->getRegion();
+	BlockActor* ba = bs->getBlockEntity(a2);
+	string text;
+	//获取沉浸式文本内容
+	SymCall<string&>("?getImmersiveReaderText@SignBlockActor@@UEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAVBlockSource@@@Z",
+		ba, &text, bs);
+	if (EventCallBack(EventCode::onUseSignBlock,
+		"{s:O,s:s,s:[i,i,i]}",
+		"player", PyEntity_FromEntity(a1),
+		"text", text.c_str(),
+		"pos", a2->x, a2->y, a2->z
+	))
+		return original(_this, a1, a2);
+	return 0;
+}
 #pragma endregion
 #pragma region API Function
 //最小版本要求
