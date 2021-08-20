@@ -92,6 +92,9 @@
     <ClInclude Include="Header File\tool.h">
       <Filter>Header File</Filter>
     </ClInclude>
+    <ClInclude Include="Header File\Command.h">
+      <Filter>Header File</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header File">
@@ -106,5 +109,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
+    <None Include="..\README.md" />
+    <None Include="..\README_ZH.md" />
   </ItemGroup>
 </Project>

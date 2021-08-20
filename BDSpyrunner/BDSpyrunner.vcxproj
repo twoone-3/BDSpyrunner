@@ -181,8 +181,11 @@
     <ClInclude Include="Header File\json.hpp" />
     <ClInclude Include="Header File\PyEntity.h" />
     <ClInclude Include="Header File\tool.h" />
+    <ClInclude Include="Header File\Command.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\README.md" />
+    <None Include="..\README_ZH.md" />
     <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

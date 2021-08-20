@@ -2,9 +2,9 @@
 ![Liscense](https://img.shields.io/github/license/twoone-3/BDSpyrunner)
 ![Downloads](https://img.shields.io/github/downloads/twoone-3/BDSpyrunner/total)
 ![Release](https://img.shields.io/github/v/release/twoone-3/BDSpyrunner)
-![Commit-activity](https://img.shields.io/github/commit-activity/m/twoone-3/BDSpyrunner)
+![BDS](https://img.shields.io/badge/support BDS version-1.17.11.01-blue)
 ![Issues](https://img.shields.io/github/issues/twoone-3/BDSpyrunner)
-[简体中文](README_ZH.md)|[English](README.md)
+[简体中文](README_ZH.md) | [English](README.md)
 # Introduction
 `BDSpyrunner` is a plug-in loader for `BDS` (Bedrock Dedicated Server).
 It uses CPython and Detours to connect Python and BDS so that Python can operate some things in Minecraft.
