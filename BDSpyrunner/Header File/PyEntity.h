@@ -22,7 +22,7 @@ struct PyEntity {
 	Actor* actor;
 };
 //×ª»»std::stringÎªPyUnicode
-PyObject* toPyUnicode(const std::string&);
+PyObject* ToPyUnicode(const std::string&);
 
 PyObject* PyEntity_FromEntity(Actor* ptr);
 

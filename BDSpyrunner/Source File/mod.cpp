@@ -48,12 +48,11 @@ BOOL WINAPI DllMain(HMODULE, DWORD, LPVOID) {
 	return TRUE;
 }
 //检查版本
-bool checkBDSVersion(const char* str) {
+string getBDSVersion() {
 	string version;
 	SymCall<string&>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 		&version);
-	//cout << version << endl;
-	return version == str;
+	return version;
 }
 //转宽字符
 static wstring CharToWchar(const string& str) {
@@ -774,11 +773,8 @@ static PyObject* PyAPI_minVersionRequire(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //获取版本（摒弃）
-static PyObject* PyAPI_getVersion(PyObject* self, PyObject* args) {
-	self;
-	args;
-	cerr << __FUNCTION__ << "被摒弃的函数，使用minVersionRequire来代替" << endl;
-	return PyLong_FromLong(209);
+static PyObject* PyAPI_getBDSVersion(PyObject*, PyObject*) {
+	return ToPyUnicode(getBDSVersion());
 }
 //指令输出
 static PyObject* PyAPI_logout(PyObject*, PyObject* args) {
@@ -912,7 +908,7 @@ static PyObject* PyAPI_getStructure(PyObject*, PyObject* args) {
 		StructureTemplate st("tmp");
 		st.fillFromWorld(bs, &start, &ss);
 
-		return toPyUnicode(CompoundTagtoJson(st.save()).dump(4));
+		return ToPyUnicode(CompoundTagtoJson(st.save()).dump(4));
 	}
 	Py_RETURN_NONE;
 }
@@ -979,7 +975,7 @@ static PyObject* PyAPI_spawnItem(PyObject*, PyObject* args) {
 //模块方法列表
 static PyMethodDef PyAPI_Methods[]{
 	{"minVersionRequire", PyAPI_minVersionRequire, METH_VARARGS, nullptr},
-	{"getVersion", (PyCFunction)PyAPI_getVersion, METH_NOARGS, nullptr},
+	{"getBDSVersion", PyAPI_getBDSVersion, METH_NOARGS, nullptr},
 	{"logout", PyAPI_logout, METH_VARARGS, nullptr},
 	{"runcmd", PyAPI_runcmd, METH_VARARGS, nullptr},
 	{"setListener", PyAPI_setListener, METH_VARARGS, nullptr},
@@ -1024,9 +1020,9 @@ void init() {
 	//如果目录不存在创建目录
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
-	if (!checkBDSVersion("1.17.11.01")) {
-		cerr << "服务端版本非最新版，请更新" << endl;
-		return;
+	if (getBDSVersion() != "1.17.11.01") {
+		cerr << "[BDSpyrunner] 服务端版本非最新版，继续使用可能出现未知问题" << endl;
+		cerr << "[BDSpyrunner] The server version is not the latest version, unknown problems may occur if you continue to use it" << endl;
 	}
 	//将plugins/py加入模块搜索路径
 	Py_SetPath((wstring(PLUGIN_PATH) + L';' + Py_GetPath()).c_str());
@@ -1055,7 +1051,7 @@ void init() {
 			if (name.front() == '_')
 				continue;
 			cout << "[BDSpyrunner] loading " << name << endl;
-			PyImport_Import(toPyUnicode(name));
+			PyImport_Import(ToPyUnicode(name));
 			PyErr_Print();
 		}
 	}

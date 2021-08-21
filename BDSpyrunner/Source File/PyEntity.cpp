@@ -8,7 +8,7 @@
 #include <ScoreBoard.h>
 
 using namespace std;
-PyObject* toPyUnicode(const string& str) {
+PyObject* ToPyUnicode(const string& str) {
 	return PyUnicode_FromStringAndSize(str.c_str(), str.length());
 }
 Actor* PyEntity_AsActor(PyObject* self) {
@@ -51,7 +51,7 @@ PyObject* PyEntity_Str(PyObject* self) {
 	Actor* a = PyEntity_AsActor(self);
 	if (!a)
 		return nullptr;
-	return toPyUnicode(a->getNameTag());
+	return ToPyUnicode(a->getNameTag());
 }
 
 //哈希
@@ -88,7 +88,7 @@ PyObject* PyEntity_GetName(PyObject* self, void*) {
 	Actor* a = PyEntity_AsActor(self);
 	if (!a)
 		return nullptr;
-	return toPyUnicode(a->getNameTag());
+	return ToPyUnicode(a->getNameTag());
 }
 
 int PyEntity_SetName(PyObject* self, PyObject* arg, void*) {
@@ -107,7 +107,7 @@ PyObject* PyEntity_GetUuid(PyObject* self, void*) {
 	Player* p = PyEntity_AsPlayer(self);
 	if (!p)
 		return nullptr;
-	return toPyUnicode(p->getUuid());
+	return ToPyUnicode(p->getUuid());
 }
 
 //获取XUID
@@ -115,7 +115,7 @@ PyObject* PyEntity_GetXuid(PyObject* self, void*) {
 	Player* p = PyEntity_AsPlayer(self);
 	if (!p)
 		return nullptr;
-	return toPyUnicode(p->getXuid());
+	return ToPyUnicode(p->getXuid());
 }
 
 //获取坐标
@@ -167,7 +167,7 @@ PyObject* PyEntity_GetTypeName(PyObject* self, void*) {
 	Actor* a = PyEntity_AsActor(self);
 	if (!a)
 		return nullptr;
-	return toPyUnicode(a->getEntityTypeName());
+	return ToPyUnicode(a->getEntityTypeName());
 }
 
 //获取nbt数据
@@ -175,7 +175,7 @@ PyObject* PyEntity_GetNBTInfo(PyObject* self, void*) {
 	Actor* a = PyEntity_AsActor(self);
 	if (!a)
 		return nullptr;
-	return toPyUnicode(CompoundTagtoJson(a->save()).dump(4));
+	return ToPyUnicode(CompoundTagtoJson(a->save()).dump(4));
 }
 
 //获取生命值
@@ -240,7 +240,7 @@ PyObject* PyEntity_GetDeviceId(PyObject* self, void*) {
 	Player* p = PyEntity_AsPlayer(self);
 	if (!p)
 		return nullptr;
-	return toPyUnicode(p->getDeviceId());
+	return ToPyUnicode(p->getDeviceId());
 }
 
 //获取设备类型
@@ -256,7 +256,7 @@ PyObject* PyEntity_GetIP(PyObject* self, void*) {
 	Player* p = PyEntity_AsPlayer(self);
 	if (!p)
 		return nullptr;
-	return toPyUnicode(g_rak_peer->getSystemAddress(p->getClientId()).toString());
+	return ToPyUnicode(g_rak_peer->getSystemAddress(p->getClientId()).toString());
 }
 
 //获取/设置玩家所有物品
@@ -284,7 +284,7 @@ PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
 	value["OffHand"] = CompoundTagtoJson(p->getOffHand()->save());
 	value["Hand"] = CompoundTagtoJson(p->getSelectedItem()->save());
 
-	return toPyUnicode(value.dump(4));
+	return ToPyUnicode(value.dump(4));
 }
 
 PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
@@ -603,7 +603,7 @@ PyObject* PyEntity_GetTags(PyObject* self, PyObject*) {
 	span<string> tags = a->getTags();
 	PyObject* list = PyList_New(0);
 	for (size_t i = 0; i < tags.size; i++) {
-		PyList_Append(list, toPyUnicode(tags.data[i]));
+		PyList_Append(list, ToPyUnicode(tags.data[i]));
 	}
 	return list;
 }
