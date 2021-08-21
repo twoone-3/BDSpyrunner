@@ -1,4 +1,6 @@
-﻿#define WIN32_LEAN_AND_MEAN
+﻿//mod.cpp 插件模块
+//排除极少使用的Windows API
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <filesystem>
 #include <tool.h>
@@ -16,20 +18,22 @@
 
 constexpr auto VERSION_1 = 1;
 constexpr auto VERSION_2 = 7;
-constexpr auto VERSION_3 = 2;
+constexpr auto VERSION_3 = 3;
 constexpr auto PLUGIN_PATH = L"plugins/py";
 constexpr auto MODULE_NAME = "mc";
 
 using namespace std;
-#pragma region Function Define
+
 //Py函数表
 static unordered_map<EventCode, vector<PyObject*>> g_callback_functions;
 //注册命令
 static unordered_map<string, pair<string, PyObject*>> g_commands;
 //伤害
 static int g_damage = 0;
+#pragma region Function Define
 //注入时事件
 static void init();
+//字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库3.10.0版本
 Json StringtoJson(string_view str) {
 	try {
 		return Json::parse(str);
@@ -39,6 +43,7 @@ Json StringtoJson(string_view str) {
 		return nullptr;
 	}
 }
+//Dll入口函数
 BOOL WINAPI DllMain(HMODULE, DWORD, LPVOID) {
 	return TRUE;
 }
@@ -62,6 +67,7 @@ static wstring CharToWchar(const string& str) {
 template <typename... Args>
 static bool EventCallBack(EventCode e, const char* format, Args... args) {
 	bool intercept = true;
+	SEH_BEGIN;
 	Py_CALL_BEGIN;
 	for (PyObject* cb : g_callback_functions[e]) {
 		PyObject* result = PyObject_CallFunction(cb, format, args...);
@@ -70,6 +76,7 @@ static bool EventCallBack(EventCode e, const char* format, Args... args) {
 			intercept = false;
 	}
 	Py_CALL_END;
+	SEH_END;
 	return intercept;
 }
 #pragma endregion
@@ -334,6 +341,10 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 //玩家攻击
 HOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
 	Player* p, Actor* a, struct ActorDamageCause* c) {
+	if (a) {
+		a->setNameTag("傻逼");
+		a->setNameTagVisible(true);
+	}
 	if (EventCallBack(EventCode::onPlayerAttack,
 		"{s:O,s:O}",
 		"player", PyEntity_FromEntity(p),
@@ -610,7 +621,7 @@ HOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NA
 }
 //服务器开完
 HOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
-	void* _this) {
+	uintptr_t _this) {
 	EventCallBack(EventCode::onServerStarted, nullptr);
 	original(_this);
 }
@@ -652,7 +663,7 @@ HOOK(onRide, bool, "?canAddRider@Actor@@UEBA_NAEAV1@@Z",
 }
 //放入取出物品展示框的物品（未测试）
 HOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
-	void* _this, Player* a2, BlockPos* a3) {
+	uintptr_t _this, Player* a2, BlockPos* a3) {
 	if (EventCallBack(EventCode::onUseFrameBlock,
 		"{s:O,s:[i,i,i],s:i}",
 		"player", PyEntity_FromEntity(a2),
@@ -664,7 +675,7 @@ HOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos
 }
 //点击物品展示框（未测试）
 HOOK(onUseFrameBlocka, bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBlockPos@@@Z",
-	void* _this, Player* a2, BlockPos* a3) {
+	uintptr_t _this, Player* a2, BlockPos* a3) {
 	if (EventCallBack(EventCode::onUseFrameBlock,
 		"{s:O,s:[i,i,i],s:i}",
 		"player", PyEntity_FromEntity(a2),
@@ -688,7 +699,7 @@ HOOK(onSneak, void, "?sendActorSneakChanged@ActorEventCoordinator@@QEAAXAEAVActo
 }
 //火势蔓延（未测试）
 HOOK(onFireSpread, bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@AEBVBlockPos@@@Z",
-	void* _this, BlockSource* bs, BlockPos* bp) {
+	uintptr_t _this, BlockSource* bs, BlockPos* bp) {
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
 	if (EventCallBack(EventCode::onFireSpread,
 		"{s:[i,i,i],s:s,s:i,s:i}",
@@ -702,7 +713,7 @@ HOOK(onFireSpread, bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@A
 }
 //方块交互（除箱子，工作台）
 HOOK(onBlockInteracted, void, "?onBlockInteractedWith@VanillaServerGameplayEventListener@@UEAA?AW4EventResult@@AEAVPlayer@@AEBVBlockPos@@@Z",
-	void* _this, Player* pl, BlockPos* bp) {
+	uintptr_t _this, Player* pl, BlockPos* bp) {
 	BlockSource* bs = g_level->getBlockSource(pl->getDimensionId());
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
 	if (EventCallBack(EventCode::onBlockInteracted,
@@ -753,17 +764,19 @@ HOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@
 static PyObject* PyAPI_minVersionRequire(PyObject*, PyObject* args) {
 	int v1, v2, v3;
 	if (PyArg_ParseTuple(args, "iii:minVersionRequire", &v1, &v2, &v3)) {
-		if (v1 < VERSION_1)
-			Py_RETURN_ERROR("The plug-in version does not meet the minimum requirements");
-		if (v2 < VERSION_2)
-			Py_RETURN_ERROR("The plug-in version does not meet the minimum requirements");
-		if (v3 < VERSION_3)
-			Py_RETURN_ERROR("The plug-in version does not meet the minimum requirements");
+		if (v1 > VERSION_1)
+			Py_RETURN_ERROR("The plugin version does not meet the minimum requirements");
+		if (v2 > VERSION_2)
+			Py_RETURN_ERROR("The plugin version does not meet the minimum requirements");
+		if (v3 > VERSION_3)
+			Py_RETURN_ERROR("The plugin version does not meet the minimum requirements");
 	}
 	Py_RETURN_NONE;
 }
 //获取版本（摒弃）
-static PyObject* PyAPI_getVersion(PyObject*, PyObject*) {
+static PyObject* PyAPI_getVersion(PyObject* self, PyObject* args) {
+	self;
+	args;
 	cerr << __FUNCTION__ << "被摒弃的函数，使用minVersionRequire来代替" << endl;
 	return PyLong_FromLong(209);
 }
@@ -966,7 +979,7 @@ static PyObject* PyAPI_spawnItem(PyObject*, PyObject* args) {
 //模块方法列表
 static PyMethodDef PyAPI_Methods[]{
 	{"minVersionRequire", PyAPI_minVersionRequire, METH_VARARGS, nullptr},
-	{"getVersion", PyAPI_getVersion, METH_NOARGS, nullptr},
+	{"getVersion", (PyCFunction)PyAPI_getVersion, METH_NOARGS, nullptr},
 	{"logout", PyAPI_logout, METH_VARARGS, nullptr},
 	{"runcmd", PyAPI_runcmd, METH_VARARGS, nullptr},
 	{"setListener", PyAPI_setListener, METH_VARARGS, nullptr},
@@ -1006,19 +1019,24 @@ static PyObject* PyAPI_init() {
 
 void init() {
 	using namespace filesystem;
-	cout << "[BDSpyrunner] " << VERSION_1 << '.' << VERSION_2 << '.' << VERSION_3 << " loaded." << endl;
+	cout << "[BDSpyrunner] " << VERSION_1
+		<< '.' << VERSION_2 << '.' << VERSION_3 << " loaded." << endl;
 	//如果目录不存在创建目录
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
+	if (!checkBDSVersion("1.17.11.01")) {
+		cerr << "服务端版本非最新版，请更新" << endl;
+		return;
+	}
 	//将plugins/py加入模块搜索路径
 	Py_SetPath((wstring(PLUGIN_PATH) + L';' + Py_GetPath()).c_str());
 #if 0
 #pragma region 预初始化3.8+
-	//PyPreConfig cfg;
-	//PyPreConfig_InitPythonConfig(&cfg);
-	//cfg.utf8_mode = 1;
-	//cfg.configure_locale = 0;
-	//Py_PreInitialize(&cfg);
+	PyPreConfig cfg;
+	PyPreConfig_InitPythonConfig(&cfg);
+	cfg.utf8_mode = 1;
+	cfg.configure_locale = 0;
+	Py_PreInitialize(&cfg);
 #pragma endregion
 #endif
 	//增加一个模块

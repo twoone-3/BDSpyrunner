@@ -413,7 +413,7 @@ PyObject* PyEntity_ResendAllChunks(PyObject* self, PyObject*) {
 
 PyObject* PyEntity_Disconnect(PyObject* self, PyObject* args) {
 	const char* msg = "";
-	if (PyArg_ParseTuple(args, "s:disconnect", &msg)) {
+	if (PyArg_ParseTuple(args, "|s:disconnect", &msg)) {
 		Player* p = PyEntity_AsPlayer(self);
 		if (!p)
 			return nullptr;

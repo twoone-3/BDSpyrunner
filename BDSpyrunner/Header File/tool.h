@@ -2,6 +2,8 @@
 #pragma execution_character_set("utf-8")
 #include <iostream>
 
+#define SEH_BEGIN try {
+#define SEH_END } catch (...) { cerr << "SEH exception was occured in file " __FILE__ ", funtion " __FUNCTION__ ", line " << __LINE__ << endl; }
 #define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
 #define SYM GetServerSymbol
 #define HOOK(name, ret, sym, ...)	\
@@ -11,10 +13,8 @@ struct name {						\
 	static func* original;			\
 };									\
 name::func* name::original =		\
-*reinterpret_cast<name::func**>		\
-(SymHook(sym, name::_hook, &name::original)); \
+*reinterpret_cast<name::func**>(SymHook(sym, name::_hook, &name::original));\
 ret name::_hook(__VA_ARGS__)
-
 extern "C" {
 	// provide Detours API
 	_declspec(dllimport) int HookFunction(void*, void*, void*);

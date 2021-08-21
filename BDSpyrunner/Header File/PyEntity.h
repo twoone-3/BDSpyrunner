@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#define PY_SSIZE_T_CLEAN
 #include "include/Python.h"
 
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
