@@ -64,7 +64,7 @@ string GetBDSVersion() {
 static wstring CharToWchar(string_view str) {
 	int len = MultiByteToWideChar(CP_ACP, 0, str.data(), static_cast<int>(str.length()), NULL, 0);
 	wstring wstr;
-	wstr.resize(len + 1);
+	wstr.resize(static_cast<size_t>(len) + 1);
 	MultiByteToWideChar(CP_ACP, 0, str.data(), static_cast<int>(str.length()), wstr.data(), len);
 	return wstr;
 }

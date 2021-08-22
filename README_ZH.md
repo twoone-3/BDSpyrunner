@@ -4,6 +4,7 @@
 ![Release](https://img.shields.io/github/v/release/twoone-3/BDSpyrunner)
 ![BDS](https://img.shields.io/badge/support--BDS--version-1.17.11.01-blue)
 ![Issues](https://img.shields.io/github/issues/twoone-3/BDSpyrunner)
+![Telegram](https://img.shields.io/badge/telegram-BDSpyrunner-blue?&logo=telegram&link=https://t.me/bdspyrunner)
 [简体中文](README_ZH.md) | [English](README.md)
 # 简介
 `BDSpyrunner`是一个用于`BDS`(Bedrock Dedicated Server)的插件加载器。
