@@ -5,7 +5,8 @@
 ![BDS](https://img.shields.io/badge/support--BDS--version-1.17.11.01-blue)
 ![Issues](https://img.shields.io/github/issues/twoone-3/BDSpyrunner)
 ![Telegram](https://img.shields.io/badge/telegram-BDSpyrunner-blue?&logo=telegram&link=https://t.me/bdspyrunner)
-[简体中文](README_ZH.md) | [English](README.md)
+
+[简体中文](README_ZH.md) | English
 # Introduction
 `BDSpyrunner` is a plug-in loader for `BDS` (Bedrock Dedicated Server).
 It uses CPython and Detours to connect Python and BDS so that Python can operate some things in Minecraft.
