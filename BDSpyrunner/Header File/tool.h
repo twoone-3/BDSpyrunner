@@ -2,8 +2,6 @@
 #pragma execution_character_set("utf-8")
 #include <iostream>
 
-#define SEH_BEGIN try {
-#define SEH_END } catch (...) { cerr << "SEH exception was occured in file " __FILE__ ", funtion " __FUNCTION__ ", line " << __LINE__ << endl; }
 #define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
 #define SYM GetServerSymbol
 #define HOOK(name, ret, sym, ...)	\
@@ -12,8 +10,7 @@ struct name {						\
 	static func _hook;				\
 	static func* original;			\
 };									\
-name::func* name::original =		\
-*reinterpret_cast<name::func**>(SymHook(sym, name::_hook, &name::original));\
+name::func* name::original = *reinterpret_cast<name::func**>(SymHook(sym, name::_hook, &name::original));\
 ret name::_hook(__VA_ARGS__)
 extern "C" {
 	// provide Detours API
@@ -37,6 +34,17 @@ ReturnType SymCall(const char* sym, Args... args) {
 }
 // replace the function
 void* SymHook(const char* sym, void* hook, void* org);
+//全局变量
+template <typename T>
+struct Global {
+	static T* data;
+};
+//Global<SPSCQueue>::data = nullptr;
+//Global<RakPeer>::data = nullptr;
+//Global<ServerNetworkHandler>::data = nullptr;
+//Global<Level>::data = nullptr;
+//Global<>::data = nullptr;
+
 constexpr size_t Hash(const char* s);
 //创建包
 uintptr_t createPacket(int type);

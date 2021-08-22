@@ -1,7 +1,7 @@
 #include <Actor.h>
+#include <NetWork.h>
 #include <Tag.h>
 #include <ItemStack.h>
-#include <global.h>
 #include <ScoreBoard.h>
 
 using namespace std;
@@ -386,7 +386,7 @@ void Player::sendCommandRequestPacket(const string& cmd) {
 	uintptr_t pkt = createPacket(77);
 	FETCH(string, pkt + 48) = cmd;
 	SymCall<uintptr_t>("?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
-		g_server_network_handler, getClientId(), pkt);
+		Global<ServerNetworkHandler>::data, getClientId(), pkt);
 	//p->sendPacket(pkt);
 }
 

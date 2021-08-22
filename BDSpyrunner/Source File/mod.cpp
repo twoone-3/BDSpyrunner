@@ -1,11 +1,11 @@
 ﻿//mod.cpp 插件模块
+
 //排除极少使用的Windows API
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <filesystem>
 #include <tool.h>
 #include <PyEntity.h>
-#include <global.h>
 #include <Actor.h>
 #include <Block.h>
 #include <ItemStack.h>
@@ -18,21 +18,27 @@
 
 constexpr auto VERSION_1 = 1;
 constexpr auto VERSION_2 = 7;
-constexpr auto VERSION_3 = 3;
+constexpr auto VERSION_3 = 4;
 constexpr auto PLUGIN_PATH = L"plugins/py";
 constexpr auto MODULE_NAME = "mc";
 
 using namespace std;
-
+#pragma region global
 //Py函数表
 static unordered_map<EventCode, vector<PyObject*>> g_callback_functions;
 //注册命令
 static unordered_map<string, pair<string, PyObject*>> g_commands;
 //伤害
 static int g_damage = 0;
+SPSCQueue* Global<SPSCQueue>::data = nullptr;
+RakPeer* Global<RakPeer>::data = nullptr;
+ServerNetworkHandler* Global<ServerNetworkHandler>::data = nullptr;
+Level* Global<Level>::data = nullptr;
+Scoreboard* Global<Scoreboard>::data = nullptr;
+#pragma endregion
 #pragma region Function Define
 //注入时事件
-static void init();
+void Init();
 //字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库3.10.0版本
 Json StringtoJson(string_view str) {
 	try {
@@ -48,25 +54,24 @@ BOOL WINAPI DllMain(HMODULE, DWORD, LPVOID) {
 	return TRUE;
 }
 //检查版本
-string getBDSVersion() {
+string GetBDSVersion() {
 	string version;
 	SymCall<string&>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 		&version);
 	return version;
 }
 //转宽字符
-static wstring CharToWchar(const string& str) {
-	int len = MultiByteToWideChar(CP_ACP, 0, str.c_str(), static_cast<int>(str.length()), NULL, 0);
+static wstring CharToWchar(string_view str) {
+	int len = MultiByteToWideChar(CP_ACP, 0, str.data(), static_cast<int>(str.length()), NULL, 0);
 	wstring wstr;
 	wstr.resize(len + 1);
-	MultiByteToWideChar(CP_ACP, 0, str.c_str(), static_cast<int>(str.length()), wstr.data(), len);
+	MultiByteToWideChar(CP_ACP, 0, str.data(), static_cast<int>(str.length()), wstr.data(), len);
 	return wstr;
 }
 //事件回调
 template <typename... Args>
 static bool EventCallBack(EventCode e, const char* format, Args... args) {
 	bool intercept = true;
-	SEH_BEGIN;
 	Py_CALL_BEGIN;
 	for (PyObject* cb : g_callback_functions[e]) {
 		PyObject* result = PyObject_CallFunction(cb, format, args...);
@@ -75,7 +80,6 @@ static bool EventCallBack(EventCode e, const char* format, Args... args) {
 			intercept = false;
 	}
 	Py_CALL_END;
-	SEH_END;
 	return intercept;
 }
 #pragma endregion
@@ -96,38 +100,37 @@ HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
 //将Python解释器初始化插入bds主函数
 HOOK(BDS_Main, int, "main",
 	int argc, char* argv[], char* envp[]) {
-	init();
-	// 执行 main 函数
+	Init();
 	return original(argc, argv, envp);
 }
 //Level的构造函数
 HOOK(Level_construct, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$WeakRefT@UEntityRefTraits@@@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
 	Level* _this, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5, uintptr_t a6, uintptr_t a7, uintptr_t a8, uintptr_t a9, uintptr_t a10, uintptr_t a11, uintptr_t a12, uintptr_t a13) {
-	return g_level = original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13);
+	return Global<Level>::data = original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13);
 }
 //SPSCQueue的构造函数
 HOOK(SPSCQueue_construct, SPSCQueue*, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@QEAA@_K@Z",
 	SPSCQueue* _this) {
-	return g_command_queue = original(_this);
+	return Global<SPSCQueue>::data = original(_this);
 }
 //RakPeer的构造函数
 HOOK(RakPeer_construct, RakPeer*, "??0RakPeer@RakNet@@QEAA@XZ",
 	RakPeer* _this) {
 	//会构造两次，取第一次值
-	if (g_rak_peer == nullptr)
-		return g_rak_peer = original(_this);
+	if (Global<RakPeer>::data == nullptr)
+		return Global<RakPeer>::data = original(_this);
 	return original(_this);
 }
 //ServerNetworkHandler的构造函数
 HOOK(ServerNetworkHandler_construct, uintptr_t, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEBV?$NonOwnerPointer@VILevel@@@Bedrock@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@3@@Z",
 	ServerNetworkHandler* _this, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5, uintptr_t a6, uintptr_t a7, uintptr_t a8, uintptr_t a9, uintptr_t a10, uintptr_t a11, uintptr_t a12, uintptr_t a13, uintptr_t a14, uintptr_t a15, uintptr_t a16, uintptr_t a17, uintptr_t a18, uintptr_t a19, uintptr_t a20) {
-	g_server_network_handler = _this;
+	Global<ServerNetworkHandler>::data = _this;
 	return original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20);
 }
 //Scoreboard的构造函数
 HOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnumRegistry@@PEAVLevelStorage@@@Z",
 	Scoreboard* _this, uintptr_t a2, uintptr_t a3) {
-	return g_scoreboard = original(_this, a2, a3);
+	return Global<Scoreboard>::data = original(_this, a2, a3);
 }
 //改变设置命令的建立，用于注册命令
 HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
@@ -247,8 +250,8 @@ HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEA
 	json v2(toJson(st2.save()));
 	//print(v2);
 	bp->y++;
-	st2.placeInWorld(_this, g_level->getBlockPalette(), bp, &ss);
-	//st.placeInWorld(_this, g_level->getBlockPalette(), bp, &ss);
+	st2.placeInWorld(_this, Global<Level>::data->getBlockPalette(), bp, &ss);
+	//st.placeInWorld(_this, Global<Level>::data->getBlockPalette(), bp, &ss);
 #endif
 	if (isPlayer(p)) {
 		BlockLegacy* bl = _this->getBlock(bp)->getBlockLegacy();
@@ -340,10 +343,10 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 //玩家攻击
 HOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
 	Player* p, Actor* a, struct ActorDamageCause* c) {
-	if (a) {
-		a->setNameTag("傻逼");
-		a->setNameTagVisible(true);
-	}
+	//if (a) {
+	//	a->setNameTag("傻逼");
+	//	a->setNameTagVisible(true);
+	//}
 	if (EventCallBack(EventCode::onPlayerAttack,
 		"{s:O,s:O}",
 		"player", PyEntity_FromEntity(p),
@@ -713,7 +716,7 @@ HOOK(onFireSpread, bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@A
 //方块交互（除箱子，工作台）
 HOOK(onBlockInteracted, void, "?onBlockInteractedWith@VanillaServerGameplayEventListener@@UEAA?AW4EventResult@@AEAVPlayer@@AEBVBlockPos@@@Z",
 	uintptr_t _this, Player* pl, BlockPos* bp) {
-	BlockSource* bs = g_level->getBlockSource(pl->getDimensionId());
+	BlockSource* bs = Global<Level>::data->getBlockSource(pl->getDimensionId());
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
 	if (EventCallBack(EventCode::onBlockInteracted,
 		"{s:O,s:[i,i,i],s:s,s:i,s:i}",
@@ -759,8 +762,9 @@ HOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@
 }
 #pragma endregion
 #pragma region API Function
+namespace mc {
 //最小版本要求
-static PyObject* PyAPI_minVersionRequire(PyObject*, PyObject* args) {
+static PyObject* minVersionRequire(PyObject*, PyObject* args) {
 	int v1, v2, v3;
 	if (PyArg_ParseTuple(args, "iii:minVersionRequire", &v1, &v2, &v3)) {
 		if (v1 > VERSION_1)
@@ -773,11 +777,11 @@ static PyObject* PyAPI_minVersionRequire(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //获取版本（摒弃）
-static PyObject* PyAPI_getBDSVersion(PyObject*, PyObject*) {
-	return ToPyUnicode(getBDSVersion());
+static PyObject* getBDSVersion(PyObject*, PyObject*) {
+	return ToPyUnicode(GetBDSVersion());
 }
 //指令输出
-static PyObject* PyAPI_logout(PyObject*, PyObject* args) {
+static PyObject* logout(PyObject*, PyObject* args) {
 	const char* msg = "";
 	if (PyArg_ParseTuple(args, "s:logout", &msg)) {
 		SymCall<ostream&>("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
@@ -786,17 +790,17 @@ static PyObject* PyAPI_logout(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //执行指令
-static PyObject* PyAPI_runcmd(PyObject*, PyObject* args) {
+static PyObject* runcmd(PyObject*, PyObject* args) {
 	const char* cmd = "";
 	if (PyArg_ParseTuple(args, "s:runcmd", &cmd)) {
-		if (!g_command_queue)
+		if (!Global<SPSCQueue>::data)
 			Py_RETURN_ERROR("Command queue is not initialized");
-		onConsoleInput::original(g_command_queue, cmd);
+		onConsoleInput::original(Global<SPSCQueue>::data, cmd);
 	}
 	Py_RETURN_NONE;
 }
 //设置监听
-static PyObject* PyAPI_setListener(PyObject*, PyObject* args) {
+static PyObject* setListener(PyObject*, PyObject* args) {
 	const char* name = ""; PyObject* func;
 	if (PyArg_ParseTuple(args, "sO:setListener", &name, &func)) {
 		auto it = events.find(name);
@@ -811,7 +815,7 @@ static PyObject* PyAPI_setListener(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //设置指令说明
-static PyObject* PyAPI_setCommandDescription(PyObject*, PyObject* args) {
+static PyObject* setCommandDescription(PyObject*, PyObject* args) {
 	const char* cmd = "";
 	const char* des = "";
 	PyObject* callback = nullptr;
@@ -821,46 +825,47 @@ static PyObject* PyAPI_setCommandDescription(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //获取玩家
-static PyObject* PyAPI_getPlayerByXuid(PyObject*, PyObject* args) {
+static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 	const char* xuid = "";
 	if (PyArg_ParseTuple(args, "s:getPlayerByXuid", &xuid)) {
-		Player* p = g_level->getPlayerByXuid(xuid);
+		Player* p = Global<Level>::data->getPlayerByXuid(xuid);
 		if (!p)
 			Py_RETURN_ERROR("Failed to find player");
 		return PyEntity_FromEntity(p);
 	}
 	Py_RETURN_NONE;
 }
-static PyObject* PyAPI_getPlayerList(PyObject*, PyObject*) {
+static PyObject* getPlayerList(PyObject*, PyObject*) {
 	PyObject* list = PyList_New(0);
-	if (!g_level)
+	if (!Global<Level>::data)
 		Py_RETURN_ERROR("Level is not set");
-	for (Player* p : g_level->getAllPlayers()) {
+	for (Player* p : Global<Level>::data->getAllPlayers()) {
 		PyList_Append(list, PyEntity_FromEntity(p));
 	}
 	return list;
 }
 //修改生物受伤的伤害值
-static PyObject* PyAPI_setDamage(PyObject*, PyObject* args) {
+static PyObject* setDamage(PyObject*, PyObject* args) {
 	PyArg_ParseTuple(args, "i:setDamage", &g_damage);
 	Py_RETURN_NONE;
 }
-static PyObject* PyAPI_setServerMotd(PyObject*, PyObject* args) {
+static PyObject* setServerMotd(PyObject*, PyObject* args) {
 	const char* name = "";
 	if (PyArg_ParseTuple(args, "s:setServerMotd", &name)) {
-		if (g_server_network_handler)
-			SymCall<uintptr_t, ServerNetworkHandler*, const string&, bool>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
-				g_server_network_handler, name, true);
-		else
+		if (!Global<ServerNetworkHandler>::data)
 			Py_RETURN_ERROR("Server did not finish loading");
+		SymCall<uintptr_t, ServerNetworkHandler*, const string&, bool>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
+			Global<ServerNetworkHandler>::data, name, true);
 	}
 	Py_RETURN_NONE;
 }
 //根据坐标设置方块
-static PyObject* PyAPI_getBlock(PyObject*, PyObject* args) {
+static PyObject* getBlock(PyObject*, PyObject* args) {
 	BlockPos bp; int did;
 	if (PyArg_ParseTuple(args, "iiii:getBlock", &bp.x, &bp.y, &bp.z, &did)) {
-		BlockSource* bs = g_level->getBlockSource(did);
+		if (!Global<Level>::data)
+			Py_RETURN_ERROR("Level is not set");
+		BlockSource* bs = Global<Level>::data->getBlockSource(did);
 		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
 		BlockLegacy* bl = bs->getBlock(&bp)->getBlockLegacy();
@@ -871,11 +876,13 @@ static PyObject* PyAPI_getBlock(PyObject*, PyObject* args) {
 	}
 	Py_RETURN_NONE;
 }
-static PyObject* PyAPI_setBlock(PyObject*, PyObject* args) {
+static PyObject* setBlock(PyObject*, PyObject* args) {
 	const char* name = "";
 	BlockPos bp; int did;
 	if (PyArg_ParseTuple(args, "siiii:setBlock", &name, &bp.x, &bp.y, &bp.z, &did)) {
-		BlockSource* bs = g_level->getBlockSource(did);
+		if (!Global<Level>::data)
+			Py_RETURN_ERROR("Level is not set");
+		BlockSource* bs = Global<Level>::data->getBlockSource(did);
 		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
 		Block* b = *reinterpret_cast<Block**>(SYM((string("?m") + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()));
@@ -886,12 +893,14 @@ static PyObject* PyAPI_setBlock(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //获取一个结构
-static PyObject* PyAPI_getStructure(PyObject*, PyObject* args) {
+static PyObject* getStructure(PyObject*, PyObject* args) {
 	BlockPos pos1, pos2; int did;
 	if (PyArg_ParseTuple(args, "iiiiiii:getStructure",
 		&pos1.x, &pos1.y, &pos1.z,
 		&pos2.x, &pos2.y, &pos2.z, &did)) {
-		BlockSource* bs = g_level->getBlockSource(did);
+		if (!Global<Level>::data)
+			Py_RETURN_ERROR("Level is not set");
+		BlockSource* bs = Global<Level>::data->getBlockSource(did);
 		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
 		BlockPos start{
@@ -912,12 +921,14 @@ static PyObject* PyAPI_getStructure(PyObject*, PyObject* args) {
 	}
 	Py_RETURN_NONE;
 }
-static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
+static PyObject* setStructure(PyObject*, PyObject* args) {
 	const char* data = "";
 	BlockPos pos; int did;
 	if (PyArg_ParseTuple(args, "siiii:setStructure",
 		&data, &pos.x, &pos.y, &pos.z, &did)) {
-		BlockSource* bs = g_level->getBlockSource(did);
+		if (!Global<Level>::data)
+			Py_RETURN_ERROR("Level is not set");
+		BlockSource* bs = Global<Level>::data->getBlockSource(did);
 		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
 		Json value = StringtoJson(data);
@@ -932,7 +943,7 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 		StructureSettings ss(&size, true, false);
 		StructureTemplate st("tmp");
 		st.fromJson(value);
-		st.placeInWorld(bs, g_level->getBlockPalette(), &pos, &ss);
+		st.placeInWorld(bs, Global<Level>::data->getBlockPalette(), &pos, &ss);
 		for (int x = 0; x != size.x; ++x) {
 			for (int y = 0; y != size.y; ++y) {
 				for (int z = 0; z != size.z; ++z) {
@@ -945,60 +956,64 @@ static PyObject* PyAPI_setStructure(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //产生爆炸
-static PyObject* PyAPI_explode(PyObject*, PyObject* args) {
+static PyObject* explode(PyObject*, PyObject* args) {
 	Vec3 pos; int did;
 	float power; bool destroy;
 	float range; bool fire;
 	if (PyArg_ParseTuple(args, "fffifbfb:explode",
 		&pos.x, &pos.y, &pos.z, &did, &power, &destroy, &range, &fire)) {
-		BlockSource* bs = g_level->getBlockSource(did);
+		if (!Global<Level>::data)
+			Py_RETURN_ERROR("Level is not set");
+		BlockSource* bs = Global<Level>::data->getBlockSource(did);
 		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
-		onLevelExplode::original(g_level, bs, nullptr, pos, power, fire, destroy, range, true);
+		onLevelExplode::original(Global<Level>::data, bs, nullptr, pos, power, fire, destroy, range, true);
 	}
 	Py_RETURN_NONE;
 }
 //生成物品
-static PyObject* PyAPI_spawnItem(PyObject*, PyObject* args) {
+static PyObject* spawnItem(PyObject*, PyObject* args) {
 	const char* data = "";
 	Vec3 pos; int did;
 	if (PyArg_ParseTuple(args, "sfffi:spawnItem", &data, &pos.x, &pos.y, &pos.z, &did)) {
-		BlockSource* bs = g_level->getBlockSource(did);
+		if (!Global<Level>::data)
+			Py_RETURN_ERROR("Level is not set");
+		BlockSource* bs = Global<Level>::data->getBlockSource(did);
 		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
 		ItemStack item(StringtoJson(data));
-		g_level->getSpawner()->spawnItem(bs, &item, &pos);
+		Global<Level>::data->getSpawner()->spawnItem(bs, &item, &pos);
 		cout << pos.toString() << endl;
 	}
 	Py_RETURN_NONE;
 }
 //模块方法列表
-static PyMethodDef PyAPI_Methods[]{
-	{"minVersionRequire", PyAPI_minVersionRequire, METH_VARARGS, nullptr},
-	{"getBDSVersion", PyAPI_getBDSVersion, METH_NOARGS, nullptr},
-	{"logout", PyAPI_logout, METH_VARARGS, nullptr},
-	{"runcmd", PyAPI_runcmd, METH_VARARGS, nullptr},
-	{"setListener", PyAPI_setListener, METH_VARARGS, nullptr},
-	{"setCommandDescription", PyAPI_setCommandDescription, METH_VARARGS, nullptr},
-	{"getPlayerByXuid", PyAPI_getPlayerByXuid, METH_VARARGS, nullptr},
-	{"getPlayerList", PyAPI_getPlayerList, METH_NOARGS, nullptr},
-	{"setDamage", PyAPI_setDamage, METH_VARARGS, nullptr},
-	{"setServerMotd", PyAPI_setServerMotd, METH_VARARGS, nullptr},
-	{"getBlock", PyAPI_getBlock, METH_VARARGS, nullptr},
-	{"setBlock", PyAPI_setBlock, METH_VARARGS, nullptr},
-	{"getStructure", PyAPI_getStructure, METH_VARARGS, nullptr},
-	{"setStructure", PyAPI_setStructure, METH_VARARGS, nullptr},
-	{"explode", PyAPI_explode, METH_VARARGS, nullptr},
-	{"spawnItem", PyAPI_spawnItem, METH_VARARGS, nullptr},
+static PyMethodDef Methods[]{
+	{"minVersionRequire", minVersionRequire, METH_VARARGS, nullptr},
+	{"getBDSVersion", getBDSVersion, METH_NOARGS, nullptr},
+	{"logout", logout, METH_VARARGS, nullptr},
+	{"runcmd", runcmd, METH_VARARGS, nullptr},
+	{"setListener", setListener, METH_VARARGS, nullptr},
+	{"setCommandDescription", setCommandDescription, METH_VARARGS, nullptr},
+	{"getPlayerByXuid", getPlayerByXuid, METH_VARARGS, nullptr},
+	{"getPlayerList", getPlayerList, METH_NOARGS, nullptr},
+	{"setDamage", setDamage, METH_VARARGS, nullptr},
+	{"setServerMotd", setServerMotd, METH_VARARGS, nullptr},
+	{"getBlock", getBlock, METH_VARARGS, nullptr},
+	{"setBlock", setBlock, METH_VARARGS, nullptr},
+	{"getStructure", getStructure, METH_VARARGS, nullptr},
+	{"setStructure", setStructure, METH_VARARGS, nullptr},
+	{"explode", explode, METH_VARARGS, nullptr},
+	{"spawnItem", spawnItem, METH_VARARGS, nullptr},
 	{nullptr}
 };
 //模块定义
-static PyModuleDef PyAPI_Module{
+static PyModuleDef Module{
 	PyModuleDef_HEAD_INIT,
 	MODULE_NAME,
 	"API functions",
 	-1,
-	PyAPI_Methods,
+	Methods,
 	nullptr,
 	nullptr,
 	nullptr,
@@ -1006,21 +1021,23 @@ static PyModuleDef PyAPI_Module{
 };
 
 //模块初始化
-static PyObject* PyAPI_init() {
-	PyObject* module = PyModule_Create(&PyAPI_Module);
+static PyObject* init() {
+	PyObject* module = PyModule_Create(&Module);
 	PyModule_AddObject(module, "Entity", reinterpret_cast<PyObject*>(&PyEntity_Type));
 	return module;
 }
+
+}
 #pragma endregion
 
-void init() {
+void Init() {
 	using namespace filesystem;
 	cout << "[BDSpyrunner] " << VERSION_1
-		<< '.' << VERSION_2 << '.' << VERSION_3 << " loaded." << endl;
+		<< '.' << VERSION_2 << '.' << VERSION_3 << "a loaded." << endl;
 	//如果目录不存在创建目录
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
-	if (getBDSVersion() != "1.17.11.01") {
+	if (GetBDSVersion() != "1.17.11.01") {
 		cerr << "[BDSpyrunner] 服务端版本非最新版，继续使用可能出现未知问题" << endl;
 		cerr << "[BDSpyrunner] The server version is not the latest version, unknown problems may occur if you continue to use it" << endl;
 	}
@@ -1036,7 +1053,7 @@ void init() {
 #pragma endregion
 #endif
 	//增加一个模块
-	PyImport_AppendInittab(MODULE_NAME, PyAPI_init);
+	PyImport_AppendInittab(MODULE_NAME, mc::init);
 	//初始化解释器
 	Py_Initialize();
 	if (PyType_Ready(&PyEntity_Type) < 0)

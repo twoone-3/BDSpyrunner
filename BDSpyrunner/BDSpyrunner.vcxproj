@@ -137,7 +137,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)BDSpyrunner\Header File;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>Async</ExceptionHandling>
+      <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -160,7 +160,6 @@
     <ClCompile Include="Source File\mod.cpp" />
     <ClCompile Include="Source File\PyEntity.cpp" />
     <ClCompile Include="Source File\tool.cpp" />
-    <ClCompile Include="Source File\global.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="Library File\chakra.lib" />
@@ -178,7 +177,6 @@
     <ClInclude Include="Header File\Structure.h" />
     <ClInclude Include="Header File\Tag.h" />
     <ClInclude Include="Header File\Event.h" />
-    <ClInclude Include="Header File\global.h" />
     <ClInclude Include="Header File\json.hpp" />
     <ClInclude Include="Header File\PyEntity.h" />
     <ClInclude Include="Header File\tool.h" />

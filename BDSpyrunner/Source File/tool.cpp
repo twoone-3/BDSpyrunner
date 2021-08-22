@@ -1,5 +1,4 @@
 #include <tool.h>
-#include <global.h>
 #include <Level.h>
 
 using namespace std;
@@ -27,7 +26,7 @@ uintptr_t createPacket(int type) {
 }
 //ÊÇ·ñÎªÍæ¼Ò
 bool isPlayer(void* ptr) {
-	for (auto& p : g_level->getAllPlayers()) {
+	for (auto& p : Global<Level>::data->getAllPlayers()) {
 		if (ptr == p)
 			return true;
 	}

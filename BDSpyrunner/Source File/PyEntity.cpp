@@ -1,6 +1,5 @@
 #include <PyEntity.h>
 #include <tool.h>
-#include <global.h>
 #include <Actor.h>
 #include <Tag.h>
 #include <ItemStack.h>
@@ -256,7 +255,7 @@ PyObject* PyEntity_GetIP(PyObject* self, void*) {
 	Player* p = PyEntity_AsPlayer(self);
 	if (!p)
 		return nullptr;
-	return ToPyUnicode(g_rak_peer->getSystemAddress(p->getClientId()).toString());
+	return ToPyUnicode(Global<RakPeer>::data->getSystemAddress(p->getClientId()).toString());
 }
 
 //获取/设置玩家所有物品
@@ -429,9 +428,9 @@ PyObject* PyEntity_GetScore(PyObject* self, PyObject* args) {
 		Player* p = PyEntity_AsPlayer(self);
 		if (!p)
 			return nullptr;
-		Objective* testobj = g_scoreboard->getObjective(objname);
+		Objective* testobj = Global<Scoreboard>::data->getObjective(objname);
 		if (testobj) {
-			auto id = g_scoreboard->getScoreboardId(p);
+			auto id = Global<Scoreboard>::data->getScoreboardId(p);
 			auto score = testobj->getPlayerScore(id);
 			return PyLong_FromLong(score->getCount());
 		}
@@ -445,10 +444,10 @@ PyObject* PyEntity_ModifyScore(PyObject* self, PyObject* args) {
 		Player* p = PyEntity_AsPlayer(self);
 		if (!p)
 			return nullptr;
-		Objective* testobj = g_scoreboard->getObjective(objname);
+		Objective* testobj = Global<Scoreboard>::data->getObjective(objname);
 		if (testobj) {
 			//mode:{set,add,remove}
-			g_scoreboard->modifyPlayerScore((ScoreboardId*)g_scoreboard->getScoreboardId(p), testobj, count, mode);
+			Global<Scoreboard>::data->modifyPlayerScore(Global<Scoreboard>::data->getScoreboardId(p), testobj, count, mode);
 		}
 	}
 	Py_RETURN_NONE;
@@ -535,7 +534,7 @@ PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
 		vector<ScorePacketInfo> info;
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {
-				ScorePacketInfo o(g_scoreboard->createScoreBoardId(key),
+				ScorePacketInfo o(Global<Scoreboard>::data->createScoreBoardId(key),
 					val.get<int>(), key);
 				info.push_back(o);
 			}

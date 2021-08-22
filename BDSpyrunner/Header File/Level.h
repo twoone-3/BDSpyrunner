@@ -10,6 +10,7 @@ struct Scoreboard;
 struct BlockPalette;
 struct ItemActor;
 struct ItemStack;
+struct SPSCQueue;
 struct Spawner {
 	ItemActor* spawnItem(BlockSource* bs, ItemStack* item, Vec3* pos);
 };
