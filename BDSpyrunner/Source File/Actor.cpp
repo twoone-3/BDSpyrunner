@@ -9,19 +9,17 @@ string Actor::getNameTag() {
 	return SymCall<string&>("?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ", this);
 }
 
-//ÉèÖÃÉúÎïÃû³ÆĞÅÏ¢
+//è®¾ç½®ç”Ÿç‰©åç§°ä¿¡æ¯
 
 void Actor::setNameTag(const std::string&name) {
 	VirtualCall(0x1F8, this, &name);
 }
 
-//ÉèÖÃÉúÎïÃû³ÆÊÇ·ñ¿É¼û
+//è®¾ç½®ç”Ÿç‰©åç§°æ˜¯å¦å¯è§
 
 void Actor::setNameTagVisible(bool visible) {
 	SymCall("?setNameTagVisible@Actor@@UEAAX_N@Z", this, visible);
 }
-
-//»ñÈ¡ÉúÎïµ±Ç°Ëù´¦Î¬¶ÈID
 
 int Actor::getDimensionId() {
 	int did;
@@ -31,34 +29,33 @@ int Actor::getDimensionId() {
 	//return FETCH(int, this + 236);//IDA Actor::getDimensionId
 }
 
-//»ñÈ¡ÉúÎïµ±Ç°ËùÔÚ×ø±ê
-
+//è·å–ç”Ÿç‰©å½“å‰æ‰€åœ¨åæ ‡
 Vec3* Actor::getPos() {
 	return SymCall<Vec3*>("?getPos@Actor@@UEBAAEBVVec3@@XZ", this);
 	//return (Vec3*)(this + 1268);//IDA Actor::getPos
 }
 
-//»ñÈ¡ÉúÎïÖ®Ç°ËùÔÚ×ø±ê
+//è·å–ç”Ÿç‰©ä¹‹å‰æ‰€åœ¨åæ ‡
 
 Vec3* Actor::getPosOld() {
 	return SymCall<Vec3*>("?getPosOld@Actor@@UEBAAEBVVec3@@XZ", this);
 	//return (Vec3*)(this + 1280);//IDA Actor::getPosOld
 }
 
-//ÊÇ·ñÒÑÒÆ³ı
+//æ˜¯å¦å·²ç§»é™¤
 
 bool Actor::isRemoved() {
 	return FETCH(bool, this + 7688);
 }
 
-//ÊÇ·ñĞü¿Õ
+//æ˜¯å¦æ‚¬ç©º
 
 bool Actor::isStand() {//IDA MovePlayerPacket::MovePlayerPacket 30
 	return FETCH(bool, this + 480);
 }
 
 
-//È¡·½¿éÔ´
+//å–æ–¹å—æº
 
 BlockSource* Actor::getRegion() {
 	return SymCall<BlockSource*>("?getRegion@Actor@@QEBAAEAVBlockSource@@XZ", this);
@@ -70,20 +67,20 @@ ItemStack* Actor::getArmor(int slot) {
 		this, slot);
 }
 
-//»ñÈ¡ÊµÌåÀàĞÍ
+//è·å–å®ä½“ç±»å‹
 
 unsigned Actor::getEntityTypeId() {
 	return VirtualCall<unsigned>(0x520, this);
 	//return SymCall<unsigned>("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ", this);
 }
 
-//»ñÈ¡²éÑ¯ÓÃID
+//è·å–æŸ¥è¯¢ç”¨ID
 
 uintptr_t Actor::getUniqueID() {
 	return SymCall<uintptr_t>("?getUniqueID@Actor@@QEBAAEBUActorUniqueID@@XZ", this);
 }
 
-//»ñÈ¡ÊµÌåÀàĞÍ
+//è·å–å®ä½“ç±»å‹
 
 string Actor::getEntityTypeName() {
 	string type;
@@ -92,25 +89,25 @@ string Actor::getEntityTypeName() {
 	return type;
 }
 
-//¸üĞÂÊôĞÔ
+//æ›´æ–°å±æ€§
 
 uintptr_t Actor::updateAttrs() {
 	return SymCall<uintptr_t>("?_sendDirtyActorData@Actor@@QEAAXXZ", this);
 }
 
-//»ñÈ¡µØÍ¼ĞÅÏ¢
+//è·å–åœ°å›¾ä¿¡æ¯
 
 Level* Actor::getLevel() {
 	return SymCall<Level*>("?getLevel@Actor@@QEBAAEBVLevel@@XZ", this);
 }
 
-//Ìí¼ÓÒ»¸ö×´Ì¬
+//æ·»åŠ ä¸€ä¸ªçŠ¶æ€
 
 uintptr_t Actor::addEffect(uintptr_t ef) {
 	return SymCall<uintptr_t>("?addEffect@Actor@@QEAAXAEBVMobEffectInstance@@@Z", this, ef);
 }
 
-//»ñÈ¡ÉúÃüÖµ
+//è·å–ç”Ÿå‘½å€¼
 
 int Actor::getHealth() {
 	return SymCall<int>("?getHealth@Actor@@QEBAHXZ", this);
@@ -134,7 +131,7 @@ void Actor::setMaxHealth(int value) {
 	//SymCall("?_setDirty@AttributeInstance@@AEAAXXZ", hattr);
 }
 
-//»ñÈ¡¸±ÊÖ
+//è·å–å‰¯æ‰‹
 
 ItemStack* Actor::getOffHand() {
 	return SymCall<ItemStack*>("?getOffhandSlot@Actor@@QEBAAEBVItemStack@@XZ", this);
@@ -146,25 +143,25 @@ Tag* Actor::save() {
 	return t;
 }
 
-//ÉèÖÃ´óĞ¡
+//è®¾ç½®å¤§å°
 
 void Actor::setSize(float f1, float f2) {
 	SymCall("?setSize@Actor@@UEAAXMM@Z", this, f1, f2);
 }
 
-//ÊÇ·ñÇ±ĞĞ
+//æ˜¯å¦æ½œè¡Œ
 
 bool Actor::isSneaking() {
 	return SymCall<bool>("?isSneaking@Actor@@QEBA_NXZ", this);
 }
 
-//»ñÈ¡×´Ì¬ÁĞ±í
+//è·å–çŠ¶æ€åˆ—è¡¨
 
 auto Actor::getAllEffects() {
 	//return SymCall<vector<MobEffectInstance>*>("?getAllEffects@Actor@@QEBAAEBV?$vector@VMobEffectInstance@@V?$allocator@VMobEffectInstance@@@std@@@std@@XZ", this);
 }
 
-//´«ËÍ
+//ä¼ é€
 
 void Actor::teleport(Vec3* target, int did) {
 	char mem[128];
@@ -174,21 +171,21 @@ void Actor::teleport(Vec3* target, int did) {
 		this, &mem);
 }
 
-//ĞÂÔö±êÇ©
+//æ–°å¢æ ‡ç­¾
 
 bool Actor::addTag(const string& str) {
 	return SymCall<bool>("?addTag@Actor@@QEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 		this, &str);
 }
 
-//ÒÆ³ı±êÇ©
+//ç§»é™¤æ ‡ç­¾
 
 bool Actor::removeTag(const string& str) {
 	return SymCall<bool>("?removeTag@Actor@@QEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 		this, &str);
 }
 
-//»ñÈ¡±êÇ©
+//è·å–æ ‡ç­¾
 
 span<string> Actor::getTags() {
 	span<string> tags;
@@ -208,14 +205,14 @@ string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 	return p;
 }
 
-//¸ù¾İµØÍ¼ĞÅÏ¢»ñÈ¡Íæ¼Òxuid
+//æ ¹æ®åœ°å›¾ä¿¡æ¯è·å–ç©å®¶xuid
 
 string& Player::getXuid() {
 	return SymCall<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
 		getLevel(), this + 3000);
 }
 
-//»ñÈ¡ÍøÂç±êÊ¶·û
+//è·å–ç½‘ç»œæ ‡è¯†ç¬¦
 
 NetworkIdentifier* Player::getClientId() {
 	return SymCall<NetworkIdentifier*>("?getClientId@Player@@QEBAAEBVNetworkIdentifier@@XZ",
@@ -223,127 +220,127 @@ NetworkIdentifier* Player::getClientId() {
 	//IDA ServerPlayer::setPermissions 34
 }
 
-//»ñÈ¡±³°ü
+//è·å–èƒŒåŒ…
 
 Container* Player::getInventory() {
 	return SymCall<Container*>("?getInventory@Player@@QEAAAEAVContainer@@XZ", this);
 	//return FETCH(Container*, FETCH(uintptr_t, this + 3208) + 176);//IDA Player::getInventory
 }
 
-//»ñÈ¡×°±¸ÈİÆ÷
+//è·å–è£…å¤‡å®¹å™¨
 
 Container* Player::getArmorContainer() {
 	return FETCH(Container*, this + 1648);//IDA Actor::_setArmorContainer 11
 }
 
-//»ñÈ¡Ä©Ó°Ïä
+//è·å–æœ«å½±ç®±
 
 Container* Player::getEnderChestContainer() {
 	return FETCH(Container*, this + 4360);//IDA ReplaceItemCommand::execute 1086 
 }
 
-//ÉèÖÃÒ»¸ö×°±¸
+//è®¾ç½®ä¸€ä¸ªè£…å¤‡
 
 uintptr_t Player::setArmor(int i, ItemStack* item) {
 	return SymCall<uintptr_t>("?setArmor@ServerPlayer@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z", this, i, item);
 }
 
-//ÉèÖÃ¸±ÊÖ
+//è®¾ç½®å‰¯æ‰‹
 
 uintptr_t Player::setOffhandSlot(ItemStack* item) {
 	return SymCall<uintptr_t>("?setOffhandSlot@Player@@UEAAXAEBVItemStack@@@Z", this, item);
 }
 
-//Ìí¼ÓÒ»¸öÎïÆ·
+//æ·»åŠ ä¸€ä¸ªç‰©å“
 
 void Player::addItem(ItemStack* item) {
 	SymCall<uintptr_t>("?addItem@@YAXAEAVPlayer@@AEAVItemStack@@@Z", this, item);
 }
 
-//Ôö¼ÓµÈ¼¶
+//å¢åŠ ç­‰çº§
 
 void Player::addLevel(int level) {
 	SymCall("?addLevels@Player@@UEAAXH@Z", this, level);
 }
 
-//»ñÈ¡µ±Ç°Ñ¡ÖĞµÄ¿òÎ»ÖÃ
+//è·å–å½“å‰é€‰ä¸­çš„æ¡†ä½ç½®
 
 int Player::getSelectedItemSlot() {
 	return SymCall<int>("?getSelectedItemSlot@Player@@QEBAHXZ", this);
 	//return FETCH(unsigned, FETCH(uintptr_t, this + 3208) + 16);//IDA Player::getSelectedItemSlot
 }
 
-//»ñÈ¡µ±Ç°ÎïÆ·
+//è·å–å½“å‰ç‰©å“
 
 ItemStack* Player::getSelectedItem() {
 	return SymCall<ItemStack*>("?getSelectedItem@Player@@QEBAAEBVItemStack@@XZ", this);
 }
 
-//»ñÈ¡±³°üÎïÆ·
+//è·å–èƒŒåŒ…ç‰©å“
 
 ItemStack* Player::getInventoryItem(int slot) {
 	return getInventory()->getSlots()[slot];
 }
 
-//»ñÈ¡ÓÎÏ·Ê±ÃüÁîÈ¨ÏŞ
+//è·å–æ¸¸æˆæ—¶å‘½ä»¤æƒé™
 
 char Player::getPermissions() {
 	return *FETCH(char*, this + 2376);//IDA ServerPlayer::setPermissions 22
 }
 
-//ÉèÖÃÓÎÏ·Ê±ÃüÁîÈ¨ÏŞ
+//è®¾ç½®æ¸¸æˆæ—¶å‘½ä»¤æƒé™
 
 void Player::setPermissions(char m) {
 	SymCall("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z",
 		this, m);
 }
 
-//»ñÈ¡ÓÎÏ·Ê±ÓÎÍæÈ¨ÏŞ
+//è·å–æ¸¸æˆæ—¶æ¸¸ç©æƒé™
 
 char Player::getPermissionLevel() {//IDA Abilities::setPlayerPermissions ?
 	return FETCH(char, FETCH(char*, this + 2376) + 1);
 }
 
-//ÉèÖÃÓÎÏ·Ê±ÓÎÍæÈ¨ÏŞ
+//è®¾ç½®æ¸¸æˆæ—¶æ¸¸ç©æƒé™
 
 void Player::setPermissionLevel(char m) {
 	SymCall("?setPlayerPermissions@Abilities@@QEAAXW4PlayerPermissionLevel@@@Z",
 		this + 2376, m);
 }
 
-//»ñÈ¡Éè±¸id
+//è·å–è®¾å¤‡id
 
 string Player::getDeviceId() {
 	return FETCH(string, this + 8352); //IDA Player::Player  v13 + 8352
 }
 
-//»ñÈ¡Éè±¸ÏµÍ³ÀàĞÍ
+//è·å–è®¾å¤‡ç³»ç»Ÿç±»å‹
 
 int Player::getDeviceOS() {
 	return FETCH(int, this + 2368);	//IDA ServerNetworkHandler::createNewPlayer  ConnectionRequest::getDeviceOS
 }
 
-//·¢ËÍ±³°ü
+//å‘é€èƒŒåŒ…
 
 void Player::sendInventroy() {
 	SymCall("?sendInventory@ServerPlayer@@UEAAX_N@Z",
 		this, true);
 }
 
-//Ë¢ĞÂÇø¿é
+//åˆ·æ–°åŒºå—
 
 void Player::resendAllChunks() {
 	SymCall("?resendAllChunks@ServerPlayer@@UEAAXXZ", this);
 }
 
-//·¢ËÍÊı¾İ°ü
+//å‘é€æ•°æ®åŒ…
 
 void Player::sendPacket(uintptr_t pkt) {
 	SymCall("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z",
 		this, pkt);
 }
 
-//Ê¹Íæ¼Ò¿Í»§¶Ë±ÀÀ£
+//ä½¿ç©å®¶å®¢æˆ·ç«¯å´©æºƒ
 void Player::crash() {
 	uintptr_t pkt = createPacket(58);
 	FETCH(int, pkt + 14) = 0;
@@ -394,7 +391,7 @@ void Player::sendBossEventCodePacket(string name, float per, int eventtype) {
 	uintptr_t pkt = createPacket(74);
 	FETCH(uintptr_t, pkt + 56) = FETCH(uintptr_t, getUniqueID());
 	//FETCH(uintptr_t, pkt + 64) = FETCH(uintptr_t, getUniqueID());
-	FETCH(int, pkt + 72) = eventtype;//0ÏÔÊ¾,1¸üĞÂ,2Òş²Ø,
+	FETCH(int, pkt + 72) = eventtype;//0æ˜¾ç¤º,1æ›´æ–°,2éšè—,
 	FETCH(string, pkt + 80) = name;
 	FETCH(float, pkt + 112) = per;
 	sendPacket(pkt);

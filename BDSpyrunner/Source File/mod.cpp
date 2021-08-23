@@ -39,6 +39,9 @@ Scoreboard* Global<Scoreboard>::data = nullptr;
 #pragma region Function Define
 //注入时事件
 void Init();
+PyObject* ToPyUnicode(const string& str) {
+	return PyUnicode_FromStringAndSize(str.c_str(), str.length());
+}
 //字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库3.10.0版本
 Json StringtoJson(string_view str) {
 	try {
@@ -60,26 +63,33 @@ string GetBDSVersion() {
 		&version);
 	return version;
 }
-//转宽字符
-static wstring CharToWchar(string_view str) {
-	int len = MultiByteToWideChar(CP_ACP, 0, str.data(), static_cast<int>(str.length()), NULL, 0);
-	wstring wstr;
-	wstr.resize(static_cast<size_t>(len) + 1);
-	MultiByteToWideChar(CP_ACP, 0, str.data(), static_cast<int>(str.length()), wstr.data(), len);
-	return wstr;
-}
+////转宽字符
+//static wstring ToWstring(string_view s) {
+//	string curlLocale = setlocale(LC_ALL, NULL);
+//	setlocale(LC_ALL, "chs");
+//	const char* _Source = s.data();
+//	size_t _Dsize = s.size() + 1;
+//
+//	wchar_t* _Dest = new wchar_t[_Dsize];
+//	size_t i;
+//	mbstowcs_s(&i, _Dest, _Dsize, _Source, s.size());
+//	wstring result = _Dest;
+//	delete[] _Dest;
+//	setlocale(LC_ALL, curlLocale.c_str());
+//	return result;
+//}
 //事件回调
 template <typename... Args>
 static bool EventCallBack(EventCode e, const char* format, Args... args) {
 	bool intercept = true;
-	Py_CALL_BEGIN;
+	Py_BEGIN_CALL;
 	for (PyObject* cb : g_callback_functions[e]) {
 		PyObject* result = PyObject_CallFunction(cb, format, args...);
 		PyErr_Print();
 		if (result == Py_False)
 			intercept = false;
 	}
-	Py_CALL_END;
+	Py_END_CALL;
 	return intercept;
 }
 #pragma endregion
@@ -145,9 +155,9 @@ HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVComm
 HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, uintptr_t size) {
 	if (&_this == &cout) {
-		wstring wstr = CharToWchar(str);
-		bool res = EventCallBack(EventCode::onConsoleOutput, "u#", wstr.c_str(), wstr.length());
-		if (!res)return _this;
+		if (EventCallBack(EventCode::onConsoleOutput, "s", str))
+			return original(_this, str, size);
+		return _this;
 	}
 	return original(_this, str, size);
 }
@@ -167,14 +177,14 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 		return 0;
 	}
 	if (debug) {
-		Py_CALL_BEGIN;
+		Py_BEGIN_CALL;
 		PyRun_SimpleString(cmd.c_str());
-		Py_CALL_END;
+		Py_END_CALL;
 		cout << '>';
 		return 0;
 	}
-	wstring wstr = CharToWchar(cmd);
-	if (EventCallBack(EventCode::onConsoleInput, "u#", wstr.c_str(), wstr.length()))
+	//wstring wstr = ToWstring(cmd);
+	if (EventCallBack(EventCode::onConsoleInput, "s", cmd.c_str()))
 		return original(_this, cmd);
 	else
 		return false;
@@ -435,10 +445,10 @@ HOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdenti
 		auto data = g_commands.find(cmd.c_str() + 1);
 		//如果有这条命令且回调函数不为nullptr
 		if (data != g_commands.end() && data->second.second) {
-			Py_CALL_BEGIN;
+			Py_BEGIN_CALL;
 			PyObject_CallFunction(data->second.second, "O", PyEntity_FromEntity(p));
 			PyErr_Print();
-			Py_CALL_END;
+			Py_END_CALL;
 			return;
 		}
 		bool res = EventCallBack(EventCode::onInputCommand,
@@ -473,14 +483,14 @@ HOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 	bool res = true;
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		auto bp = FETCH(BlockPos, pkt + 48);
-		auto mode = FETCH(unsigned short, pkt + 60);
-		auto condition = FETCH(bool, pkt + 62);
-		auto redstone = FETCH(bool, pkt + 63);
-		auto cmd = FETCH(string, pkt + 72);
-		auto output = FETCH(string, pkt + 104);
-		auto rawname = FETCH(string, pkt + 136);
-		auto delay = FETCH(int, pkt + 168);
+		BlockPos bp = FETCH(BlockPos, pkt + 48);
+		unsigned short mode = FETCH(unsigned short, pkt + 60);
+		bool condition = FETCH(bool, pkt + 62);
+		bool redstone = FETCH(bool, pkt + 63);
+		string cmd = FETCH(string, pkt + 72);
+		string output = FETCH(string, pkt + 104);
+		string rawname = FETCH(string, pkt + 136);
+		int delay = FETCH(int, pkt + 168);
 		res = EventCallBack(EventCode::onCommandBlockUpdate,
 			"{s:O,s:i,s:i,s:i,s:s,s:s,s:s,s:i,s:[i,i,i]}",
 			"player", PyEntity_FromEntity(p),
@@ -553,15 +563,11 @@ HOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 //计分板改变监听
 HOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboardId@@AEBVObjective@@@Z",
 	Scoreboard* _this, ScoreboardId* a1, Objective* a2) {
-	/*
-	原命令：
-	创建计分板时：/scoreboard objectives <add|remove> <objectivename> dummy <objectivedisplayname>
-	修改计分板时（此函数hook此处)：/scoreboard players <add|remove|set> <playersname> <objectivename> <playersnum>
-	*/
-	int scoreboardid = a1->id;
+	//创建计分板时：/scoreboard objectives <add|remove> <objectivename> dummy <objectivedisplayname>
+	//修改计分板时（此函数hook此处)：/scoreboard players <add|remove|set> <playersname> <objectivename> <playersnum>
 	EventCallBack(EventCode::onScoreChanged,
 		"{s:i,s:i,s:s,s:s}",
-		"scoreboardid", scoreboardid,
+		"scoreboardid", a1->id,
 		"playersnum", a2->getPlayerScore(a1)->getCount(),
 		"objectivename", a2->getScoreName().c_str(),
 		"objectivedisname", a2->getScoreDisplayName().c_str()
@@ -585,16 +591,14 @@ HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSour
 //使用重生锚
 HOOK(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPlayer@@AEBVBlockPos@@AEAVBlockSource@@AEAVLevel@@@Z",
 	Player* p, BlockPos* a2, BlockSource* a3, Level* a4) {
-	if (isPlayer(p)) {
-		if (!EventCallBack(EventCode::onUseRespawnAnchorBlock,
-			"{s:O,s:[i,i,i],s:i}",
-			"player", PyEntity_FromEntity(p),
-			"position", a2->x, a2->y, a2->z,
-			"dimensionid", a3->getDimensionId()
-		))
-			return false;
-	}
-	return original(p, a2, a3, a4);
+	if (EventCallBack(EventCode::onUseRespawnAnchorBlock,
+		"{s:O,s:[i,i,i],s:i}",
+		"player", PyEntity_FromEntity(p),
+		"position", a2->x, a2->y, a2->z,
+		"dimensionid", a3->getDimensionId()
+	))
+		return original(p, a2, a3, a4);
+	return false;
 }
 //活塞推
 HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBlockSource@@AEBVBlockPos@@EE@Z",
@@ -1032,32 +1036,43 @@ static PyObject* init() {
 
 void Init() {
 	using namespace filesystem;
-	cout << "[BDSpyrunner] " << VERSION_1
-		<< '.' << VERSION_2 << '.' << VERSION_3 << "a loaded." << endl;
+	//system("chcp 65001");
+	if (GetConsoleCP() != 65001)
+		SetConsoleCP(65001);
+	//输出版本号信息
+	cout << "[BDSpyrunner] "
+		<< VERSION_1 << '.'
+		<< VERSION_2 << '.'
+		<< VERSION_3 << "b loaded." << endl;
 	//如果目录不存在创建目录
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
+	//检测服务端版本
 	if (GetBDSVersion() != "1.17.11.01") {
-		cerr << "[BDSpyrunner] 服务端版本非最新版，继续使用可能出现未知问题" << endl;
 		cerr << "[BDSpyrunner] The server version is not the latest version, unknown problems may occur if you continue to use it" << endl;
+		exit(-1);
 	}
 	//将plugins/py加入模块搜索路径
 	Py_SetPath((wstring(PLUGIN_PATH) + L';' + Py_GetPath()).c_str());
 #if 0
-#pragma region 预初始化3.8+
+	//预初始化3.8+
 	PyPreConfig cfg;
 	PyPreConfig_InitPythonConfig(&cfg);
 	cfg.utf8_mode = 1;
 	cfg.configure_locale = 0;
 	Py_PreInitialize(&cfg);
-#pragma endregion
 #endif
 	//增加一个模块
 	PyImport_AppendInittab(MODULE_NAME, mc::init);
+	//https://docs.python.org/zh-cn/3.7/c-api/init.html?highlight=py_begin_allow_threads#c.Py_LegacyWindowsStdioFlag
+	//Py_LegacyWindowsStdioFlag = 1;
+	//cout << Py_UTF8Mode << endl;
+	//Py_UTF8Mode = 1;
 	//初始化解释器
 	Py_Initialize();
+	//初始化类型
 	if (PyType_Ready(&PyEntity_Type) < 0)
-		cerr << "Falid to prepare class 'Entity'" << endl;
+		Py_FatalError("Can't initialize entity type");
 	//启用线程支持
 	PyEval_InitThreads();
 	for (auto& info : directory_iterator(PLUGIN_PATH)) {
