@@ -18,7 +18,7 @@
 
 constexpr auto VERSION_1 = 1;
 constexpr auto VERSION_2 = 7;
-constexpr auto VERSION_3 = 4;
+constexpr auto VERSION_3 = 5;
 constexpr auto PLUGIN_PATH = L"plugins/py";
 constexpr auto MODULE_NAME = "mc";
 
@@ -1043,12 +1043,12 @@ void Init() {
 	cout << "[BDSpyrunner] "
 		<< VERSION_1 << '.'
 		<< VERSION_2 << '.'
-		<< VERSION_3 << "b loaded." << endl;
+		<< VERSION_3 << " loaded." << endl;
 	//如果目录不存在创建目录
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
 	//检测服务端版本
-	if (GetBDSVersion() != "1.17.11.01") {
+	if (!GetBDSVersion()._Starts_with("1.17.11.01")) {
 		cerr << "[BDSpyrunner] The server version is not the latest version, unknown problems may occur if you continue to use it" << endl;
 		exit(-1);
 	}

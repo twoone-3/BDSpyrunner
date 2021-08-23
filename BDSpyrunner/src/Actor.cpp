@@ -1,4 +1,4 @@
-#include <Actor.h>
+﻿#include <Actor.h>
 #include <NetWork.h>
 #include <Tag.h>
 #include <ItemStack.h>
@@ -11,7 +11,7 @@ string Actor::getNameTag() {
 
 //设置生物名称信息
 
-void Actor::setNameTag(const std::string&name) {
+void Actor::setNameTag(const string&name) {
 	VirtualCall(0x1F8, this, &name);
 }
 

@@ -136,7 +136,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)BDSpyrunner\Header File;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)BDSpyrunner\include%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
     <Link>
@@ -149,38 +149,38 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Source File\Actor.cpp" />
-    <ClCompile Include="Source File\Block.cpp" />
-    <ClCompile Include="Source File\ItemStack.cpp" />
-    <ClCompile Include="Source File\Level.cpp" />
-    <ClCompile Include="Source File\NetWork.cpp" />
-    <ClCompile Include="Source File\ScoreBoard.cpp" />
-    <ClCompile Include="Source File\Structure.cpp" />
-    <ClCompile Include="Source File\Tag.cpp" />
-    <ClCompile Include="Source File\mod.cpp" />
-    <ClCompile Include="Source File\PyEntity.cpp" />
-    <ClCompile Include="Source File\tool.cpp" />
+    <ClCompile Include="src\Actor.cpp" />
+    <ClCompile Include="src\Block.cpp" />
+    <ClCompile Include="src\ItemStack.cpp" />
+    <ClCompile Include="src\Level.cpp" />
+    <ClCompile Include="src\NetWork.cpp" />
+    <ClCompile Include="src\ScoreBoard.cpp" />
+    <ClCompile Include="src\Structure.cpp" />
+    <ClCompile Include="src\Tag.cpp" />
+    <ClCompile Include="src\mod.cpp" />
+    <ClCompile Include="src\PyEntity.cpp" />
+    <ClCompile Include="src\tool.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="Library File\chakra.lib" />
-    <Library Include="Library File\python37.lib" />
+    <Library Include="lib\chakra.lib" />
+    <Library Include="lib\python37.lib" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Header File\Actor.h" />
-    <ClInclude Include="Header File\Block.h" />
-    <ClInclude Include="Header File\ItemStack.h" />
-    <ClInclude Include="Header File\Level.h" />
-    <ClInclude Include="Header File\Position.h" />
-    <ClInclude Include="Header File\NetWork.h" />
-    <ClInclude Include="Header File\ScoreBoard.h" />
-    <ClInclude Include="Header File\span.h" />
-    <ClInclude Include="Header File\Structure.h" />
-    <ClInclude Include="Header File\Tag.h" />
-    <ClInclude Include="Header File\Event.h" />
-    <ClInclude Include="Header File\json.hpp" />
-    <ClInclude Include="Header File\PyEntity.h" />
-    <ClInclude Include="Header File\tool.h" />
-    <ClInclude Include="Header File\Command.h" />
+    <ClInclude Include="include\Actor.h" />
+    <ClInclude Include="include\Block.h" />
+    <ClInclude Include="include\ItemStack.h" />
+    <ClInclude Include="include\Level.h" />
+    <ClInclude Include="include\Position.h" />
+    <ClInclude Include="include\NetWork.h" />
+    <ClInclude Include="include\ScoreBoard.h" />
+    <ClInclude Include="include\span.h" />
+    <ClInclude Include="include\Structure.h" />
+    <ClInclude Include="include\Tag.h" />
+    <ClInclude Include="include\Event.h" />
+    <ClInclude Include="include\json.hpp" />
+    <ClInclude Include="include\PyEntity.h" />
+    <ClInclude Include="include\tool.h" />
+    <ClInclude Include="include\Command.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
