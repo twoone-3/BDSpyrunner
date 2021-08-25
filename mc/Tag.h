@@ -1,6 +1,5 @@
 #pragma once
-#include <memory>
-#include "json.hpp"
+#include "json_tool.h"
 
 enum class TagType : uint8_t {
 	End, Byte, Short, Int, Int64, Float, Double,

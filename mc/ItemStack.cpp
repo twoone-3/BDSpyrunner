@@ -1,6 +1,6 @@
-#include <ItemStack.h>
-#include <tool.h>
-#include <Tag.h>
+#include "ItemStack.h"
+#include "tool.h"
+#include "Tag.h"
 
 using namespace std;
 ItemStack::ItemStack() {

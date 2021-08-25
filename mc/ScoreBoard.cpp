@@ -1,5 +1,5 @@
-#include <ScoreBoard.h>
-#include <tool.h>
+#include "ScoreBoard.h"
+#include "tool.h"
 
 using namespace std;
 //获取计分板名称

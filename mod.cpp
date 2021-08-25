@@ -4,17 +4,17 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <filesystem>
-#include <tool.h>
-#include <PyEntity.h>
-#include <Actor.h>
-#include <Block.h>
-#include <ItemStack.h>
-#include <Level.h>
-#include <NetWork.h>
-#include <ScoreBoard.h>
-#include <Structure.h>
-#include <Tag.h>
-#include <Event.h>
+#include "mc/Actor.h"
+#include "mc/Block.h"
+#include "mc/ItemStack.h"
+#include "mc/Level.h"
+#include "mc/NetWork.h"
+#include "mc/ScoreBoard.h"
+#include "mc/Structure.h"
+#include "mc/Tag.h"
+#include "mc/tool.h"
+#include "mod/Entity.h"
+#include "mod/Event.h"
 
 constexpr auto VERSION_1 = 1;
 constexpr auto VERSION_2 = 7;
@@ -30,11 +30,6 @@ static unordered_map<EventCode, vector<PyObject*>> g_callback_functions;
 static unordered_map<string, pair<string, PyObject*>> g_commands;
 //伤害
 static int g_damage = 0;
-SPSCQueue* Global<SPSCQueue>::data = nullptr;
-RakPeer* Global<RakPeer>::data = nullptr;
-ServerNetworkHandler* Global<ServerNetworkHandler>::data = nullptr;
-Level* Global<Level>::data = nullptr;
-Scoreboard* Global<Scoreboard>::data = nullptr;
 #pragma endregion
 #pragma region Function Define
 //注入时事件
@@ -892,7 +887,7 @@ static PyObject* setBlock(PyObject*, PyObject* args) {
 		Block* b = *reinterpret_cast<Block**>(SYM((string("?m") + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()));
 		if (!b)
 			Py_RETURN_ERROR("Unknown Block");
-		bs->setBlock(b, &bp);
+		bs->setBlock(&bp, b);
 	}
 	Py_RETURN_NONE;
 }

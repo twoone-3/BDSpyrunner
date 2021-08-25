@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include "tool.h"
 #include "Position.h"
 #include "span.h"
 

@@ -21,19 +21,19 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{0a446010-5a87-4f55-8154-eda3911aa42d}</ProjectGuid>
+    <ProjectGuid>{c78e00da-f99b-4629-87a2-428314cef72a}</ProjectGuid>
     <RootNamespace>BDSpyrunner</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -81,8 +81,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\..\BDS\bdxcore_mod\</OutDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -90,7 +88,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -105,7 +102,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -126,66 +122,63 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>copy.bat</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
+      <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)BDSpyrunner\include%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>
-      </AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>copy.bat</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Actor.cpp" />
-    <ClCompile Include="src\Block.cpp" />
-    <ClCompile Include="src\ItemStack.cpp" />
-    <ClCompile Include="src\Level.cpp" />
-    <ClCompile Include="src\NetWork.cpp" />
-    <ClCompile Include="src\ScoreBoard.cpp" />
-    <ClCompile Include="src\Structure.cpp" />
-    <ClCompile Include="src\Tag.cpp" />
-    <ClCompile Include="src\mod.cpp" />
-    <ClCompile Include="src\PyEntity.cpp" />
-    <ClCompile Include="src\tool.cpp" />
+    <ClCompile Include="mc\Actor.cpp" />
+    <ClCompile Include="mc\Block.cpp" />
+    <ClCompile Include="mc\ItemStack.cpp" />
+    <ClCompile Include="mc\Level.cpp" />
+    <ClCompile Include="mc\NetWork.cpp" />
+    <ClCompile Include="mc\ScoreBoard.cpp" />
+    <ClCompile Include="mc\Structure.cpp" />
+    <ClCompile Include="mc\Tag.cpp" />
+    <ClCompile Include="mod.cpp" />
+    <ClCompile Include="mod\Entity.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="mod\Event.h" />
+    <ClInclude Include="mc\Actor.h" />
+    <ClInclude Include="mc\Block.h" />
+    <ClInclude Include="mc\Command.h" />
+    <ClInclude Include="mc\ItemStack.h" />
+    <ClInclude Include="mc\json.hpp" />
+    <ClInclude Include="mc\json_tool.h" />
+    <ClInclude Include="mc\Level.h" />
+    <ClInclude Include="mc\NetWork.h" />
+    <ClInclude Include="mc\Position.h" />
+    <ClInclude Include="mc\ScoreBoard.h" />
+    <ClInclude Include="mc\span.h" />
+    <ClInclude Include="mc\Structure.h" />
+    <ClInclude Include="mc\Tag.h" />
+    <ClInclude Include="mc\tool.h" />
+    <ClInclude Include="mod\Entity.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\chakra.lib" />
     <Library Include="lib\python37.lib" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\Actor.h" />
-    <ClInclude Include="include\Block.h" />
-    <ClInclude Include="include\ItemStack.h" />
-    <ClInclude Include="include\Level.h" />
-    <ClInclude Include="include\Position.h" />
-    <ClInclude Include="include\NetWork.h" />
-    <ClInclude Include="include\ScoreBoard.h" />
-    <ClInclude Include="include\span.h" />
-    <ClInclude Include="include\Structure.h" />
-    <ClInclude Include="include\Tag.h" />
-    <ClInclude Include="include\Event.h" />
-    <ClInclude Include="include\json.hpp" />
-    <ClInclude Include="include\PyEntity.h" />
-    <ClInclude Include="include\tool.h" />
-    <ClInclude Include="include\Command.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\README.md" />
-    <None Include="..\README_ZH.md" />
-    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

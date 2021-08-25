@@ -1,6 +1,9 @@
 #pragma once
 #pragma execution_character_set("utf-8")
+#pragma warning(disable:4996)
 #include <iostream>
+#include "Level.h"
+#include "NetWork.h"
 
 #define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
 #define SYM GetServerSymbol
@@ -33,19 +36,45 @@ ReturnType SymCall(const char* sym, Args... args) {
 	return reinterpret_cast<ReturnType(*)(Args...)>(found)(args...);
 }
 // replace the function
-void* SymHook(const char* sym, void* hook, void* org);
+inline void* SymHook(const char* sym, void* hook, void* org) {
+	void* found = SYM(sym);
+	if (!found)
+		std::cerr << "Failed to hook " << sym << std::endl;
+	HookFunction(found, org, hook);
+	return org;
+}
 //全局变量
 template <typename T>
 struct Global {
-	static T* data;
+	inline static T* data = nullptr;
 };
-//Global<SPSCQueue>::data = nullptr;
-//Global<RakPeer>::data = nullptr;
-//Global<ServerNetworkHandler>::data = nullptr;
-//Global<Level>::data = nullptr;
-//Global<>::data = nullptr;
+//SPSCQueue* Global<SPSCQueue>::data = nullptr;
+//RakPeer* Global<RakPeer>::data = nullptr;
+//ServerNetworkHandler* Global<ServerNetworkHandler>::data = nullptr;
+//Level* Global<Level>::data = nullptr;
+//Scoreboard* Global<Scoreboard>::data = nullptr;
 
-constexpr size_t Hash(const char* s);
+//字符串哈希
+inline constexpr size_t Hash(const char* s) {
+	unsigned h = 0;
+	for (; *s; ++s)
+		h = 5 * h + *s;
+	return static_cast<size_t>(h);
+}
+
 //创建包
-uintptr_t createPacket(int type);
-bool isPlayer(void*);
+inline uintptr_t createPacket(int type) {
+	uintptr_t pkt[2];
+	SymCall("?createPacket@MinecraftPackets@@SA?AV?$shared_ptr@VPacket@@@std@@W4MinecraftPacketIds@@@Z",
+		pkt, type);
+	return *pkt;
+}
+
+//是否为玩家
+inline bool isPlayer(void* ptr) {
+	for (auto p : Global<Level>::data->getAllPlayers()) {
+		if (ptr == p)
+			return true;
+	}
+	return false;
+}

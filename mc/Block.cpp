@@ -1,5 +1,5 @@
-#include <Block.h>
-#include <tool.h>
+#include "Block.h"
+#include "tool.h"
 
 using namespace std;
 string BlockLegacy::getBlockName() {
@@ -38,9 +38,11 @@ BlockActor* BlockSource::getBlockEntity(const BlockPos* bp) {
 		this, bp);
 }
 
-bool BlockSource::setBlock(Block* b, BlockPos* bp) {
-	return SymCall<bool>("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z",
-		this, bp, b, 3, nullptr);
+void BlockSource::setBlock(const BlockPos* bp, Block* b) {
+	SymCall<uintptr_t>("?setBlock@BlockSource@@QEAA_NHHHAEBVBlock@@H@Z",
+		this, bp->x, bp->y, bp->z, b);
+	//return SymCall<bool>("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z",
+	//	this, bp, b, 3, nullptr);
 }
 
 void BlockSource::neighborChanged(const BlockPos* pos) {

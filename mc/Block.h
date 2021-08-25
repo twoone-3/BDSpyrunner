@@ -16,7 +16,7 @@ struct BlockActor {
 struct BlockSource {
 	Block* getBlock(const BlockPos* bp);
 	BlockActor* getBlockEntity(const BlockPos* bp);
-	bool setBlock(Block* b, BlockPos* bp);
+	void setBlock(const BlockPos*, Block* b);
 	void neighborChanged(const BlockPos* pos);
 	void updateNeighborsAt(const BlockPos* pos);
 	int getDimensionId();

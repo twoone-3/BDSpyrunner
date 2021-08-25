@@ -1,10 +1,10 @@
-#include <PyEntity.h>
-#include <tool.h>
-#include <Actor.h>
-#include <Tag.h>
-#include <ItemStack.h>
-#include <NetWork.h>
-#include <ScoreBoard.h>
+#include "Entity.h"
+#include "../mc/tool.h"
+#include "../mc/Actor.h"
+#include "../mc/ItemStack.h"
+#include "../mc/NetWork.h"
+#include "../mc/ScoreBoard.h"
+#include "../mc/Tag.h"
 
 using namespace std;
 struct PyEntity {
@@ -286,7 +286,7 @@ PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		Json value(StringtoJson(x));
+		Json value(StringToJson(x));
 
 		if (value.contains("Inventory")) {
 			const vector<ItemStack*>& items = p->getInventory()->getSlots();
@@ -326,7 +326,7 @@ PyObject* PyEntity_SetHand(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		Json json(StringtoJson(x));
+		Json json(StringToJson(x));
 		p->getSelectedItem()->fromJson(json);
 		p->sendInventroy();
 	}
@@ -341,7 +341,7 @@ PyObject* PyEntity_AddItem(PyObject* self, PyObject* args) {
 		if (!p)
 			return nullptr;
 		ItemStack i;
-		i.fromJson(StringtoJson(x));
+		i.fromJson(StringToJson(x));
 		p->addItem(&i);
 		p->sendInventroy();
 	}
@@ -524,7 +524,7 @@ PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
 		if (!p)
 			return nullptr;
 		p->sendsetDisplayObjectivePacket(title);
-		Json value = StringtoJson(data);
+		Json value = StringToJson(data);
 		vector<ScorePacketInfo> info;
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {

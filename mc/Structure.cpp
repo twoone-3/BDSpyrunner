@@ -1,6 +1,6 @@
-#include <Structure.h>
-#include <Tag.h>
-#include <tool.h>
+#include "Structure.h"
+#include "tool.h"
+#include "Tag.h"
 
 using namespace std;
 StructureSettings::StructureSettings(BlockPos* size, bool IgnoreEntities, bool IgnoreBlocks) {
