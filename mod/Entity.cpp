@@ -116,11 +116,7 @@ PyObject* PyEntity_GetPos(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
-	Vec3* pos = a->getPos();
-	PyObject* x = PyFloat_FromDouble(pos->x);
-	PyObject* y = PyFloat_FromDouble(pos->y);
-	PyObject* z = PyFloat_FromDouble(pos->z);
-	return PyTuple_Pack(3, x, y, z);
+	return ToList(a->getPos());
 }
 
 //获取维度ID
@@ -619,15 +615,6 @@ PyObject* PyEntity_Kill(PyObject* self, PyObject*) {
 	Py_RETURN_NONE;
 }
 
-PyObject* PyEntity_FromEntity(Actor* ptr) {
-	PyObject* obj;
-	Py_BEGIN_CALL;
-	obj = PyEntity_Type.tp_alloc(&PyEntity_Type, 0);
-	Py_END_CALL;
-	reinterpret_cast<PyEntity*>(obj)->actor = ptr;
-	return obj;
-}
-
 //获取属性方法
 PyGetSetDef PyEntity_GetSet[]{
 	{"name", PyEntity_GetName, PyEntity_SetName, nullptr},
@@ -729,3 +716,12 @@ PyTypeObject PyEntity_Type{
 	0,						/* tp_version_tag */
 	nullptr,				/* tp_finalize */
 };
+
+PyObject* ToEntity(Actor* ptr) {
+	PyObject* obj;
+	Py_BEGIN_CALL;
+	obj = PyEntity_Type.tp_alloc(&PyEntity_Type, 0);
+	Py_END_CALL;
+	reinterpret_cast<struct PyEntity*>(obj)->actor = ptr;
+	return obj;
+}

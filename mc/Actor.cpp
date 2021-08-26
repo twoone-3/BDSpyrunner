@@ -6,6 +6,14 @@
 #include "ScoreBoard.h"
 
 using namespace std;
+//创建包
+inline uintptr_t createPacket(int type) {
+	uintptr_t pkt[2];
+	SymCall("?createPacket@MinecraftPackets@@SA?AV?$shared_ptr@VPacket@@@std@@W4MinecraftPacketIds@@@Z",
+		pkt, type);
+	return *pkt;
+}
+
 string Actor::getNameTag() {
 	return SymCall<string&>("?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ", this);
 }

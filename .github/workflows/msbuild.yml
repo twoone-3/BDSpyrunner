@@ -23,4 +23,4 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v0.1.12
         with:
-          files: ../BDS/bdxcore_mod/*
+          files: ./x64/Release/*

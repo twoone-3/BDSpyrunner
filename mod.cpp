@@ -18,7 +18,7 @@
 
 constexpr auto VERSION_1 = 1;
 constexpr auto VERSION_2 = 7;
-constexpr auto VERSION_3 = 5;
+constexpr auto VERSION_3 = 6;
 constexpr auto PLUGIN_PATH = L"plugins/py";
 constexpr auto MODULE_NAME = "mc";
 
@@ -34,29 +34,28 @@ static int g_damage = 0;
 #pragma region Function Define
 //注入时事件
 void Init();
-PyObject* ToPyUnicode(const string& str) {
-	return PyUnicode_FromStringAndSize(str.c_str(), str.length());
-}
-//字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库3.10.0版本
-Json StringtoJson(string_view str) {
-	try {
-		return Json::parse(str);
-	}
-	catch (const exception& e) {
-		cerr << e.what() << endl;
-		return nullptr;
-	}
-}
 //Dll入口函数
 BOOL WINAPI DllMain(HMODULE, DWORD, LPVOID) {
 	return TRUE;
 }
 //检查版本
-string GetBDSVersion() {
-	string version;
-	SymCall<string&>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
-		&version);
-	return version;
+static string GetBDSVersion() {
+	return SymCall<string>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
+}
+constexpr int IsSlimeChunk(unsigned x, unsigned z) {
+	unsigned mt0 = (x * 0x1F1F1F1F) ^ z;
+	unsigned mt1 = (1812433253u * (mt0 ^ (mt0 >> 30u)) + 1);
+	unsigned mt2 = mt1;
+	for (unsigned i = 2; i < 398; ++i)
+		mt2 = (1812433253u * (mt2 ^ (mt2 >> 30u)) + i);
+	unsigned k = (mt0 & 0x80000000u) + (mt1 & 0x7FFFFFFFU);
+	mt0 = mt2 ^ (k >> 1u);
+	if (k & 1) mt0 ^= 2567483615u;
+	mt0 ^= (mt0 >> 11u);
+	mt0 ^= (mt0 << 7u) & 0x9D2C5680u;
+	mt0 ^= (mt0 << 15u) & 0xEFC60000u;
+	mt0 ^= (mt0 >> 18u);
+	return !(mt0 % 10);
 }
 ////转宽字符
 //static wstring ToWstring(string_view s) {
@@ -189,14 +188,14 @@ HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifi
 	ServerNetworkHandler* _this, uintptr_t id,/*SetLocalPlayerAsInitializedPacket*/ uintptr_t pkt) {
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		EventCallBack(EventCode::onPlayerJoin, "O", PyEntity_FromEntity(p));
+		EventCallBack(EventCode::onPlayerJoin, "O", ToEntity(p));
 	}
 	original(_this, id, pkt);
 }
 //玩家退出
 HOOK(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
 	uintptr_t _this, Player* p, char v3) {
-	EventCallBack(EventCode::onPlayerLeft, "O", PyEntity_FromEntity(p));
+	EventCallBack(EventCode::onPlayerLeft, "O", ToEntity(p));
 	return original(_this, p, v3);
 }
 //使用物品
@@ -210,18 +209,17 @@ HOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@E
 	short bid = bl->getBlockItemID();
 	string bn = bl->getBlockName();
 	if (EventCallBack(EventCode::onUseItem,
-		"{s:O,s:i,s:i,s:s,s:s,s:i,s:[i,i,i]}",
-		"player", PyEntity_FromEntity(p),
+		"{s:O,s:i,s:i,s:s,s:s,s:i,s:O}",
+		"player", ToEntity(p),
 		"itemid", static_cast<int>(iid),
 		"itemaux", static_cast<int>(iaux),
 		"itemname", iname.c_str(),
 		"blockname", bn.c_str(),
 		"blockid", static_cast<int>(bid),
-		"position", bp->x, bp->y, bp->z
+		"position", ToList(bp)
 	))
 		return original(_this, item, bp, a4, a5, b);
-	else
-		return false;
+	return false;
 }
 //放置方块
 HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@EPEAVActor@@_N@Z",
@@ -231,11 +229,11 @@ HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 		short bid = bl->getBlockItemID();
 		string bn = bl->getBlockName();
 		if (!EventCallBack(EventCode::onPlaceBlock,
-			"{s:O,s:s,s:i,s:[i,i,i]}",
-			"player", PyEntity_FromEntity(p),
+			"{s:O,s:s,s:i,s:O}",
+			"player", ToEntity(p),
 			"blockname", bn.c_str(),
 			"blockid", bid,
-			"position", bp->x, bp->y, bp->z
+			"position", ToList(bp)
 		))
 			return false;
 	}
@@ -243,43 +241,29 @@ HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 }
 //破坏方块
 HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
-	BlockSource* _this, Actor* p, BlockPos* bp, ItemStack* a3, bool a4) {
-#if 0//测试获取结构
-	BlockPos size = { 5,5,5 };
-	StructureSettings ss(&size, 0, 0);
-	StructureTemplate st("tmp");
-	StructureTemplate st2("tmp2");
-	st.fillFromWorld(_this, bp, &ss);
-	json v(toJson(st.save()));
-	st2.fromJson(v);
-	json v2(toJson(st2.save()));
-	//print(v2);
-	bp->y++;
-	st2.placeInWorld(_this, Global<Level>::data->getBlockPalette(), bp, &ss);
-	//st.placeInWorld(_this, Global<Level>::data->getBlockPalette(), bp, &ss);
-#endif
-	if (isPlayer(p)) {
-		BlockLegacy* bl = _this->getBlock(bp)->getBlockLegacy();
+	BlockSource* _this, Actor* a1, BlockPos* a2, ItemStack* a3, bool a4) {
+	if (isPlayer(a1)) {
+		BlockLegacy* bl = _this->getBlock(a2)->getBlockLegacy();
 		short bid = bl->getBlockItemID();
 		string bn = bl->getBlockName();
 		if (!EventCallBack(EventCode::onDestroyBlock,
-			"{s:O,s:s,s:i,s:[i,i,i]}",
-			"player", PyEntity_FromEntity(p),
+			"{s:O,s:s,s:i,s:O}",
+			"player", ToEntity(a1),
 			"blockname", bn.c_str(),
 			"blockid", static_cast<int>(bid),
-			"position", bp->x, bp->y, bp->z
+			"position", ToList(a2)
 		))
 			return false;
 	}
-	return original(_this, p, bp, a3, a4);
+	return original(_this, a1, a2, a3, a4);
 }
 //开箱
 HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* p, BlockPos* bp) {
 	if (EventCallBack(EventCode::onOpenChest,
-		"{s:O,s:[i,i,i]}",
-		"player", PyEntity_FromEntity(p),
-		"position", bp->x, bp->y, bp->z
+		"{s:O,s:O}",
+		"player", ToEntity(p),
+		"position", ToList(bp)
 	))
 		return original(_this, p, bp);
 	return false;
@@ -288,9 +272,9 @@ HOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 HOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* p, BlockPos* bp) {
 	if (EventCallBack(EventCode::onOpenBarrel,
-		"{s:O,s:[i,i,i]}",
-		"player", PyEntity_FromEntity(p),
-		"position", bp->x, bp->y, bp->z
+		"{s:O,s:O}",
+		"player", ToEntity(p),
+		"position", ToList(bp)
 	))
 		return original(_this, p, bp);
 	return false;
@@ -300,9 +284,9 @@ HOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	uintptr_t _this, Player* p) {
 	auto bp = (BlockPos*)(_this - 204);
 	EventCallBack(EventCode::onCloseChest,
-		"{s:O,s:[i,i,i]}",
-		"player", PyEntity_FromEntity(p),
-		"position", bp->x, bp->y, bp->z
+		"{s:O,s:O}",
+		"player", ToEntity(p),
+		"position", ToList(bp)
 	);
 	original(_this, p);
 }
@@ -311,9 +295,9 @@ HOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	uintptr_t _this, Player* p) {
 	auto bp = (BlockPos*)(_this - 204);
 	EventCallBack(EventCode::onCloseBarrel,
-		"{s:O,s:[i,i,i]}",
-		"player", PyEntity_FromEntity(p),
-		"position", bp->x, bp->y, bp->z
+		"{s:O,s:O}",
+		"player", ToEntity(p),
+		"position", ToList(bp)
 	);
 	original(_this, p);
 }
@@ -330,11 +314,11 @@ HOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEA
 		if (v5) {
 			ItemStack* i = (*reinterpret_cast<ItemStack * (**)(uintptr_t, uintptr_t)>(FETCH(uintptr_t, v5) + 40))(v5, slot);
 			EventCallBack(EventCode::onContainerChange,
-				"{s:O,s:s,s:i,s:[i,i,i],s:i,s:i,s:s,s:i,s:i}",
-				"player", PyEntity_FromEntity(p),
+				"{s:O,s:s,s:i,s:O,s:i,s:i,s:s,s:i,s:i}",
+				"player", ToEntity(p),
 				"blockname", bl->getBlockName().c_str(),
 				"blockid", bid,
-				"position", bp->x, bp->y, bp->z,
+				"position", ToList(bp),
 				"itemid", i->getId(),
 				"itemcount", i->getCount(),
 				"itemname", i->getName().c_str(),
@@ -354,8 +338,8 @@ HOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z
 	//}
 	if (EventCallBack(EventCode::onPlayerAttack,
 		"{s:O,s:O}",
-		"player", PyEntity_FromEntity(p),
-		"actor", PyEntity_FromEntity(a)
+		"player", ToEntity(p),
+		"actor", ToEntity(a)
 	))
 		return original(p, a, c);
 	return false;
@@ -365,7 +349,7 @@ HOOK(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@
 	uintptr_t _this, Player* p, uintptr_t req) {
 	bool result = original(_this, p, req);
 	if (result) {
-		EventCallBack(EventCode::onChangeDimension, "O", PyEntity_FromEntity(p));
+		EventCallBack(EventCode::onChangeDimension, "O", ToEntity(p));
 	}
 	return result;
 }
@@ -377,8 +361,8 @@ HOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	bool res = EventCallBack(EventCode::onMobDie,
 		"{s:I,s:O,s:O}",
 		"dmcase", FETCH(unsigned, dmsg + 8),
-		"actor1", PyEntity_FromEntity(_this),
-		"actor2", PyEntity_FromEntity(sa)//可能为0
+		"actor1", ToEntity(_this),
+		"actor2", ToEntity(sa)//可能为0
 	);
 	if (res) original(_this, dmsg);
 }
@@ -391,8 +375,8 @@ HOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 	if (EventCallBack(EventCode::onMobHurt,
 		"{s:i,s:O,s:O,s:i}",
 		"dmcase", FETCH(unsigned, dmsg + 8),
-		"actor1", PyEntity_FromEntity(_this),
-		"actor2", PyEntity_FromEntity(sa),//可能为0
+		"actor1", ToEntity(_this),
+		"actor2", ToEntity(sa),//可能为0
 		"damage", a3
 	))
 		return original(_this, dmsg, g_damage, a4, a5);
@@ -401,7 +385,7 @@ HOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 //玩家重生
 HOOK(onRespawn, void, "?respawn@Player@@UEAAXXZ",
 	Player* p) {
-	EventCallBack(EventCode::onRespawn, "O", PyEntity_FromEntity(p));
+	EventCallBack(EventCode::onRespawn, "O", ToEntity(p));
 	original(p);
 }
 //聊天，消息title msg w等...
@@ -425,7 +409,7 @@ HOOK(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifie
 		const string& msg = FETCH(string, pkt + 88);
 		res = EventCallBack(EventCode::onInputText,
 			"{s:O,s:s}",
-			"player", PyEntity_FromEntity(p),
+			"player", ToEntity(p),
 			"msg", msg.c_str()
 		);
 	}
@@ -441,14 +425,14 @@ HOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdenti
 		//如果有这条命令且回调函数不为nullptr
 		if (data != g_commands.end() && data->second.second) {
 			Py_BEGIN_CALL;
-			PyObject_CallFunction(data->second.second, "O", PyEntity_FromEntity(p));
+			PyObject_CallFunction(data->second.second, "O", ToEntity(p));
 			PyErr_Print();
 			Py_END_CALL;
 			return;
 		}
 		bool res = EventCallBack(EventCode::onInputCommand,
 			"{s:O,s:s}",
-			"player", PyEntity_FromEntity(p),
+			"player", ToEntity(p),
 			"cmd", cmd.c_str()
 		);
 		if (res)original(_this, id, pkt);
@@ -465,7 +449,7 @@ HOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormRe
 		if (data.back() == '\n')data.pop_back();
 		EventCallBack(EventCode::onSelectForm,
 			"{s:O,s:s,s:I}",
-			"player", PyEntity_FromEntity(p),
+			"player", ToEntity(p),
 			"selected", data.c_str(),
 			"formid", fid
 		);
@@ -487,8 +471,8 @@ HOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 		string rawname = FETCH(string, pkt + 136);
 		int delay = FETCH(int, pkt + 168);
 		res = EventCallBack(EventCode::onCommandBlockUpdate,
-			"{s:O,s:i,s:i,s:i,s:s,s:s,s:s,s:i,s:[i,i,i]}",
-			"player", PyEntity_FromEntity(p),
+			"{s:O,s:i,s:i,s:i,s:s,s:s,s:s,s:i,s:O}",
+			"player", ToEntity(p),
 			"mode", mode,
 			"condition", condition,
 			"redstone", redstone,
@@ -496,7 +480,7 @@ HOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwork
 			"output", output.c_str(),
 			"rawname", rawname.c_str(),
 			"delay", delay,
-			"position", bp.x, bp.y, bp.z
+			"position", ToList(&bp)
 		);
 	}
 	if (res)original(_this, id, pkt);
@@ -506,7 +490,7 @@ HOOK(onLevelExplode, bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEB
 	Level* _this, BlockSource* bs, Actor* a3, Vec3 pos, float a5, bool a6, bool a7, float a8, bool a9) {
 	if (EventCallBack(EventCode::onLevelExplode,
 		"{s:O,s:[f,f,f],s:i,s:f}",
-		"actor", PyEntity_FromEntity(a3),
+		"actor", ToEntity(a3),
 		"position", pos.x, pos.y, pos.z,
 		"dimensionid", bs->getDimensionId(),
 		"power", a5
@@ -524,12 +508,12 @@ HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@
 	string cmd = FETCH(string, a3 + 264);
 	string rawname = FETCH(string, a3 + 296);
 	if (EventCallBack(EventCode::onCommandBlockPerform,
-		"{s:i,s:b,s:s,s:s,s:[i,i,i]}",
+		"{s:i,s:b,s:s,s:s,s:O}",
 		"mode", mode,
 		"condition", condition,
 		"cmd", cmd.c_str(),
 		"rawname", rawname.c_str(),
-		"position", bp->x, bp->y, bp->z
+		"position", ToList(bp)
 	))
 		return original(_this, a2, a3, bp, a5);
 	return false;
@@ -537,7 +521,7 @@ HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@
 //玩家移动
 HOOK(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
-	EventCallBack(EventCode::onMove, "O", PyEntity_FromEntity(p));
+	EventCallBack(EventCode::onMove, "O", ToEntity(p));
 	original(_this, p, a3, a4, a5);
 }
 //玩家穿戴
@@ -545,7 +529,7 @@ HOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 	Player* p, unsigned slot, ItemStack* i) {
 	if (!EventCallBack(EventCode::onSetArmor,
 		"{s:O,s:i,s:i,s:s,s:i,s:i}",
-		"player", PyEntity_FromEntity(p),
+		"player", ToEntity(p),
 		"itemid", i->getId(),
 		"itemcount", i->getCount(),
 		"itemname", i->getName().c_str(),
@@ -574,9 +558,9 @@ HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSour
 	uintptr_t _this, BlockSource* a1, BlockPos* a2, Actor* p, uintptr_t a4) {
 	if (isPlayer(p)) {
 		if (!EventCallBack(EventCode::onFallBlockTransform,
-			"{s:O,s:[i,i,i],s:i}",
-			"player", PyEntity_FromEntity(p),
-			"position", a2->x, a2->y, a2->z,
+			"{s:O,s:O,s:i}",
+			"player", ToEntity(p),
+			"position", ToList(a2),
 			"dimensionid", a1->getDimensionId()
 		))
 			return;
@@ -587,9 +571,9 @@ HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSour
 HOOK(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPlayer@@AEBVBlockPos@@AEAVBlockSource@@AEAVLevel@@@Z",
 	Player* p, BlockPos* a2, BlockSource* a3, Level* a4) {
 	if (EventCallBack(EventCode::onUseRespawnAnchorBlock,
-		"{s:O,s:[i,i,i],s:i}",
-		"player", PyEntity_FromEntity(p),
-		"position", a2->x, a2->y, a2->z,
+		"{s:O,s:O,s:i}",
+		"player", ToEntity(p),
+		"position", ToList(a2),
 		"dimensionid", a3->getDimensionId()
 	))
 		return original(p, a2, a3, a4);
@@ -603,11 +587,11 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 	short bid = blg->getBlockItemID();
 	BlockPos* bp2 = _this->getPosition();
 	if (EventCallBack(EventCode::onPistonPush,
-		"{s:s,s:i,s:[i,i,i],s:[i,i,i],s:i}",
+		"{s:s,s:i,s:O,s:O,s:i}",
 		"blockname", bn.c_str(),
 		"blockid", bid,
-		"blockpos", bp->x, bp->y, bp->z,
-		"pistonpos", bp2->x, bp2->y, bp2->z,
+		"blockpos", ToList(bp),
+		"pistonpos", ToList(bp2),
 		"dimensionid", bs->getDimensionId()
 	))
 		return original(_this, bs, bp, a3, a4);
@@ -616,14 +600,14 @@ HOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBloc
 //末影人随机传送（没人会用吧？）
 HOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NAEAVActor@@@Z",
 	uintptr_t _this, Actor* a1) {
-	if (EventCallBack(EventCode::onEndermanRandomTeleport, "O", PyEntity_FromEntity(a1)))
+	if (EventCallBack(EventCode::onEndermanRandomTeleport, "O", ToEntity(a1)))
 		return original(_this, a1);
 	return false;
 }
 //服务器开完
 HOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
 	uintptr_t _this) {
-	EventCallBack(EventCode::onServerStarted, nullptr);
+	//EventCallBack(EventCode::onServerStarted, nullptr);
 	original(_this);
 }
 //丢物品
@@ -631,7 +615,7 @@ HOOK(onDropItem, bool, "?drop@Player@@UEAA_NAEBVItemStack@@_N@Z",
 	Player* _this, ItemStack* a2, bool a3) {
 	if (EventCallBack(EventCode::onDropItem,
 		"{s:O,s:i,s:i,s:s,s:i}",
-		"player", PyEntity_FromEntity(_this),
+		"player", ToEntity(_this),
 		"itemid", a2->getId(),
 		"itemcount", a2->getCount(),
 		"itemname", a2->getName().c_str(),
@@ -645,8 +629,8 @@ HOOK(onTakeItem, bool, "?take@Player@@QEAA_NAEAVActor@@HH@Z",
 	Player* _this, Actor* actor, int a2, int a3) {
 	if (EventCallBack(EventCode::onTakeItem,
 		"{s:O,s:O}",
-		"player", PyEntity_FromEntity(_this),
-		"actor", PyEntity_FromEntity(actor)
+		"player", ToEntity(_this),
+		"actor", ToEntity(actor)
 	))
 		return original(_this, actor, a2, a3);
 	return false;
@@ -656,8 +640,8 @@ HOOK(onRide, bool, "?canAddRider@Actor@@UEBA_NAEAV1@@Z",
 	Actor* a1, Actor* a2) {
 	if (EventCallBack(EventCode::onRide,
 		"{s:O,s:O}",
-		"actor1", PyEntity_FromEntity(a1),
-		"actor2", PyEntity_FromEntity(a2)
+		"actor1", ToEntity(a1),
+		"actor2", ToEntity(a2)
 	))
 		return original(a1, a2);
 	return false;
@@ -666,9 +650,9 @@ HOOK(onRide, bool, "?canAddRider@Actor@@UEBA_NAEAV1@@Z",
 HOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* a2, BlockPos* a3) {
 	if (EventCallBack(EventCode::onUseFrameBlock,
-		"{s:O,s:[i,i,i],s:i}",
-		"player", PyEntity_FromEntity(a2),
-		"blockpos", a3->x, a3->y, a3->z,
+		"{s:O,s:O,s:i}",
+		"player", ToEntity(a2),
+		"blockpos", ToList(a3),
 		"dimensionid", a2->getDimensionId()
 	))
 		return original(_this, a2, a3);
@@ -678,9 +662,9 @@ HOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos
 HOOK(onUseFrameBlocka, bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBlockPos@@@Z",
 	uintptr_t _this, Player* a2, BlockPos* a3) {
 	if (EventCallBack(EventCode::onUseFrameBlock,
-		"{s:O,s:[i,i,i],s:i}",
-		"player", PyEntity_FromEntity(a2),
-		"blockpos", a3->x, a3->y, a3->z,
+		"{s:O,s:O,s:i}",
+		"player", ToEntity(a2),
+		"blockpos", ToList(a3),
 		"dimensionid", a2->getDimensionId()
 	))
 		return original(_this, a2, a3);
@@ -689,13 +673,13 @@ HOOK(onUseFrameBlocka, bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBloc
 //玩家跳跃
 HOOK(onJump, void, "?jumpFromGround@Player@@UEAAXXZ",
 	Player* _this) {
-	if (EventCallBack(EventCode::onJump, "O", PyEntity_FromEntity(_this)))
+	if (EventCallBack(EventCode::onJump, "O", ToEntity(_this)))
 		return original(_this);
 }
 //玩家潜行
 HOOK(onSneak, void, "?sendActorSneakChanged@ActorEventCoordinator@@QEAAXAEAVActor@@_N@Z",
 	uintptr_t _this, Actor* a1, bool a2) {
-	if (EventCallBack(EventCode::onSneak, "O", PyEntity_FromEntity(a1)))
+	if (EventCallBack(EventCode::onSneak, "O", ToEntity(a1)))
 		return original(_this, a1, a2);
 }
 //火势蔓延（未测试）
@@ -703,8 +687,8 @@ HOOK(onFireSpread, bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@A
 	uintptr_t _this, BlockSource* bs, BlockPos* bp) {
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
 	if (EventCallBack(EventCode::onFireSpread,
-		"{s:[i,i,i],s:s,s:i,s:i}",
-		"blockpos", bp->x, bp->y, bp->z,
+		"{s:O,s:s,s:i,s:i}",
+		"blockpos", ToList(bp),
 		"blockname", bl->getBlockName().c_str(),
 		"blockid", bl->getBlockItemID(),
 		"dimensionid", bs->getDimensionId()
@@ -718,9 +702,9 @@ HOOK(onBlockInteracted, void, "?onBlockInteractedWith@VanillaServerGameplayEvent
 	BlockSource* bs = Global<Level>::data->getBlockSource(pl->getDimensionId());
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
 	if (EventCallBack(EventCode::onBlockInteracted,
-		"{s:O,s:[i,i,i],s:s,s:i,s:i}",
-		"player", PyEntity_FromEntity(pl),
-		"blockpos", bp->x, bp->y, bp->z,
+		"{s:O,s:O,s:s,s:i,s:i}",
+		"player", ToEntity(pl),
+		"blockpos", ToList(bp),
 		"blockname", bl->getBlockName().c_str(),
 		"blockid", bl->getBlockItemID(),
 		"dimensionid", bs->getDimensionId()
@@ -732,9 +716,9 @@ HOOK(onBlockExploded, void, "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockP
 	Block* _this, BlockSource* bs, BlockPos* bp, Actor* actor) {
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
 	if (EventCallBack(EventCode::onBlockExploded,
-		"{s:O,s:[i,i,i],s:s,s:i,s:i}",
-		"actor", PyEntity_FromEntity(actor),
-		"blockpos", bp->x, bp->y, bp->z,
+		"{s:O,s:O,s:s,s:i,s:i}",
+		"actor", ToEntity(actor),
+		"blockpos", ToList(bp),
 		"blockname", bl->getBlockName().c_str(),
 		"blockid", bl->getBlockItemID(),
 		"dimensionid", bs->getDimensionId()
@@ -751,10 +735,10 @@ HOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@
 	SymCall<string&>("?getImmersiveReaderText@SignBlockActor@@UEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAVBlockSource@@@Z",
 		ba, &text, bs);
 	if (EventCallBack(EventCode::onUseSignBlock,
-		"{s:O,s:s,s:[i,i,i]}",
-		"player", PyEntity_FromEntity(a1),
+		"{s:O,s:s,s:O}",
+		"player", ToEntity(a1),
 		"text", text.c_str(),
-		"pos", a2->x, a2->y, a2->z
+		"position", ToList(a2)
 	))
 		return original(_this, a1, a2);
 	return 0;
@@ -830,7 +814,7 @@ static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 		Player* p = Global<Level>::data->getPlayerByXuid(xuid);
 		if (!p)
 			Py_RETURN_ERROR("Failed to find player");
-		return PyEntity_FromEntity(p);
+		return ToEntity(p);
 	}
 	Py_RETURN_NONE;
 }
@@ -839,7 +823,7 @@ static PyObject* getPlayerList(PyObject*, PyObject*) {
 	if (!Global<Level>::data)
 		Py_RETURN_ERROR("Level is not set");
 	for (Player* p : Global<Level>::data->getAllPlayers()) {
-		PyList_Append(list, PyEntity_FromEntity(p));
+		PyList_Append(list, ToEntity(p));
 	}
 	return list;
 }
@@ -930,7 +914,7 @@ static PyObject* setStructure(PyObject*, PyObject* args) {
 		BlockSource* bs = Global<Level>::data->getBlockSource(did);
 		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
-		Json value = StringtoJson(data);
+		Json value = StringToJson(data);
 		Json& arr = value["size9"];
 		if (!arr.is_array())
 			Py_RETURN_ERROR("Invalid json string");
@@ -980,9 +964,20 @@ static PyObject* spawnItem(PyObject*, PyObject* args) {
 		BlockSource* bs = Global<Level>::data->getBlockSource(did);
 		if (!bs)
 			Py_RETURN_ERROR("Unknown dimension ID");
-		ItemStack item(StringtoJson(data));
+		ItemStack item(StringToJson(data));
 		Global<Level>::data->getSpawner()->spawnItem(bs, &item, &pos);
 		cout << pos.toString() << endl;
+	}
+	Py_RETURN_NONE;
+}
+//是否为史莱姆区块
+static PyObject* isSlimeChunk(PyObject*, PyObject* args) {
+	unsigned x, z;
+	if (PyArg_ParseTuple(args, "II:isSlimeChunl", &x, &z)) {
+		if (IsSlimeChunk(x, z))
+			Py_RETURN_TRUE;
+		else
+			Py_RETURN_FALSE;
 	}
 	Py_RETURN_NONE;
 }
@@ -1004,6 +999,7 @@ static PyMethodDef Methods[]{
 	{"setStructure", setStructure, METH_VARARGS, nullptr},
 	{"explode", explode, METH_VARARGS, nullptr},
 	{"spawnItem", spawnItem, METH_VARARGS, nullptr},
+	{"isSlimeChunk", isSlimeChunk, METH_VARARGS, nullptr},
 	{nullptr}
 };
 //模块定义
@@ -1018,17 +1014,14 @@ static PyModuleDef Module{
 	nullptr,
 	nullptr
 };
-
 //模块初始化
 static PyObject* init() {
 	PyObject* module = PyModule_Create(&Module);
 	PyModule_AddObject(module, "Entity", reinterpret_cast<PyObject*>(&PyEntity_Type));
 	return module;
 }
-
 }
 #pragma endregion
-
 void Init() {
 	using namespace filesystem;
 	//system("chcp 65001");
