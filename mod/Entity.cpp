@@ -27,7 +27,7 @@ struct PyEntity {
 		Actor* a = asActor(self);
 		if (!a)
 			return -1;
-		fprintf(file, "%s", a->getNameTag().c_str());
+		fputs(a->getNameTag().c_str(), file);
 		return 0;
 	}
 	static PyObject* repr(PyObject* self) {

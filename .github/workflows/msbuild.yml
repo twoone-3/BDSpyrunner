@@ -23,4 +23,7 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v0.1.12
         with:
-          files: ./x64/Release/*
+          files: |
+            ./x64/Release/BDSpyrunner.dll
+            ./x64/Release/BDSpyrunner.pdb
+            ./BDSpyrunner.bat

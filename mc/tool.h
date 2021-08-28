@@ -1,6 +1,7 @@
 #pragma once
 #pragma execution_character_set("utf-8")
 #pragma warning(disable:4996)
+#pragma comment(lib,"lib/chakra.lib")
 #include <iostream>
 #include "Level.h"
 #include "NetWork.h"
@@ -18,9 +19,9 @@ ret name::_hook(__VA_ARGS__)
 
 extern "C" {
 	// provide Detours API
-	_declspec(dllimport) int HookFunction(void*, void*, void*);
+	_declspec(dllimport) int HookFunction(void* orifunc, void* orifuncptr, void* newfunc);
 	// get address from symbol string
-	_declspec(dllimport) void* GetServerSymbol(const char*);
+	_declspec(dllimport) void* GetServerSymbol(const char* symbol);
 }
 // call a virtual function
 // _this: this ptr, off: offsetof function
@@ -49,6 +50,11 @@ template <typename T>
 struct Global {
 	inline static T* data = nullptr;
 };
+
+//获取服务端版本
+inline std::string GetBDSVersion() {
+	return SymCall<std::string>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
+}
 
 //字符串哈希
 inline constexpr size_t Hash(const char* s) {

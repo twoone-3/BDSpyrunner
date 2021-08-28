@@ -12,6 +12,7 @@ struct Block {
 struct BlockActor {
 	Block* getBlock();
 	BlockPos* getPosition();
+	void setChanged();
 };
 struct BlockSource {
 	Block* getBlock(const BlockPos* bp);
