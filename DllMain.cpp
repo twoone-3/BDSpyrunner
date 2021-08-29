@@ -23,8 +23,9 @@
 #include <WinInet.h>
 #pragma comment(lib,"WinInet.lib")
 
-#define PLUGIN_PATH "plugins/py/"
-#define CACHE_PATH "plugins/py/cache/"
+#define PLUGINS_PATH "plugins/"
+#define PY_PLUGIN_PATH "plugins/py/"
+#define CACHE_PATH "plugins/cache/"
 
 constexpr size_t BLOCK_SIZE = 0x1000;
 constexpr const wchar_t* USER_AGENT = L"Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko";
@@ -812,17 +813,19 @@ HOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@
 
 void Init() {
 	//如果目录不存在创建目录
-	if (!exists(PLUGIN_PATH))
-		create_directories(PLUGIN_PATH);
+	if (!exists(PLUGINS_PATH))
+		create_directory(PLUGINS_PATH);
+	if (!exists(PY_PLUGIN_PATH))
+		create_directory(PY_PLUGIN_PATH);
 	if (!exists(CACHE_PATH))
-		create_directories(CACHE_PATH);
+		create_directory(CACHE_PATH);
 	//检测服务端版本
 	if (!GetBDSVersion()._Starts_with("1.17.11.01")) {
 		cerr << "[BDSpyrunner] The server version isn't the latest version, unknown problems may occur if you continue to use it" << endl;
 		exit(-1);
 	}
 	//将plugins/py加入模块搜索路径
-	Py_SetPath((wstring(PLUGIN_PATH L";") + Py_GetPath()).c_str());
+	Py_SetPath((wstring(PY_PLUGIN_PATH L";") + Py_GetPath()).c_str());
 #if 0
 	//预初始化3.8+
 	PyPreConfig cfg;
@@ -844,7 +847,7 @@ void Init() {
 		Py_FatalError("Can't initialize entity type");
 	//启用线程支持
 	PyEval_InitThreads();
-	for (auto& info : directory_iterator(PLUGIN_PATH)) {
+	for (auto& info : directory_iterator(PY_PLUGIN_PATH)) {
 		//whether the file is py
 		if (info.path().extension() == ".py") {
 			const string& name = info.path().stem().u8string();
@@ -859,6 +862,5 @@ void Init() {
 	//释放当前线程
 	PyEval_SaveThread();
 	//输出版本号信息
-	cout << "[BDSpyrunner] " << VERSION_STRING
-		<< " loaded, © 2021 twoone3." << endl;
+	cout << "[BDSpyrunner] " << VERSION_STRING << " loaded, © 2021 twoone3." << endl;
 }

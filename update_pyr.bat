@@ -1,5 +1,5 @@
 @echo off
-timeout /t 1 /nobreak
-copy plugins\\py\\cache\\BDSpyrunner.dll plugins\\BDSpyrunner.dll
-copy plugins\\py\\cache\\BDSpyrunner.pdb plugins\\BDSpyrunner.pdb
+timeout /t 1
+copy plugins\\cache\\BDSpyrunner.dll plugins\\BDSpyrunner.dll
+copy plugins\\cache\\BDSpyrunner.pdb plugins\\BDSpyrunner.pdb
 exit
