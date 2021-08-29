@@ -24,7 +24,10 @@
 #pragma comment(lib,"WinInet.lib")
 
 #define PLUGIN_PATH "plugins/py/"
-#define DOWNLOAD_PATH "plugins/py/cache/"
+#define CACHE_PATH "plugins/py/cache/"
+
+constexpr size_t BLOCK_SIZE = 0x1000;
+constexpr const wchar_t* USER_AGENT = L"Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko";
 
 using namespace std;
 using namespace filesystem;
@@ -36,6 +39,7 @@ void Init();
 BOOL WINAPI DllMain(HMODULE, DWORD, LPVOID) {
 	return TRUE;
 }
+//GBK转UTF8
 static string GbkToUtf8(const char* src_str) {
 	int len = MultiByteToWideChar(CP_ACP, 0, src_str, -1, NULL, 0);
 	wchar_t* wstr = new wchar_t[len + 1];
@@ -50,6 +54,7 @@ static string GbkToUtf8(const char* src_str) {
 	if (str) delete[] str;
 	return strTemp;
 }
+//UTF8转GBK
 static string Utf8ToGbk(const char* src_str) {
 	int len = MultiByteToWideChar(CP_UTF8, 0, src_str, -1, NULL, 0);
 	wchar_t* wszGBK = new wchar_t[len + 1];
@@ -82,10 +87,10 @@ static wstring ToWstring(string_view s) {
 //访问url
 static Json AccessUrlForJson(const wchar_t* url) {
 	string data;
-	constexpr size_t BLOCKSIZE = 1024;
-	char buffer[BLOCKSIZE + 1];
+	//非空终止
+	char buffer[BLOCK_SIZE];
 
-	HINTERNET hSession = InternetOpen(L"RookIE/1.0", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+	HINTERNET hSession = InternetOpen(USER_AGENT, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (!hSession)
 		return nullptr;
 	HINTERNET handle2 = InternetOpenUrl(hSession, url, NULL, 0, INTERNET_FLAG_DONT_CACHE, 0);
@@ -93,7 +98,7 @@ static Json AccessUrlForJson(const wchar_t* url) {
 		return nullptr;
 	DWORD size = 0;
 	do {
-		InternetReadFile(handle2, buffer, BLOCKSIZE, &size);
+		InternetReadFile(handle2, buffer, BLOCK_SIZE, &size);
 		data.append(buffer, size);
 	} while (size);
 	InternetCloseHandle(handle2);
@@ -102,10 +107,10 @@ static Json AccessUrlForJson(const wchar_t* url) {
 }
 //访问url
 static void AccessUrlForFile(const wchar_t* url, string_view filename) {
-	constexpr size_t BLOCKSIZE = 0x1000;
-	char buffer[BLOCKSIZE + 1];
+	//非空终止
+	char buffer[BLOCK_SIZE];
 
-	HINTERNET hSession = InternetOpen(L"RookIE/1.0", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+	HINTERNET hSession = InternetOpen(USER_AGENT, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if (!hSession)
 		return;
 	HINTERNET handle2 = InternetOpenUrl(hSession, url, NULL, 0, INTERNET_FLAG_DONT_CACHE, 0);
@@ -117,37 +122,30 @@ static void AccessUrlForFile(const wchar_t* url, string_view filename) {
 	do {
 		total += size;
 		cout << "Downloading " << filename << "... " << total << "bytes\r";
-		InternetReadFile(handle2, buffer, BLOCKSIZE, &size);
+		InternetReadFile(handle2, buffer, BLOCK_SIZE, &size);
 		file.write(buffer, size);
 	} while (size);
 	InternetCloseHandle(handle2);
 	InternetCloseHandle(hSession);
 }
-//替换自己
-static void ReplaceSelf() {
-	system("start plugins\\BDSpyrunner.bat");
-	exit(0);
-}
 //检查版本
 static void CheckPluginVersion() {
-	if (!exists(DOWNLOAD_PATH))
-		create_directories(DOWNLOAD_PATH);
-	else
-		ReplaceSelf();
-	cout << "Checking plugin version..." << endl;
+	cout << "[BDSpyrunner] Checking plugin version..." << endl;
 	Json info = AccessUrlForJson(L"https://api.github.com/repos/twoone-3/BDSpyrunner/releases/latest");
 	if (info["tag_name"] == VERSION_STRING) {
-		cout << "Your plugin version is latest." << endl;
+		cout << "[BDSpyrunner] Your plugin version is latest." << endl;
 		return;
 	}
-	cout << "Your plugin version isn't latest, auto downloading..." << endl;
+	cout << "[BDSpyrunner] Your plugin version isn't latest, auto downloading..." << endl;
 	for (auto& asset : info["assets"]) {
 		string download_url = asset["browser_download_url"];
 		download_url.replace(8, 10, "hub.fastgit.org");
-		AccessUrlForFile(ToWstring(download_url).c_str(), DOWNLOAD_PATH + string(asset["name"]));
+		AccessUrlForFile(ToWstring(download_url).c_str(), CACHE_PATH + string(asset["name"]));
 		cout << asset["name"] << " was downloaded successfully, size: " << asset["size"] << endl;
 	}
-	cout << "The new version has been downloaded to plugins/download, please restart the server to replace it" << endl;
+	cout << "[BDSpyrunner] The new version has been downloaded to plugins/download, please restart the server to replace it" << endl;
+	system("start /min plugins\\update_pyr.bat");
+	exit(0);
 }
 //事件回调
 template <typename... Args>
@@ -816,6 +814,8 @@ void Init() {
 	//如果目录不存在创建目录
 	if (!exists(PLUGIN_PATH))
 		create_directories(PLUGIN_PATH);
+	if (!exists(CACHE_PATH))
+		create_directories(CACHE_PATH);
 	//检测服务端版本
 	if (!GetBDSVersion()._Starts_with("1.17.11.01")) {
 		cerr << "[BDSpyrunner] The server version isn't the latest version, unknown problems may occur if you continue to use it" << endl;
@@ -851,7 +851,7 @@ void Init() {
 			//ignore files starting with '_'
 			if (name.front() == '_')
 				continue;
-			cout << "[BDSpyrunner] loading " << name << endl;
+			cout << "[BDSpyrunner] Loading " << name << endl;
 			PyImport_Import(ToPyUnicode(name));
 			PyErr_Print();
 		}

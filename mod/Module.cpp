@@ -53,7 +53,7 @@ static PyObject* logout(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //÷¥––÷∏¡Ó
-static PyObject* runcmd(PyObject*, PyObject* args) {
+static PyObject* runCommand(PyObject*, PyObject* args) {
 	const char* cmd = "";
 	if (PyArg_ParseTuple(args, "s:" __FUNCTION__, &cmd)) {
 		if (!Global<SPSCQueue>::data)
@@ -285,8 +285,8 @@ static PyMethodDef Methods[]{
 	{"minVersionRequire", minVersionRequire, METH_VARARGS, nullptr},
 	{"getBDSVersion", getBDSVersion, METH_NOARGS, nullptr},
 	{"logout", logout, METH_VARARGS, nullptr},
-	{"runcmd", runcmd, METH_VARARGS, nullptr},
-	{"runCommand", runcmd, METH_VARARGS, nullptr},
+	{"runcmd", runCommand, METH_VARARGS, nullptr},
+	{"runCommand", runCommand, METH_VARARGS, nullptr},
 	{"setListener", setListener, METH_VARARGS, nullptr},
 	{"setCommandDescription", setCommandDescription, METH_VARARGS, nullptr},
 	{"getPlayerByXuid", getPlayerByXuid, METH_VARARGS, nullptr},

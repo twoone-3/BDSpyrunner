@@ -26,4 +26,4 @@ jobs:
           files: |
             ./x64/Release/BDSpyrunner.dll
             ./x64/Release/BDSpyrunner.pdb
-            ./BDSpyrunner.bat
+            ./update_pyr.bat

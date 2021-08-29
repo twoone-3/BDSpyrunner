@@ -161,7 +161,7 @@
     <ClCompile Include="mc\ScoreBoard.cpp" />
     <ClCompile Include="mc\Structure.cpp" />
     <ClCompile Include="mc\Tag.cpp" />
-    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="mod\Module.cpp" />
     <ClCompile Include="mod\Entity.cpp" />
   </ItemGroup>
@@ -184,6 +184,9 @@
     <ClInclude Include="mc\tool.h" />
     <ClInclude Include="mod\Entity.h" />
     <ClInclude Include="mod\Version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="update_pyr.bat" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
