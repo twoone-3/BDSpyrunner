@@ -23,9 +23,9 @@
 #include <WinInet.h>
 #pragma comment(lib,"WinInet.lib")
 
-#define PLUGINS_PATH "plugins/"
-#define PY_PLUGIN_PATH "plugins/py/"
-#define CACHE_PATH "plugins/cache/"
+#define PLUGIN_PATH "plugins\\py\\"
+#define CACHE_PATH "plugins\\cache\\"
+#define BAT_PATH "plugins\\update_pyr.bat"
 
 constexpr size_t BLOCK_SIZE = 0x1000;
 constexpr const wchar_t* USER_AGENT = L"Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko";
@@ -131,6 +131,8 @@ static void AccessUrlForFile(const wchar_t* url, string_view filename) {
 }
 //检查版本
 static void CheckPluginVersion() {
+	if (!exists(BAT_PATH))
+		return;
 	cout << "[BDSpyrunner] Checking plugin version..." << endl;
 	Json info = AccessUrlForJson(L"https://api.github.com/repos/twoone-3/BDSpyrunner/releases/latest");
 	if (info["tag_name"] == VERSION_STRING) {
@@ -145,7 +147,7 @@ static void CheckPluginVersion() {
 		cout << asset["name"] << " was downloaded successfully, size: " << asset["size"] << endl;
 	}
 	cout << "[BDSpyrunner] The new version has been downloaded to plugins/download, please restart the server to replace it" << endl;
-	system("start /min plugins\\update_pyr.bat");
+	system("start /min " BAT_PATH);
 	exit(0);
 }
 //事件回调
@@ -810,13 +812,10 @@ HOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@
 	return 0;
 }
 #pragma endregion
-
 void Init() {
 	//如果目录不存在创建目录
-	if (!exists(PLUGINS_PATH))
-		create_directory(PLUGINS_PATH);
-	if (!exists(PY_PLUGIN_PATH))
-		create_directory(PY_PLUGIN_PATH);
+	if (!exists(PLUGIN_PATH))
+		create_directory(PLUGIN_PATH);
 	if (!exists(CACHE_PATH))
 		create_directory(CACHE_PATH);
 	//检测服务端版本
@@ -825,7 +824,7 @@ void Init() {
 		exit(-1);
 	}
 	//将plugins/py加入模块搜索路径
-	Py_SetPath((wstring(PY_PLUGIN_PATH L";") + Py_GetPath()).c_str());
+	Py_SetPath((wstring(PLUGIN_PATH L";") + Py_GetPath()).c_str());
 #if 0
 	//预初始化3.8+
 	PyPreConfig cfg;
@@ -836,21 +835,17 @@ void Init() {
 #endif
 	//增加一个模块
 	PyImport_AppendInittab("mc", mc_init);
-	//https://docs.python.org/zh-cn/3.7/c-api/init.html?highlight=py_begin_allow_threads#c.Py_LegacyWindowsStdioFlag
-	//Py_LegacyWindowsStdioFlag = 1;
-	//cout << Py_UTF8Mode << endl;
-	//Py_UTF8Mode = 1;
 	//初始化解释器
-	Py_Initialize();
+	Py_InitializeEx(0);
 	//初始化类型
 	if (PyType_Ready(&PyEntity_Type) < 0)
 		Py_FatalError("Can't initialize entity type");
 	//启用线程支持
 	PyEval_InitThreads();
-	for (auto& info : directory_iterator(PY_PLUGIN_PATH)) {
+	for (auto& info : directory_iterator(PLUGIN_PATH)) {
 		//whether the file is py
 		if (info.path().extension() == ".py") {
-			const string& name = info.path().stem().u8string();
+			string name = info.path().stem().u8string();
 			//ignore files starting with '_'
 			if (name.front() == '_')
 				continue;
