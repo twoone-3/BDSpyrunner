@@ -1,8 +1,6 @@
 #pragma once
-#pragma comment(lib,"lib/python37.lib")
 #include <string>
-#define PY_SSIZE_T_CLEAN
-#include "../include/Python.h"
+#include "CPython.h"
 #include "../mc/Position.h"
 
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr

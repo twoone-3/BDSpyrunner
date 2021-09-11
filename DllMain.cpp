@@ -166,10 +166,12 @@ static bool EventCallBack(EventCode e, const char* format, Args... args) {
 }
 #pragma endregion
 #pragma region Hook List
-//HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
-//	Level* _this) {
-//	original(_this);
-//}
+/*
+HOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
+	Level* _this) {
+	original(_this);
+}
+*/
 //将Python解释器初始化插入bds主函数
 HOOK(BDS_Main, int, "main",
 	int argc, char* argv[], char* envp[]) {
@@ -202,15 +204,15 @@ HOOK(ServerNetworkHandler_construct, uintptr_t, "??0ServerNetworkHandler@@QEAA@A
 }
 //Scoreboard的构造函数
 HOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnumRegistry@@PEAVLevelStorage@@@Z",
-	Scoreboard* _this, uintptr_t a2, uintptr_t a3) {
-	return Global<Scoreboard>::data = original(_this, a2, a3);
+	Scoreboard* _this, uintptr_t a1, uintptr_t a2) {
+	return Global<Scoreboard>::data = original(_this, a1, a2);
 }
 //改变设置命令的建立，用于注册命令
 HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
 	uintptr_t _this) {
 	for (auto& [cmd, des] : g_commands) {
 		SymCall("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
-			_this, &cmd, des.first.c_str(), 0, 0, 0x80);
+			_this, &cmd, des.first.c_str(), 0, 0, 0x80/*CommandFlag*/);
 	}
 	original(_this);
 }
@@ -221,7 +223,7 @@ HOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
 	thread(CheckPluginVersion).detach();
 	original(_this);
 }
-//控制台输出，实际上是cout<<xxx的底层调用
+//控制台输出，实际上是ostrram::operator<<的底层调用
 HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, uintptr_t size) {
 	if (&_this == &cout) {
@@ -233,7 +235,6 @@ HOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std
 //控制台输入，实际上是命令队列的底层
 HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 	SPSCQueue* _this, string* cmd) {
-	//debug模式（不推荐使用）
 	static bool debug = false;
 	if (*cmd == "pydebug") {
 		if (debug) {
@@ -243,19 +244,18 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 			debug = true;
 			cout << '>';
 		}
-		return 0;
+		return false;
 	}
 	if (debug) {
 		Py_BEGIN_CALL;
 		PyRun_SimpleString(cmd->c_str());
 		Py_END_CALL;
 		cout << '>';
-		return 0;
+		return false;
 	}
 	if (EventCallBack(EventCode::onConsoleInput, "O", ToPyUnicode(*cmd)))
 		return original(_this, cmd);
-	else
-		return false;
+	return false;
 }
 //玩家加入发包
 HOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVSetLocalPlayerAsInitializedPacket@@@Z",
@@ -793,7 +793,7 @@ HOOK(onBlockExploded, void, "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockP
 	))
 		return original(_this, bs, bp, actor);
 }
-//方块侧面放触发，点击牌子触发
+//使用牌子
 HOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* a1, BlockPos* a2) {
 	BlockSource* bs = a1->getRegion();

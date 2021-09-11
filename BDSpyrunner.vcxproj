@@ -123,6 +123,7 @@
     <ClInclude Include="mc\tool.h" />
     <ClInclude Include="mod\Entity.h" />
     <ClInclude Include="mod\Version.h" />
+    <ClInclude Include="mod\CPython.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="update_pyr.bat" />
