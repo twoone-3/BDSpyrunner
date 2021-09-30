@@ -286,7 +286,6 @@ static PyMethodDef Methods[]{
 	{"getBDSVersion", getBDSVersion, METH_NOARGS, nullptr},
 	{"logout", logout, METH_VARARGS, nullptr},
 	{"runcmd", runCommand, METH_VARARGS, nullptr},
-	{"runCommand", runCommand, METH_VARARGS, nullptr},
 	{"setListener", setListener, METH_VARARGS, nullptr},
 	{"setCommandDescription", setCommandDescription, METH_VARARGS, nullptr},
 	{"getPlayerByXuid", getPlayerByXuid, METH_VARARGS, nullptr},

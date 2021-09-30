@@ -819,10 +819,8 @@ void Init() {
 	if (!exists(CACHE_PATH))
 		create_directory(CACHE_PATH);
 	//检测服务端版本
-	if (!GetBDSVersion()._Starts_with("1.17.11.01")) {
-		cerr << "[BDSpyrunner] The server version isn't the latest version, unknown problems may occur if you continue to use it" << endl;
-		exit(-1);
-	}
+	if (!GetBDSVersion()._Starts_with("1.17.31.01"))
+		Py_FatalError("[BDSpyrunner] The server version isn't the latest version, unknown problems may occur if you continue to use it");
 	//将plugins/py加入模块搜索路径
 	Py_SetPath((wstring(PLUGIN_PATH L";") + Py_GetPath()).c_str());
 #if 0
@@ -845,7 +843,7 @@ void Init() {
 	for (auto& info : directory_iterator(PLUGIN_PATH)) {
 		//whether the file is py
 		if (info.path().extension() == ".py") {
-			string name = info.path().stem().u8string();
+			string name(GbkToUtf8(info.path().stem().string().c_str()));
 			//ignore files starting with '_'
 			if (name.front() == '_')
 				continue;
