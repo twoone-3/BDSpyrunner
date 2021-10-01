@@ -245,7 +245,7 @@ Container* Player::getArmorContainer() {
 //获取末影箱
 
 Container* Player::getEnderChestContainer() {
-	return FETCH(Container*, this + 4360);//IDA ReplaceItemCommand::execute 1086 
+	return FETCH(Container*, this + 4440);//IDA ReplaceItemCommand::execute 1086 
 }
 
 //设置一个装备
