@@ -69,6 +69,7 @@ struct Actor {
 };
 struct Mob : Actor {};
 struct Player : Mob {
+	//获取玩家uuid
 	std::string getUuid();
 	//根据地图信息获取玩家xuid
 	std::string& getXuid();
@@ -110,8 +111,6 @@ struct Player : Mob {
 	void sendInventroy();
 	//刷新区块
 	void resendAllChunks();
-	//崩溃客户端
-	void crash();
 	//发送数据包
 	void sendPacket(uintptr_t pkt);
 	unsigned sendModalFormRequestPacket(const std::string& str);
@@ -123,3 +122,5 @@ struct Player : Mob {
 	void sendsetDisplayObjectivePacket(const std::string& title, const std::string& name = "name");
 	void sendSetScorePacket(char type, const std::vector<ScorePacketInfo>& slot);
 };
+//是否为玩家
+bool IsPlayer(Actor* ptr);

@@ -20,7 +20,7 @@ string Actor::getNameTag() {
 
 //设置生物名称信息
 
-void Actor::setNameTag(const string&name) {
+void Actor::setNameTag(const string& name) {
 	VirtualCall(0x1F8, this, &name);
 }
 
@@ -79,7 +79,7 @@ ItemStack* Actor::getArmor(int slot) {
 //获取实体类型
 
 unsigned Actor::getEntityTypeId() {
-	return VirtualCall<unsigned>(0x520, this);
+	return VirtualCall<unsigned>(0x558, this);
 	//return SymCall<unsigned>("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ", this);
 }
 
@@ -210,7 +210,7 @@ void Actor::kill() {
 string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 	string p;
 	SymCall<string&>("?asString@UUID@mce@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
-		this + 3000, &p);
+		uintptr_t(this) + 2976, &p);
 	return p;
 }
 
@@ -218,7 +218,7 @@ string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 
 string& Player::getXuid() {
 	return SymCall<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
-		getLevel(), this + 3000);
+		Global<Level>::data, uintptr_t(this) + 2976);
 }
 
 //获取网络标识符
@@ -349,15 +349,6 @@ void Player::sendPacket(uintptr_t pkt) {
 		this, pkt);
 }
 
-//使玩家客户端崩溃
-void Player::crash() {
-	uintptr_t pkt = createPacket(58);
-	FETCH(int, pkt + 14) = 0;
-	FETCH(int, pkt + 15) = 0;
-	FETCH(bool, pkt + 48) = 1;
-	sendPacket(pkt);
-}
-
 unsigned Player::sendModalFormRequestPacket(const string& str) {
 	static unsigned id = 0;
 	uintptr_t pkt = createPacket(100);
@@ -421,4 +412,10 @@ void Player::sendSetScorePacket(char type, const vector<ScorePacketInfo>& slot) 
 	FETCH(char, pkt + 48) = type;//{set,remove}
 	FETCH(vector<ScorePacketInfo>, pkt + 56) = slot;
 	sendPacket(pkt);
+}
+
+bool IsPlayer(Actor* ptr) {
+	if (ptr && ptr->getEntityTypeId() == 319)
+		return true;
+	return false;
 }

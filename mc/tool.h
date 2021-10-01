@@ -32,10 +32,7 @@ inline ReturnType VirtualCall(uintptr_t off, void* _this, Args... args) {
 // call a function by symbol string
 template<typename ReturnType = void, typename... Args>
 inline ReturnType SymCall(const char* sym, Args... args) {
-	void* found = SYM(sym);
-	if (!found)
-		std::cerr << "Failed to call " << sym << std::endl;
-	return reinterpret_cast<ReturnType(*)(Args...)>(found)(args...);
+	return reinterpret_cast<ReturnType(*)(Args...)>(SYM(sym))(std::forward<Args>(args)...);
 }
 // replace the function
 inline void* SymHook(const char* sym, void* org, void* hook) {
@@ -54,21 +51,4 @@ struct Global {
 //获取服务端版本
 inline std::string GetBDSVersion() {
 	return SymCall<std::string>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
-}
-
-//字符串哈希
-inline constexpr size_t Hash(const char* s) {
-	unsigned h = 0;
-	for (; *s; ++s)
-		h = 5 * h + *s;
-	return static_cast<size_t>(h);
-}
-
-//是否为玩家
-inline bool isPlayer(void* ptr) {
-	for (auto p : Global<Level>::data->getAllPlayers()) {
-		if (ptr == p)
-			return true;
-	}
-	return false;
 }

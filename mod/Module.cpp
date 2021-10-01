@@ -30,18 +30,18 @@ constexpr int IsSlimeChunk(unsigned x, unsigned z) {
 static PyObject* minVersionRequire(PyObject*, PyObject* args) {
 	int v1, v2, v3;
 	if (PyArg_ParseTuple(args, "iii:" __FUNCTION__, &v1, &v2, &v3)) {
-		if (v1 > VERSION_1)
+		if (v1 > PYR_MAJOR_VERSION)
 			Py_RETURN_ERROR("The plugin version does not meet the minimum requirements");
-		if (v2 > VERSION_2)
+		if (v2 > PYR_MINOR_VERSION)
 			Py_RETURN_ERROR("The plugin version does not meet the minimum requirements");
-		if (v3 > VERSION_3)
+		if (v3 > PYR_MICRO_VERSION)
 			Py_RETURN_ERROR("The plugin version does not meet the minimum requirements");
 	}
 	Py_RETURN_NONE;
 }
 //获取BDS版本
 static PyObject* getBDSVersion(PyObject*, PyObject*) {
-	return ToPyUnicode(GetBDSVersion());
+	return StringToPyUnicode(GetBDSVersion());
 }
 //指令输出
 static PyObject* logout(PyObject*, PyObject* args) {
@@ -103,9 +103,12 @@ static PyObject* getPlayerList(PyObject*, PyObject*) {
 	PyObject* list = PyList_New(0);
 	if (!Global<Level>::data)
 		Py_RETURN_ERROR("Level is not set");
-	for (Player* p : Global<Level>::data->getAllPlayers()) {
-		PyList_Append(list, ToEntity(p));
-	}
+	Global<Level>::data->forEachPlayer(
+		[list](Player* p)->bool {
+			PyList_Append(list, ToEntity(p));
+			return true;
+		}
+	);
 	return list;
 }
 //修改生物受伤的伤害值
@@ -181,7 +184,7 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 		StructureTemplate st("tmp");
 		st.fillFromWorld(bs, &start, &ss);
 
-		return ToPyUnicode(CompoundTagtoJson(st.save()).dump(4));
+		return StringToPyUnicode(CompoundTagtoJson(st.save()).dump(4));
 	}
 	Py_RETURN_NONE;
 }

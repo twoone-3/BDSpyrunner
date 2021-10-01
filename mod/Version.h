@@ -1,5 +1,5 @@
 #pragma once
-constexpr unsigned VERSION_1 = 1;
-constexpr unsigned VERSION_2 = 7;
-constexpr unsigned VERSION_3 = 11;
-constexpr const char* VERSION_STRING = "v1.7.11";
+constexpr unsigned PYR_MAJOR_VERSION = 1;
+constexpr unsigned PYR_MINOR_VERSION = 8;
+constexpr unsigned PYR_MICRO_VERSION = 0;
+constexpr const char* PYR_VERSION = "v1.8.0";

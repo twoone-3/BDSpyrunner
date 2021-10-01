@@ -33,7 +33,9 @@ constexpr const wchar_t* USER_AGENT = L"Mozilla/5.0 (Windows NT 6.3; Trident/7.0
 using namespace std;
 using namespace filesystem;
 
-#pragma region Function Define
+static vector<PyObject*> g_plugins;
+
+#pragma region Function
 //注入时事件
 void Init();
 //Dll入口函数
@@ -135,7 +137,7 @@ static void CheckPluginVersion() {
 		return;
 	cout << "[BDSpyrunner] Checking plugin version..." << endl;
 	Json info = AccessUrlForJson(L"https://api.github.com/repos/twoone-3/BDSpyrunner/releases/latest");
-	if (info["tag_name"] == VERSION_STRING) {
+	if (info["tag_name"] == PYR_VERSION) {
 		cout << "[BDSpyrunner] Your plugin version is latest." << endl;
 		return;
 	}
@@ -152,12 +154,12 @@ static void CheckPluginVersion() {
 }
 //事件回调
 template <typename... Args>
-static bool EventCallBack(EventCode e, const char* format, Args... args) {
+static bool EventCallBack(const EventCode e, const char* format, Args... args) {
 	bool intercept = true;
 	Py_BEGIN_CALL;
 	for (PyObject* cb : g_callback_functions[e]) {
 		PyObject* result = PyObject_CallFunction(cb, format, args...);
-		PyErr_Print();
+		PrintPythonError();
 		if (result == Py_False)
 			intercept = false;
 	}
@@ -216,6 +218,8 @@ HOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVComm
 	}
 	original(_this);
 }
+#pragma endregion
+#pragma region Listener
 //开服完成
 HOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
 	uintptr_t _this) {
@@ -253,7 +257,7 @@ HOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tra
 		cout << '>';
 		return false;
 	}
-	if (EventCallBack(EventCode::onConsoleInput, "O", ToPyUnicode(*cmd)))
+	if (EventCallBack(EventCode::onConsoleInput, "O", StringToPyUnicode(*cmd)))
 		return original(_this, cmd);
 	return false;
 }
@@ -298,7 +302,7 @@ HOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@E
 //放置方块
 HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@EPEAVActor@@_N@Z",
 	BlockSource* _this, Block* b, BlockPos* bp, unsigned char a4, Actor* p, bool _bool) {
-	if (isPlayer(p)) {
+	if (IsPlayer(p)) {
 		BlockLegacy* bl = b->getBlockLegacy();
 		short bid = bl->getBlockItemID();
 		string bn = bl->getBlockName();
@@ -316,7 +320,7 @@ HOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@
 //破坏方块
 HOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
 	BlockSource* _this, Actor* a1, BlockPos* a2, ItemStack* a3, bool a4) {
-	if (isPlayer(a1)) {
+	if (IsPlayer(a1)) {
 		BlockLegacy* bl = _this->getBlock(a2)->getBlockLegacy();
 		short bid = bl->getBlockItemID();
 		string bn = bl->getBlockName();
@@ -500,7 +504,7 @@ HOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdenti
 		if (data != g_commands.end() && data->second.second) {
 			Py_BEGIN_CALL;
 			PyObject_CallFunction(data->second.second, "O", ToEntity(p));
-			PyErr_Print();
+			PrintPythonError();
 			Py_END_CALL;
 			return;
 		}
@@ -630,7 +634,7 @@ HOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboar
 //耕地破坏
 HOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@M@Z",
 	uintptr_t _this, BlockSource* a1, BlockPos* a2, Actor* p, uintptr_t a4) {
-	if (isPlayer(p)) {
+	if (IsPlayer(p)) {
 		if (!EventCallBack(EventCode::onFallBlockTransform,
 			"{s:O,s:O,s:i}",
 			"player", ToEntity(p),
@@ -714,7 +718,7 @@ HOOK(onRide, bool, "?canAddRider@Actor@@UEBA_NAEAV1@@Z",
 		return original(a1, a2);
 	return false;
 }
-//放入取出物品展示框的物品（未测试）
+//放入取出物品展示框的物品
 HOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* a2, BlockPos* a3) {
 	if (EventCallBack(EventCode::onUseFrameBlock,
@@ -726,7 +730,7 @@ HOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos
 		return original(_this, a2, a3);
 	return false;
 }
-//点击物品展示框（未测试）
+//点击物品展示框
 HOOK(onUseFrameBlocka, bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBlockPos@@@Z",
 	uintptr_t _this, Player* a2, BlockPos* a3) {
 	if (EventCallBack(EventCode::onUseFrameBlock,
@@ -750,7 +754,7 @@ HOOK(onSneak, void, "?sendActorSneakChanged@ActorEventCoordinator@@QEAAXAEAVActo
 	if (EventCallBack(EventCode::onSneak, "O", ToEntity(a1)))
 		return original(_this, a1, a2);
 }
-//火势蔓延（未测试）
+//火势蔓延
 HOOK(onFireSpread, bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@AEBVBlockPos@@@Z",
 	uintptr_t _this, BlockSource* bs, BlockPos* bp) {
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
@@ -779,7 +783,7 @@ HOOK(onBlockInteracted, void, "?onBlockInteractedWith@VanillaServerGameplayEvent
 	))
 		return original(_this, pl, bp);
 }
-//方块被爆炸破坏（未测试）
+//方块被爆炸破坏
 HOOK(onBlockExploded, void, "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@@Z",
 	Block* _this, BlockSource* bs, BlockPos* bp, Actor* actor) {
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
@@ -812,6 +816,7 @@ HOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@
 	return 0;
 }
 #pragma endregion
+
 void Init() {
 	//如果目录不存在创建目录
 	if (!exists(PLUGIN_PATH))
@@ -819,10 +824,15 @@ void Init() {
 	if (!exists(CACHE_PATH))
 		create_directory(CACHE_PATH);
 	//检测服务端版本
-	if (!GetBDSVersion()._Starts_with("1.17.31.01"))
-		Py_FatalError("[BDSpyrunner] The server version isn't the latest version, unknown problems may occur if you continue to use it");
+	//if (!GetBDSVersion()._Starts_with("1.17.31.01"))
+	//	Py_FatalError("[BDSpyrunner] The server version isn't the latest version, unknown problems may occur if you continue to use it");
+
 	//将plugins/py加入模块搜索路径
-	Py_SetPath((wstring(PLUGIN_PATH L";") + Py_GetPath()).c_str());
+	{
+		wstring py_path(PLUGIN_PATH L";");
+		py_path.append(Py_GetPath());
+		Py_SetPath(py_path.c_str());
+	}
 #if 0
 	//预初始化3.8+
 	PyPreConfig cfg;
@@ -848,12 +858,12 @@ void Init() {
 			if (name.front() == '_')
 				continue;
 			cout << "[BDSpyrunner] Loading " << name << endl;
-			PyImport_Import(ToPyUnicode(name));
-			PyErr_Print();
+			g_plugins.push_back(PyImport_Import(StringToPyUnicode(name)));
+			PrintPythonError();
 		}
 	}
 	//释放当前线程
 	PyEval_SaveThread();
 	//输出版本号信息
-	cout << "[BDSpyrunner] " << VERSION_STRING << " loaded, © 2021 twoone3." << endl;
-}
+	cout << "[BDSpyrunner] " << PYR_VERSION << " loaded, © 2021 twoone3." << endl;
+	}

@@ -18,7 +18,7 @@ struct PyEntity {
 			Py_RETURN_ERROR("This entity pointer is nullptr");
 	}
 	static Player* asPlayer(PyObject* self) {
-		if (isPlayer(reinterpret_cast<PyEntity*>(self)->actor))
+		if (IsPlayer(reinterpret_cast<PyEntity*>(self)->actor))
 			return reinterpret_cast<Player*>(reinterpret_cast<PyEntity*>(self)->actor);
 		else
 			Py_RETURN_ERROR("This entity pointer is nullptr or is not player pointer");
@@ -34,7 +34,7 @@ struct PyEntity {
 		Actor* a = asActor(self);
 		if (!a)
 			return nullptr;
-		return ToPyUnicode(a->getNameTag());
+		return StringToPyUnicode(a->getNameTag());
 	}
 	static Py_hash_t hash(PyObject* self) {
 		return reinterpret_cast<Py_hash_t>(asActor(self));
@@ -43,7 +43,7 @@ struct PyEntity {
 		Actor* a = asActor(self);
 		if (!a)
 			return nullptr;
-		return ToPyUnicode(a->getNameTag());
+		return StringToPyUnicode(a->getNameTag());
 	}
 };
 
@@ -81,7 +81,7 @@ PyObject* PyEntity_GetName(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
-	return ToPyUnicode(a->getNameTag());
+	return StringToPyUnicode(a->getNameTag());
 }
 
 int PyEntity_SetName(PyObject* self, PyObject* arg, void*) {
@@ -100,7 +100,7 @@ PyObject* PyEntity_GetUuid(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return ToPyUnicode(p->getUuid());
+	return StringToPyUnicode(p->getUuid());
 }
 
 //获取XUID
@@ -108,7 +108,7 @@ PyObject* PyEntity_GetXuid(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return ToPyUnicode(p->getXuid());
+	return StringToPyUnicode(p->getXuid());
 }
 
 //获取坐标
@@ -156,7 +156,7 @@ PyObject* PyEntity_GetTypeName(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
-	return ToPyUnicode(a->getEntityTypeName());
+	return StringToPyUnicode(a->getEntityTypeName());
 }
 
 //获取nbt数据
@@ -164,7 +164,7 @@ PyObject* PyEntity_GetNBTInfo(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
-	return ToPyUnicode(CompoundTagtoJson(a->save()).dump(4));
+	return StringToPyUnicode(CompoundTagtoJson(a->save()).dump(4));
 }
 
 //获取生命值
@@ -229,7 +229,7 @@ PyObject* PyEntity_GetDeviceId(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return ToPyUnicode(p->getDeviceId());
+	return StringToPyUnicode(p->getDeviceId());
 }
 
 //获取设备类型
@@ -245,7 +245,7 @@ PyObject* PyEntity_GetIP(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return ToPyUnicode(Global<RakPeer>::data->getSystemAddress(p->getClientId()).toString());
+	return StringToPyUnicode(Global<RakPeer>::data->getSystemAddress(p->getClientId()).toString());
 }
 
 //获取/设置玩家所有物品
@@ -273,7 +273,7 @@ PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
 	value["OffHand"] = CompoundTagtoJson(p->getOffHand()->save());
 	value["Hand"] = CompoundTagtoJson(p->getSelectedItem()->save());
 
-	return ToPyUnicode(value.dump(4));
+	return StringToPyUnicode(value.dump(4));
 }
 
 PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
@@ -592,18 +592,9 @@ PyObject* PyEntity_GetTags(PyObject* self, PyObject*) {
 	span<string> tags = a->getTags();
 	PyObject* list = PyList_New(0);
 	for (size_t i = 0; i < tags.size; i++) {
-		PyList_Append(list, ToPyUnicode(tags.data[i]));
+		PyList_Append(list, StringToPyUnicode(tags.data[i]));
 	}
 	return list;
-}
-
-//崩溃客户端
-PyObject* PyEntity_Crash(PyObject* self, PyObject*) {
-	Player* p = PyEntity::asPlayer(self);
-	if (!p)
-		return nullptr;
-	p->crash();
-	Py_RETURN_NONE;
 }
 
 //杀死实体
@@ -661,7 +652,6 @@ PyMethodDef PyEntity_Methods[]{
 	{"addTag", PyEntity_AddTag, METH_VARARGS, nullptr},
 	{"removeTag", PyEntity_RemoveTag, METH_VARARGS, nullptr},
 	{"getTags", PyEntity_GetTags, METH_NOARGS, nullptr},
-	{"crash", PyEntity_Crash, METH_NOARGS, nullptr},
 	{"kill", PyEntity_Kill, METH_NOARGS, nullptr},
 	{nullptr}
 };

@@ -12,6 +12,11 @@ BlockSource* Level::getBlockSource(int did) {
 	return FETCH(BlockSource*, d + 96);//IDA Level::tickEntities 120
 }
 
+void Level::forEachPlayer(const std::function<bool(Player*)>& fn) {
+	SymCall("?forEachPlayer@Level@@UEBAXV?$function@$$A6A_NAEBVPlayer@@@Z@std@@@Z",
+		this, &fn);
+}
+
 Scoreboard* Level::getScoreBoard() {
 	return FETCH(Scoreboard*, this + 8600);//IDA Level::getScoreboard
 }
@@ -35,10 +40,6 @@ Actor* Level::fetchEntity(uintptr_t id) {
 Player* Level::getPlayerByXuid(const string& xuid) {
 	return SymCall<Player*>("?getPlayerByXuid@Level@@UEBAPEAVPlayer@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 		this, &xuid);
-}
-
-vector<Player*> Level::getAllPlayers() {
-	return FETCH(vector<Player*>, this + 112);//IDA Level::forEachPlayer
 }
 
 BlockPalette* Level::getBlockPalette() {

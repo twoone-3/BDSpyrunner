@@ -17,10 +17,6 @@
 
 //Entity类型
 extern PyTypeObject PyEntity_Type;
-//字符串转Unicode
-inline PyObject* ToPyUnicode(std::string_view str) {
-	return PyUnicode_FromStringAndSize(str.data(), str.length());
-}
 //Vec3转list
 inline PyObject* ToList(Vec3 * vec) {
 	PyObject* list = PyList_New(3);
