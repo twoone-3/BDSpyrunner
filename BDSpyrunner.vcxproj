@@ -63,8 +63,8 @@
     </Link>
     <PostBuildEvent>
       <Command>if exist ..\BDS\plugins (
-	copy $(OutputPath)BDSpyrunner.dll ..\BDS\plugins\BDSpyrunner.dll
-	copy $(OutputPath)BDSpyrunner.pdb ..\BDS\plugins\BDSpyrunner.pdb
+copy $(OutputPath)$(ProjectName).dll ..\BDS\plugins\$(ProjectName).dll
+copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
 )</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -86,8 +86,8 @@
     </Link>
     <PostBuildEvent>
       <Command>if exist ..\BDS\plugins (
-	copy $(OutputPath)BDSpyrunner.dll ..\BDS\plugins\BDSpyrunner.dll
-	copy $(OutputPath)BDSpyrunner.pdb ..\BDS\plugins\BDSpyrunner.pdb
+copy $(OutputPath)$(ProjectName).dll ..\BDS\plugins\$(ProjectName).dll
+copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
 )</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

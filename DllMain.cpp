@@ -583,8 +583,11 @@ HOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@
 	int mode = SymCall<int>("?getMode@CommandBlockActor@@QEBA?AW4CommandBlockMode@@AEAVBlockSource@@@Z", a3, a2);
 	//无条件:0,有条件:1
 	bool condition = SymCall<bool>("?getConditionalMode@CommandBlockActor@@QEBA_NAEAVBlockSource@@@Z", a3, a2);
-	string cmd = FETCH(string, a3 + 264);
-	string rawname = FETCH(string, a3 + 296);
+	//SymCall<string&>("?getName@BaseCommandBlock@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+	//a3 + 200);
+	//a3 + 200 BaseCommandBlock
+	string cmd = FETCH(string, a3 + 256);
+	string rawname = FETCH(string, a3 + 288);
 	if (EventCallBack(EventCode::onCommandBlockPerform,
 		"{s:i,s:b,s:s,s:s,s:O}",
 		"mode", mode,
