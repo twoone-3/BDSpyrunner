@@ -9,6 +9,6 @@ inline std::unordered_map<EventCode, std::vector<PyObject*>> g_callback_function
 //×¢²áÃüÁî
 inline std::unordered_map<std::string, std::pair<std::string, PyObject*>> g_commands;
 //ÉËº¦
-inline int g_damage = 0;
+inline static int g_damage = 0;
 
-PyObject* mc_init();
+extern "C" PyObject * mc_init();

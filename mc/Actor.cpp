@@ -239,7 +239,8 @@ Container* Player::getInventory() {
 //获取装备容器
 
 Container* Player::getArmorContainer() {
-	return FETCH(Container*, this + 1648);//IDA Actor::_setArmorContainer 11
+	return SymCall<Container*>("?getArmorContainer@Actor@@QEBAAEBVSimpleContainer@@XZ",
+		this);
 }
 
 //获取末影箱
@@ -251,38 +252,43 @@ Container* Player::getEnderChestContainer() {
 //设置一个装备
 
 uintptr_t Player::setArmor(int i, ItemStack* item) {
-	return SymCall<uintptr_t>("?setArmor@ServerPlayer@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z", this, i, item);
+	return SymCall<uintptr_t>("?setArmor@ServerPlayer@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
+		this, i, item);
 }
 
 //设置副手
 
 uintptr_t Player::setOffhandSlot(ItemStack* item) {
-	return SymCall<uintptr_t>("?setOffhandSlot@Player@@UEAAXAEBVItemStack@@@Z", this, item);
+	return SymCall<uintptr_t>("?setOffhandSlot@Player@@UEAAXAEBVItemStack@@@Z",
+		this, item);
 }
 
 //添加一个物品
 
 void Player::addItem(ItemStack* item) {
-	SymCall<uintptr_t>("?addItem@@YAXAEAVPlayer@@AEAVItemStack@@@Z", this, item);
+	SymCall<uintptr_t>("?addItem@@YAXAEAVPlayer@@AEAVItemStack@@@Z",
+		this, item);
 }
 
 //增加等级
 
 void Player::addLevel(int level) {
-	SymCall("?addLevels@Player@@UEAAXH@Z", this, level);
+	SymCall("?addLevels@Player@@UEAAXH@Z",
+		this, level);
 }
 
 //获取当前选中的框位置
 
 int Player::getSelectedItemSlot() {
-	return SymCall<int>("?getSelectedItemSlot@Player@@QEBAHXZ", this);
-	//return FETCH(unsigned, FETCH(uintptr_t, this + 3208) + 16);//IDA Player::getSelectedItemSlot
+	return SymCall<int>("?getSelectedItemSlot@Player@@QEBAHXZ",
+		this);
 }
 
 //获取当前物品
 
 ItemStack* Player::getSelectedItem() {
-	return SymCall<ItemStack*>("?getSelectedItem@Player@@QEBAAEBVItemStack@@XZ", this);
+	return SymCall<ItemStack*>("?getSelectedItem@Player@@QEBAAEBVItemStack@@XZ",
+		this);
 }
 
 //获取背包物品
@@ -291,42 +297,36 @@ ItemStack* Player::getInventoryItem(int slot) {
 	return getInventory()->getSlots()[slot];
 }
 
-//获取游戏时命令权限
-
-char Player::getPermissions() {
-	return *FETCH(char*, this + 2376);//IDA ServerPlayer::setPermissions 22
+//获取游戏时游玩权限
+PlayerPermissionLevel Player::getPlayerPermissionLevel() {
+	return SymCall<PlayerPermissionLevel>("?getPlayerPermissionLevel@Player@@QEBA?AW4PlayerPermissionLevel@@XZ",
+		this);
 }
 
 //设置游戏时命令权限
 
-void Player::setPermissions(char m) {
+void Player::setPermissions(PlayerPermissionLevel m) {
 	SymCall("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z",
 		this, m);
 }
 
-//获取游戏时游玩权限
-
-char Player::getPermissionLevel() {//IDA Abilities::setPlayerPermissions ?
-	return FETCH(char, FETCH(char*, this + 2376) + 1);
-}
-
-//设置游戏时游玩权限
-
-void Player::setPermissionLevel(char m) {
-	SymCall("?setPlayerPermissions@Abilities@@QEAAXW4PlayerPermissionLevel@@@Z",
-		this + 2376, m);
-}
-
 //获取设备id
-
-string Player::getDeviceId() {
-	return FETCH(string, this + 8352); //IDA Player::Player  v13 + 8352
+string Player::getPlatformOnlineId() {
+	string id;
+	SymCall<string&>("?getPlatformOnlineId@Player@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+		this, &id);
+	return id;
+	//return FETCH(string, this + 8352);
+	//IDA Player::Player  v13 + 8352
 }
 
 //获取设备系统类型
 
-int Player::getDeviceOS() {
-	return FETCH(int, this + 2368);	//IDA ServerNetworkHandler::createNewPlayer  ConnectionRequest::getDeviceOS
+unsigned Player::getPlatform() {
+	return SymCall<unsigned>("?getPlatform@Player@@QEBA?AW4BuildPlatform@@XZ",
+		this);
+	//return FETCH(int, this + 2336);
+	//IDA ServerNetworkHandler::createNewPlayer  ConnectionRequest::getDeviceOS
 }
 
 //发送背包
@@ -415,7 +415,9 @@ void Player::sendSetScorePacket(char type, const vector<ScorePacketInfo>& slot) 
 }
 
 bool IsPlayer(Actor* ptr) {
-	if (ptr && ptr->getEntityTypeId() == 319)
-		return true;
-	return false;
+	if (ptr == nullptr)
+		return false;
+	if (ptr->getEntityTypeId() != 319)
+		return false;
+	return true;
 }

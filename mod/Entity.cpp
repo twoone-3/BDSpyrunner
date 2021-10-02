@@ -45,55 +45,54 @@ struct PyEntity {
 			return nullptr;
 		return StringToPyUnicode(a->getNameTag());
 	}
+	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
+		switch (op) {
+			//<
+		case Py_LT:break;
+			//<=
+		case Py_LE:break;
+			//==
+		case Py_EQ:
+			if (PyEntity::asActor(self) == PyEntity::asActor(other))
+				Py_RETURN_TRUE;
+			else
+				Py_RETURN_FALSE;
+			break;
+			//!=
+		case Py_NE:
+			if (PyEntity::asActor(self) != PyEntity::asActor(other))
+				Py_RETURN_TRUE;
+			else
+				Py_RETURN_FALSE;
+			break;
+			//>
+		case Py_GT:break;
+			//>=
+		case Py_GE:break;
+		}
+		Py_RETURN_NOTIMPLEMENTED;
+	}
+
+	//获取名字
+	static PyObject* getName(PyObject* self, void*) {
+		Actor* a = PyEntity::asActor(self);
+		if (!a)
+			return nullptr;
+		return StringToPyUnicode(a->getNameTag());
+	}
+	static int setName(PyObject* self, PyObject* arg, void*) {
+		if (PyUnicode_Check(arg)) {
+			Player* p = PyEntity::asPlayer(self);
+			if (!p)
+				return -1;
+			p->setNameTag(PyUnicode_AsUTF8(arg));
+			return 0;
+		}
+		return PyErr_BadArgument(), -1;
+	}
+
 };
 
-//比较
-PyObject* PyEntity_RichCompare(PyObject* self, PyObject* other, int op) {
-	switch (op) {
-		//<
-	case Py_LT:break;
-		//<=
-	case Py_LE:break;
-		//==
-	case Py_EQ:
-		if (PyEntity::asActor(self) == PyEntity::asActor(other))
-			Py_RETURN_TRUE;
-		else
-			Py_RETURN_FALSE;
-		break;
-		//!=
-	case Py_NE:
-		if (PyEntity::asActor(self) != PyEntity::asActor(other))
-			Py_RETURN_TRUE;
-		else
-			Py_RETURN_FALSE;
-		break;
-		//>
-	case Py_GT:break;
-		//>=
-	case Py_GE:break;
-	}
-	Py_RETURN_NOTIMPLEMENTED;
-}
-
-//获取名字
-PyObject* PyEntity_GetName(PyObject* self, void*) {
-	Actor* a = PyEntity::asActor(self);
-	if (!a)
-		return nullptr;
-	return StringToPyUnicode(a->getNameTag());
-}
-
-int PyEntity_SetName(PyObject* self, PyObject* arg, void*) {
-	if (PyUnicode_Check(arg)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return -1;
-		p->setNameTag(PyUnicode_AsUTF8(arg));
-		return 0;
-	}
-	return PyErr_BadArgument(), -1;
-}
 
 //获取UUID
 PyObject* PyEntity_GetUuid(PyObject* self, void*) {
@@ -210,7 +209,7 @@ PyObject* PyEntity_GetPermissions(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return PyLong_FromLong(p->getPermissions());
+	return PyLong_FromLong(static_cast<int>(p->getPlayerPermissionLevel()));
 }
 
 int PyEntity_SetPermissions(PyObject* self, PyObject* arg, void*) {
@@ -218,26 +217,26 @@ int PyEntity_SetPermissions(PyObject* self, PyObject* arg, void*) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return -1;
-		p->setPermissions((char)PyLong_AsLong(arg));
+		p->setPermissions(static_cast<PlayerPermissionLevel>(PyLong_AsLong(arg)));
 		return 0;
 	}
 	return PyErr_BadArgument(), -1;
 }
 
 //获取设备id
-PyObject* PyEntity_GetDeviceId(PyObject* self, void*) {
+PyObject* PyEntity_GetPlatformOnlineId(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return StringToPyUnicode(p->getDeviceId());
+	return StringToPyUnicode(p->getPlatformOnlineId());
 }
 
 //获取设备类型
-PyObject* PyEntity_GetDeviceOS(PyObject* self, void*) {
+PyObject* PyEntity_GetPlatform(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return PyLong_FromLong(p->getDeviceOS());
+	return PyLong_FromLong(p->getPlatform());
 }
 
 //获取IP
@@ -275,6 +274,42 @@ PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
 
 	return StringToPyUnicode(value.dump(4));
 }
+
+//获取/设置玩家物品
+//PyObject* PyEntity_GetItem(PyObject* self, PyObject* args, PyObject* kwds) {
+//	bool get_inventory, get_enderchest, get_armor, get_offhand, get_hand;
+//	Py_KERWORDS_LIST(
+//		"Inventory", "EndChest", "Armor", "OffHand", "Hand"
+//	);
+//	Py_PARSE_WITH_KERWORDS(
+//		"|ppppp",
+//		&get_inventory, &get_enderchest, &get_armor, &get_offhand, &get_hand
+//	);
+//	Player* p = PyEntity::asPlayer(self);
+//	if (!p)
+//		return nullptr;
+//	Json value;
+//
+//	Json& inventory = value["Inventory"];
+//	for (auto& i : p->getInventory()->getSlots()) {
+//		inventory.push_back(CompoundTagtoJson(i->save()));
+//	}
+//
+//	Json& endchest = value["EndChest"];
+//	for (auto& i : p->getEnderChestContainer()->getSlots()) {
+//		endchest.push_back(CompoundTagtoJson(i->save()));
+//	}
+//
+//	Json& armor = value["Armor"];
+//	for (auto& i : p->getArmorContainer()->getSlots()) {
+//		armor.push_back(CompoundTagtoJson(i->save()));
+//	}
+//
+//	value["OffHand"] = CompoundTagtoJson(p->getOffHand()->save());
+//	value["Hand"] = CompoundTagtoJson(p->getSelectedItem()->save());
+//
+//	return StringToPyUnicode(value.dump(4));
+//}
 
 PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 	const char* x = "";
@@ -608,26 +643,33 @@ PyObject* PyEntity_Kill(PyObject* self, PyObject*) {
 
 //获取属性方法
 PyGetSetDef PyEntity_GetSet[]{
-	{"name", PyEntity_GetName, PyEntity_SetName, nullptr},
+	{"name", PyEntity::getName, PyEntity::setName, nullptr},
 	{"uuid", PyEntity_GetUuid, nullptr, nullptr},
 	{"xuid", PyEntity_GetXuid, nullptr, nullptr},
 	{"pos", PyEntity_GetPos, nullptr, nullptr},
 	{"did", PyEntity_GetDimensionId, nullptr, nullptr},
-	{"isstand", PyEntity_GetIsStand, nullptr, nullptr},
-	{"issneak", PyEntity_GetIsSneaking, nullptr, nullptr},
+	{"is_standing", PyEntity_GetIsStand, nullptr, nullptr},
+	/*已弃用*/{"isstand", PyEntity_GetIsStand, nullptr, nullptr},
+	{"is_sneaking", PyEntity_GetIsSneaking, nullptr, nullptr},
+	/*已弃用*/{"issneak", PyEntity_GetIsSneaking, nullptr, nullptr},
 	{"typeid", PyEntity_GetTypeID, nullptr, nullptr},
 	{"typename", PyEntity_GetTypeName, nullptr, nullptr},
-	{"nbt", PyEntity_GetNBTInfo, nullptr, nullptr},
+	{"NBT", PyEntity_GetNBTInfo, nullptr, nullptr},
+	/*已弃用*/{"nbt", PyEntity_GetNBTInfo, nullptr, nullptr},
 	{"health", PyEntity_GetHealth, PyEntity_SetHealth, nullptr},
 	{"maxhealth", PyEntity_GetMaxHealth, PyEntity_SetMaxHealth, nullptr},
 	{"perm", PyEntity_GetPermissions, PyEntity_SetPermissions, nullptr},
-	{"deviceid", PyEntity_GetDeviceId, nullptr, nullptr},
-	{"deviceos", PyEntity_GetDeviceOS, nullptr, nullptr},
-	{"ip", PyEntity_GetIP, nullptr, nullptr},
+	{"platform_online_id", PyEntity_GetPlatformOnlineId, nullptr, nullptr},
+	/*已弃用*/{"deviceid", PyEntity_GetPlatformOnlineId, nullptr, nullptr},
+	{"platform", PyEntity_GetPlatform, nullptr, nullptr},
+	/*已弃用*/{"deviceos", PyEntity_GetPlatform, nullptr, nullptr},
+	{"IP", PyEntity_GetIP, nullptr, nullptr},
+	/*已弃用*/{"ip", PyEntity_GetIP, nullptr, nullptr},
 	{nullptr}
 };
 //Entity方法
 PyMethodDef PyEntity_Methods[]{
+	//{"getItem", (PyCFunction)PyEntity_GetItem, METH_VARARGS | METH_KEYWORDS, nullptr},
 	{"getAllItem", PyEntity_GetAllItem, METH_VARARGS, nullptr},
 	{"setAllItem", PyEntity_SetAllItem, METH_VARARGS, nullptr},
 	{"setHand", PyEntity_SetHand, METH_VARARGS, nullptr},
@@ -680,7 +722,7 @@ PyTypeObject PyEntity_Type{
 	"Entities in Minecraft",/* tp_doc */
 	nullptr,				/* tp_traverse */
 	nullptr,				/* tp_clear */
-	PyEntity_RichCompare,	/* tp_richcompare */
+	PyEntity::rich_compare,	/* tp_richcompare */
 	0,						/* tp_weaklistoffset */
 	nullptr,				/* tp_iter */
 	nullptr,				/* tp_iternext */

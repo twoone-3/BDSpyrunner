@@ -100,8 +100,9 @@ void ItemStack::fromJson(const Json& value) {
 
 vector<ItemStack*> Container::getSlots() {
 	vector<ItemStack*> s;
-	SymCall<uintptr_t>("?getSlots@Container@@UEBA?BV?$vector@PEBVItemStack@@V?$allocator@PEBVItemStack@@@std@@@std@@XZ",
-		this, &s);
+	VirtualCall<uintptr_t>(0x98, this, &s);
+	//SymCall<uintptr_t>("?getSlots@Container@@UEBA?BV?$vector@PEBVItemStack@@V?$allocator@PEBVItemStack@@@std@@@std@@XZ",
+	//	this, &s);
 	return s;
 }
 
