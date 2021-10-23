@@ -79,8 +79,8 @@ ItemStack* Actor::getArmor(int slot) {
 //获取实体类型
 
 unsigned Actor::getEntityTypeId() {
-	return VirtualCall<unsigned>(0x558, this);
-	//return SymCall<unsigned>("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ", this);
+	//return VirtualCall<unsigned>(0x558, this);
+	return SymCall<unsigned>("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ", this);
 }
 
 //获取查询用ID
@@ -209,23 +209,32 @@ void Actor::kill() {
 
 string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 	string p;
+	void* v33 = **(void***)(this + 8);
+	__int32 v107 = *(__int32*)(this + 16);
+	void* v34 = SymCall<void*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v33, &v107);
 	SymCall<string&>("?asString@UUID@mce@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
-		uintptr_t(this) + 2976, &p);
+		uintptr_t(v34) + 168, &p);
 	return p;
 }
 
 //根据地图信息获取玩家xuid
 
 string& Player::getXuid() {
+	void* v33 = **(void***)(this + 8);
+	__int32 v107 = *(__int32*)(this + 16);
+	void* v34 = SymCall<void*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v33, &v107);
 	return SymCall<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
-		Global<Level>::data, uintptr_t(this) + 2976);
+		Global<Level>::data, uintptr_t(v34) + 168);
 }
 
 //获取网络标识符
 
 NetworkIdentifier* Player::getClientId() {
-	return SymCall<NetworkIdentifier*>("?getClientId@Player@@QEBAAEBVNetworkIdentifier@@XZ",
-		this);
+
+	void* v6 = **(void***)(this + 8);
+	__int32 v58 = *(__int32*)(this + 16);
+	char* v7 = SymCall<char*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v6, &v58);
+	return (NetworkIdentifier*)(uintptr_t(v7) + 160);
 	//IDA ServerPlayer::setPermissions 34
 }
 
@@ -246,7 +255,7 @@ Container* Player::getArmorContainer() {
 //获取末影箱
 
 Container* Player::getEnderChestContainer() {
-	return FETCH(Container*, this + 4440);//IDA ReplaceItemCommand::execute 1086 
+	return FETCH(Container*, this + 4208);//IDA ReplaceItemCommand::execute 1086 
 }
 
 //设置一个装备
@@ -417,7 +426,7 @@ void Player::sendSetScorePacket(char type, const vector<ScorePacketInfo>& slot) 
 bool IsPlayer(Actor* ptr) {
 	if (ptr == nullptr)
 		return false;
-	if (ptr->getEntityTypeId() != 319)
+	if (ptr->getEntityTypeId() != 1)
 		return false;
 	return true;
 }

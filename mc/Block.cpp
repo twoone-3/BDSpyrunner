@@ -33,7 +33,7 @@ void BlockActor::setChanged() {
 }
 
 Block* BlockSource::getBlock(const BlockPos* bp) {
-	return SymCall<Block*>("?getBlock@BlockSource@@QEBAAEBVBlock@@AEBVBlockPos@@@Z",
+	return SymCall<Block*>("?getBlock@BlockSource@@UEBAAEBVBlock@@AEBVBlockPos@@@Z",
 		this, bp);
 }
 
@@ -61,7 +61,7 @@ void BlockSource::updateNeighborsAt(const BlockPos* pos) {
 
 int BlockSource::getDimensionId() {
 	int did;
-	SymCall<int>("?getDimensionId@BlockSource@@QEBA?AV?$AutomaticID@VDimension@@H@@XZ",
+	SymCall<int>("?getDimensionId@BlockSource@@UEBA?AV?$AutomaticID@VDimension@@H@@XZ",
 		this, &did);
 	return did;
 	//IDA Dimension::onBlockChanged 42
