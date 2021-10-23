@@ -8,13 +8,14 @@
 
 #define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
 #define SYM GetServerSymbol
-#define HOOK(name, ret, sym, ...)		\
+#define THOOK(name, ret, sym, ...)		\
 struct name {							\
 	using func = ret(__VA_ARGS__);		\
 	static func _hook;					\
-	static func* original;				\
+	inline static func* original;		\
+	inline static HookRegister _reg =	\
+		{ SYM(sym),&original,&_hook };	\
 };										\
-name::func* name::original = *reinterpret_cast<name::func**>(SymHook(sym, &name::original, name::_hook)); \
 ret name::_hook(__VA_ARGS__)
 
 extern "C" {
@@ -35,20 +36,12 @@ inline ReturnType SymCall(const char* sym, Args... args) {
 	return reinterpret_cast<ReturnType(*)(Args...)>(SYM(sym))(std::forward<Args>(args)...);
 }
 // replace the function
-inline void* SymHook(const char* sym, void* org, void* hook) {
-	void* found = SYM(sym);
-	if (!found)
-		std::cerr << "Failed to hook " << sym << std::endl;
-	HookFunction(found, org, hook);
-	return org;
-}
+struct HookRegister {
+	HookRegister(void* func, void* org, void* hook) {
+		HookFunction(func, org, hook);
+	}
+};
 //全局变量
 template <typename T>
-struct Global {
-	inline static T* data = nullptr;
-};
+inline static T* global = nullptr;
 
-//获取服务端版本
-inline std::string GetBDSVersion() {
-	return SymCall<std::string>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
-}

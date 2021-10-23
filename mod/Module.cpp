@@ -41,7 +41,7 @@ static PyObject* minVersionRequire(PyObject*, PyObject* args) {
 //获取BDS版本
 static PyObject* getBDSVersion(PyObject*, PyObject* args) {
 	Py_PARSE("");
-	return StringToPyUnicode(GetBDSVersion());
+	return StringToPyUnicode(SymCall<std::string>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ"));
 }
 //指令输出
 static PyObject* logout(PyObject*, PyObject* args) {
@@ -55,10 +55,10 @@ static PyObject* logout(PyObject*, PyObject* args) {
 static PyObject* runCommand(PyObject*, PyObject* args) {
 	const char* cmd = "";
 	Py_PARSE("s", &cmd);
-	if (!Global<SPSCQueue>::data)
+	if (global<SPSCQueue> == nullptr)
 		Py_RETURN_ERROR("Command queue is not initialized");
 	SymCall<bool, SPSCQueue*, const string&>("??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
-		Global<SPSCQueue>::data, cmd);
+		global<SPSCQueue>, cmd);
 	Py_RETURN_NONE;
 }
 //设置监听
@@ -86,8 +86,8 @@ static PyObject* setCommandDescription(PyObject*, PyObject* args) {
 static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 	const char* xuid = "";
 	Py_PARSE("s", &xuid);
-	Player* p = Global<Level>::data->getPlayerByXuid(xuid);
-	if (!p)
+	Player* p = global<Level>->getPlayerByXuid(xuid);
+	if (p == nullptr)
 		Py_RETURN_ERROR("Failed to find player");
 	return ToEntity(p);
 }
@@ -95,9 +95,9 @@ static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 static PyObject* getPlayerList(PyObject*, PyObject* args) {
 	Py_PARSE("");
 	PyObject* list = PyList_New(0);
-	if (!Global<Level>::data)
+	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	Global<Level>::data->forEachPlayer(
+	global<Level>->forEachPlayer(
 		[list](Player* p)->bool {
 			PyList_Append(list, ToEntity(p));
 			return true;
@@ -113,20 +113,20 @@ static PyObject* setDamage(PyObject*, PyObject* args) {
 static PyObject* setServerMotd(PyObject*, PyObject* args) {
 	const char* name = "";
 	Py_PARSE("s", &name);
-	if (!Global<ServerNetworkHandler>::data)
+	if (global<ServerNetworkHandler> == nullptr)
 		Py_RETURN_ERROR("Server did not finish loading");
 	SymCall<uintptr_t, ServerNetworkHandler*, const string&, bool>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
-		Global<ServerNetworkHandler>::data, name, true);
+		global<ServerNetworkHandler>, name, true);
 	Py_RETURN_NONE;
 }
 //根据坐标设置方块
 static PyObject* getBlock(PyObject*, PyObject* args) {
 	BlockPos bp; int did;
 	Py_PARSE("iiii", &bp.x, &bp.y, &bp.z, &did);
-	if (!Global<Level>::data)
+	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Global<Level>::data->getBlockSource(did);
-	if (!bs)
+	BlockSource* bs = global<Level>->getBlockSource(did);
+	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	BlockLegacy* bl = bs->getBlock(&bp)->getBlockLegacy();
 	return Py_BuildValue("{s:s:s:i}",
@@ -138,13 +138,13 @@ static PyObject* setBlock(PyObject*, PyObject* args) {
 	const char* name = "";
 	BlockPos bp; int did;
 	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &did);
-	if (!Global<Level>::data)
+	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Global<Level>::data->getBlockSource(did);
-	if (!bs)
+	BlockSource* bs = global<Level>->getBlockSource(did);
+	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	Block* b = *reinterpret_cast<Block**>(SYM((string("?m") + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()));
-	if (!b)
+	if (b == nullptr)
 		Py_RETURN_ERROR("Unknown Block");
 	bs->setBlock(&bp, b);
 	Py_RETURN_NONE;
@@ -156,10 +156,10 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 		&pos1.x, &pos1.y, &pos1.z,
 		&pos2.x, &pos2.y, &pos2.z, &did
 	);
-	if (!Global<Level>::data)
+	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Global<Level>::data->getBlockSource(did);
-	if (!bs)
+	BlockSource* bs = global<Level>->getBlockSource(did);
+	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	BlockPos start{
 		min(pos1.x,pos2.x),
@@ -181,10 +181,10 @@ static PyObject* setStructure(PyObject*, PyObject* args) {
 	const char* data = "";
 	BlockPos pos; int did;
 	Py_PARSE("siiii", &data, &pos.x, &pos.y, &pos.z, &did);
-	if (!Global<Level>::data)
+	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Global<Level>::data->getBlockSource(did);
-	if (!bs)
+	BlockSource* bs = global<Level>->getBlockSource(did);
+	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	Json value = StringToJson(data);
 	Json& arr = value["size9"];
@@ -198,7 +198,7 @@ static PyObject* setStructure(PyObject*, PyObject* args) {
 	StructureSettings ss(&size, true, false);
 	StructureTemplate st("tmp");
 	st.fromJson(value);
-	st.placeInWorld(bs, Global<Level>::data->getBlockPalette(), &pos, &ss);
+	st.placeInWorld(bs, global<Level>->getBlockPalette(), &pos, &ss);
 	for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {
 			for (int z = 0; z != size.z; ++z) {
@@ -217,13 +217,13 @@ static PyObject* explode(PyObject*, PyObject* args) {
 	Py_PARSE("fffifbfb",
 		&pos.x, &pos.y, &pos.z, &did, &power, &destroy, &range, &fire
 	);
-	if (!Global<Level>::data)
+	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Global<Level>::data->getBlockSource(did);
+	BlockSource* bs = global<Level>->getBlockSource(did);
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	SymCall<bool>("?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
-		Global<Level>::data, bs, nullptr, pos, power, fire, destroy, range, true);
+		global<Level>, bs, nullptr, pos, power, fire, destroy, range, true);
 	Py_RETURN_NONE;
 }
 //生成物品
@@ -231,13 +231,13 @@ static PyObject* spawnItem(PyObject*, PyObject* args) {
 	const char* data = "";
 	Vec3 pos; int did;
 	Py_PARSE("sfffi", &data, &pos.x, &pos.y, &pos.z, &did);
-	if (!Global<Level>::data)
+	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Global<Level>::data->getBlockSource(did);
+	BlockSource* bs = global<Level>->getBlockSource(did);
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	ItemStack item(StringToJson(data));
-	Global<Level>::data->getSpawner()->spawnItem(bs, &item, &pos);
+	global<Level>->getSpawner()->spawnItem(bs, &item, &pos);
 	Py_RETURN_NONE;
 }
 //是否为史莱姆区块
@@ -254,10 +254,10 @@ static PyObject* setSignBlockMessage(PyObject*, PyObject* args) {
 	const char* name = "";
 	BlockPos bp; int did;
 	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &did);
-	if (!Global<Level>::data)
+	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Global<Level>::data->getBlockSource(did);
-	if (!bs)
+	BlockSource* bs = global<Level>->getBlockSource(did);
+	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	BlockActor* sign = bs->getBlockEntity(&bp);
 	SymCall<void, BlockActor*, const string&, const string&>("?setMessage@SignBlockActor@@QEAAXV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@0@Z",

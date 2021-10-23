@@ -25,6 +25,12 @@ enum class CommandPermissionLevel : uint8_t {
 	Owner,
 	Internal 
 };
+struct UserEntityIdentifierComponent {
+	NetworkIdentifier nid;
+	char unk;
+	void* uuid[2];
+	struct Certificate* cert;
+};
 struct Actor {
 	//获取生物名称信息
 	std::string getNameTag();
@@ -84,6 +90,8 @@ struct Actor {
 };
 struct Mob : Actor {};
 struct Player : Mob {
+	//获取玩家身份数据
+	UserEntityIdentifierComponent* getUserEntityIdentifierComponent();
 	//获取玩家uuid
 	std::string getUuid();
 	//获取玩家xuid

@@ -28,7 +28,7 @@ string SystemAddress::toString() {
 SystemAddress RakPeer::getSystemAddress(NetworkIdentifier* ni) {
 	SystemAddress sa;
 	SymCall<SystemAddress&>("?GetSystemAddressFromGuid@RakPeer@RakNet@@UEBA?AUSystemAddress@2@URakNetGUID@2@@Z",
-		this, &sa, ni);
+		this, &sa, ni + 8);
 	return sa;
 }
 

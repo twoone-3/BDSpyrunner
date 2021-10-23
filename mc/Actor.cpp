@@ -79,8 +79,8 @@ ItemStack* Actor::getArmor(int slot) {
 //获取实体类型
 
 unsigned Actor::getEntityTypeId() {
-	//return VirtualCall<unsigned>(0x558, this);
-	return SymCall<unsigned>("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ", this);
+	return VirtualCall<unsigned>(0x550, this);
+	//return SymCall<unsigned>("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ", this);
 }
 
 //获取查询用ID
@@ -148,7 +148,8 @@ ItemStack* Actor::getOffHand() {
 
 Tag* Actor::save() {
 	Tag* t = newTag(TagType::Compound);
-	SymCall("?save@Actor@@UEAA_NAEAVCompoundTag@@@Z", this, t);
+	VirtualCall(0x530, this, t);
+	//SymCall("?save@Actor@@UEAA_NAEAVCompoundTag@@@Z", this, t);
 	return t;
 }
 
@@ -207,7 +208,14 @@ void Actor::kill() {
 	SymCall("?kill@Mob@@UEAAXXZ", this);
 }
 
+UserEntityIdentifierComponent* Player::getUserEntityIdentifierComponent() {
+	return SymCall<UserEntityIdentifierComponent*>("??$tryGetComponent@VUserEntityIdentifierComponent@@@Actor@@QEAAPEAVUserEntityIdentifierComponent@@XZ",
+		this);
+}
+
 string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
+	uintptr_t userid = SymCall<uintptr_t>("??$tryGetComponent@VUserEntityIdentifierComponent@@@Actor@@QEAAPEAVUserEntityIdentifierComponent@@XZ",
+		this);
 	string p;
 	void* v33 = **(void***)(this + 8);
 	__int32 v107 = *(__int32*)(this + 16);
@@ -224,7 +232,7 @@ string& Player::getXuid() {
 	__int32 v107 = *(__int32*)(this + 16);
 	void* v34 = SymCall<void*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v33, &v107);
 	return SymCall<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
-		Global<Level>::data, uintptr_t(v34) + 168);
+		global<Level>, uintptr_t(this) + 2976);
 }
 
 //获取网络标识符
@@ -255,7 +263,8 @@ Container* Player::getArmorContainer() {
 //获取末影箱
 
 Container* Player::getEnderChestContainer() {
-	return FETCH(Container*, this + 4208);//IDA ReplaceItemCommand::execute 1086 
+	//IDA Player::addAdditionalSaveData EnderChestInventory
+	return FETCH(Container*, this + 4208);
 }
 
 //设置一个装备
@@ -392,7 +401,7 @@ void Player::sendCommandRequestPacket(const string& cmd) {
 	uintptr_t pkt = createPacket(77);
 	FETCH(string, pkt + 48) = cmd;
 	SymCall<uintptr_t>("?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
-		Global<ServerNetworkHandler>::data, getClientId(), pkt);
+		global<ServerNetworkHandler>, getClientId(), pkt);
 	//p->sendPacket(pkt);
 }
 

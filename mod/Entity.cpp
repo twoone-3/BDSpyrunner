@@ -163,7 +163,11 @@ PyObject* PyEntity_GetNBTInfo(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
-	return StringToPyUnicode(CompoundTagtoJson(a->save()).dump(4));
+	//内存泄露需回收 2021.10.22
+	Tag* t = a->save();
+	PyObject* result = StringToPyUnicode(CompoundTagtoJson(t).dump(4));
+	t->deleteCompound();
+	return result;
 }
 
 //获取生命值
@@ -244,7 +248,7 @@ PyObject* PyEntity_GetIP(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return StringToPyUnicode(Global<RakPeer>::data->getSystemAddress(p->getClientId()).toString());
+	return StringToPyUnicode(global<RakPeer>->getSystemAddress(p->getClientId()).toString());
 }
 
 //获取/设置玩家所有物品
@@ -453,9 +457,9 @@ PyObject* PyEntity_GetScore(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		Objective* testobj = Global<Scoreboard>::data->getObjective(objname);
+		Objective* testobj = global<Scoreboard>->getObjective(objname);
 		if (testobj) {
-			auto id = Global<Scoreboard>::data->getScoreboardId(p);
+			auto id = global<Scoreboard>->getScoreboardId(p);
 			auto score = testobj->getPlayerScore(id);
 			return PyLong_FromLong(score->getCount());
 		}
@@ -469,10 +473,10 @@ PyObject* PyEntity_ModifyScore(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		Objective* testobj = Global<Scoreboard>::data->getObjective(objname);
+		Objective* testobj = global<Scoreboard>->getObjective(objname);
 		if (testobj) {
 			//mode:{set,add,remove}
-			Global<Scoreboard>::data->modifyPlayerScore(Global<Scoreboard>::data->getScoreboardId(p), testobj, count, mode);
+			global<Scoreboard>->modifyPlayerScore(global<Scoreboard>->getScoreboardId(p), testobj, count, mode);
 		}
 	}
 	Py_RETURN_NONE;
@@ -559,7 +563,7 @@ PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
 		vector<ScorePacketInfo> info;
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {
-				ScorePacketInfo o(Global<Scoreboard>::data->createScoreBoardId(key),
+				ScorePacketInfo o(global<Scoreboard>->createScoreBoardId(key),
 					val.get<int>(), key);
 				info.push_back(o);
 			}
@@ -708,7 +712,7 @@ PyTypeObject PyEntity_Type{
 	nullptr,				/* tp_getattr */
 	nullptr,				/* tp_setattr */
 	nullptr,				/* tp_reserved */
-	PyEntity::repr,				/* tp_repr */
+	PyEntity::repr,			/* tp_repr */
 	nullptr,				/* tp_as_number */
 	nullptr,				/* tp_as_sequence */
 	nullptr,				/* tp_as_mapping */
@@ -734,7 +738,7 @@ PyTypeObject PyEntity_Type{
 	nullptr,				/* tp_descr_get */
 	nullptr,				/* tp_descr_set */
 	0,						/* tp_dictoffset */
-	nullptr,//PyEntity_Init,			/* tp_init */
+	nullptr,				/* tp_init */
 	nullptr,				/* tp_alloc */
 	nullptr,				/* tp_new */
 	nullptr,				/* tp_free */
@@ -754,6 +758,6 @@ PyObject* ToEntity(Actor* ptr) {
 	Py_BEGIN_CALL;
 	obj = PyEntity_Type.tp_alloc(&PyEntity_Type, 0);
 	Py_END_CALL;
-	reinterpret_cast<struct PyEntity*>(obj)->actor = ptr;
+	reinterpret_cast<PyEntity*>(obj)->actor = ptr;
 	return obj;
 }

@@ -2,6 +2,7 @@
 #include <string>
 
 struct NetworkIdentifier {
+	char _this[144];
 	std::string getAddress();
 	std::string toString();
 };

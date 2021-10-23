@@ -61,9 +61,7 @@ void BlockSource::updateNeighborsAt(const BlockPos* pos) {
 
 int BlockSource::getDimensionId() {
 	int did;
-	SymCall<int>("?getDimensionId@BlockSource@@UEBA?AV?$AutomaticID@VDimension@@H@@XZ",
+	SymCall<int&>("?getDimensionId@BlockSource@@UEBA?AV?$AutomaticID@VDimension@@H@@XZ",
 		this, &did);
 	return did;
-	//IDA Dimension::onBlockChanged 42
-	//return FETCH(int, FETCH(uintptr_t, this + 32) + 216);
 }
