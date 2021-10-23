@@ -1,6 +1,5 @@
 ﻿#include "Actor.h"
 #include "tool.h"
-#include "NetWork.h"
 #include "Tag.h"
 #include "ItemStack.h"
 #include "ScoreBoard.h"
@@ -238,7 +237,7 @@ string& Player::getXuid() {
 //获取网络标识符
 
 NetworkIdentifier* Player::getClientId() {
-
+	return &getUserEntityIdentifierComponent()->nid;
 	void* v6 = **(void***)(this + 8);
 	__int32 v58 = *(__int32*)(this + 16);
 	char* v7 = SymCall<char*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v6, &v58);
@@ -400,9 +399,9 @@ void Player::sendTextPacket(int mode, const string& msg) {
 void Player::sendCommandRequestPacket(const string& cmd) {
 	uintptr_t pkt = createPacket(77);
 	FETCH(string, pkt + 48) = cmd;
-	SymCall<uintptr_t>("?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
-		global<ServerNetworkHandler>, getClientId(), pkt);
-	//p->sendPacket(pkt);
+	//SymCall<uintptr_t>("?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
+	//	global<ServerNetworkHandler>, getClientId(), pkt);
+	sendPacket(pkt);
 }
 
 void Player::sendBossEventCodePacket(string name, float per, int eventtype) {
@@ -435,7 +434,7 @@ void Player::sendSetScorePacket(char type, const vector<ScorePacketInfo>& slot) 
 bool IsPlayer(Actor* ptr) {
 	if (ptr == nullptr)
 		return false;
-	if (ptr->getEntityTypeId() != 1)
+	if (ptr->getEntityTypeId() != 319)
 		return false;
 	return true;
 }

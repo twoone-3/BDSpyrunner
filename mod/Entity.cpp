@@ -248,7 +248,8 @@ PyObject* PyEntity_GetIP(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return StringToPyUnicode(global<RakPeer>->getSystemAddress(p->getClientId()).toString());
+	auto ni = p->getClientId();
+	return StringToPyUnicode(global<RakPeer>->getSystemAddress(ni).toString());
 }
 
 //获取/设置玩家所有物品

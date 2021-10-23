@@ -43,5 +43,5 @@ struct HookRegister {
 };
 //全局变量
 template <typename T>
-inline static T* global = nullptr;
+inline T* global = nullptr;
 

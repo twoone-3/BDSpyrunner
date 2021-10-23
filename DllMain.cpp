@@ -37,9 +37,29 @@ namespace fs = filesystem;
 //注入时事件
 void Init();
 //Dll入口函数
-//BOOL WINAPI DllMain(HMODULE, DWORD, LPVOID) {
-//	return TRUE;
-//}
+BOOL WINAPI DllMain(
+	HINSTANCE hinstDLL	/*handle to DLL module*/,
+	DWORD fdwReason		/* reason for calling function */,
+	LPVOID lpReserved	/* reserved*/
+) {
+	// Perform actions based on the reason for calling.
+	switch (fdwReason) {
+	case DLL_PROCESS_ATTACH:
+		// Initialize once for each new process.
+		// Return FALSE to fail DLL load.
+		break;
+	case DLL_THREAD_ATTACH:
+		// Do thread-specific initialization.
+		break;
+	case DLL_THREAD_DETACH:
+		// Do thread-specific cleanup.
+		break;
+	case DLL_PROCESS_DETACH:
+		// Perform any necessary cleanup.
+		break;
+	}
+	return TRUE;  // Successful DLL_PROCESS_ATTACH.
+}
 //GBK转UTF8
 static string GbkToUtf8(const char* src_str) {
 	int len = MultiByteToWideChar(CP_ACP, 0, src_str, -1, NULL, 0);
@@ -192,8 +212,10 @@ THOOK(SPSCQueue_construct, SPSCQueue*, "??0?$SPSCQueue@V?$basic_string@DU?$char_
 THOOK(RakPeer_construct, RakPeer*, "??0RakPeer@RakNet@@QEAA@XZ",
 	RakPeer* _this) {
 	//会构造两次，取第一次值
-	if (global<RakPeer> == nullptr)
-		return global<RakPeer> = original(_this);
+	if (global<RakPeer> == nullptr) {
+		global<RakPeer> = original(_this);
+		return global<RakPeer>;
+	}
 	return original(_this);
 }
 //ServerNetworkHandler的构造函数
@@ -586,15 +608,19 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 	//a3 + 200 BaseCommandBlock
 	string cmd = FETCH(string, a3 + 256);
 	string rawname = FETCH(string, a3 + 288);
+	PyObject* pos = ToList(bp);
 	if (EventCallBack(EventCode::onCommandBlockPerform,
 		"{s:i,s:b,s:s,s:s,s:O}",
 		"mode", mode,
 		"condition", condition,
 		"cmd", cmd.c_str(),
 		"rawname", rawname.c_str(),
-		"position", ToList(bp)
-	))
+		"position", pos
+	)) {
+		Py_CLEAR(pos);
 		return original(_this, a2, a3, bp, a5);
+	}
+	Py_CLEAR(pos);
 	return false;
 }
 //玩家移动
@@ -724,7 +750,7 @@ THOOK(onRide, bool, "?canAddPassenger@Actor@@UEBA_NAEAV1@@Z",
 	))
 		return original(a1, a2);
 	return false;
-}*/
+}
 //放入取出物品展示框的物品
 THOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* a2, BlockPos* a3) {

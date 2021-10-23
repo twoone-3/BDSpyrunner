@@ -7,7 +7,7 @@ struct NetworkIdentifier {
 	std::string toString();
 };
 struct SystemAddress {
-	char _this[132];
+	char _this[136];
 	SystemAddress();
 	std::string toString();
 };
@@ -16,4 +16,8 @@ struct RakPeer {
 };
 struct ServerNetworkHandler {
 	struct Player* _getServerPlayer(uintptr_t id, uintptr_t pkt);
+};
+struct RakNetGUID {
+	uint64_t unk;
+	short    unk8;
 };

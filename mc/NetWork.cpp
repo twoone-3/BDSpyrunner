@@ -27,8 +27,9 @@ string SystemAddress::toString() {
 
 SystemAddress RakPeer::getSystemAddress(NetworkIdentifier* ni) {
 	SystemAddress sa;
+	RakNetGUID& guid = FETCH(RakNetGUID, ni->_this + 8);
 	SymCall<SystemAddress&>("?GetSystemAddressFromGuid@RakPeer@RakNet@@UEBA?AUSystemAddress@2@URakNetGUID@2@@Z",
-		this, &sa, ni + 8);
+		this, &sa, &guid);
 	return sa;
 }
 

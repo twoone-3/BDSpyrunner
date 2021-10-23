@@ -2,12 +2,12 @@
 #include <vector>
 #include "Position.h"
 #include "span.h"
+#include "NetWork.h"
 
 struct BlockSource;
 struct ItemStack;
 struct Level;
 struct Tag;
-struct NetworkIdentifier;
 struct Container;
 struct ScorePacketInfo;
 struct Abilities;
