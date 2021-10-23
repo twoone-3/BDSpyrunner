@@ -360,7 +360,7 @@ HOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z"
 //关箱
 HOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	uintptr_t _this, Player* p) {
-	auto bp = (BlockPos*)(_this - 204);
+	auto bp = (BlockPos*)(_this - 196);
 	EventCallBack(EventCode::onCloseChest,
 		"{s:O,s:O}",
 		"player", ToEntity(p),
@@ -371,7 +371,7 @@ HOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 //关桶
 HOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	uintptr_t _this, Player* p) {
-	auto bp = (BlockPos*)(_this - 204);
+	auto bp = (BlockPos*)(_this - 196);
 	EventCallBack(EventCode::onCloseBarrel,
 		"{s:O,s:O}",
 		"player", ToEntity(p),
@@ -711,7 +711,7 @@ HOOK(onTakeItem, bool, "?take@Player@@QEAA_NAEAVActor@@HH@Z",
 	return false;
 }
 //骑
-HOOK(onRide, bool, "?canAddRider@Actor@@UEBA_NAEAV1@@Z",
+/*HOOK(onRide, bool, "?canAddRider@Actor@@UEBA_NAEAV1@@Z",
 	Actor* a1, Actor* a2) {
 	if (EventCallBack(EventCode::onRide,
 		"{s:O,s:O}",
@@ -720,7 +720,7 @@ HOOK(onRide, bool, "?canAddRider@Actor@@UEBA_NAEAV1@@Z",
 	))
 		return original(a1, a2);
 	return false;
-}
+}*/
 //放入取出物品展示框的物品
 HOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* a2, BlockPos* a3) {
@@ -868,5 +868,5 @@ void Init() {
 	//释放当前线程
 	PyEval_SaveThread();
 	//输出版本号信息
-	cout << "[BDSpyrunner] " << PYR_VERSION << " loaded, © 2021 twoone3." << endl;
+	cout << "[BDSpyrunner] " << PYR_VERSION << " loaded, © 2021 twoone3 updated by fishing." << endl;
 	}
