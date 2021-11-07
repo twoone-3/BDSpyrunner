@@ -30,6 +30,7 @@ struct Tag {
 	void add(Tag* t);
 	void deleteCompound();
 	void deleteList();
+	void deleteString();
 
 	TagType getVariantType();
 	TagType getListType();
@@ -39,7 +40,7 @@ struct Tag {
 	auto& asInt64();
 	auto& asFloat();
 	auto& asDouble();
-	auto& asString();
+	std::string& asString();
 	auto& asByteArray();
 	auto& asList();
 	auto& asCompound();

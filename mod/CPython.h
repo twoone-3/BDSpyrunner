@@ -8,7 +8,7 @@
 #define Py_PARSE_WITH_KERWORDS(format,...) if (!PyArg_ParseTupleAndKeywords(args, kwds, format ":" __FUNCTION__, const_cast<char**>(kwlist), __VA_ARGS__))return nullptr
 
 //字符串转Unicode
-inline PyObject* StringToPyUnicode(std::string_view str) {
+inline PyObject* ToPyStr(std::string_view str) {
 	return PyUnicode_FromStringAndSize(str.data(), str.length());
 }
 //打印错误信息

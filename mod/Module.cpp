@@ -40,8 +40,9 @@ static PyObject* minVersionRequire(PyObject*, PyObject* args) {
 }
 //获取BDS版本
 static PyObject* getBDSVersion(PyObject*, PyObject* args) {
-	Py_PARSE("");
-	return StringToPyUnicode(SymCall<std::string>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ"));
+	//Py_PARSE("");
+	string version = SymCall<std::string>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
+	return ToPyStr(version);
 }
 //指令输出
 static PyObject* logout(PyObject*, PyObject* args) {
@@ -175,7 +176,7 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 	StructureTemplate st("tmp");
 	st.fillFromWorld(bs, &start, &ss);
 
-	return StringToPyUnicode(CompoundTagtoJson(st.save()).dump(4));
+	return ToPyStr(CompoundTagtoJson(st.save()).dump(4));
 }
 static PyObject* setStructure(PyObject*, PyObject* args) {
 	const char* data = "";

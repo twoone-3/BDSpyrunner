@@ -62,6 +62,10 @@ void Tag::deleteList() {
 	SymCall("??1ListTag@@UEAA@XZ", this);
 }
 
+void Tag::deleteString() {
+	asString().~basic_string();
+}
+
 TagType Tag::getVariantType() {
 	return *((TagType*)this + 40);
 }
@@ -82,7 +86,7 @@ auto& Tag::asFloat() { return *reinterpret_cast<float*>(data); }
 
 auto& Tag::asDouble() { return *reinterpret_cast<double*>(data); }
 
-auto& Tag::asString() { return *reinterpret_cast<string*>(data); }
+string& Tag::asString() { return *reinterpret_cast<string*>(data); }
 
 auto& Tag::asByteArray() { return *reinterpret_cast<TagMemoryChunk*>(data); }
 
@@ -246,6 +250,7 @@ Tag* ObjecttoTag(const Json& value) {
 		case TagType::Compound: {
 			Tag* t = ObjecttoTag(val);
 			c->putCompound(new_key, t);
+			//t->deleteCompound();
 			//delete t;
 			break;
 		}
@@ -267,13 +272,22 @@ Tag* ArraytoTag(const Json& value) {
 			break;
 		case JsonType::object:
 			tag = ObjecttoTag(x);
+			list->add(tag);
+			//tag->deleteCompound();
+			//delete tag;
 			break;
 		case JsonType::array:
 			tag = ArraytoTag(x);
+			list->add(tag);
+			//tag->deleteList();
+			//delete tag;
 			break;
 		case JsonType::string:
 			tag = newTag(TagType::String);
 			FETCH(string, tag->data) = x.get<string>();
+			list->add(tag);
+			//tag->deleteString();
+			//delete tag;
 			break;
 		case JsonType::boolean:
 			break;
@@ -281,10 +295,14 @@ Tag* ArraytoTag(const Json& value) {
 		case JsonType::number_unsigned:
 			tag = newTag(TagType::Int);
 			FETCH(int, tag->data) = x.get<int>();
+			list->add(tag);
+			//delete tag;
 			break;
 		case JsonType::number_float:
 			tag = newTag(TagType::Double);
 			FETCH(double, tag->data) = x.get<double>();
+			list->add(tag);
+			//delete tag;
 			break;
 		case JsonType::binary:
 			break;
@@ -292,8 +310,7 @@ Tag* ArraytoTag(const Json& value) {
 			break;
 		default:
 			break;
-		}
-		list->add(tag);
+		}		
 	}
 	return list;
 }

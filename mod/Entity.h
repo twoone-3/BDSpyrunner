@@ -11,7 +11,7 @@
 	Py_BEGIN_ALLOW_THREADS;\
 	Py_BLOCK_THREADS
 #define Py_END_CALL\
-	Py_UNBLOCK_THREADS;\
+	Py_UNBLOCK_THREADS\
 	Py_END_ALLOW_THREADS;\
 	if (!_has_gil)PyGILState_Release(_gil_state)
 

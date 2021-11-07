@@ -27,20 +27,18 @@
 #define CACHE_PATH "plugins\\cache\\"
 #define BAT_PATH "plugins\\update_pyr.bat"
 
-constexpr size_t BLOCK_SIZE = 0x1000;
+constexpr size_t BLOCK_SIZE = 0x800;
 constexpr const wchar_t* USER_AGENT = L"Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko";
 
 using namespace std;
 
 namespace fs = filesystem;
 #pragma region Function
-//注入时事件
-void Init();
 //Dll入口函数
 BOOL WINAPI DllMain(
-	HINSTANCE hinstDLL	/*handle to DLL module*/,
+	HINSTANCE hinstDLL	/* handle to DLL module */,
 	DWORD fdwReason		/* reason for calling function */,
-	LPVOID lpReserved	/* reserved*/
+	LPVOID lpReserved	/* reserved */
 ) {
 	// Perform actions based on the reason for calling.
 	switch (fdwReason) {
@@ -170,32 +168,156 @@ static void CheckPluginVersion() {
 	system("start /min " BAT_PATH);
 	exit(0);
 }
-//事件回调
-template <typename... Args>
-static bool EventCallBack(const EventCode e, const char* format, Args... args) {
-	bool intercept = true;
-	Py_BEGIN_CALL;
-	for (PyObject* cb : g_callback_functions[e]) {
-		PyObject* result = PyObject_CallFunction(cb, format, args...);
-		PrintPythonError();
-		if (result == Py_False)
-			intercept = false;
+//事件回调助手
+class EventCallBackHelper {
+public:
+	EventCallBackHelper(EventCode t) : type_(t), arg_(nullptr) {}
+	~EventCallBackHelper() {
+		if (arg_) {
+			//cout << "引用计数" << arg_->ob_refcnt << endl;
+			//玄学回收有的行有的不行
+			if (arg_->ob_refcnt > 1)
+				Py_XDECREF(arg_);
+		}
 	}
-	Py_END_CALL;
-	return intercept;
-}
+	//事件回调
+	bool call() {
+		bool intercept = true;
+		//如果没有则跳过
+		auto cbs = g_callback_functions[type_];
+		//if (cbs.empty()) {
+		//	cout << "未找到加1" << endl;
+		//	Py_XINCREF(arg_);
+		//	return intercept;
+		//}
+		Py_BEGIN_CALL;
+		//Py_XINCREF(arg_);
+		for (auto cb : cbs) {
+			PyObject* result = PyObject_CallFunction(cb, "O", arg_);
+			PrintPythonError();
+			if (result == Py_False)
+				intercept = false;
+		}
+		Py_END_CALL;
+		return intercept;
+	}
+	EventCallBackHelper& setArg(PyObject* arg) {
+		arg_ = arg;
+		return *this;
+	}
+	EventCallBackHelper& setDict() {
+		arg_ = PyDict_New();
+		return *this;
+	}
+	EventCallBackHelper& insert(string_view key, PyObject* item) {
+		if (arg_ == nullptr)
+			arg_ = PyDict_New();
+		PyDict_SetItem(arg_, ToPyStr(key), item);
+		return *this;
+	}
+	EventCallBackHelper& insert(string_view key, string_view item) {
+		return insert(key, ToPyStr(item));
+	}
+	EventCallBackHelper& insert(string_view key, Actor* item) {
+		return insert(key, ToEntity(item));
+	}
+	EventCallBackHelper& insert(string_view key, BlockPos* item) {
+		return insert(key, ToList(item));
+	}
+	EventCallBackHelper& insert(string_view key, Vec3* item) {
+		return insert(key, ToList(item));
+	}
+	EventCallBackHelper& insert(string_view key, short item) {
+		return insert(key, PyLong_FromLong(item));
+	}
+	EventCallBackHelper& insert(string_view key, int item) {
+		return insert(key, PyLong_FromLong(item));
+	}
+	EventCallBackHelper& insert(string_view key, unsigned item) {
+		return insert(key, PyLong_FromUnsignedLong(item));
+	}
+	EventCallBackHelper& insert(string_view key, float item) {
+		return insert(key, PyLong_FromDouble(item));
+	}
+private:
+	EventCode type_;
+	PyObject* arg_;
+};
 #pragma endregion
 #pragma region Hook List
-/*
-THOOK(Level_tick, void, "?tick@Level@@UEAAXXZ",
-	Level* _this) {
-	original(_this);
-}
-*/
 //将Python解释器初始化插入bds主函数
 THOOK(BDS_Main, int, "main",
 	int argc, char* argv[], char* envp[]) {
-	Init();
+//	while (true) {
+//		Tag* t = ObjecttoTag(StringToJson(R"(
+//             {
+//                "Block10": {
+//                    "name8": "minecraft:crafting_table",
+//                    "states10": null,
+//                    "version3": 17879555
+//                },
+//                "Count1": 64,
+//                "Damage2": 0,
+//                "Name8": "minecraft:crafting_table",
+//                "WasPickedUp1": 0,
+//                "tag10": {
+//                    "display10": {
+//                        "Lore9": [
+//                            "针不戳",
+//                            "很不错"
+//                        ]
+//                    }
+//                }
+//            }
+//)"));
+//		cout << CompoundTagtoJson(t).dump(4) << endl;
+//		t->deleteCompound();
+//		delete t;
+//	}
+	//如果目录不存在创建目录
+	if (!fs::exists(PLUGIN_PATH))
+		fs::create_directory(PLUGIN_PATH);
+	if (!fs::exists(CACHE_PATH))
+		fs::create_directory(CACHE_PATH);
+	//设置模块搜索路径
+	Py_SetPath(
+		PLUGIN_PATH L";"
+		PLUGIN_PATH "Dlls;"
+		PLUGIN_PATH "Lib"
+	);
+#if 0
+	//预初始化3.8+
+	PyPreConfig cfg;
+	PyPreConfig_InitPythonConfig(&cfg);
+	cfg.utf8_mode = 1;
+	cfg.configure_locale = 0;
+	Py_PreInitialize(&cfg);
+#endif
+	//增加一个模块
+	PyImport_AppendInittab("mc", mc_init);
+	//初始化解释器
+	Py_InitializeEx(0);
+	//初始化类型
+	if (PyType_Ready(&PyEntity_Type) < 0)
+		Py_FatalError("Can't initialize entity type");
+	//启用线程支持
+	PyEval_InitThreads();
+	for (auto& info : fs::directory_iterator(PLUGIN_PATH)) {
+		//whether the file is py
+		if (info.path().extension() == ".py") {
+			string name(info.path().stem().u8string());
+			//ignore files starting with '_'
+			if (name.front() == '_')
+				continue;
+			cout << "[BDSpyrunner] Loading " << name << endl;
+			PyImport_Import(ToPyStr(name));
+			PrintPythonError();
+		}
+	}
+	//释放当前线程
+	PyEval_SaveThread();
+	//输出版本号信息
+	cout << "[BDSpyrunner] " << PYR_VERSION << " loaded." << endl;
 	return original(argc, argv, envp);
 }
 //Level的构造函数
@@ -243,15 +365,19 @@ THOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCom
 //开服完成
 THOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
 	uintptr_t _this) {
-	EventCallBack(EventCode::onServerStarted, nullptr);
+	EventCallBackHelper h(EventCode::onServerStarted);
+	h.setArg(Py_None);
+	h.call();
 	thread(CheckPluginVersion).detach();
 	original(_this);
 }
 //控制台输出，实际上是ostrram::operator<<的底层调用
 THOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, uintptr_t size) {
+	EventCallBackHelper h(EventCode::onConsoleOutput);
 	if (&_this == &cout) {
-		if (!EventCallBack(EventCode::onConsoleOutput, "s", str))
+		h.setArg(ToPyStr(str));
+		if (!h.call())
 			return _this;
 	}
 	return original(_this, str, size);
@@ -259,6 +385,7 @@ THOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@st
 //控制台输入，实际上是命令队列的底层
 THOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 	SPSCQueue* _this, string* cmd) {
+	EventCallBackHelper h(EventCode::onConsoleInput);
 	static bool debug = false;
 	if (*cmd == "pydebug") {
 		if (debug) {
@@ -277,62 +404,60 @@ THOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tr
 		cout << '>';
 		return false;
 	}
-	if (EventCallBack(EventCode::onConsoleInput, "O", StringToPyUnicode(*cmd)))
+	h.setArg(ToPyStr(*cmd));
+	if (h.call())
 		return original(_this, cmd);
 	return false;
 }
 //玩家加入发包
 THOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVSetLocalPlayerAsInitializedPacket@@@Z",
 	ServerNetworkHandler* _this, uintptr_t id,/*SetLocalPlayerAsInitializedPacket*/ uintptr_t pkt) {
+	EventCallBackHelper h(EventCode::onPlayerJoin);
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		EventCallBack(EventCode::onPlayerJoin, "O", ToEntity(p));
+		h.setArg(ToEntity(p)).call();
 	}
 	original(_this, id, pkt);
 }
 //玩家退出
 THOOK(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
 	uintptr_t _this, Player* p, char v3) {
-	EventCallBack(EventCode::onPlayerLeft, "O", ToEntity(p));
+	EventCallBackHelper h(EventCode::onPlayerLeft);
+	h.setArg(ToEntity(p));
+	h.call();
 	return original(_this, p, v3);
 }
 //使用物品
 THOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@EAEBVVec3@@PEBVBlock@@@Z",
 	uintptr_t _this, ItemStack* item, BlockPos* bp, char a4, uintptr_t a5, Block* b) {
+	EventCallBackHelper h(EventCode::onUseItem);
 	Player* p = FETCH(Player*, _this + 8);
-	short iid = item->getId();
-	short iaux = item->getAuxValue();
-	string iname = item->getName();
 	BlockLegacy* bl = b->getBlockLegacy();
-	short bid = bl->getBlockItemID();
-	string bn = bl->getBlockName();
-	if (EventCallBack(EventCode::onUseItem,
-		"{s:O,s:i,s:i,s:s,s:s,s:i,s:O}",
-		"player", ToEntity(p),
-		"itemid", static_cast<int>(iid),
-		"itemaux", static_cast<int>(iaux),
-		"itemname", iname.c_str(),
-		"blockname", bn.c_str(),
-		"blockid", static_cast<int>(bid),
-		"position", ToList(bp)
-	))
+	h
+		.insert("player", p)
+		.insert("itemid", item->getId())
+		.insert("itemaux", item->getAuxValue())
+		.insert("itemcount", item->getCount())
+		.insert("itemname", item->getName())
+		.insert("blockname", bl->getBlockName())
+		.insert("blockid", bl->getBlockItemID())
+		.insert("position", bp);
+	if (h.call())
 		return original(_this, item, bp, a4, a5, b);
 	return false;
 }
 //放置方块
 THOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@EPEAVActor@@_N@Z",
 	BlockSource* _this, Block* b, BlockPos* bp, unsigned char a4, Actor* p, bool _bool) {
+	EventCallBackHelper h(EventCode::onPlaceBlock);
 	if (IsPlayer(p)) {
 		BlockLegacy* bl = b->getBlockLegacy();
-		short bid = bl->getBlockItemID();
-		string bn = bl->getBlockName();
-		if (!EventCallBack(EventCode::onPlaceBlock,
-			"{s:O,s:s,s:i,s:O}",
-			"player", ToEntity(p),
-			"blockname", bn.c_str(),
-			"blockid", bid,
-			"position", ToList(bp)
-		))
+		h
+			.insert("player", p)
+			.insert("blockname", bl->getBlockName())
+			.insert("blockid", bl->getBlockItemID())
+			.insert("position", bp);
+		if (!h.call())
 			return false;
 	}
 	return original(_this, b, bp, a4, p, _bool);
@@ -340,17 +465,15 @@ THOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@
 //破坏方块
 THOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
 	BlockSource* _this, Actor* a1, BlockPos* a2, ItemStack* a3, bool a4) {
+	EventCallBackHelper h(EventCode::onDestroyBlock);
 	if (IsPlayer(a1)) {
 		BlockLegacy* bl = _this->getBlock(a2)->getBlockLegacy();
-		short bid = bl->getBlockItemID();
-		string bn = bl->getBlockName();
-		if (!EventCallBack(EventCode::onDestroyBlock,
-			"{s:O,s:s,s:i,s:O}",
-			"player", ToEntity(a1),
-			"blockname", bn.c_str(),
-			"blockid", static_cast<int>(bid),
-			"position", ToList(a2)
-		))
+		h
+			.insert("player", a1)
+			.insert("blockname", bl->getBlockName())
+			.insert("blockid", bl->getBlockItemID())
+			.insert("position", a2);
+		if (!h.call())
 			return false;
 	}
 	return original(_this, a1, a2, a3, a4);
@@ -358,50 +481,49 @@ THOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAE
 //开箱
 THOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* p, BlockPos* bp) {
-	if (EventCallBack(EventCode::onOpenChest,
-		"{s:O,s:O}",
-		"player", ToEntity(p),
-		"position", ToList(bp)
-	))
+	EventCallBackHelper h(EventCode::onOpenChest);
+	h
+		.insert("player", p)
+		.insert("position", bp);
+	if (h.call())
 		return original(_this, p, bp);
 	return false;
 }
-//开桶，不能拦截，到方块交互才能拦截，不知道mojang员工在想什么
+//开桶，不能拦截，拦截请看方块交互
 THOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* p, BlockPos* bp) {
-	if (EventCallBack(EventCode::onOpenBarrel,
-		"{s:O,s:O}",
-		"player", ToEntity(p),
-		"position", ToList(bp)
-	))
+	EventCallBackHelper h(EventCode::onOpenBarrel);
+	h
+		.insert("player", p)
+		.insert("position", bp);
+	if (h.call())
 		return original(_this, p, bp);
 	return false;
 }
 //关箱
 THOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	uintptr_t _this, Player* p) {
+	EventCallBackHelper h(EventCode::onCloseChest);
 	auto bp = (BlockPos*)(_this - 196);
-	EventCallBack(EventCode::onCloseChest,
-		"{s:O,s:O}",
-		"player", ToEntity(p),
-		"position", ToList(bp)
-	);
+	h
+		.insert("player", p)
+		.insert("position", bp);
 	original(_this, p);
 }
 //关桶
 THOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	uintptr_t _this, Player* p) {
+	EventCallBackHelper h(EventCode::onCloseBarrel);
 	auto bp = (BlockPos*)(_this - 196);
-	EventCallBack(EventCode::onCloseBarrel,
-		"{s:O,s:O}",
-		"player", ToEntity(p),
-		"position", ToList(bp)
-	);
+	h
+		.insert("player", p)
+		.insert("position", bp);
 	original(_this, p);
 }
 //放入取出物品，实际上是容器改变
 THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEAAXH@Z",
 	uintptr_t _this, unsigned slot) {
+	EventCallBackHelper h(EventCode::onContainerChange);
 	Player* p = FETCH(Player*, _this + 208);//IDA LevelContainerModel::_getContainer line 15 25 v3
 	BlockSource* bs = p->getRegion();
 	BlockPos* bp = reinterpret_cast<BlockPos*>(_this + 216);
@@ -410,19 +532,17 @@ THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UE
 	if (bid == 54 || bid == 130 || bid == 146 || bid == -203 || bid == 205 || bid == 218) {	//非箱子、桶、潜影盒的情况不作处理
 		uintptr_t v5 = (*reinterpret_cast<uintptr_t(**)(uintptr_t)>(FETCH(uintptr_t, _this) + 160))(_this);
 		if (v5) {
-			ItemStack* i = (*reinterpret_cast<ItemStack * (**)(uintptr_t, uintptr_t)>(FETCH(uintptr_t, v5) + 40))(v5, slot);
-			EventCallBack(EventCode::onContainerChange,
-				"{s:O,s:s,s:i,s:O,s:i,s:i,s:s,s:i,s:i}",
-				"player", ToEntity(p),
-				"blockname", bl->getBlockName().c_str(),
-				"blockid", bid,
-				"position", ToList(bp),
-				"itemid", i->getId(),
-				"itemcount", i->getCount(),
-				"itemname", i->getName().c_str(),
-				"itemaux", i->getAuxValue(),
-				"slot", slot
-			);
+			ItemStack* item = (*reinterpret_cast<ItemStack * (**)(uintptr_t, uintptr_t)>(FETCH(uintptr_t, v5) + 40))(v5, slot);
+			h
+				.insert("player", p)
+				.insert("itemid", item->getId())
+				.insert("itemaux", item->getAuxValue())
+				.insert("itemcount", item->getCount())
+				.insert("itemname", item->getName())
+				.insert("blockname", bl->getBlockName())
+				.insert("blockid", bid)
+				.insert("position", bp)
+				.insert("slot", slot);
 		}
 	}
 	original(_this, slot);
@@ -430,92 +550,91 @@ THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UE
 //玩家攻击
 THOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
 	Player* p, Actor* a, struct ActorDamageCause* c) {
-	//if (a) {
-	//	a->setNameTag("傻逼");
-	//	a->setNameTagVisible(true);
-	//}
-	if (EventCallBack(EventCode::onPlayerAttack,
-		"{s:O,s:O}",
-		"player", ToEntity(p),
-		"actor", ToEntity(a)
-	))
+	EventCallBackHelper h(EventCode::onPlayerAttack);
+	h
+		.insert("player", p)
+		.insert("actor", a);
+	if (h.call())
 		return original(p, a, c);
 	return false;
 }
 //切换纬度
 THOOK(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@AEAVChangeDimensionRequest@@@Z",
 	uintptr_t _this, Player* p, uintptr_t req) {
+	EventCallBackHelper h(EventCode::onChangeDimension);
 	bool result = original(_this, p, req);
 	if (result) {
-		EventCallBack(EventCode::onChangeDimension, "O", ToEntity(p));
+		h.setArg(ToEntity(p)).call();
 	}
 	return result;
 }
 //生物死亡
 THOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	Mob* _this, uintptr_t dmsg) {
+	EventCallBackHelper h(EventCode::onMobDie);
 	char v72;
 	Actor* sa = _this->getLevel()->fetchEntity(*(uintptr_t*)((*(uintptr_t(__fastcall**)(uintptr_t, char*))(*(uintptr_t*)dmsg + 64))(dmsg, &v72)));
-	bool res = EventCallBack(EventCode::onMobDie,
-		"{s:I,s:O,s:O}",
-		"dmcase", FETCH(unsigned, dmsg + 8),
-		"actor1", ToEntity(_this),
-		"actor2", ToEntity(sa)//可能为0
-	);
-	if (res) original(_this, dmsg);
+	h
+		.insert("actor1", _this)
+		.insert("actor2", sa)
+		.insert("dmcase", FETCH(unsigned, dmsg + 8))
+		;
+	if (h.call())
+		original(_this, dmsg);
 }
 //生物受伤
 THOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 	Mob* _this, uintptr_t dmsg, int a3, bool a4, bool a5) {
+	EventCallBackHelper h(EventCode::onMobHurt);
 	g_damage = a3;//将生物受伤的值设置为可调整
 	char v72;
 	Actor* sa = _this->getLevel()->fetchEntity(*(uintptr_t*)((*(uintptr_t(__fastcall**)(uintptr_t, char*))(*(uintptr_t*)dmsg + 64))(dmsg, &v72)));
-	if (EventCallBack(EventCode::onMobHurt,
-		"{s:i,s:O,s:O,s:i}",
-		"dmcase", FETCH(unsigned, dmsg + 8),
-		"actor1", ToEntity(_this),
-		"actor2", ToEntity(sa),//可能为0
-		"damage", a3
-	))
+	h
+		.insert("actor1", _this)
+		.insert("actor2", sa)
+		.insert("dmcase", FETCH(unsigned, dmsg + 8))
+		.insert("damage", a3)
+		;
+	if (h.call())
 		return original(_this, dmsg, g_damage, a4, a5);
 	return false;
 }
 //玩家重生
 THOOK(onRespawn, void, "?respawn@Player@@UEAAXXZ",
 	Player* p) {
-	EventCallBack(EventCode::onRespawn, "O", ToEntity(p));
+	EventCallBackHelper h(EventCode::onRespawn);
+	h.setArg(ToEntity(p)).call();
 	original(p);
 }
 //聊天，消息title msg w等...
 THOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@000@Z",
 	uintptr_t _this, string& sender, string& target, string& msg, string& style) {
-	EventCallBack(EventCode::onChat,
-		"{s:s,s:s,s:s,s:s}",
-		"sender", sender.c_str(),
-		"target", target.c_str(),
-		"msg", msg.c_str(),
-		"style", style.c_str()
-	);
+	EventCallBackHelper h(EventCode::onChat);
+	h.insert("sender", sender)
+		.insert("target", target)
+		.insert("msg", msg)
+		.insert("style", style);
+	h.call();
 	original(_this, sender, target, msg, style);
 }
 //玩家输入文本
 THOOK(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVTextPacket@@@Z",
 	ServerNetworkHandler* _this, uintptr_t id, /*TextPacket*/uintptr_t pkt) {
+	EventCallBackHelper h(EventCode::onInputText);
 	Player* p = _this->_getServerPlayer(id, pkt);
-	bool res = true;
 	if (p) {
 		const string& msg = FETCH(string, pkt + 88);
-		res = EventCallBack(EventCode::onInputText,
-			"{s:O,s:s}",
-			"player", ToEntity(p),
-			"msg", msg.c_str()
-		);
+		h.insert("player", p)
+			.insert("msg", msg);
+		if (!h.call())
+			return;
 	}
-	if (res)original(_this, id, pkt);
+	original(_this, id, pkt);
 }
 //玩家输入命令
 THOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
 	ServerNetworkHandler* _this, uintptr_t id, /*CommandRequestPacket*/uintptr_t pkt) {
+	EventCallBackHelper h(EventCode::onInputCommand);
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
 		const string& cmd = FETCH(string, pkt + 48);
@@ -528,36 +647,35 @@ THOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdent
 			Py_END_CALL;
 			return;
 		}
-		bool res = EventCallBack(EventCode::onInputCommand,
-			"{s:O,s:s}",
-			"player", ToEntity(p),
-			"cmd", cmd.c_str()
-		);
-		if (res)original(_this, id, pkt);
+		h.insert("player", p)
+			.insert("cmd", cmd);
+		if (h.call())
+			original(_this, id, pkt);
 	}
 }
 //玩家选择表单
 THOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormResponsePacket@@$0A@@@UEBAXAEBVNetworkIdentifier@@AEAVNetEventCallback@@AEAV?$shared_ptr@VPacket@@@std@@@Z",
 	uintptr_t _this, uintptr_t id, ServerNetworkHandler* handle,/*ModalFormResponsePacket*/uintptr_t* ppkt) {
+	EventCallBackHelper h(EventCode::onSelectForm);
 	uintptr_t pkt = *ppkt;
 	Player* p = handle->_getServerPlayer(id, pkt);
 	if (p) {
 		unsigned fid = FETCH(unsigned, pkt + 48);
 		string data = FETCH(string, pkt + 56);
-		if (data.back() == '\n')data.pop_back();
-		EventCallBack(EventCode::onSelectForm,
-			"{s:O,s:s,s:I}",
-			"player", ToEntity(p),
-			"selected", data.c_str(),
-			"formid", fid
-		);
+		if (data.back() == '\n')
+			data.pop_back();
+		h
+			.insert("player", p)
+			.insert("selected", data)
+			.insert("formid", fid);
+		h.call();
 	}
 	original(_this, id, handle, ppkt);
 }
 //命令方块更新
 THOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandBlockUpdatePacket@@@Z",
 	ServerNetworkHandler* _this, uintptr_t id, /*CommandBlockUpdatePacket*/uintptr_t pkt) {
-	bool res = true;
+	EventCallBackHelper h(EventCode::onCommandBlockUpdate);
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
 		BlockPos bp = FETCH(BlockPos, pkt + 48);
@@ -568,37 +686,37 @@ THOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwor
 		string output = FETCH(string, pkt + 104);
 		string rawname = FETCH(string, pkt + 136);
 		int delay = FETCH(int, pkt + 168);
-		res = EventCallBack(EventCode::onCommandBlockUpdate,
-			"{s:O,s:i,s:i,s:i,s:s,s:s,s:s,s:i,s:O}",
-			"player", ToEntity(p),
-			"mode", mode,
-			"condition", condition,
-			"redstone", redstone,
-			"cmd", cmd.c_str(),
-			"output", output.c_str(),
-			"rawname", rawname.c_str(),
-			"delay", delay,
-			"position", ToList(&bp)
-		);
+		h.insert("player", ToEntity(p))
+			.insert("mode", mode)
+			.insert("condition", condition)
+			.insert("redstone", redstone)
+			.insert("cmd", cmd)
+			.insert("output", output)
+			.insert("rawname", rawname)
+			.insert("delay", delay)
+			.insert("position", &bp);
+		if (!h.call())
+			return;
 	}
-	if (res)original(_this, id, pkt);
+	original(_this, id, pkt);
 }
 //爆炸
 THOOK(onLevelExplode, bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
 	Level* _this, BlockSource* bs, Actor* a3, Vec3 pos, float a5, bool a6, bool a7, float a8, bool a9) {
-	if (EventCallBack(EventCode::onLevelExplode,
-		"{s:O,s:[f,f,f],s:i,s:f}",
-		"actor", ToEntity(a3),
-		"position", pos.x, pos.y, pos.z,
-		"dimensionid", bs->getDimensionId(),
-		"power", a5
-	))
+	EventCallBackHelper h(EventCode::onLevelExplode);
+	h
+		.insert("actor", a3)
+		.insert("position", &pos)
+		.insert("dimensionid", bs->getDimensionId())
+		.insert("power", a5);
+	if (h.call())
 		return original(_this, bs, a3, pos, a5, a6, a7, a8, a9);
 	return false;
 }
 //命令方块执行
 THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@@AEAVCommandBlockActor@@AEBVBlockPos@@_N@Z",
 	uintptr_t _this, BlockSource* a2, uintptr_t a3, BlockPos* bp, bool a5) {
+	EventCallBackHelper h(EventCode::onCommandBlockPerform);
 	//脉冲:0,重复:1,链:2
 	int mode = SymCall<int>("?getMode@CommandBlockActor@@QEBA?AW4CommandBlockMode@@AEAVBlockSource@@@Z", a3, a2);
 	//无条件:0,有条件:1
@@ -609,71 +727,57 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 	string cmd = FETCH(string, a3 + 256);
 	string rawname = FETCH(string, a3 + 288);
 	PyObject* pos = ToList(bp);
-	if (EventCallBack(EventCode::onCommandBlockPerform,
-		"{s:i,s:b,s:s,s:s,s:O}",
-		"mode", mode,
-		"condition", condition,
-		"cmd", cmd.c_str(),
-		"rawname", rawname.c_str(),
-		"position", pos
-	)) {
-		Py_CLEAR(pos);
+	h.insert("mode", mode)
+		.insert("condition", condition)
+		.insert("cmd", cmd.c_str())
+		.insert("rawname", rawname.c_str())
+		.insert("position", pos);
+	if (h.call())
 		return original(_this, a2, a3, bp, a5);
-	}
-	Py_CLEAR(pos);
 	return false;
 }
 //玩家移动
 THOOK(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
-	EventCallBack(EventCode::onMove, "O", ToEntity(p));
+	EventCallBackHelper h(EventCode::onMove);
+	h.setArg(ToEntity(p)).call();
 	original(_this, p, a3, a4, a5);
 }
-////玩家移动
-//THOOK(onMove, void, "?onMovePlayerPacketNormal@Player@@MEAAXAEBVVec3@@AEBVVec2@@M@Z",
-//	Player* _this, Vec3* a1, Vec2* a2, float a3) {
-//	EventCallBack(EventCode::onMove, "O", ToEntity(_this));
-//	original(_this, a1, a2, a3);
-//}
 //玩家穿戴
 THOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 	Player* p, unsigned slot, ItemStack* i) {
-	if (!EventCallBack(EventCode::onSetArmor,
-		"{s:O,s:i,s:i,s:s,s:i,s:i}",
-		"player", ToEntity(p),
-		"itemid", i->getId(),
-		"itemcount", i->getCount(),
-		"itemname", i->getName().c_str(),
-		"itemaux", i->getAuxValue(),
-		"slot", slot
-	))
-		return;
-	return original(p, slot, i);
+	EventCallBackHelper h(EventCode::onSetArmor);
+	h.insert("player", ToEntity(p))
+		.insert("itemid", i->getId())
+		.insert("itemcount", i->getCount())
+		.insert("itemname", i->getName())
+		.insert("itemaux", i->getAuxValue())
+		.insert("slot", slot);
+	if (h.call())
+		return original(p, slot, i);
+	return;
 }
 //计分板改变监听
 THOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboardId@@AEBVObjective@@@Z",
 	Scoreboard* _this, ScoreboardId* a1, Objective* a2) {
 	//创建计分板时：/scoreboard objectives <add|remove> <objectivename> dummy <objectivedisplayname>
 	//修改计分板时（此函数hook此处)：/scoreboard players <add|remove|set> <playersname> <objectivename> <playersnum>
-	EventCallBack(EventCode::onScoreChanged,
-		"{s:i,s:i,s:s,s:s}",
-		"scoreboardid", a1->id,
-		"playersnum", a2->getPlayerScore(a1)->getCount(),
-		"objectivename", a2->getScoreName().c_str(),
-		"objectivedisname", a2->getScoreDisplayName().c_str()
-	);
+	EventCallBackHelper h(EventCode::onScoreChanged);
+	h.insert("scoreboardid", a1->id)
+		.insert("playersnum", a2->getPlayerScore(a1)->getCount())
+		.insert("objectivename", a2->getScoreName())
+		.insert("objectivedisname", a2->getScoreDisplayName());
 	original(_this, a1, a2);
 }
 //耕地破坏
 THOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@M@Z",
 	uintptr_t _this, BlockSource* a1, BlockPos* a2, Actor* p, uintptr_t a4) {
+	EventCallBackHelper h(EventCode::onFallBlockTransform);
 	if (IsPlayer(p)) {
-		if (!EventCallBack(EventCode::onFallBlockTransform,
-			"{s:O,s:O,s:i}",
-			"player", ToEntity(p),
-			"position", ToList(a2),
-			"dimensionid", a1->getDimensionId()
-		))
+		h.insert("player", p)
+			.insert("position", a2)
+			.insert("dimensionid", a1->getDimensionId());
+		if (!h.call())
 			return;
 	}
 	original(_this, a1, a2, p, a4);
@@ -681,218 +785,166 @@ THOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSou
 //使用重生锚
 THOOK(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPlayer@@AEBVBlockPos@@AEAVBlockSource@@AEAVLevel@@@Z",
 	Player* p, BlockPos* a2, BlockSource* a3, Level* a4) {
-	if (EventCallBack(EventCode::onUseRespawnAnchorBlock,
-		"{s:O,s:O,s:i}",
-		"player", ToEntity(p),
-		"position", ToList(a2),
-		"dimensionid", a3->getDimensionId()
-	))
+	EventCallBackHelper h(EventCode::onUseRespawnAnchorBlock);
+	h.insert("player", ToEntity(p))
+		.insert("position", ToList(a2))
+		.insert("dimensionid", a3->getDimensionId());
+	if (h.call())
 		return original(p, a2, a3, a4);
 	return false;
 }
 //活塞推
 THOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBlockSource@@AEBVBlockPos@@EE@Z",
 	BlockActor* _this, BlockSource* bs, BlockPos* bp, unsigned a3, unsigned a4) {
+	EventCallBackHelper h(EventCode::onPistonPush);
 	BlockLegacy* blg = bs->getBlock(bp)->getBlockLegacy();
 	string bn = blg->getBlockName();
 	short bid = blg->getBlockItemID();
 	BlockPos* bp2 = _this->getPosition();
-	if (EventCallBack(EventCode::onPistonPush,
-		"{s:s,s:i,s:O,s:O,s:i}",
-		"blockname", bn.c_str(),
-		"blockid", bid,
-		"blockpos", ToList(bp),
-		"pistonpos", ToList(bp2),
-		"dimensionid", bs->getDimensionId()
-	))
+	h.insert("blockname", bn)
+		.insert("blockid", bid)
+		.insert("blockpos", bp)
+		.insert("pistonpos", bp2)
+		.insert("dimensionid", bs->getDimensionId());
+	if (h.call())
 		return original(_this, bs, bp, a3, a4);
 	return false;
 }
 //末影人随机传送（没人会用吧？）
 THOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NAEAVActor@@@Z",
 	uintptr_t _this, Actor* a1) {
-	if (EventCallBack(EventCode::onEndermanRandomTeleport, "O", ToEntity(a1)))
+	EventCallBackHelper h(EventCode::onEndermanRandomTeleport);
+	h.setArg(ToEntity(a1)).call();
+	if (h.call())
 		return original(_this, a1);
 	return false;
 }
 //丢物品
 THOOK(onDropItem, bool, "?drop@Player@@UEAA_NAEBVItemStack@@_N@Z",
 	Player* _this, ItemStack* a2, bool a3) {
-	if (EventCallBack(EventCode::onDropItem,
-		"{s:O,s:i,s:i,s:s,s:i}",
-		"player", ToEntity(_this),
-		"itemid", a2->getId(),
-		"itemcount", a2->getCount(),
-		"itemname", a2->getName().c_str(),
-		"itemaux", a2->getAuxValue()
-	))
+	EventCallBackHelper h(EventCode::onDropItem);
+	h.insert("player", _this)
+		.insert("itemid", a2->getId())
+		.insert("itemcount", a2->getCount())
+		.insert("itemname", a2->getName())
+		.insert("itemaux", a2->getAuxValue());
+	if (h.call())
 		return original(_this, a2, a3);
 	return false;
 }
 //拿物品
 THOOK(onTakeItem, bool, "?take@Player@@QEAA_NAEAVActor@@HH@Z",
 	Player* _this, Actor* actor, int a2, int a3) {
-	if (EventCallBack(EventCode::onTakeItem,
-		"{s:O,s:O}",
-		"player", ToEntity(_this),
-		"actor", ToEntity(actor)
-	))
+	EventCallBackHelper h(EventCode::onTakeItem);
+	h.insert("player", _this)
+		.insert("actor", actor);
+	if (h.call())
 		return original(_this, actor, a2, a3);
 	return false;
 }
 //骑
 THOOK(onRide, bool, "?canAddPassenger@Actor@@UEBA_NAEAV1@@Z",
 	Actor* a1, Actor* a2) {
-	if (EventCallBack(EventCode::onRide,
-		"{s:O,s:O}",
-		"actor1", ToEntity(a1),
-		"actor2", ToEntity(a2)
-	))
+	EventCallBackHelper h(EventCode::onRide);
+	h.insert("actor1", a1)
+		.insert("actor2", a2);
+	if (h.call())
 		return original(a1, a2);
 	return false;
 }
 //放入取出物品展示框的物品
 THOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* a2, BlockPos* a3) {
-	if (EventCallBack(EventCode::onUseFrameBlock,
-		"{s:O,s:O,s:i}",
-		"player", ToEntity(a2),
-		"blockpos", ToList(a3),
-		"dimensionid", a2->getDimensionId()
-	))
+	EventCallBackHelper h(EventCode::onUseFrameBlock);
+	h.insert("player", a2)
+		.insert("blockpos", a3)
+		.insert("dimensionid", a2->getDimensionId());
+	if (h.call())
 		return original(_this, a2, a3);
 	return false;
 }
 //点击物品展示框
-THOOK(onUseFrameBlocka, bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBlockPos@@@Z",
+THOOK(onUseFrameBlock2, bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBlockPos@@@Z",
 	uintptr_t _this, Player* a2, BlockPos* a3) {
-	if (EventCallBack(EventCode::onUseFrameBlock,
-		"{s:O,s:O,s:i}",
-		"player", ToEntity(a2),
-		"blockpos", ToList(a3),
-		"dimensionid", a2->getDimensionId()
-	))
+	EventCallBackHelper h(EventCode::onUseFrameBlock);
+	h.insert("player", a2)
+		.insert("blockpos", a3)
+		.insert("dimensionid", a2->getDimensionId());
+	if (h.call())
 		return original(_this, a2, a3);
 	return false;
 }
 //玩家跳跃
 THOOK(onJump, void, "?jumpFromGround@Player@@UEAAXXZ",
 	Player* _this) {
-	if (EventCallBack(EventCode::onJump, "O", ToEntity(_this)))
+	EventCallBackHelper h(EventCode::onJump);
+	h.setArg(ToEntity(_this));
+	if (h.call())
 		return original(_this);
 }
 //玩家潜行
 THOOK(onSneak, void, "?sendActorSneakChanged@ActorEventCoordinator@@QEAAXAEAVActor@@_N@Z",
 	uintptr_t _this, Actor* a1, bool a2) {
-	if (EventCallBack(EventCode::onSneak, "O", ToEntity(a1)))
+	EventCallBackHelper h(EventCode::onSneak);
+	h.setArg(ToEntity(a1));
+	if (h.call())
 		return original(_this, a1, a2);
 }
 //火势蔓延
 THOOK(onFireSpread, bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@AEBVBlockPos@@@Z",
 	uintptr_t _this, BlockSource* bs, BlockPos* bp) {
+	EventCallBackHelper h(EventCode::onFireSpread);
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
-	if (EventCallBack(EventCode::onFireSpread,
-		"{s:O,s:s,s:i,s:i}",
-		"blockpos", ToList(bp),
-		"blockname", bl->getBlockName().c_str(),
-		"blockid", bl->getBlockItemID(),
-		"dimensionid", bs->getDimensionId()
-	))
+	h.insert("blockpos", bp)
+		.insert("blockname", bl->getBlockName())
+		.insert("blockid", bl->getBlockItemID())
+		.insert("dimensionid", bs->getDimensionId());
+	if (h.call())
 		return original(_this, bs, bp);
 	return false;
 }
 //方块交互（除箱子，工作台）
 THOOK(onBlockInteracted, void, "?onBlockInteractedWith@VanillaServerGameplayEventListener@@UEAA?AW4EventResult@@AEAVPlayer@@AEBVBlockPos@@@Z",
 	uintptr_t _this, Player* pl, BlockPos* bp) {
+	EventCallBackHelper h(EventCode::onBlockInteracted);
 	BlockSource* bs = global<Level>->getBlockSource(pl->getDimensionId());
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
-	if (EventCallBack(EventCode::onBlockInteracted,
-		"{s:O,s:O,s:s,s:i,s:i}",
-		"player", ToEntity(pl),
-		"blockpos", ToList(bp),
-		"blockname", bl->getBlockName().c_str(),
-		"blockid", bl->getBlockItemID(),
-		"dimensionid", bs->getDimensionId()
-	))
+	h.insert("player", pl)
+		.insert("blockpos", bp)
+		.insert("blockname", bl->getBlockName())
+		.insert("blockid", bl->getBlockItemID())
+		.insert("dimensionid", bs->getDimensionId());
+	if (h.call())
 		return original(_this, pl, bp);
 }
 //方块被爆炸破坏
 THOOK(onBlockExploded, void, "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@@Z",
 	Block* _this, BlockSource* bs, BlockPos* bp, Actor* actor) {
+	EventCallBackHelper h(EventCode::onBlockExploded);
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
-	if (EventCallBack(EventCode::onBlockExploded,
-		"{s:O,s:O,s:s,s:i,s:i}",
-		"actor", ToEntity(actor),
-		"blockpos", ToList(bp),
-		"blockname", bl->getBlockName().c_str(),
-		"blockid", bl->getBlockItemID(),
-		"dimensionid", bs->getDimensionId()
-	))
+	h.insert("actor", actor)
+		.insert("blockpos", bp)
+		.insert("blockname", bl->getBlockName())
+		.insert("blockid", bl->getBlockItemID())
+		.insert("dimensionid", bs->getDimensionId());
+	if (h.call())
 		return original(_this, bs, bp, actor);
 }
 //使用牌子
 THOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* a1, BlockPos* a2) {
+	EventCallBackHelper h(EventCode::onUseSignBlock);
 	BlockSource* bs = a1->getRegion();
 	BlockActor* ba = bs->getBlockEntity(a2);
 	string text;
 	//获取沉浸式文本内容
 	SymCall<string&>("?getImmersiveReaderText@SignBlockActor@@UEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAVBlockSource@@@Z",
 		ba, &text, bs);
-	if (EventCallBack(EventCode::onUseSignBlock,
-		"{s:O,s:s,s:O}",
-		"player", ToEntity(a1),
-		"text", text.c_str(),
-		"position", ToList(a2)
-	))
+	h.insert("player", a1)
+		.insert("text", text)
+		.insert("position", a2);
+	if (h.call())
 		return original(_this, a1, a2);
 	return 0;
 }
 #pragma endregion
-
-void Init() {
-	//如果目录不存在创建目录
-	if (!fs::exists(PLUGIN_PATH))
-		fs::create_directory(PLUGIN_PATH);
-	if (!fs::exists(CACHE_PATH))
-		fs::create_directory(CACHE_PATH);
-	//设置模块搜索路径
-	Py_SetPath(
-		PLUGIN_PATH L";"
-		PLUGIN_PATH "Dlls;"
-		PLUGIN_PATH "Lib"
-	);
-#if 0
-	//预初始化3.8+
-	PyPreConfig cfg;
-	PyPreConfig_InitPythonConfig(&cfg);
-	cfg.utf8_mode = 1;
-	cfg.configure_locale = 0;
-	Py_PreInitialize(&cfg);
-#endif
-	//增加一个模块
-	PyImport_AppendInittab("mc", mc_init);
-	//初始化解释器
-	Py_InitializeEx(0);
-	//初始化类型
-	if (PyType_Ready(&PyEntity_Type) < 0)
-		Py_FatalError("Can't initialize entity type");
-	//启用线程支持
-	PyEval_InitThreads();
-	for (auto& info : fs::directory_iterator(PLUGIN_PATH)) {
-		//whether the file is py
-		if (info.path().extension() == ".py") {
-			string name(info.path().stem().u8string());
-			//ignore files starting with '_'
-			if (name.front() == '_')
-				continue;
-			cout << "[BDSpyrunner] Loading " << name << endl;
-			PyImport_Import(StringToPyUnicode(name));
-			PrintPythonError();
-		}
-	}
-	//释放当前线程
-	PyEval_SaveThread();
-	//输出版本号信息
-	cout << "[BDSpyrunner] " << PYR_VERSION << " loaded." << endl;
-}

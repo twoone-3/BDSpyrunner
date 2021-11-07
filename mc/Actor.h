@@ -47,7 +47,7 @@ struct Actor {
 	//是否已移除
 	bool isRemoved();
 	//是否悬空
-	bool isStand();
+	bool isStanding();
 	//取方块源
 	BlockSource* getRegion();
 	ItemStack* getArmor(int slot);

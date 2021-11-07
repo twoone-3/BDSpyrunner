@@ -34,7 +34,7 @@ struct PyEntity {
 		Actor* a = asActor(self);
 		if (!a)
 			return nullptr;
-		return StringToPyUnicode(a->getNameTag());
+		return ToPyStr(a->getNameTag());
 	}
 	static Py_hash_t hash(PyObject* self) {
 		return reinterpret_cast<Py_hash_t>(asActor(self));
@@ -43,7 +43,7 @@ struct PyEntity {
 		Actor* a = asActor(self);
 		if (!a)
 			return nullptr;
-		return StringToPyUnicode(a->getNameTag());
+		return ToPyStr(a->getNameTag());
 	}
 	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
 		switch (op) {
@@ -78,7 +78,7 @@ struct PyEntity {
 		Actor* a = PyEntity::asActor(self);
 		if (!a)
 			return nullptr;
-		return StringToPyUnicode(a->getNameTag());
+		return ToPyStr(a->getNameTag());
 	}
 	static int setName(PyObject* self, PyObject* arg, void*) {
 		if (PyUnicode_Check(arg)) {
@@ -99,7 +99,7 @@ PyObject* PyEntity_GetUuid(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return StringToPyUnicode(p->getUuid());
+	return ToPyStr(p->getUuid());
 }
 
 //获取XUID
@@ -107,7 +107,7 @@ PyObject* PyEntity_GetXuid(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return StringToPyUnicode(p->getXuid());
+	return ToPyStr(p->getXuid());
 }
 
 //获取坐标
@@ -131,7 +131,7 @@ PyObject* PyEntity_GetIsStand(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
-	return PyBool_FromLong(a->isStand());
+	return PyBool_FromLong(a->isStanding());
 }
 
 //是否潜行
@@ -155,7 +155,7 @@ PyObject* PyEntity_GetTypeName(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
-	return StringToPyUnicode(a->getEntityTypeName());
+	return ToPyStr(a->getEntityTypeName());
 }
 
 //获取nbt数据
@@ -165,7 +165,7 @@ PyObject* PyEntity_GetNBTInfo(PyObject* self, void*) {
 		return nullptr;
 	//内存泄露需回收 2021.10.22
 	Tag* t = a->save();
-	PyObject* result = StringToPyUnicode(CompoundTagtoJson(t).dump(4));
+	PyObject* result = ToPyStr(CompoundTagtoJson(t).dump(4));
 	t->deleteCompound();
 	return result;
 }
@@ -232,7 +232,7 @@ PyObject* PyEntity_GetPlatformOnlineId(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	return StringToPyUnicode(p->getPlatformOnlineId());
+	return ToPyStr(p->getPlatformOnlineId());
 }
 
 //获取设备类型
@@ -249,7 +249,7 @@ PyObject* PyEntity_GetIP(PyObject* self, void*) {
 	if (!p)
 		return nullptr;
 	auto ni = p->getClientId();
-	return StringToPyUnicode(global<RakPeer>->getSystemAddress(ni).toString());
+	return ToPyStr(global<RakPeer>->getSystemAddress(ni).toString());
 }
 
 //获取/设置玩家所有物品
@@ -277,44 +277,8 @@ PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
 	value["OffHand"] = CompoundTagtoJson(p->getOffHand()->save());
 	value["Hand"] = CompoundTagtoJson(p->getSelectedItem()->save());
 
-	return StringToPyUnicode(value.dump(4));
+	return ToPyStr(value.dump(4));
 }
-
-//获取/设置玩家物品
-//PyObject* PyEntity_GetItem(PyObject* self, PyObject* args, PyObject* kwds) {
-//	bool get_inventory, get_enderchest, get_armor, get_offhand, get_hand;
-//	Py_KERWORDS_LIST(
-//		"Inventory", "EndChest", "Armor", "OffHand", "Hand"
-//	);
-//	Py_PARSE_WITH_KERWORDS(
-//		"|ppppp",
-//		&get_inventory, &get_enderchest, &get_armor, &get_offhand, &get_hand
-//	);
-//	Player* p = PyEntity::asPlayer(self);
-//	if (!p)
-//		return nullptr;
-//	Json value;
-//
-//	Json& inventory = value["Inventory"];
-//	for (auto& i : p->getInventory()->getSlots()) {
-//		inventory.push_back(CompoundTagtoJson(i->save()));
-//	}
-//
-//	Json& endchest = value["EndChest"];
-//	for (auto& i : p->getEnderChestContainer()->getSlots()) {
-//		endchest.push_back(CompoundTagtoJson(i->save()));
-//	}
-//
-//	Json& armor = value["Armor"];
-//	for (auto& i : p->getArmorContainer()->getSlots()) {
-//		armor.push_back(CompoundTagtoJson(i->save()));
-//	}
-//
-//	value["OffHand"] = CompoundTagtoJson(p->getOffHand()->save());
-//	value["Hand"] = CompoundTagtoJson(p->getSelectedItem()->save());
-//
-//	return StringToPyUnicode(value.dump(4));
-//}
 
 PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 	const char* x = "";
@@ -632,7 +596,7 @@ PyObject* PyEntity_GetTags(PyObject* self, PyObject*) {
 	span<string> tags = a->getTags();
 	PyObject* list = PyList_New(0);
 	for (size_t i = 0; i < tags.size; i++) {
-		PyList_Append(list, StringToPyUnicode(tags.data[i]));
+		PyList_Append(list, ToPyStr(tags.data[i]));
 	}
 	return list;
 }
@@ -755,10 +719,10 @@ PyTypeObject PyEntity_Type{
 };
 
 PyObject* ToEntity(Actor* ptr) {
-	PyObject* obj;
-	Py_BEGIN_CALL;
-	obj = PyEntity_Type.tp_alloc(&PyEntity_Type, 0);
-	Py_END_CALL;
-	reinterpret_cast<PyEntity*>(obj)->actor = ptr;
-	return obj;
+	//Py_BEGIN_CALL;
+	PyEntity* obj = PyObject_New(PyEntity, &PyEntity_Type);
+	//obj = PyEntity_Type.tp_alloc(&PyEntity_Type, 0);
+	//Py_END_CALL;
+	obj->actor = ptr;
+	return reinterpret_cast<PyObject*>(obj);
 }

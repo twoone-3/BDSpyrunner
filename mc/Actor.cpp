@@ -58,8 +58,8 @@ bool Actor::isRemoved() {
 
 //是否悬空
 
-bool Actor::isStand() {//IDA MovePlayerPacket::MovePlayerPacket 30
-	return FETCH(bool, this + 480);
+bool Actor::isStanding() {//IDA MovePlayerPacket::MovePlayerPacket
+	return FETCH(bool, this + 472);
 }
 
 
