@@ -40,7 +40,7 @@ static PyObject* minVersionRequire(PyObject*, PyObject* args) {
 }
 //ªÒ»°BDS∞Ê±æ
 static PyObject* getBDSVersion(PyObject*, PyObject* args) {
-	//Py_PARSE("");
+	args;
 	string version = SymCall<std::string>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
 	return ToPyStr(version);
 }

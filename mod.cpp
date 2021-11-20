@@ -1,8 +1,4 @@
 ﻿//mod.cpp 插件模块
-
-//排除极少使用的Windows API
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <filesystem>
 #include <fstream>
 #include <thread>
@@ -19,21 +15,14 @@
 #include "mod/Event.h"
 #include "mod/Module.h"
 #include "mod/Version.h"
-//WinInet library for auto update
-#include <WinInet.h>
-#pragma comment(lib,"WinInet.lib")
 
 #define PLUGIN_PATH "plugins\\py\\"
-#define CACHE_PATH "plugins\\cache\\"
-#define BAT_PATH "plugins\\update_pyr.bat"
-
-constexpr size_t BLOCK_SIZE = 0x800;
-constexpr const wchar_t* USER_AGENT = L"Mozilla/5.0 (Windows NT 6.3; Trident/7.0; rv:11.0) like Gecko";
 
 using namespace std;
 
 namespace fs = filesystem;
 #pragma region Function
+#if 0
 //Dll入口函数
 BOOL WINAPI DllMain(
 	HINSTANCE hinstDLL	/* handle to DLL module */,
@@ -137,7 +126,7 @@ static void AccessUrlForFile(const wchar_t* url, string_view filename) {
 		return;
 	DWORD total = 0;
 	DWORD size = 0;
-	ofstream file(filename, ios::out | ios::binary);
+	ofstream file(filename.data(), ios::out | ios::binary);
 	do {
 		total += size;
 		cout << "Downloading " << filename << "... " << total << "bytes\r";
@@ -168,6 +157,7 @@ static void CheckPluginVersion() {
 	system("start /min " BAT_PATH);
 	exit(0);
 }
+#endif 
 //事件回调助手
 class EventCallBackHelper {
 public:
@@ -184,7 +174,7 @@ public:
 	bool call() {
 		bool intercept = true;
 		//如果没有则跳过
-		auto cbs = g_callback_functions[type_];
+		auto& cbs = g_callback_functions[type_];
 		//if (cbs.empty()) {
 		//	cout << "未找到加1" << endl;
 		//	Py_XINCREF(arg_);
@@ -248,42 +238,41 @@ private:
 //将Python解释器初始化插入bds主函数
 THOOK(BDS_Main, int, "main",
 	int argc, char* argv[], char* envp[]) {
-//	while (true) {
-//		Tag* t = ObjecttoTag(StringToJson(R"(
-//             {
-//                "Block10": {
-//                    "name8": "minecraft:crafting_table",
-//                    "states10": null,
-//                    "version3": 17879555
-//                },
-//                "Count1": 64,
-//                "Damage2": 0,
-//                "Name8": "minecraft:crafting_table",
-//                "WasPickedUp1": 0,
-//                "tag10": {
-//                    "display10": {
-//                        "Lore9": [
-//                            "针不戳",
-//                            "很不错"
-//                        ]
-//                    }
-//                }
-//            }
-//)"));
-//		cout << CompoundTagtoJson(t).dump(4) << endl;
-//		t->deleteCompound();
-//		delete t;
-//	}
-	//如果目录不存在创建目录
+	//	while (true) {
+	//		Tag* t = ObjecttoTag(StringToJson(R"(
+	//             {
+	//                "Block10": {
+	//                    "name8": "minecraft:crafting_table",
+	//                    "states10": null,
+	//                    "version3": 17879555
+	//                },
+	//                "Count1": 64,
+	//                "Damage2": 0,
+	//                "Name8": "minecraft:crafting_table",
+	//                "WasPickedUp1": 0,
+	//                "tag10": {
+	//                    "display10": {
+	//                        "Lore9": [
+	//                            "针不戳",
+	//                            "很不错"
+	//                        ]
+	//                    }
+	//                }
+	//            }
+	//)"));
+	//		cout << CompoundTagtoJson(t).dump(4) << endl;
+	//		t->deleteCompound();
+	//		delete t;
+	//	}
+		//如果目录不存在创建目录
 	if (!fs::exists(PLUGIN_PATH))
 		fs::create_directory(PLUGIN_PATH);
-	if (!fs::exists(CACHE_PATH))
-		fs::create_directory(CACHE_PATH);
 	//设置模块搜索路径
 	Py_SetPath(
 		PLUGIN_PATH L";"
 		PLUGIN_PATH "Dlls;"
-		PLUGIN_PATH "Lib"
+		PLUGIN_PATH "Lib;"
+		PLUGIN_PATH "Extra"
 	);
 #if 0
 	//预初始化3.8+
@@ -368,7 +357,7 @@ THOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
 	EventCallBackHelper h(EventCode::onServerStarted);
 	h.setArg(Py_None);
 	h.call();
-	thread(CheckPluginVersion).detach();
+	//thread(CheckPluginVersion).detach();
 	original(_this);
 }
 //控制台输出，实际上是ostrram::operator<<的底层调用

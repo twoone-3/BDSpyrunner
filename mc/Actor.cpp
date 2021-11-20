@@ -213,8 +213,8 @@ UserEntityIdentifierComponent* Player::getUserEntityIdentifierComponent() {
 }
 
 string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
-	uintptr_t userid = SymCall<uintptr_t>("??$tryGetComponent@VUserEntityIdentifierComponent@@@Actor@@QEAAPEAVUserEntityIdentifierComponent@@XZ",
-		this);
+	//uintptr_t userid = SymCall<uintptr_t>("??$tryGetComponent@VUserEntityIdentifierComponent@@@Actor@@QEAAPEAVUserEntityIdentifierComponent@@XZ",
+	//	this);
 	string p;
 	void* v33 = **(void***)(this + 8);
 	__int32 v107 = *(__int32*)(this + 16);
@@ -227,9 +227,9 @@ string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 //根据地图信息获取玩家xuid
 
 string& Player::getXuid() {
-	void* v33 = **(void***)(this + 8);
-	__int32 v107 = *(__int32*)(this + 16);
-	void* v34 = SymCall<void*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v33, &v107);
+	//void* v33 = **(void***)(this + 8);
+	//__int32 v107 = *(__int32*)(this + 16);
+	//void* v34 = SymCall<void*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v33, &v107);
 	return SymCall<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
 		global<Level>, uintptr_t(this) + 2976);
 }
@@ -238,10 +238,10 @@ string& Player::getXuid() {
 
 NetworkIdentifier* Player::getClientId() {
 	return &getUserEntityIdentifierComponent()->nid;
-	void* v6 = **(void***)(this + 8);
-	__int32 v58 = *(__int32*)(this + 16);
-	char* v7 = SymCall<char*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v6, &v58);
-	return (NetworkIdentifier*)(uintptr_t(v7) + 160);
+	//void* v6 = **(void***)(this + 8);
+	//__int32 v58 = *(__int32*)(this + 16);
+	//char* v7 = SymCall<char*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v6, &v58);
+	//return (NetworkIdentifier*)(uintptr_t(v7) + 160);
 	//IDA ServerPlayer::setPermissions 34
 }
 

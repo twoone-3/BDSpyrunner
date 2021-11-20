@@ -48,7 +48,7 @@ enum class EventCode {
 	onUseSignBlock,
 };
 
-const std::unordered_map<std::string, EventCode> events{
+inline const std::unordered_map<std::string, EventCode> events{
 {"onConsoleInput",EventCode::onConsoleInput},
 {"onConsoleOutput",EventCode::onConsoleOutput},
 {"onSelectForm",EventCode::onSelectForm},

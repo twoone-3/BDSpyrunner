@@ -39,7 +39,7 @@
     <ClCompile Include="mc\Tag.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DllMain.cpp">
+    <ClCompile Include="mod.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="mod\Entity.cpp">
@@ -107,10 +107,5 @@
     <ClInclude Include="mod\CPython.h">
       <Filter>头文件</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="update_pyr.bat">
-      <Filter>源文件</Filter>
-    </None>
   </ItemGroup>
 </Project>
