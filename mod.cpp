@@ -161,34 +161,33 @@ static void CheckPluginVersion() {
 //事件回调助手
 class EventCallBackHelper {
 public:
-	EventCallBackHelper(EventCode t) : type_(t), arg_(nullptr) {}
+	EventCallBackHelper(EventCode t) :
+		type_(t), arg_(nullptr), gil_(PyGILState_Ensure()) {}
 	~EventCallBackHelper() {
 		if (arg_) {
-			//cout << "引用计数" << arg_->ob_refcnt << endl;
+			//if (type_ != EventCode::onMove)
+			//	cout << "对象：" << PyUnicode_AsUTF8(PyObject_Repr(arg_)) << "\n引用计数：" << arg_->ob_refcnt << endl;
 			//玄学回收有的行有的不行
-			if (arg_->ob_refcnt > 1)
+			//if (arg_->ob_refcnt > 1)
 				Py_XDECREF(arg_);
 		}
+		PyGILState_Release(gil_);
 	}
 	//事件回调
 	bool call() {
 		bool intercept = true;
 		//如果没有则跳过
 		auto& cbs = g_callback_functions[type_];
-		//if (cbs.empty()) {
-		//	cout << "未找到加1" << endl;
-		//	Py_XINCREF(arg_);
-		//	return intercept;
-		//}
-		Py_BEGIN_CALL;
+		//Py_BEGIN_CALL;
 		//Py_XINCREF(arg_);
 		for (auto cb : cbs) {
 			PyObject* result = PyObject_CallFunction(cb, "O", arg_);
 			PrintPythonError();
 			if (result == Py_False)
 				intercept = false;
+			Py_XDECREF(result);
 		}
-		Py_END_CALL;
+		//Py_END_CALL;
 		return intercept;
 	}
 	EventCallBackHelper& setArg(PyObject* arg) {
@@ -202,7 +201,9 @@ public:
 	EventCallBackHelper& insert(string_view key, PyObject* item) {
 		if (arg_ == nullptr)
 			arg_ = PyDict_New();
-		PyDict_SetItem(arg_, ToPyStr(key), item);
+		PyDict_SetItemString(arg_, key.data(), item);
+		Py_DECREF(item);
+		Py_PRINT_REFCOUNT(item);
 		return *this;
 	}
 	EventCallBackHelper& insert(string_view key, string_view item) {
@@ -232,6 +233,7 @@ public:
 private:
 	EventCode type_;
 	PyObject* arg_;
+	PyGILState_STATE gil_;
 };
 #pragma endregion
 #pragma region Hook List
@@ -299,12 +301,14 @@ THOOK(BDS_Main, int, "main",
 			if (name.front() == '_')
 				continue;
 			cout << "[BDSpyrunner] Loading " << name << endl;
-			PyImport_Import(ToPyStr(name));
+			PyImport_ImportModule(name.c_str());
 			PrintPythonError();
 		}
 	}
+	// 启动子线程前执行，为了释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
+	PyEval_ReleaseThread(PyThreadState_Get());
 	//释放当前线程
-	PyEval_SaveThread();
+	//PyEval_SaveThread();
 	//输出版本号信息
 	cout << "[BDSpyrunner] " << PYR_VERSION << " loaded." << endl;
 	return original(argc, argv, envp);
@@ -350,6 +354,7 @@ THOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCom
 	original(_this);
 }
 #pragma endregion
+#if 1
 #pragma region Listener
 //开服完成
 THOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
@@ -357,7 +362,6 @@ THOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
 	EventCallBackHelper h(EventCode::onServerStarted);
 	h.setArg(Py_None);
 	h.call();
-	//thread(CheckPluginVersion).detach();
 	original(_this);
 }
 //控制台输出，实际上是ostrram::operator<<的底层调用
@@ -387,9 +391,9 @@ THOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tr
 		return false;
 	}
 	if (debug) {
-		Py_BEGIN_CALL;
+		//Py_BEGIN_CALL;
 		PyRun_SimpleString(cmd->c_str());
-		Py_END_CALL;
+		//Py_END_CALL;
 		cout << '>';
 		return false;
 	}
@@ -630,10 +634,10 @@ THOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdent
 		auto data = g_commands.find(cmd.c_str() + 1);
 		//如果有这条命令且回调函数不为nullptr
 		if (data != g_commands.end() && data->second.second) {
-			Py_BEGIN_CALL;
+			//Py_BEGIN_CALL;
 			PyObject_CallFunction(data->second.second, "O", ToEntity(p));
 			PrintPythonError();
-			Py_END_CALL;
+			//Py_END_CALL;
 			return;
 		}
 		h.insert("player", p)
@@ -715,12 +719,12 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 	//a3 + 200 BaseCommandBlock
 	string cmd = FETCH(string, a3 + 256);
 	string rawname = FETCH(string, a3 + 288);
-	PyObject* pos = ToList(bp);
-	h.insert("mode", mode)
+	h
+		.insert("mode", mode)
 		.insert("condition", condition)
-		.insert("cmd", cmd.c_str())
-		.insert("rawname", rawname.c_str())
-		.insert("position", pos);
+		.insert("cmd", cmd)
+		.insert("rawname", rawname)
+		.insert("position", bp);
 	if (h.call())
 		return original(_this, a2, a3, bp, a5);
 	return false;
@@ -736,7 +740,8 @@ THOOK(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z
 THOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 	Player* p, unsigned slot, ItemStack* i) {
 	EventCallBackHelper h(EventCode::onSetArmor);
-	h.insert("player", ToEntity(p))
+	h
+		.insert("player", ToEntity(p))
 		.insert("itemid", i->getId())
 		.insert("itemcount", i->getCount())
 		.insert("itemname", i->getName())
@@ -937,3 +942,4 @@ THOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos
 	return 0;
 }
 #pragma endregion
+#endif

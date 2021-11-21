@@ -33,7 +33,7 @@ struct PyEntity {
 	static PyObject* repr(PyObject* self) {
 		Actor* a = asActor(self);
 		if (!a)
-			return nullptr;
+			return ToPyStr("");
 		return ToPyStr(a->getNameTag());
 	}
 	static Py_hash_t hash(PyObject* self) {
@@ -42,7 +42,7 @@ struct PyEntity {
 	static PyObject* str(PyObject* self) {
 		Actor* a = asActor(self);
 		if (!a)
-			return nullptr;
+			return ToPyStr("");
 		return ToPyStr(a->getNameTag());
 	}
 	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
@@ -719,9 +719,9 @@ PyTypeObject PyEntity_Type{
 };
 
 PyObject* ToEntity(Actor* ptr) {
+	PyEntity* obj = nullptr;
 	//Py_BEGIN_CALL;
-	PyEntity* obj = PyObject_New(PyEntity, &PyEntity_Type);
-	//obj = PyEntity_Type.tp_alloc(&PyEntity_Type, 0);
+	obj = PyObject_New(PyEntity, &PyEntity_Type);
 	//Py_END_CALL;
 	obj->actor = ptr;
 	return reinterpret_cast<PyObject*>(obj);
