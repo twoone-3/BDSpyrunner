@@ -7,6 +7,7 @@
 #include "../mc/ScoreBoard.h"
 #include "../mc/Structure.h"
 #include "../mc/Tag.h"
+#include "../mc/DataIO.h"
 
 using namespace std;
 //是否为史莱姆区块
@@ -210,6 +211,39 @@ static PyObject* setStructure(PyObject*, PyObject* args) {
 	}
 	Py_RETURN_NONE;
 }
+static PyObject* getStructureRaw(PyObject*, PyObject* args) {
+	BlockPos pos1, pos2; int did;
+	Py_PARSE("iiiiiii",
+		&pos1.x, &pos1.y, &pos1.z,
+		&pos2.x, &pos2.y, &pos2.z, &did
+	);
+	if (global<Level> == nullptr)
+		Py_RETURN_ERROR("Level is not set");
+	BlockSource* bs = global<Level>->getBlockSource(did);
+	if (bs == nullptr)
+		Py_RETURN_ERROR("Unknown dimension ID");
+	BlockPos start{
+		min(pos1.x,pos2.x),
+		min(pos1.y,pos2.y),
+		min(pos1.z,pos2.z)
+	};
+	BlockPos size{
+		max(pos1.x,pos2.x) - start.x,
+		max(pos1.y,pos2.y) - start.y,
+		max(pos1.z,pos2.z) - start.z
+	};
+	StructureSettings ss(&size, false, false);
+	StructureTemplate st("tmp");
+	st.fillFromWorld(bs, &start, &ss);
+	CompoundTag* t = st.save();
+	BinaryStream* stream = new BinaryStream();
+	serialize<CompoundTag>::write(t, stream);
+	size_t sizet = stream->mBuffer->length();
+	auto result = PyBytes_FromStringAndSize(stream->GetAndReleaseData()->c_str(),sizet);
+	stream->~BinaryStream();
+	return result;
+}
+
 //产生爆炸
 static PyObject* explode(PyObject*, PyObject* args) {
 	Vec3 pos; int did;
@@ -282,6 +316,7 @@ static PyMethodDef Methods[]{
 	{"setBlock", setBlock, METH_VARARGS, nullptr},
 	{"getStructure", getStructure, METH_VARARGS, nullptr},
 	{"setStructure", setStructure, METH_VARARGS, nullptr},
+	{"getStructureRaw", getStructureRaw, METH_VARARGS, nullptr},
 	{"explode", explode, METH_VARARGS, nullptr},
 	{"spawnItem", spawnItem, METH_VARARGS, nullptr},
 	{"isSlimeChunk", isSlimeChunk, METH_VARARGS, nullptr},

@@ -25,10 +25,12 @@ StructureTemplate::~StructureTemplate() {
 }
 
 Tag* StructureTemplate::save() {
-	Tag* t = 0;
+	return *SymCall<Tag**>("?save@StructureTemplateData@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
+		_this + 32);
+	/*Tag* t = 0;
 	SymCall<Tag*>("?save@StructureTemplateData@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ",
 		_this + 32, &t);
-	return t;
+	return t;*/
 }
 
 void StructureTemplate::load(Tag* t) {

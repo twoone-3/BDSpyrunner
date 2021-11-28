@@ -1,8 +1,19 @@
 #include "Tag.h"
 #include "tool.h"
 
+
 using namespace std;
 TagMemoryChunk::TagMemoryChunk(size_t size, uint8_t data[]) :capacity(size), size(size), data(data) {}
+
+void serialize<CompoundTag>::write(const CompoundTag* item, BinaryStream* stream) {
+	return SymCall("?write@?$serialize@VCompoundTag@@@@SAXAEBVCompoundTag@@AEAVBinaryStream@@@Z",
+		item, stream);
+}
+
+CompoundTag* serialize<CompoundTag>::read(ReadOnlyBinaryStream* stream) {
+	return SymCall<CompoundTag*>("_ZN9serializeI11CompoundTagE4readER20ReadOnlyBinaryStream",
+		stream);
+}
 
 void Tag::put(const string& key, Tag* value) {
 	return SymCall("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
@@ -67,7 +78,7 @@ void Tag::deleteString() {
 }
 
 TagType Tag::getVariantType() {
-	return *((TagType*)this + 40);
+	return (TagType)(VirtualCall<byte>(40, this));//return *((TagType*)this + 40);
 }
 
 TagType Tag::getListType() {
@@ -314,3 +325,4 @@ Tag* ArraytoTag(const Json& value) {
 	}
 	return list;
 }
+

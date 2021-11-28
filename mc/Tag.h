@@ -1,5 +1,8 @@
 #pragma once
 #include "json_tool.h"
+#include "DataIO.h"
+
+
 
 enum class TagType : uint8_t {
 	End, Byte, Short, Int, Int64, Float, Double,
@@ -45,9 +48,17 @@ struct Tag {
 	auto& asList();
 	auto& asCompound();
 };
+typedef Tag CompoundTag;
 
 Tag* newTag(TagType t);
 Json ListtoJson(Tag* t);
 Json CompoundTagtoJson(Tag* t);
 Tag* ObjecttoTag(const Json& value);
 Tag* ArraytoTag(const Json& value);
+
+template<> class serialize<CompoundTag>
+{
+public:
+	static void write(const CompoundTag* val, BinaryStream* stream);
+	static CompoundTag* read(ReadOnlyBinaryStream* stream);
+};
