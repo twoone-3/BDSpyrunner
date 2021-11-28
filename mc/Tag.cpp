@@ -11,8 +11,10 @@ void serialize<CompoundTag>::write(const CompoundTag* item, BinaryStream* stream
 }
 
 CompoundTag* serialize<CompoundTag>::read(ReadOnlyBinaryStream* stream) {
-	return SymCall<CompoundTag*>("_ZN9serializeI11CompoundTagE4readER20ReadOnlyBinaryStream",
-		stream);
+	CompoundTag* tag = newTag(TagType::Compound);
+	SymCall("?read@?$serialize@VCompoundTag@@@@SA?AVCompoundTag@@AEAVReadOnlyBinaryStream@@@Z",
+		tag, stream);
+	return tag;
 }
 
 void Tag::put(const string& key, Tag* value) {
@@ -85,25 +87,9 @@ TagType Tag::getListType() {
 	return *((TagType*)this + 32);
 }
 
-auto& Tag::asByte() { return *reinterpret_cast<uint8_t*>(data); }
 
-auto& Tag::asShort() { return *reinterpret_cast<short*>(data); }
 
-auto& Tag::asInt() { return *reinterpret_cast<int*>(data); }
 
-auto& Tag::asInt64() { return *reinterpret_cast<long long*>(data); }
-
-auto& Tag::asFloat() { return *reinterpret_cast<float*>(data); }
-
-auto& Tag::asDouble() { return *reinterpret_cast<double*>(data); }
-
-string& Tag::asString() { return *reinterpret_cast<string*>(data); }
-
-auto& Tag::asByteArray() { return *reinterpret_cast<TagMemoryChunk*>(data); }
-
-auto& Tag::asList() { return *reinterpret_cast<vector<Tag*>*>(data); }
-
-auto& Tag::asCompound() { return *reinterpret_cast<map<string, Tag>*>(data); }
 
 Tag* newTag(TagType t) {
 	Tag* tag;

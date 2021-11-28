@@ -9,6 +9,10 @@ public:
 	size_t unk1;
 	const std::string mOwnedBuffer;
 	const std::string* mBuffer;
+	ReadOnlyBinaryStream();
+	ReadOnlyBinaryStream(std::string* buffer);
+	ReadOnlyBinaryStream(const std::string* buffer, bool copyBuffer);
+	~ReadOnlyBinaryStream();
 	inline size_t getLength() const { return mBuffer->size(); }
 	inline void setReadPointer(std::size_t size) {
 		auto len = getLength();

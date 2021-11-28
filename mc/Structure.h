@@ -31,6 +31,7 @@ struct StructureTemplate {
 	Tag* save();
 	void load(Tag* t);
 	void fromJson(const Json& value);
+	void fromCompound(Tag* t);
 	void fillFromWorld(BlockSource* a2, BlockPos* a3, StructureSettings* a4);
 	void placeInWorld(BlockSource* a2, BlockPalette* a3, BlockPos* a4, StructureSettings* a5);
 };

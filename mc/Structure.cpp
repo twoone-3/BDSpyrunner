@@ -45,6 +45,10 @@ void StructureTemplate::fromJson(const Json& value) {
 	delete t;
 }
 
+void StructureTemplate::fromCompound(Tag* t) {
+	load(t);
+}
+
 void StructureTemplate::fillFromWorld(BlockSource* a2, BlockPos* a3, StructureSettings* a4) {
 	SymCall("?fillFromWorld@StructureTemplate@@QEAAXAEAVBlockSource@@AEBVBlockPos@@AEBVStructureSettings@@@Z",
 		this, a2, a3, a4);

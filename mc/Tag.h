@@ -37,16 +37,16 @@ struct Tag {
 
 	TagType getVariantType();
 	TagType getListType();
-	auto& asByte();
-	auto& asShort();
-	auto& asInt();
-	auto& asInt64();
-	auto& asFloat();
-	auto& asDouble();
-	std::string& asString();
-	auto& asByteArray();
-	auto& asList();
-	auto& asCompound();
+	inline uint8_t& asByte() { return *reinterpret_cast<uint8_t*>(data); }
+	inline short& asShort() { return *reinterpret_cast<short*>(data); }
+	inline int& asInt() { return *reinterpret_cast<int*>(data); }
+	inline long long& asInt64() { return *reinterpret_cast<long long*>(data); }
+	inline float& asFloat() { return *reinterpret_cast<float*>(data); }
+	inline double& asDouble() { return *reinterpret_cast<double*>(data); }
+	inline std::string& asString() { return *reinterpret_cast<std::string*>(data); }
+	inline TagMemoryChunk& asByteArray() { return *reinterpret_cast<TagMemoryChunk*>(data); }
+	inline std::vector<Tag*>& asList() { return *reinterpret_cast<std::vector<Tag*>*>(data); }
+	inline std::map<std::string, Tag>& asCompound() { return *reinterpret_cast<std::map<std::string, Tag>*>(data); }
 };
 typedef Tag CompoundTag;
 

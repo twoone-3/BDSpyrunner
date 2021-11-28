@@ -211,6 +211,7 @@ static PyObject* setStructure(PyObject*, PyObject* args) {
 	}
 	Py_RETURN_NONE;
 }
+//从指定地点获取二进制NBT结构数据
 static PyObject* getStructureRaw(PyObject*, PyObject* args) {
 	BlockPos pos1, pos2; int did;
 	Py_PARSE("iiiiiii",
@@ -243,7 +244,48 @@ static PyObject* getStructureRaw(PyObject*, PyObject* args) {
 	stream->~BinaryStream();
 	return result;
 }
-
+//从二进制NBT结构数据导出结构到指定地点
+static PyObject* setStructureRaw(PyObject*, PyObject* args) {
+	const char* data;
+	Py_ssize_t datasize;
+	//Py_buffer data;
+	BlockPos pos; int did;
+	Py_PARSE("y#iiii", &data, &datasize, &pos.x, &pos.y, &pos.z, &did);
+	if (global<Level> == nullptr)
+		Py_RETURN_ERROR("Level is not set");
+	BlockSource* bs = global<Level>->getBlockSource(did);
+	if (bs == nullptr)
+		Py_RETURN_ERROR("Unknown dimension ID");
+	ReadOnlyBinaryStream* stream = new ReadOnlyBinaryStream(new std::string(data, datasize));
+	//printf("bufferlength: %d\n",stream->mBuffer->length());
+	CompoundTag* tag = serialize<CompoundTag>::read(stream);
+	//printf("deserialized.\n");
+	if (tag->getVariantType() != TagType::Compound)
+		Py_RETURN_ERROR("Invalid Tag");
+	auto& t_C = tag->asCompound();
+	if (t_C.find("size") == t_C.end() || t_C["size"].getVariantType() != TagType::List)
+		Py_RETURN_ERROR("Invalid Tag");
+	auto& t_C_Lsize = t_C["size"].asList();
+	
+	BlockPos size{
+		t_C_Lsize[0]->asInt(),
+		t_C_Lsize[1]->asInt(),
+		t_C_Lsize[2]->asInt()
+	};
+	StructureSettings ss(&size, true, false);
+	StructureTemplate st("tmp");
+	st.fromCompound(tag);
+	st.placeInWorld(bs, global<Level>->getBlockPalette(), &pos, &ss);
+	for (int x = 0; x != size.x; ++x) {
+		for (int y = 0; y != size.y; ++y) {
+			for (int z = 0; z != size.z; ++z) {
+				BlockPos bp{ x,y,z };
+				bs->neighborChanged(&bp);
+			}
+		}
+	}
+	Py_RETURN_NONE;
+}
 //产生爆炸
 static PyObject* explode(PyObject*, PyObject* args) {
 	Vec3 pos; int did;
@@ -317,6 +359,7 @@ static PyMethodDef Methods[]{
 	{"getStructure", getStructure, METH_VARARGS, nullptr},
 	{"setStructure", setStructure, METH_VARARGS, nullptr},
 	{"getStructureRaw", getStructureRaw, METH_VARARGS, nullptr},
+	{"setStructureRaw", setStructureRaw, METH_VARARGS, nullptr},
 	{"explode", explode, METH_VARARGS, nullptr},
 	{"spawnItem", spawnItem, METH_VARARGS, nullptr},
 	{"isSlimeChunk", isSlimeChunk, METH_VARARGS, nullptr},
