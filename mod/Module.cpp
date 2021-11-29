@@ -179,10 +179,12 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 
 	return ToPyStr(CompoundTagtoJson(st.save()).dump(4));
 }
-static PyObject* setStructure(PyObject*, PyObject* args) {
+static PyObject* setStructure(PyObject*, PyObject* args, PyObject* kwds) {
+	Py_KERWORDS_LIST("data", "x", "y", "x", "dim", "update");
+	bool update = true;
 	const char* data = "";
 	BlockPos pos; int did;
-	Py_PARSE("siiii", &data, &pos.x, &pos.y, &pos.z, &did);
+	Py_PARSE_WITH_KERWORDS("siiii|b", &data, &pos.x, &pos.y, &pos.z, &did, &update);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = global<Level>->getBlockSource(did);
@@ -201,11 +203,13 @@ static PyObject* setStructure(PyObject*, PyObject* args) {
 	StructureTemplate st("tmp");
 	st.fromJson(value);
 	st.placeInWorld(bs, global<Level>->getBlockPalette(), &pos, &ss);
-	for (int x = 0; x != size.x; ++x) {
-		for (int y = 0; y != size.y; ++y) {
-			for (int z = 0; z != size.z; ++z) {
-				BlockPos bp{ x,y,z };
-				bs->neighborChanged(&bp);
+	if (update) {
+		for (int x = 0; x != size.x; ++x) {
+			for (int y = 0; y != size.y; ++y) {
+				for (int z = 0; z != size.z; ++z) {
+					BlockPos bp{ x,y,z };
+					bs->neighborChanged(&bp);
+				}
 			}
 		}
 	}
@@ -245,12 +249,14 @@ static PyObject* getStructureRaw(PyObject*, PyObject* args) {
 	return result;
 }
 //从二进制NBT结构数据导出结构到指定地点
-static PyObject* setStructureRaw(PyObject*, PyObject* args) {
+static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
+	Py_KERWORDS_LIST("data", "x", "y", "x", "dim", "update");
+	bool update = true;
 	const char* data;
 	Py_ssize_t datasize;
 	//Py_buffer data;
 	BlockPos pos; int did;
-	Py_PARSE("y#iiii", &data, &datasize, &pos.x, &pos.y, &pos.z, &did);
+	Py_PARSE_WITH_KERWORDS("y#iiii|b", &data, &datasize, &pos.x, &pos.y, &pos.z, &did, &update);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = global<Level>->getBlockSource(did);
@@ -276,11 +282,13 @@ static PyObject* setStructureRaw(PyObject*, PyObject* args) {
 	StructureTemplate st("tmp");
 	st.fromCompound(tag);
 	st.placeInWorld(bs, global<Level>->getBlockPalette(), &pos, &ss);
-	for (int x = 0; x != size.x; ++x) {
-		for (int y = 0; y != size.y; ++y) {
-			for (int z = 0; z != size.z; ++z) {
-				BlockPos bp{ x,y,z };
-				bs->neighborChanged(&bp);
+	if (update) {
+		for (int x = 0; x != size.x; ++x) {
+			for (int y = 0; y != size.y; ++y) {
+				for (int z = 0; z != size.z; ++z) {
+					BlockPos bp{ x,y,z };
+					bs->neighborChanged(&bp);
+				}
 			}
 		}
 	}
@@ -357,9 +365,9 @@ static PyMethodDef Methods[]{
 	{"getBlock", getBlock, METH_VARARGS, nullptr},
 	{"setBlock", setBlock, METH_VARARGS, nullptr},
 	{"getStructure", getStructure, METH_VARARGS, nullptr},
-	{"setStructure", setStructure, METH_VARARGS, nullptr},
+	{"setStructure", (PyCFunction)setStructure, METH_VARARGS | METH_KEYWORDS, nullptr},
 	{"getStructureRaw", getStructureRaw, METH_VARARGS, nullptr},
-	{"setStructureRaw", setStructureRaw, METH_VARARGS, nullptr},
+	{"setStructureRaw", (PyCFunction)setStructureRaw, METH_VARARGS | METH_KEYWORDS, nullptr},
 	{"explode", explode, METH_VARARGS, nullptr},
 	{"spawnItem", spawnItem, METH_VARARGS, nullptr},
 	{"isSlimeChunk", isSlimeChunk, METH_VARARGS, nullptr},
