@@ -9,7 +9,7 @@ BlockSource* Level::getBlockSource(int did) {
 		this, did);
 	if (!d)
 		return nullptr;
-	return FETCH(BlockSource*, d + 96);//IDA Level::tickEntities 120
+	return Dereference<BlockSource*>( d , 96);//IDA Level::tickEntities 120
 }
 
 void Level::forEachPlayer(const std::function<bool(Player*)>& fn) {
@@ -18,7 +18,7 @@ void Level::forEachPlayer(const std::function<bool(Player*)>& fn) {
 }
 
 Scoreboard* Level::getScoreBoard() {
-	return FETCH(Scoreboard*, this + 8600);//IDA Level::getScoreboard
+	return Dereference<Scoreboard*>( this + 8600);//IDA Level::getScoreboard
 }
 
 unsigned Level::getSeed() {
@@ -43,7 +43,7 @@ Player* Level::getPlayerByXuid(const string& xuid) {
 }
 
 BlockPalette* Level::getBlockPalette() {
-	return FETCH(BlockPalette*, this + 2120);
+	return Dereference<BlockPalette*>( this + 2120);
 }
 
 Spawner* Level::getSpawner() {

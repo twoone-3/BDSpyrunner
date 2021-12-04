@@ -164,14 +164,14 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	BlockPos start{
-		min(pos1.x,pos2.x),
-		min(pos1.y,pos2.y),
-		min(pos1.z,pos2.z)
+		min(pos1.x, pos2.x),
+		min(pos1.y, pos2.y),
+		min(pos1.z, pos2.z)
 	};
 	BlockPos size{
-		max(pos1.x,pos2.x) - start.x,
-		max(pos1.y,pos2.y) - start.y,
-		max(pos1.z,pos2.z) - start.z
+		max(pos1.x, pos2.x) - start.x,
+		max(pos1.y, pos2.y) - start.y,
+		max(pos1.z, pos2.z) - start.z
 	};
 	StructureSettings ss(&size, false, false);
 	StructureTemplate st("tmp");
@@ -207,7 +207,7 @@ static PyObject* setStructure(PyObject*, PyObject* args, PyObject* kwds) {
 		for (int x = 0; x != size.x; ++x) {
 			for (int y = 0; y != size.y; ++y) {
 				for (int z = 0; z != size.z; ++z) {
-					BlockPos bp{ x,y,z };
+					BlockPos bp{ x, y, z };
 					bs->neighborChanged(&bp);
 				}
 			}
@@ -228,14 +228,14 @@ static PyObject* getStructureRaw(PyObject*, PyObject* args) {
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	BlockPos start{
-		min(pos1.x,pos2.x),
-		min(pos1.y,pos2.y),
-		min(pos1.z,pos2.z)
+		min(pos1.x, pos2.x),
+		min(pos1.y, pos2.y),
+		min(pos1.z, pos2.z)
 	};
 	BlockPos size{
-		max(pos1.x,pos2.x) - start.x,
-		max(pos1.y,pos2.y) - start.y,
-		max(pos1.z,pos2.z) - start.z
+		max(pos1.x, pos2.x) - start.x,
+		max(pos1.y, pos2.y) - start.y,
+		max(pos1.z, pos2.z) - start.z
 	};
 	StructureSettings ss(&size, false, false);
 	StructureTemplate st("tmp");
@@ -244,7 +244,7 @@ static PyObject* getStructureRaw(PyObject*, PyObject* args) {
 	BinaryStream* stream = new BinaryStream();
 	serialize<CompoundTag>::write(t, stream);
 	size_t sizet = stream->mBuffer->length();
-	auto result = PyBytes_FromStringAndSize(stream->GetAndReleaseData()->c_str(),sizet);
+	auto result = PyBytes_FromStringAndSize(stream->GetAndReleaseData()->c_str(), sizet);
 	stream->~BinaryStream();
 	return result;
 }
@@ -272,7 +272,7 @@ static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
 	if (t_C.find("size") == t_C.end() || t_C["size"].getVariantType() != TagType::List)
 		Py_RETURN_ERROR("Invalid Tag");
 	auto& t_C_Lsize = t_C["size"].asList();
-	
+
 	BlockPos size{
 		t_C_Lsize[0]->asInt(),
 		t_C_Lsize[1]->asInt(),
@@ -286,7 +286,7 @@ static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
 		for (int x = 0; x != size.x; ++x) {
 			for (int y = 0; y != size.y; ++y) {
 				for (int z = 0; z != size.z; ++z) {
-					BlockPos bp{ x,y,z };
+					BlockPos bp{ x, y, z };
 					bs->neighborChanged(&bp);
 				}
 			}
@@ -352,27 +352,27 @@ static PyObject* setSignBlockMessage(PyObject*, PyObject* args) {
 }
 //模块方法列表
 static PyMethodDef Methods[]{
-	{"minVersionRequire", minVersionRequire, METH_VARARGS, nullptr},
-	{"getBDSVersion", getBDSVersion, METH_NOARGS, nullptr},
-	{"logout", logout, METH_VARARGS, nullptr},
-	{"runcmd", runCommand, METH_VARARGS, nullptr},
-	{"setListener", setListener, METH_VARARGS, nullptr},
-	{"setCommandDescription", setCommandDescription, METH_VARARGS, nullptr},
-	{"getPlayerByXuid", getPlayerByXuid, METH_VARARGS, nullptr},
-	{"getPlayerList", getPlayerList, METH_NOARGS, nullptr},
-	{"setDamage", setDamage, METH_VARARGS, nullptr},
-	{"setServerMotd", setServerMotd, METH_VARARGS, nullptr},
-	{"getBlock", getBlock, METH_VARARGS, nullptr},
-	{"setBlock", setBlock, METH_VARARGS, nullptr},
-	{"getStructure", getStructure, METH_VARARGS, nullptr},
-	{"setStructure", (PyCFunction)setStructure, METH_VARARGS | METH_KEYWORDS, nullptr},
-	{"getStructureRaw", getStructureRaw, METH_VARARGS, nullptr},
-	{"setStructureRaw", (PyCFunction)setStructureRaw, METH_VARARGS | METH_KEYWORDS, nullptr},
-	{"explode", explode, METH_VARARGS, nullptr},
-	{"spawnItem", spawnItem, METH_VARARGS, nullptr},
-	{"isSlimeChunk", isSlimeChunk, METH_VARARGS, nullptr},
-	{"setSignBlockMessage", setSignBlockMessage, METH_VARARGS, nullptr},
-	{nullptr}
+	{ "minVersionRequire", minVersionRequire, METH_VARARGS, nullptr },
+	{ "getBDSVersion", getBDSVersion, METH_NOARGS, nullptr },
+	{ "logout", logout, METH_VARARGS, nullptr },
+	{ "runcmd", runCommand, METH_VARARGS, nullptr },
+	{ "setListener", setListener, METH_VARARGS, nullptr },
+	{ "setCommandDescription", setCommandDescription, METH_VARARGS, nullptr },
+	{ "getPlayerByXuid", getPlayerByXuid, METH_VARARGS, nullptr },
+	{ "getPlayerList", getPlayerList, METH_NOARGS, nullptr },
+	{ "setDamage", setDamage, METH_VARARGS, nullptr },
+	{ "setServerMotd", setServerMotd, METH_VARARGS, nullptr },
+	{ "getBlock", getBlock, METH_VARARGS, nullptr },
+	{ "setBlock", setBlock, METH_VARARGS, nullptr },
+	{ "getStructure", getStructure, METH_VARARGS, nullptr },
+	{ "setStructure", (PyCFunction)setStructure, METH_VARARGS | METH_KEYWORDS, nullptr },
+	{ "getStructureRaw", getStructureRaw, METH_VARARGS, nullptr },
+	{ "setStructureRaw", (PyCFunction)setStructureRaw, METH_VARARGS | METH_KEYWORDS, nullptr },
+	{ "explode", explode, METH_VARARGS, nullptr },
+	{ "spawnItem", spawnItem, METH_VARARGS, nullptr },
+	{ "isSlimeChunk", isSlimeChunk, METH_VARARGS, nullptr },
+	{ "setSignBlockMessage", setSignBlockMessage, METH_VARARGS, nullptr },
+	{ nullptr }
 };
 //模块定义
 static PyModuleDef Module{

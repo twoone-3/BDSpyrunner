@@ -44,10 +44,10 @@ struct Actor {
 	Vec3* getPos();
 	//获取生物之前所在坐标
 	Vec3* getPosOld();
-	//是否已移除
-	bool isRemoved();
 	//是否悬空
 	bool isStanding();
+	//是否潜行
+	bool isSneaking();
 	//取方块源
 	BlockSource* getRegion();
 	ItemStack* getArmor(int slot);
@@ -69,12 +69,10 @@ struct Actor {
 	void setHealth(int value);
 	void setMaxHealth(int value);
 	//获取副手
-	ItemStack* getOffHand();
+	ItemStack* getOffhandSlot();
 	Tag* save();
 	//设置大小
 	void setSize(float f1, float f2);
-	//是否潜行
-	bool isSneaking();
 	//获取状态列表
 	auto getAllEffects();
 	//传送
@@ -95,7 +93,7 @@ struct Player : Mob {
 	//获取玩家uuid
 	std::string getUuid();
 	//获取玩家xuid
-	std::string& getXuid();
+	std::string getXuid();
 	//获取网络标识符
 	NetworkIdentifier* getClientId();
 	//获取背包
@@ -133,7 +131,7 @@ struct Player : Mob {
 	//刷新区块
 	void resendAllChunks();
 	//发送数据包
-	void sendPacket(uintptr_t pkt);
+	void sendNetworkPacket(uintptr_t pkt);
 	unsigned sendModalFormRequestPacket(const std::string& str);
 	void sendTransferPacket(const std::string& address, unsigned short port);
 	void sendDisconnectPacket(const std::string& msg);

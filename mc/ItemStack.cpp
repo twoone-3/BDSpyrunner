@@ -17,11 +17,11 @@ ItemStack::~ItemStack() {
 }
 
 short ItemStack::getAuxValue() {
-	return FETCH(short, _this + 32);
+	return Dereference<short>( this , 32);
 }
 
 unsigned char ItemStack::getCount() {
-	return FETCH(unsigned char, _this + 34);
+	return Dereference<unsigned char>( _this , 34);
 }
 
 short ItemStack::getId() {
@@ -44,7 +44,7 @@ string ItemStack::getName() {
 //取容器内数量
 
 int ItemStack::getStackCount() {//IDA ContainerModel::networkUpdateItem
-	return FETCH(int, this + 34);
+	return Dereference<int>( this + 34);
 }
 
 //判断是否空容器
@@ -54,7 +54,7 @@ bool ItemStack::isNull() {
 }
 
 bool ItemStack::isEmptyStack() {
-	return FETCH(char, this + 34) == 0;
+	return Dereference<char>( this + 34) == 0;
 }
 
 Tag* ItemStack::getNetworkUserData() {

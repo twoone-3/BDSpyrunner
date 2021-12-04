@@ -27,7 +27,7 @@ string SystemAddress::toString() {
 
 SystemAddress RakPeer::getSystemAddress(NetworkIdentifier* ni) {
 	SystemAddress sa;
-	RakNetGUID& guid = FETCH(RakNetGUID, ni->_this + 8);
+	RakNetGUID& guid = Dereference<RakNetGUID>(ni->_this, 8);
 	SymCall<SystemAddress&>("?GetSystemAddressFromGuid@RakPeer@RakNet@@UEBA?AUSystemAddress@2@URakNetGUID@2@@Z",
 		this, &sa, &guid);
 	return sa;
@@ -35,5 +35,5 @@ SystemAddress RakPeer::getSystemAddress(NetworkIdentifier* ni) {
 
 Player* ServerNetworkHandler::_getServerPlayer(uintptr_t id, uintptr_t pkt) {
 	return SymCall<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@E@Z",
-		this, id, FETCH(char, pkt + 16));
+		this, id, Dereference<char>(pkt, 16));
 }

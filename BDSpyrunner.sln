@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31613.86
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31919.166
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BDSpyrunner", "BDSpyrunner.vcxproj", "{C78E00DA-F99B-4629-87A2-428314CEF72A}"
 EndProject
@@ -11,8 +11,7 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C78E00DA-F99B-4629-87A2-428314CEF72A}.Debug|x64.ActiveCfg = Debug|x64
-		{C78E00DA-F99B-4629-87A2-428314CEF72A}.Debug|x64.Build.0 = Debug|x64
+		{C78E00DA-F99B-4629-87A2-428314CEF72A}.Debug|x64.ActiveCfg = Release|x64
 		{C78E00DA-F99B-4629-87A2-428314CEF72A}.Release|x64.ActiveCfg = Release|x64
 		{C78E00DA-F99B-4629-87A2-428314CEF72A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection

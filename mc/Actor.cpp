@@ -14,7 +14,8 @@ inline uintptr_t createPacket(int type) {
 }
 
 string Actor::getNameTag() {
-	return SymCall<string&>("?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ", this);
+	return SymCall<string&>("?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+		this);
 }
 
 //设置生物名称信息
@@ -34,40 +35,36 @@ int Actor::getDimensionId() {
 	SymCall("?getDimensionId@Actor@@UEBA?AV?$AutomaticID@VDimension@@H@@XZ",
 		this, &did);
 	return did;
-	//return FETCH(int, this + 236);//IDA Actor::getDimensionId
 }
 
 //获取生物当前所在坐标
 Vec3* Actor::getPos() {
 	return SymCall<Vec3*>("?getPos@Actor@@UEBAAEBVVec3@@XZ", this);
-	//return (Vec3*)(this + 1268);//IDA Actor::getPos
 }
 
 //获取生物之前所在坐标
 
 Vec3* Actor::getPosOld() {
 	return SymCall<Vec3*>("?getPosOld@Actor@@UEBAAEBVVec3@@XZ", this);
-	//return (Vec3*)(this + 1280);//IDA Actor::getPosOld
-}
-
-//是否已移除
-
-bool Actor::isRemoved() {
-	return FETCH(bool, this + 7688);
 }
 
 //是否悬空
 
 bool Actor::isStanding() {//IDA MovePlayerPacket::MovePlayerPacket
-	return FETCH(bool, this + 472);
+	return Dereference<bool>(this, 472);
 }
 
+//是否潜行
+
+bool Actor::isSneaking() {
+	return SymCall<bool>("?isSneaking@Actor@@QEBA_NXZ", this);
+}
 
 //取方块源
 
 BlockSource* Actor::getRegion() {
 	return SymCall<BlockSource*>("?getRegion@Actor@@QEBAAEAVBlockSource@@XZ", this);
-	//return FETCH(BlockSource*, this + 872);//IDA Actor::getRegion
+	//return Dereference<BlockSource*, this + 872);//IDA Actor::getRegion
 }
 
 ItemStack* Actor::getArmor(int slot) {
@@ -128,20 +125,20 @@ int Actor::getMaxHealth() {
 void Actor::setHealth(int value) {
 	uintptr_t hattr = (*reinterpret_cast<uintptr_t(**)(Actor*, void*)>(*(uintptr_t*)this + 1552))
 		(this, SYM("?HEALTH@SharedAttributes@@2VAttribute@@B"));
-	FETCH(int, hattr + 132) = value;
+	Dereference<int>(hattr, 132) = value;
 	//SymCall("?_setDirty@AttributeInstance@@AEAAXXZ", hattr);
 }
 
 void Actor::setMaxHealth(int value) {
 	uintptr_t hattr = (*reinterpret_cast<uintptr_t(**)(Actor*, void*)>(*(uintptr_t*)this + 1552))
 		(this, SYM("?HEALTH@SharedAttributes@@2VAttribute@@B"));
-	FETCH(int, hattr + 128) = value;
+	Dereference<int>(hattr, 128) = value;
 	//SymCall("?_setDirty@AttributeInstance@@AEAAXXZ", hattr);
 }
 
 //获取副手
 
-ItemStack* Actor::getOffHand() {
+ItemStack* Actor::getOffhandSlot() {
 	return SymCall<ItemStack*>("?getOffhandSlot@Actor@@QEBAAEBVItemStack@@XZ", this);
 }
 
@@ -156,12 +153,6 @@ Tag* Actor::save() {
 
 void Actor::setSize(float f1, float f2) {
 	SymCall("?setSize@Actor@@UEAAXMM@Z", this, f1, f2);
-}
-
-//是否潜行
-
-bool Actor::isSneaking() {
-	return SymCall<bool>("?isSneaking@Actor@@QEBA_NXZ", this);
 }
 
 //获取状态列表
@@ -217,7 +208,7 @@ string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 	//	this);
 	string p;
 	void* v33 = **(void***)(this + 8);
-	__int32 v107 = *(__int32*)(this + 16);
+	int v107 = *(int*)(this + 16);
 	void* v34 = SymCall<void*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v33, &v107);
 	SymCall<string&>("?asString@UUID@mce@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 		uintptr_t(v34) + 168, &p);
@@ -226,12 +217,11 @@ string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 
 //根据地图信息获取玩家xuid
 
-string& Player::getXuid() {
-	//void* v33 = **(void***)(this + 8);
-	//__int32 v107 = *(__int32*)(this + 16);
-	//void* v34 = SymCall<void*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v33, &v107);
-	return SymCall<string&>("?getPlayerXUID@Level@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVUUID@mce@@@Z",
-		global<Level>, uintptr_t(this) + 2976);
+string Player::getXuid() {
+	string xuid;
+	SymCall<string&>("?getXuid@Player@@UEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+		this,&xuid);
+	return xuid;
 }
 
 //获取网络标识符
@@ -239,7 +229,7 @@ string& Player::getXuid() {
 NetworkIdentifier* Player::getClientId() {
 	return &getUserEntityIdentifierComponent()->nid;
 	//void* v6 = **(void***)(this + 8);
-	//__int32 v58 = *(__int32*)(this + 16);
+	//int v58 = *(int*)(this + 16);
 	//char* v7 = SymCall<char*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v6, &v58);
 	//return (NetworkIdentifier*)(uintptr_t(v7) + 160);
 	//IDA ServerPlayer::setPermissions 34
@@ -248,8 +238,9 @@ NetworkIdentifier* Player::getClientId() {
 //获取背包
 
 Container* Player::getInventory() {
-	return SymCall<Container*>("?getInventory@Player@@QEAAAEAVContainer@@XZ", this);
-	//return FETCH(Container*, FETCH(uintptr_t, this + 3208) + 176);//IDA Player::getInventory
+	return SymCall<Container*>("?getInventory@Player@@QEAAAEAVContainer@@XZ",
+		this);
+	//return Dereference<Container*, Dereference<uintptr_t, this + 3208) + 176);//IDA Player::getInventory
 }
 
 //获取装备容器
@@ -263,7 +254,7 @@ Container* Player::getArmorContainer() {
 
 Container* Player::getEnderChestContainer() {
 	//IDA Player::addAdditionalSaveData EnderChestInventory
-	return FETCH(Container*, this + 4208);
+	return Dereference<Container*>(this, 4200);
 }
 
 //设置一个装备
@@ -333,7 +324,7 @@ string Player::getPlatformOnlineId() {
 	SymCall<string&>("?getPlatformOnlineId@Player@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 		this, &id);
 	return id;
-	//return FETCH(string, this + 8352);
+	//return Dereference<string, this + 8352);
 	//IDA Player::Player  v13 + 8352
 }
 
@@ -342,7 +333,7 @@ string Player::getPlatformOnlineId() {
 unsigned Player::getPlatform() {
 	return SymCall<unsigned>("?getPlatform@Player@@QEBA?AW4BuildPlatform@@XZ",
 		this);
-	//return FETCH(int, this + 2336);
+	//return Dereference<int, this + 2336);
 	//IDA ServerNetworkHandler::createNewPlayer  ConnectionRequest::getDeviceOS
 }
 
@@ -361,7 +352,7 @@ void Player::resendAllChunks() {
 
 //发送数据包
 
-void Player::sendPacket(uintptr_t pkt) {
+void Player::sendNetworkPacket(uintptr_t pkt) {
 	SymCall("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z",
 		this, pkt);
 }
@@ -369,66 +360,66 @@ void Player::sendPacket(uintptr_t pkt) {
 unsigned Player::sendModalFormRequestPacket(const string& str) {
 	static unsigned id = 0;
 	uintptr_t pkt = createPacket(100);
-	FETCH(unsigned, pkt + 48) = ++id;
-	FETCH(string, pkt + 56) = str;
-	sendPacket(pkt);
+	Dereference<unsigned>(pkt, 48) = ++id;
+	Dereference<string>(pkt, 56) = str;
+	sendNetworkPacket(pkt);
 	return id;
 }
 
 void Player::sendTransferPacket(const string& address, unsigned short port) {
 	uintptr_t pkt = createPacket(85);
-	FETCH(string, pkt + 48) = address;
-	FETCH(unsigned short, pkt + 80) = port;
-	sendPacket(pkt);
+	Dereference<string>(pkt, 48) = address;
+	Dereference<unsigned short>(pkt, 80) = port;
+	sendNetworkPacket(pkt);
 }
 
 void Player::sendDisconnectPacket(const string& msg) {
 	uintptr_t pkt = createPacket(5);
-	FETCH(string, pkt + 56) = msg;
-	sendPacket(pkt);
+	Dereference<string>(pkt, 56) = msg;
+	sendNetworkPacket(pkt);
 }
 
 void Player::sendTextPacket(int mode, const string& msg) {
 	uintptr_t pkt = createPacket(9);
-	FETCH(int, pkt + 48) = mode;
-	FETCH(string, pkt + 56) = getNameTag();
-	FETCH(string, pkt + 88) = msg;
-	sendPacket(pkt);
+	Dereference<int>(pkt, 48) = mode;
+	Dereference<string>(pkt, 56) = getNameTag();
+	Dereference<string>(pkt, 88) = msg;
+	sendNetworkPacket(pkt);
 }
 
 void Player::sendCommandRequestPacket(const string& cmd) {
 	uintptr_t pkt = createPacket(77);
-	FETCH(string, pkt + 48) = cmd;
+	Dereference<string>(pkt, 48) = cmd;
 	//SymCall<uintptr_t>("?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
 	//	global<ServerNetworkHandler>, getClientId(), pkt);
-	sendPacket(pkt);
+	sendNetworkPacket(pkt);
 }
 
 void Player::sendBossEventCodePacket(string name, float per, int eventtype) {
 	uintptr_t pkt = createPacket(74);
-	FETCH(uintptr_t, pkt + 56) = FETCH(uintptr_t, getUniqueID());
-	//FETCH(uintptr_t, pkt + 64) = FETCH(uintptr_t, getUniqueID());
-	FETCH(int, pkt + 72) = eventtype;//0显示,1更新,2隐藏,
-	FETCH(string, pkt + 80) = name;
-	FETCH(float, pkt + 112) = per;
-	sendPacket(pkt);
+	Dereference<uintptr_t>(pkt, 56) = Dereference<uintptr_t>(getUniqueID());
+	//Dereference<uintptr_t, pkt + 64) = Dereference<uintptr_t, getUniqueID());
+	Dereference<int>(pkt, 72) = eventtype;//0显示,1更新,2隐藏,
+	Dereference<string>(pkt, 80) = name;
+	Dereference<float>(pkt, 112) = per;
+	sendNetworkPacket(pkt);
 }
 
 void Player::sendsetDisplayObjectivePacket(const string& title, const string& name) {
 	uintptr_t pkt = createPacket(107);
-	FETCH(string, pkt + 48) = "sidebar";
-	FETCH(string, pkt + 80) = name;
-	FETCH(string, pkt + 112) = title;
-	FETCH(string, pkt + 144) = "dummy";
-	FETCH(char, pkt + 176) = 0;
-	sendPacket(pkt);
+	Dereference<string>(pkt, 48) = "sidebar";
+	Dereference<string>(pkt, 80) = name;
+	Dereference<string>(pkt, 112) = title;
+	Dereference<string>(pkt, 144) = "dummy";
+	Dereference<char>(pkt, 176) = 0;
+	sendNetworkPacket(pkt);
 }
 
 void Player::sendSetScorePacket(char type, const vector<ScorePacketInfo>& slot) {
 	uintptr_t pkt = createPacket(108);
-	FETCH(char, pkt + 48) = type;//{set,remove}
-	FETCH(vector<ScorePacketInfo>, pkt + 56) = slot;
-	sendPacket(pkt);
+	Dereference<char>(pkt, 48) = type;//{set,remove}
+	Dereference<vector<ScorePacketInfo>>(pkt, 56) = slot;
+	sendNetworkPacket(pkt);
 }
 
 bool IsPlayer(Actor* ptr) {

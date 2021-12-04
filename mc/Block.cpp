@@ -3,12 +3,12 @@
 
 using namespace std;
 string BlockLegacy::getBlockName() {
-	return FETCH(string, this + 128);
+	return Dereference<string>(this , 128);
 }
 
 short BlockLegacy::getBlockItemID() {
 	//IDA Item::beginCreativeGroup(,Block*,) 18~22
-	//short v3 = FETCH(short, this + 328);
+	//short v3 = Dereference<short, this + 328);
 	//if (v3 < 0x100) {
 	//	return v3;
 	//}
@@ -17,15 +17,15 @@ short BlockLegacy::getBlockItemID() {
 }
 
 BlockLegacy* Block::getBlockLegacy() {
-	return FETCH(BlockLegacy*, this + 16);
+	return Dereference<BlockLegacy*>(this , 16);
 }
 
 Block* BlockActor::getBlock() {
-	return FETCH(Block*, this + 16);
+	return Dereference<Block*>(this , 16);
 }
 
 BlockPos* BlockActor::getPosition() {//IDA BlockActor::BlockActor 18~20
-	return reinterpret_cast<BlockPos*>(this + 44);
+	return Dereference<BlockPos*>(this , 44);
 }
 
 void BlockActor::setChanged() {

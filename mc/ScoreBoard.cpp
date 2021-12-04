@@ -5,13 +5,13 @@ using namespace std;
 //获取计分板名称
 
 string Objective::getScoreName() {
-	return FETCH(string, this + 64);
+	return Dereference<string>( this + 64);
 }
 
 //获取计分板展示名称
 
 string Objective::getScoreDisplayName() {
-	return FETCH(string, this + 96);
+	return Dereference<string>( this + 96);
 }
 
 auto Objective::createScoreboardId(Player* player) {
@@ -75,9 +75,9 @@ ScorePacketInfo::ScorePacketInfo(ScoreboardId* s, unsigned num, const string& fa
 }
 
 int ScoreInfo::getCount() {
-	return FETCH(int, this + 12);
+	return Dereference<int>( this + 12);
 }
 
 uintptr_t PlayerScore::getScore() {
-	return FETCH(uintptr_t, this + 4);
+	return Dereference<uintptr_t>( this + 4);
 }

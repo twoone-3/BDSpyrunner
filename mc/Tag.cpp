@@ -281,7 +281,7 @@ Tag* ArraytoTag(const Json& value) {
 			break;
 		case JsonType::string:
 			tag = newTag(TagType::String);
-			FETCH(string, tag->data) = x.get<string>();
+			Dereference<string>( tag->data) = x.get<string>();
 			list->add(tag);
 			//tag->deleteString();
 			//delete tag;
@@ -291,13 +291,13 @@ Tag* ArraytoTag(const Json& value) {
 		case JsonType::number_integer:
 		case JsonType::number_unsigned:
 			tag = newTag(TagType::Int);
-			FETCH(int, tag->data) = x.get<int>();
+			Dereference<int>( tag->data) = x.get<int>();
 			list->add(tag);
 			//delete tag;
 			break;
 		case JsonType::number_float:
 			tag = newTag(TagType::Double);
-			FETCH(double, tag->data) = x.get<double>();
+			Dereference<double>( tag->data) = x.get<double>();
 			list->add(tag);
 			//delete tag;
 			break;

@@ -5,7 +5,7 @@
 //Entity类型
 extern PyTypeObject PyEntity_Type;
 //Vec3转list
-inline PyObject* ToList(Vec3 * vec) {
+inline PyObject* ToList(Vec3* vec) {
 	PyObject* list = PyList_New(3);
 	PyList_SetItem(list, 0, PyFloat_FromDouble(vec->x));
 	PyList_SetItem(list, 1, PyFloat_FromDouble(vec->y));
@@ -13,7 +13,7 @@ inline PyObject* ToList(Vec3 * vec) {
 	return list;
 }
 //方块坐标转list
-inline PyObject* ToList(BlockPos * bp) {
+inline PyObject* ToList(BlockPos* bp) {
 	PyObject* list = PyList_New(3);
 	PyList_SetItem(list, 0, PyLong_FromLong(bp->x));
 	PyList_SetItem(list, 1, PyLong_FromLong(bp->y));

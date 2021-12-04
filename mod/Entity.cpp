@@ -90,76 +90,64 @@ struct PyEntity {
 		}
 		return PyErr_BadArgument(), -1;
 	}
-
-};
-
-
 //获取UUID
-PyObject* PyEntity_GetUuid(PyObject* self, void*) {
+static PyObject* getUuid(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
 	return ToPyStr(p->getUuid());
 }
-
 //获取XUID
-PyObject* PyEntity_GetXuid(PyObject* self, void*) {
+static PyObject* getXuid(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
 	return ToPyStr(p->getXuid());
 }
-
 //获取坐标
-PyObject* PyEntity_GetPos(PyObject* self, void*) {
+static PyObject* getPos(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
 	return ToList(a->getPos());
 }
-
 //获取维度ID
-PyObject* PyEntity_GetDimensionId(PyObject* self, void*) {
+static PyObject* getDimensionId(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
 	return PyLong_FromLong(a->getDimensionId());
 }
-
 //是否着地
-PyObject* PyEntity_GetIsStand(PyObject* self, void*) {
+static PyObject*getIsStand(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
 	return PyBool_FromLong(a->isStanding());
 }
-
 //是否潜行
-PyObject* PyEntity_GetIsSneaking(PyObject* self, void*) {
+static PyObject* getIsSneaking(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
 	return PyBool_FromLong(a->isSneaking());
 }
-
 //获取类型
-PyObject* PyEntity_GetTypeID(PyObject* self, void*) {
+static PyObject* getTypeID(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
 	return PyLong_FromLong(a->getEntityTypeId());
 }
-
 //获取类型字符串
-PyObject* PyEntity_GetTypeName(PyObject* self, void*) {
+static PyObject* getTypeName(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
 	return ToPyStr(a->getEntityTypeName());
 }
-
 //获取nbt数据
-PyObject* PyEntity_GetNBTInfo(PyObject* self, void*) {
+static PyObject*getNBTInfo(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
@@ -169,16 +157,14 @@ PyObject* PyEntity_GetNBTInfo(PyObject* self, void*) {
 	t->deleteCompound();
 	return result;
 }
-
 //获取生命值
-PyObject* PyEntity_GetHealth(PyObject* self, void*) {
+static PyObject* getHealth(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
 	return PyLong_FromLong(a->getHealth());
 }
-
-int PyEntity_SetHealth(PyObject* self, PyObject* arg, void*) {
+static int setHealth(PyObject* self, PyObject* arg, void*) {
 	if (PyLong_Check(arg)) {
 		Actor* a = PyEntity::asActor(self);
 		if (!a)
@@ -188,16 +174,14 @@ int PyEntity_SetHealth(PyObject* self, PyObject* arg, void*) {
 	}
 	return PyErr_BadArgument(), -1;
 }
-
 //获取最大生命值
-PyObject* PyEntity_GetMaxHealth(PyObject* self, void*) {
+static PyObject* getMaxHealth(PyObject* self, void*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
 	return PyLong_FromLong(a->getMaxHealth());
 }
-
-int PyEntity_SetMaxHealth(PyObject* self, PyObject* arg, void*) {
+static int setMaxHealth(PyObject* self, PyObject* arg, void*) {
 	if (PyLong_Check(arg)) {
 		Actor* a = PyEntity::asActor(self);
 		if (!a)
@@ -207,16 +191,14 @@ int PyEntity_SetMaxHealth(PyObject* self, PyObject* arg, void*) {
 	}
 	return PyErr_BadArgument(), -1;
 }
-
 //获取权限
-PyObject* PyEntity_GetPermissions(PyObject* self, void*) {
+static PyObject* getPermissions(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
 	return PyLong_FromLong(static_cast<int>(p->getPlayerPermissionLevel()));
 }
-
-int PyEntity_SetPermissions(PyObject* self, PyObject* arg, void*) {
+static int setPermissions(PyObject* self, PyObject* arg, void*) {
 	if (PyLong_Check(arg)) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
@@ -226,31 +208,29 @@ int PyEntity_SetPermissions(PyObject* self, PyObject* arg, void*) {
 	}
 	return PyErr_BadArgument(), -1;
 }
-
 //获取设备id
-PyObject* PyEntity_GetPlatformOnlineId(PyObject* self, void*) {
+static PyObject* getPlatformOnlineId(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
 	return ToPyStr(p->getPlatformOnlineId());
 }
-
 //获取设备类型
-PyObject* PyEntity_GetPlatform(PyObject* self, void*) {
+static PyObject* getPlatform(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
 	return PyLong_FromLong(p->getPlatform());
 }
-
 //获取IP
-PyObject* PyEntity_GetIP(PyObject* self, void*) {
+static PyObject* getIP(PyObject* self, void*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
 	auto ni = p->getClientId();
 	return ToPyStr(global<RakPeer>->getSystemAddress(ni).toString());
 }
+};
 
 //获取/设置玩家所有物品
 PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
@@ -274,7 +254,7 @@ PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
 		armor.push_back(CompoundTagtoJson(i->save()));
 	}
 
-	value["OffHand"] = CompoundTagtoJson(p->getOffHand()->save());
+	value["OffHand"] = CompoundTagtoJson(p->getOffhandSlot()->save());
 	value["Hand"] = CompoundTagtoJson(p->getSelectedItem()->save());
 
 	return ToPyStr(value.dump(4));
@@ -313,7 +293,7 @@ PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 		}
 
 		if (value.contains("OffHand")) {
-			p->getOffHand()->fromJson(value["OffHand"]);
+			p->getOffhandSlot()->fromJson(value["OffHand"]);
 		}
 		p->sendInventroy();
 	}
@@ -613,27 +593,27 @@ PyObject* PyEntity_Kill(PyObject* self, PyObject*) {
 //获取属性方法
 PyGetSetDef PyEntity_GetSet[]{
 	{"name", PyEntity::getName, PyEntity::setName, nullptr},
-	{"uuid", PyEntity_GetUuid, nullptr, nullptr},
-	{"xuid", PyEntity_GetXuid, nullptr, nullptr},
-	{"pos", PyEntity_GetPos, nullptr, nullptr},
-	{"did", PyEntity_GetDimensionId, nullptr, nullptr},
-	{"is_standing", PyEntity_GetIsStand, nullptr, nullptr},
-	/*已弃用*/{"isstand", PyEntity_GetIsStand, nullptr, nullptr},
-	{"is_sneaking", PyEntity_GetIsSneaking, nullptr, nullptr},
-	/*已弃用*/{"issneak", PyEntity_GetIsSneaking, nullptr, nullptr},
-	{"typeid", PyEntity_GetTypeID, nullptr, nullptr},
-	{"typename", PyEntity_GetTypeName, nullptr, nullptr},
-	{"NBT", PyEntity_GetNBTInfo, nullptr, nullptr},
-	/*已弃用*/{"nbt", PyEntity_GetNBTInfo, nullptr, nullptr},
-	{"health", PyEntity_GetHealth, PyEntity_SetHealth, nullptr},
-	{"maxhealth", PyEntity_GetMaxHealth, PyEntity_SetMaxHealth, nullptr},
-	{"perm", PyEntity_GetPermissions, PyEntity_SetPermissions, nullptr},
-	{"platform_online_id", PyEntity_GetPlatformOnlineId, nullptr, nullptr},
-	/*已弃用*/{"deviceid", PyEntity_GetPlatformOnlineId, nullptr, nullptr},
-	{"platform", PyEntity_GetPlatform, nullptr, nullptr},
-	/*已弃用*/{"deviceos", PyEntity_GetPlatform, nullptr, nullptr},
-	{"IP", PyEntity_GetIP, nullptr, nullptr},
-	/*已弃用*/{"ip", PyEntity_GetIP, nullptr, nullptr},
+	{"uuid", PyEntity::getUuid, nullptr, nullptr},
+	{"xuid", PyEntity::getXuid, nullptr, nullptr},
+	{"pos", PyEntity::getPos, nullptr, nullptr},
+	{"did", PyEntity::getDimensionId, nullptr, nullptr},
+	{"is_standing", PyEntity::getIsStand, nullptr, nullptr},
+	/*已弃用*/{"isstand", PyEntity::getIsStand, nullptr, nullptr},
+	{"is_sneaking", PyEntity::getIsSneaking, nullptr, nullptr},
+	/*已弃用*/{"issneak", PyEntity::getIsSneaking, nullptr, nullptr},
+	{"typeid", PyEntity::getTypeID, nullptr, nullptr},
+	{"typename", PyEntity::getTypeName, nullptr, nullptr},
+	{"NBT", PyEntity::getNBTInfo, nullptr, nullptr},
+	/*已弃用*/{"nbt", PyEntity::getNBTInfo, nullptr, nullptr},
+	{"health", PyEntity::getHealth, PyEntity::setHealth, nullptr},
+	{"maxhealth", PyEntity::getMaxHealth, PyEntity::setMaxHealth, nullptr},
+	{"perm", PyEntity::getPermissions, PyEntity::setPermissions, nullptr},
+	{"platform_online_id", PyEntity::getPlatformOnlineId, nullptr, nullptr},
+	/*已弃用*/{"deviceid", PyEntity::getPlatformOnlineId, nullptr, nullptr},
+	{"platform", PyEntity::getPlatform, nullptr, nullptr},
+	/*已弃用*/{"deviceos", PyEntity::getPlatform, nullptr, nullptr},
+	{"IP", PyEntity::getIP, nullptr, nullptr},
+	/*已弃用*/{"ip", PyEntity::getIP, nullptr, nullptr},
 	{nullptr}
 };
 //Entity方法

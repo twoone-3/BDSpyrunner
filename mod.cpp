@@ -163,7 +163,8 @@ static void CheckPluginVersion() {
 class EventCallBackHelper {
 public:
 	EventCallBackHelper(EventCode t) :
-		type_(t), arg_(nullptr), gil_(PyGILState_Ensure()) {}
+		type_(t), arg_(nullptr), gil_(PyGILState_Ensure()) {
+	}
 	~EventCallBackHelper() {
 		if (arg_) {
 			Py_XDECREF(arg_);
@@ -420,7 +421,7 @@ THOOK(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerP
 THOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@EAEBVVec3@@PEBVBlock@@@Z",
 	uintptr_t _this, ItemStack* item, BlockPos* bp, char a4, uintptr_t a5, Block* b) {
 	EventCallBackHelper h(EventCode::onUseItem);
-	Player* p = FETCH(Player*, _this + 8);
+	Player* p = Dereference<Player*>(_this, 8);
 	BlockLegacy* bl = b->getBlockLegacy();
 	h
 		.insert("player", p)
@@ -513,15 +514,15 @@ THOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEAAXH@Z",
 	uintptr_t _this, unsigned slot) {
 	EventCallBackHelper h(EventCode::onContainerChange);
-	Player* p = FETCH(Player*, _this + 208);//IDA LevelContainerModel::_getContainer line 15 25 v3
+	Player* p = Dereference<Player*>(_this, 208);//IDA LevelContainerModel::_getContainer line 15 25 v3
 	BlockSource* bs = p->getRegion();
 	BlockPos* bp = reinterpret_cast<BlockPos*>(_this + 216);
 	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
 	short bid = bl->getBlockItemID();
 	if (bid == 54 || bid == 130 || bid == 146 || bid == -203 || bid == 205 || bid == 218) {	//非箱子、桶、潜影盒的情况不作处理
-		uintptr_t v5 = (*reinterpret_cast<uintptr_t(**)(uintptr_t)>(FETCH(uintptr_t, _this) + 160))(_this);
+		uintptr_t v5 = (*reinterpret_cast<uintptr_t(**)(uintptr_t)>(Dereference<uintptr_t>(_this) + 160))(_this);
 		if (v5) {
-			ItemStack* item = (*reinterpret_cast<ItemStack * (**)(uintptr_t, uintptr_t)>(FETCH(uintptr_t, v5) + 40))(v5, slot);
+			ItemStack* item = (*reinterpret_cast<ItemStack * (**)(uintptr_t, uintptr_t)>(Dereference<uintptr_t>(v5) + 40))(v5, slot);
 			h
 				.insert("player", p)
 				.insert("itemid", item->getId())
@@ -566,7 +567,7 @@ THOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	h
 		.insert("actor1", _this)
 		.insert("actor2", sa)
-		.insert("dmcase", FETCH(unsigned, dmsg + 8))
+		.insert("dmcase", Dereference<unsigned>(dmsg, 8))
 		;
 	if (h.call())
 		original(_this, dmsg);
@@ -581,7 +582,7 @@ THOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 	h
 		.insert("actor1", _this)
 		.insert("actor2", sa)
-		.insert("dmcase", FETCH(unsigned, dmsg + 8))
+		.insert("dmcase", Dereference<unsigned>(dmsg, 8))
 		.insert("damage", a3)
 		;
 	if (h.call())
@@ -612,7 +613,7 @@ THOOK(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifi
 	EventCallBackHelper h(EventCode::onInputText);
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		const string& msg = FETCH(string, pkt + 88);
+		const string& msg = Dereference<string>(pkt, 88);
 		h.insert("player", p)
 			.insert("msg", msg);
 		if (!h.call())
@@ -626,7 +627,7 @@ THOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdent
 	EventCallBackHelper h(EventCode::onInputCommand);
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		const string& cmd = FETCH(string, pkt + 48);
+		const string& cmd = Dereference<string>(pkt, 48);
 		auto data = g_commands.find(cmd.c_str() + 1);
 		//如果有这条命令且回调函数不为nullptr
 		if (data != g_commands.end() && data->second.second) {
@@ -649,8 +650,8 @@ THOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormR
 	uintptr_t pkt = *ppkt;
 	Player* p = handle->_getServerPlayer(id, pkt);
 	if (p) {
-		unsigned fid = FETCH(unsigned, pkt + 48);
-		string data = FETCH(string, pkt + 56);
+		unsigned fid = Dereference<unsigned>(pkt, 48);
+		string data = Dereference<string>(pkt, 56);
 		if (data.back() == '\n')
 			data.pop_back();
 		h
@@ -667,14 +668,14 @@ THOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwor
 	EventCallBackHelper h(EventCode::onCommandBlockUpdate);
 	Player* p = _this->_getServerPlayer(id, pkt);
 	if (p) {
-		BlockPos bp = FETCH(BlockPos, pkt + 48);
-		unsigned short mode = FETCH(unsigned short, pkt + 60);
-		bool condition = FETCH(bool, pkt + 62);
-		bool redstone = FETCH(bool, pkt + 63);
-		string cmd = FETCH(string, pkt + 72);
-		string output = FETCH(string, pkt + 104);
-		string rawname = FETCH(string, pkt + 136);
-		int delay = FETCH(int, pkt + 168);
+		BlockPos bp = Dereference<BlockPos>(pkt, 48);
+		unsigned short mode = Dereference<unsigned short>(pkt, 60);
+		bool condition = Dereference<bool>(pkt, 62);
+		bool redstone = Dereference<bool>(pkt, 63);
+		string cmd = Dereference<string>(pkt, 72);
+		string output = Dereference<string>(pkt, 104);
+		string rawname = Dereference<string>(pkt, 136);
+		int delay = Dereference<int>(pkt, 168);
 		h.insert("player", ToEntity(p))
 			.insert("mode", mode)
 			.insert("condition", condition)
@@ -713,8 +714,8 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 	//SymCall<string&>("?getName@BaseCommandBlock@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 	//	a3 + 200);
 	//a3 + 200 BaseCommandBlock
-	string cmd = FETCH(string, a3 + 256);
-	string rawname = FETCH(string, a3 + 288);
+	string cmd = Dereference<string>(a3, 256);
+	string rawname = Dereference<string>(a3 , 288);
 	h
 		.insert("mode", mode)
 		.insert("condition", condition)

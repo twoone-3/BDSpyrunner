@@ -6,7 +6,23 @@
 #include "Level.h"
 #include "NetWork.h"
 
-#define FETCH(type, ptr) (*reinterpret_cast<type*>(ptr))
+//#define Dereference<type>( ptr) (*reinterpret_cast<type*>(ptr))
+template <typename T>
+inline T& Dereference(void* ptr, uintptr_t offset) {
+	return *reinterpret_cast<T*>(uintptr_t(ptr) + offset);
+}
+template <typename T>
+inline T& Dereference(uintptr_t ptr, uintptr_t offset) {
+	return *reinterpret_cast<T*>(uintptr_t(ptr) + offset);
+}
+template <typename T>
+inline T& Dereference(void* ptr) {
+	return *reinterpret_cast<T*>(ptr);
+}
+template <typename T>
+inline T& Dereference(uintptr_t ptr) {
+	return *reinterpret_cast<T*>(ptr);
+}
 #define SYM GetServerSymbol
 #define THOOK(name, ret, sym, ...)		\
 struct name {							\
@@ -28,7 +44,7 @@ extern "C" {
 // _this: this ptr, off: offsetof function
 template<typename ReturnType = void, typename... Args>
 inline ReturnType VirtualCall(uintptr_t off, void* _this, Args... args) {
-	return (*reinterpret_cast<ReturnType(**)(void*, Args...)>(FETCH(uintptr_t, _this) + off))(_this, args...);
+	return (*reinterpret_cast<ReturnType(**)(void*, Args...)>(Dereference<uintptr_t>( _this) + off))(_this, args...);
 }
 // call a function by symbol string
 template<typename ReturnType = void, typename... Args>

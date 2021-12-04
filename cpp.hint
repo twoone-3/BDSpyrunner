@@ -1,2 +1,3 @@
 #define METH_NOARGS
 #define METH_VARARGS
+#define METH_KEYWORDS

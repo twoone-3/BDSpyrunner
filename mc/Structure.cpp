@@ -5,10 +5,10 @@
 using namespace std;
 StructureSettings::StructureSettings(BlockPos* size, bool IgnoreEntities, bool IgnoreBlocks) {
 	SymCall("??0StructureSettings@@QEAA@XZ", this);
-	FETCH(bool, _this + 32) = IgnoreEntities;
-	FETCH(bool, _this + 34) = IgnoreBlocks;
-	FETCH(BlockPos, _this + 36) = *size;
-	FETCH(BlockPos, _this + 48) = { 0,0,0 };
+	Dereference<bool>( _this + 32) = IgnoreEntities;
+	Dereference<bool>( _this + 34) = IgnoreBlocks;
+	Dereference<BlockPos>( _this + 36) = *size;
+	Dereference<BlockPos>( _this + 48) = { 0,0,0 };
 }
 
 StructureSettings::~StructureSettings() {
