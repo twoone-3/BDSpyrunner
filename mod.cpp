@@ -238,33 +238,35 @@ private:
 //将Python解释器初始化插入bds主函数
 THOOK(BDS_Main, int, "main",
 	int argc, char* argv[], char* envp[]) {
-	//	while (true) {
-	//		Tag* t = ObjecttoTag(StringToJson(R"(
-	//             {
-	//                "Block10": {
-	//                    "name8": "minecraft:crafting_table",
-	//                    "states10": null,
-	//                    "version3": 17879555
-	//                },
-	//                "Count1": 64,
-	//                "Damage2": 0,
-	//                "Name8": "minecraft:crafting_table",
-	//                "WasPickedUp1": 0,
-	//                "tag10": {
-	//                    "display10": {
-	//                        "Lore9": [
-	//                            "针不戳",
-	//                            "很不错"
-	//                        ]
-	//                    }
-	//                }
-	//            }
-	//)"));
-	//		cout << CompoundTagtoJson(t).dump(4) << endl;
-	//		t->deleteCompound();
-	//		delete t;
-	//	}
-		//如果目录不存在创建目录
+#if 0
+	while (true) {
+		Tag* t = ObjecttoTag(StringToJson(R"(
+	             {
+	                "Block10": {
+	                    "name8": "minecraft:crafting_table",
+	                    "states10": null,
+	                    "version3": 17879555
+	                },
+	                "Count1": 64,
+	                "Damage2": 0,
+	                "Name8": "minecraft:crafting_table",
+	                "WasPickedUp1": 0,
+	                "tag10": {
+	                    "display10": {
+	                        "Lore9": [
+	                            "针不戳",
+	                            "很不错"
+	                        ]
+	                    }
+	                }
+	            }
+	)"));
+		cout << CompoundTagtoJson(t).dump(4) << endl;
+		t->deleteCompound();
+		delete t;
+	}
+#endif
+	//如果目录不存在创建目录
 	if (!fs::exists(PLUGIN_PATH))
 		fs::create_directory(PLUGIN_PATH);
 	//设置模块搜索路径
@@ -272,8 +274,7 @@ THOOK(BDS_Main, int, "main",
 		PLUGIN_PATH L";"
 		PLUGIN_PATH "Dlls;"
 		PLUGIN_PATH "Lib;"
-		PLUGIN_PATH "Extra;"
-		"plugins\\lib\\python37.zip"
+		PLUGIN_PATH "Extra"
 	);
 #if 0
 	//预初始化3.8+
@@ -715,7 +716,7 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 	//	a3 + 200);
 	//a3 + 200 BaseCommandBlock
 	string cmd = Dereference<string>(a3, 256);
-	string rawname = Dereference<string>(a3 , 288);
+	string rawname = Dereference<string>(a3, 288);
 	h
 		.insert("mode", mode)
 		.insert("condition", condition)
