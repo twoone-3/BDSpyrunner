@@ -1,8 +1,21 @@
 #include "Tag.h"
 #include "tool.h"
 
+
 using namespace std;
 TagMemoryChunk::TagMemoryChunk(size_t size, uint8_t data[]) :capacity(size), size(size), data(data) {}
+
+void serialize<CompoundTag>::write(const CompoundTag* item, BinaryStream* stream) {
+	return SymCall("?write@?$serialize@VCompoundTag@@@@SAXAEBVCompoundTag@@AEAVBinaryStream@@@Z",
+		item, stream);
+}
+
+CompoundTag* serialize<CompoundTag>::read(ReadOnlyBinaryStream* stream) {
+	CompoundTag* tag = newTag(TagType::Compound);
+	SymCall("?read@?$serialize@VCompoundTag@@@@SA?AVCompoundTag@@AEAVReadOnlyBinaryStream@@@Z",
+		tag, stream);
+	return tag;
+}
 
 void Tag::put(const string& key, Tag* value) {
 	return SymCall("?put@CompoundTag@@QEAAAEAVTag@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$QEAV2@@Z",
@@ -67,32 +80,16 @@ void Tag::deleteString() {
 }
 
 TagType Tag::getVariantType() {
-	return *((TagType*)this + 40);
+	return (TagType)(VirtualCall<byte>(40, this));//return *((TagType*)this + 40);
 }
 
 TagType Tag::getListType() {
 	return *((TagType*)this + 32);
 }
 
-auto& Tag::asByte() { return *reinterpret_cast<uint8_t*>(data); }
 
-auto& Tag::asShort() { return *reinterpret_cast<short*>(data); }
 
-auto& Tag::asInt() { return *reinterpret_cast<int*>(data); }
 
-auto& Tag::asInt64() { return *reinterpret_cast<long long*>(data); }
-
-auto& Tag::asFloat() { return *reinterpret_cast<float*>(data); }
-
-auto& Tag::asDouble() { return *reinterpret_cast<double*>(data); }
-
-string& Tag::asString() { return *reinterpret_cast<string*>(data); }
-
-auto& Tag::asByteArray() { return *reinterpret_cast<TagMemoryChunk*>(data); }
-
-auto& Tag::asList() { return *reinterpret_cast<vector<Tag*>*>(data); }
-
-auto& Tag::asCompound() { return *reinterpret_cast<map<string, Tag>*>(data); }
 
 Tag* newTag(TagType t) {
 	Tag* tag;
@@ -314,3 +311,4 @@ Tag* ArraytoTag(const Json& value) {
 	}
 	return list;
 }
+

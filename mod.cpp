@@ -274,7 +274,8 @@ THOOK(BDS_Main, int, "main",
 		PLUGIN_PATH L";"
 		PLUGIN_PATH "Dlls;"
 		PLUGIN_PATH "Lib;"
-		PLUGIN_PATH "Extra"
+		PLUGIN_PATH "Extra;"
+		"plugins\\lib\\python37.zip"
 	);
 #if 0
 	//预初始化3.8+

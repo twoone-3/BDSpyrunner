@@ -7,6 +7,7 @@
 #include "../mc/ScoreBoard.h"
 #include "../mc/Structure.h"
 #include "../mc/Tag.h"
+#include "../mc/DataIO.h"
 
 using namespace std;
 //是否为史莱姆区块
@@ -178,10 +179,12 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 
 	return ToPyStr(CompoundTagtoJson(st.save()).dump(4));
 }
-static PyObject* setStructure(PyObject*, PyObject* args) {
+static PyObject* setStructure(PyObject*, PyObject* args, PyObject* kwds) {
+	Py_KERWORDS_LIST("data", "x", "y", "x", "dim", "update");
+	bool update = true;
 	const char* data = "";
 	BlockPos pos; int did;
-	Py_PARSE("siiii", &data, &pos.x, &pos.y, &pos.z, &did);
+	Py_PARSE_WITH_KERWORDS("siiii|b", &data, &pos.x, &pos.y, &pos.z, &did, &update);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = global<Level>->getBlockSource(did);
@@ -200,11 +203,92 @@ static PyObject* setStructure(PyObject*, PyObject* args) {
 	StructureTemplate st("tmp");
 	st.fromJson(value);
 	st.placeInWorld(bs, global<Level>->getBlockPalette(), &pos, &ss);
-	for (int x = 0; x != size.x; ++x) {
-		for (int y = 0; y != size.y; ++y) {
-			for (int z = 0; z != size.z; ++z) {
-				BlockPos bp{ x,y,z };
-				bs->neighborChanged(&bp);
+	if (update) {
+		for (int x = 0; x != size.x; ++x) {
+			for (int y = 0; y != size.y; ++y) {
+				for (int z = 0; z != size.z; ++z) {
+					BlockPos bp{ x,y,z };
+					bs->neighborChanged(&bp);
+				}
+			}
+		}
+	}
+	Py_RETURN_NONE;
+}
+//从指定地点获取二进制NBT结构数据
+static PyObject* getStructureRaw(PyObject*, PyObject* args) {
+	BlockPos pos1, pos2; int did;
+	Py_PARSE("iiiiiii",
+		&pos1.x, &pos1.y, &pos1.z,
+		&pos2.x, &pos2.y, &pos2.z, &did
+	);
+	if (global<Level> == nullptr)
+		Py_RETURN_ERROR("Level is not set");
+	BlockSource* bs = global<Level>->getBlockSource(did);
+	if (bs == nullptr)
+		Py_RETURN_ERROR("Unknown dimension ID");
+	BlockPos start{
+		min(pos1.x,pos2.x),
+		min(pos1.y,pos2.y),
+		min(pos1.z,pos2.z)
+	};
+	BlockPos size{
+		max(pos1.x,pos2.x) - start.x,
+		max(pos1.y,pos2.y) - start.y,
+		max(pos1.z,pos2.z) - start.z
+	};
+	StructureSettings ss(&size, false, false);
+	StructureTemplate st("tmp");
+	st.fillFromWorld(bs, &start, &ss);
+	CompoundTag* t = st.save();
+	BinaryStream* stream = new BinaryStream();
+	serialize<CompoundTag>::write(t, stream);
+	size_t sizet = stream->mBuffer->length();
+	auto result = PyBytes_FromStringAndSize(stream->GetAndReleaseData()->c_str(),sizet);
+	stream->~BinaryStream();
+	return result;
+}
+//从二进制NBT结构数据导出结构到指定地点
+static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
+	Py_KERWORDS_LIST("data", "x", "y", "x", "dim", "update");
+	bool update = true;
+	const char* data;
+	Py_ssize_t datasize;
+	//Py_buffer data;
+	BlockPos pos; int did;
+	Py_PARSE_WITH_KERWORDS("y#iiii|b", &data, &datasize, &pos.x, &pos.y, &pos.z, &did, &update);
+	if (global<Level> == nullptr)
+		Py_RETURN_ERROR("Level is not set");
+	BlockSource* bs = global<Level>->getBlockSource(did);
+	if (bs == nullptr)
+		Py_RETURN_ERROR("Unknown dimension ID");
+	ReadOnlyBinaryStream* stream = new ReadOnlyBinaryStream(new std::string(data, datasize));
+	//printf("bufferlength: %d\n",stream->mBuffer->length());
+	CompoundTag* tag = serialize<CompoundTag>::read(stream);
+	//printf("deserialized.\n");
+	if (tag->getVariantType() != TagType::Compound)
+		Py_RETURN_ERROR("Invalid Tag");
+	auto& t_C = tag->asCompound();
+	if (t_C.find("size") == t_C.end() || t_C["size"].getVariantType() != TagType::List)
+		Py_RETURN_ERROR("Invalid Tag");
+	auto& t_C_Lsize = t_C["size"].asList();
+	
+	BlockPos size{
+		t_C_Lsize[0]->asInt(),
+		t_C_Lsize[1]->asInt(),
+		t_C_Lsize[2]->asInt()
+	};
+	StructureSettings ss(&size, true, false);
+	StructureTemplate st("tmp");
+	st.fromCompound(tag);
+	st.placeInWorld(bs, global<Level>->getBlockPalette(), &pos, &ss);
+	if (update) {
+		for (int x = 0; x != size.x; ++x) {
+			for (int y = 0; y != size.y; ++y) {
+				for (int z = 0; z != size.z; ++z) {
+					BlockPos bp{ x,y,z };
+					bs->neighborChanged(&bp);
+				}
 			}
 		}
 	}
@@ -281,7 +365,9 @@ static PyMethodDef Methods[]{
 	{"getBlock", getBlock, METH_VARARGS, nullptr},
 	{"setBlock", setBlock, METH_VARARGS, nullptr},
 	{"getStructure", getStructure, METH_VARARGS, nullptr},
-	{"setStructure", setStructure, METH_VARARGS, nullptr},
+	{"setStructure", (PyCFunction)setStructure, METH_VARARGS | METH_KEYWORDS, nullptr},
+	{"getStructureRaw", getStructureRaw, METH_VARARGS, nullptr},
+	{"setStructureRaw", (PyCFunction)setStructureRaw, METH_VARARGS | METH_KEYWORDS, nullptr},
 	{"explode", explode, METH_VARARGS, nullptr},
 	{"spawnItem", spawnItem, METH_VARARGS, nullptr},
 	{"isSlimeChunk", isSlimeChunk, METH_VARARGS, nullptr},

@@ -48,6 +48,9 @@
     <ClCompile Include="mod\Module.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="mc\DataIO.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mc\Actor.h">
@@ -105,6 +108,15 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\CPython.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mc\DataIO.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MinecraftHeaders\dll.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MinecraftHeaders\Core\BinaryStream.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

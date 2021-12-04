@@ -48,6 +48,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>..\MCPE\plugins\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -94,6 +95,7 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
   <ItemGroup>
     <ClCompile Include="mc\Actor.cpp" />
     <ClCompile Include="mc\Block.cpp" />
+    <ClCompile Include="mc\DataIO.cpp" />
     <ClCompile Include="mc\ItemStack.cpp" />
     <ClCompile Include="mc\Level.cpp" />
     <ClCompile Include="mc\NetWork.cpp" />
@@ -105,6 +107,9 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClCompile Include="mod\Entity.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="mc\DataIO.h" />
+    <ClInclude Include="MinecraftHeaders\Core\BinaryStream.h" />
+    <ClInclude Include="MinecraftHeaders\dll.h" />
     <ClInclude Include="mod\Module.h" />
     <ClInclude Include="mod\Event.h" />
     <ClInclude Include="mc\Actor.h" />
