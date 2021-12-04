@@ -16,8 +16,7 @@ std::string* BinaryStream::GetAndReleaseData() {
 		this);
 }
 
-void BinaryStream::writeUnsignedInt(unsigned int num)
-{
+void BinaryStream::writeUnsignedInt(unsigned int num) {
 	SymCall("?writeUnsignedInt@BinaryStream@@QEAAXI@Z", this, num);
 }
 
@@ -26,22 +25,18 @@ BinaryStream::~BinaryStream() {
 		this);
 }
 
-ReadOnlyBinaryStream::ReadOnlyBinaryStream()
-{}
+ReadOnlyBinaryStream::ReadOnlyBinaryStream() {}
 
-ReadOnlyBinaryStream::ReadOnlyBinaryStream(std::string* buffer)
-{
-	SymCall("??0ReadOnlyBinaryStream@@QEAA@$$QEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z", 
+ReadOnlyBinaryStream::ReadOnlyBinaryStream(std::string* buffer) {
+	SymCall("??0ReadOnlyBinaryStream@@QEAA@$$QEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 		this, buffer);
 }
 
-ReadOnlyBinaryStream::ReadOnlyBinaryStream(const std::string* buffer, bool copyBuffer)
-{
+ReadOnlyBinaryStream::ReadOnlyBinaryStream(const std::string* buffer, bool copyBuffer) {
 	SymCall("??0ReadOnlyBinaryStream@@QEAA@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
 		this, buffer, copyBuffer);
 }
 
-ReadOnlyBinaryStream::~ReadOnlyBinaryStream()
-{
+ReadOnlyBinaryStream::~ReadOnlyBinaryStream() {
 	SymCall("??1ReadOnlyBinaryStream@@UEAA@XZ", this);
 }

@@ -159,17 +159,14 @@ static void CheckPluginVersion() {
 }
 #endif 
 //事件回调助手
+//创建会申请GIL
 class EventCallBackHelper {
 public:
 	EventCallBackHelper(EventCode t) :
 		type_(t), arg_(nullptr), gil_(PyGILState_Ensure()) {}
 	~EventCallBackHelper() {
 		if (arg_) {
-			//if (type_ != EventCode::onMove)
-			//	cout << "对象：" << PyUnicode_AsUTF8(PyObject_Repr(arg_)) << "\n引用计数：" << arg_->ob_refcnt << endl;
-			//玄学回收有的行有的不行
-			//if (arg_->ob_refcnt > 1)
-				Py_XDECREF(arg_);
+			Py_XDECREF(arg_);
 		}
 		PyGILState_Release(gil_);
 	}
@@ -203,7 +200,7 @@ public:
 			arg_ = PyDict_New();
 		PyDict_SetItemString(arg_, key.data(), item);
 		Py_DECREF(item);
-		Py_PRINT_REFCOUNT(item);
+		//Py_PRINT_REFCOUNT(item);
 		return *this;
 	}
 	EventCallBackHelper& insert(string_view key, string_view item) {
@@ -355,14 +352,12 @@ THOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCom
 	original(_this);
 }
 #pragma endregion
-#if 1
 #pragma region Listener
 //开服完成
 THOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
 	uintptr_t _this) {
 	EventCallBackHelper h(EventCode::onServerStarted);
-	h.setArg(Py_None);
-	h.call();
+	h.setArg(Py_None).call();
 	original(_this);
 }
 //控制台输出，实际上是ostrram::operator<<的底层调用
@@ -943,4 +938,3 @@ THOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos
 	return 0;
 }
 #pragma endregion
-#endif

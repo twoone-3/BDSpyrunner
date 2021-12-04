@@ -1,10 +1,8 @@
+name: Build and Release
+
 on:
   push:
     tags: v*
-
-env:
-  SOLUTION_FILE_PATH: .
-  BUILD_CONFIGURATION: Release
 
 jobs:
   build:
@@ -13,15 +11,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v1
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+        with:
+          msbuild-architecture: x64
 
       - name: Build Project
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
+        run: msbuild /m /p:Configuration=Release ./
 
-      - name: Release
-        uses: softprops/action-gh-release@v0.1.12
+      - name: GH Release
+        uses: softprops/action-gh-release@v0.1.14
         with:
           files: |
             ./x64/Release/BDSpyrunner.dll

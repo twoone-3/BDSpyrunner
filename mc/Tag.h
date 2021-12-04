@@ -56,8 +56,7 @@ Json CompoundTagtoJson(Tag* t);
 Tag* ObjecttoTag(const Json& value);
 Tag* ArraytoTag(const Json& value);
 
-template<> class serialize<CompoundTag>
-{
+template<> class serialize<CompoundTag> {
 public:
 	static void write(const CompoundTag* val, BinaryStream* stream);
 	static CompoundTag* read(ReadOnlyBinaryStream* stream);

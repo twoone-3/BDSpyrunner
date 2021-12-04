@@ -33,4 +33,4 @@ public:
 	virtual ~Command() { SymCall("??1Command@@UEAA@XZ", this); }
 	virtual void execute(CommandOrigin*, CommandOutput*) = 0;
 };
-static_assert(sizeof(Command) == 32)
+static_assert(sizeof(Command) == 32);

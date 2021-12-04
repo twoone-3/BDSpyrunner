@@ -1,8 +1,7 @@
 #pragma once
 #include <string>
 
-struct ReadOnlyBinaryStream
-{
+struct ReadOnlyBinaryStream {
 public:
 	int (**_vptr$ReadOnlyBinaryStream)(void);
 	size_t mReadPointer;
@@ -17,14 +16,13 @@ public:
 	inline void setReadPointer(std::size_t size) {
 		auto len = getLength();
 		if (size <= len)
-			mReadPointer= size;
+			mReadPointer = size;
 		else
 			mReadPointer = len;
 	}
 };
 
-class BinaryStream : public ReadOnlyBinaryStream
-{
+class BinaryStream : public ReadOnlyBinaryStream {
 public:
 	std::string mOwnedBuffer;
 	std::string* mBuffer;
