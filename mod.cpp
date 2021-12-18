@@ -270,12 +270,12 @@ THOOK(BDS_Main, int, "main",
 	if (!fs::exists(PLUGIN_PATH))
 		fs::create_directory(PLUGIN_PATH);
 	//设置模块搜索路径
-	Py_SetPath(
-		PLUGIN_PATH L";"
-		PLUGIN_PATH "Dlls;"
-		PLUGIN_PATH "Lib;"
-		PLUGIN_PATH "Extra"
-	);
+	wstring py_path(PLUGIN_PATH L";"
+					PLUGIN_PATH "Dlls;"
+					PLUGIN_PATH "Lib;"
+					PLUGIN_PATH "Extra;");
+	py_path.append(Py_GetPath());
+	Py_SetPath(py_path.c_str());
 #if 0
 	//预初始化3.8+
 	PyPreConfig cfg;
@@ -732,7 +732,7 @@ THOOK(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
 	EventCallBackHelper h(EventCode::onMove);
 	h.setArg(ToEntity(p)).call();
-	original(_this, p, a3, a4, a5);
+	return original(_this, p, a3, a4, a5);
 }
 //玩家穿戴
 THOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
