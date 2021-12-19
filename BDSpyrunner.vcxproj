@@ -32,6 +32,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PublicIncludeDirectories>
+    </PublicIncludeDirectories>
+    <IncludePath>Header;$(IncludePath)</IncludePath>
+    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -48,6 +52,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <DelayLoadDLLs>bedrock_server.dll</DelayLoadDLLs>
     </Link>
     <PostBuildEvent>
       <Command>if exist ..\BDS\plugins (
@@ -69,6 +74,7 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClCompile Include="mod.cpp" />
     <ClCompile Include="mod\Module.cpp" />
     <ClCompile Include="mod\Entity.cpp" />
+    <ClCompile Include="mod\NBT.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mc\DataIO.h" />
@@ -80,8 +86,8 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClInclude Include="mc\Block.h" />
     <ClInclude Include="mc\Command.h" />
     <ClInclude Include="mc\ItemStack.h" />
-    <ClInclude Include="mc\json.hpp" />
-    <ClInclude Include="mc\json_tool.h" />
+    <ClInclude Include="mod\json.hpp" />
+    <ClInclude Include="mod\JsonTool.h" />
     <ClInclude Include="mc\Level.h" />
     <ClInclude Include="mc\NetWork.h" />
     <ClInclude Include="mc\Position.h" />
@@ -89,10 +95,18 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClInclude Include="mc\span.h" />
     <ClInclude Include="mc\Structure.h" />
     <ClInclude Include="mc\Tag.h" />
-    <ClInclude Include="mc\tool.h" />
+    <ClInclude Include="mod\NBT.h" />
+    <ClInclude Include="mod\Tool.h" />
     <ClInclude Include="mod\Entity.h" />
     <ClInclude Include="mod\Version.h" />
     <ClInclude Include="mod\CPython.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="lib\bedrock_server_api.lib" />
+    <Library Include="lib\bedrock_server_var.lib" />
+    <Library Include="lib\LiteLoader.lib" />
+    <Library Include="lib\python37.lib" />
+    <Library Include="lib\SymDBHelper.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

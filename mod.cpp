@@ -1,18 +1,8 @@
-﻿//mod.cpp 插件模块
-#include <filesystem>
+﻿#include <filesystem>
 #include <fstream>
 #include <thread>
-#include "mc/Actor.h"
-#include "mc/Block.h"
-#include "mc/ItemStack.h"
-#include "mc/Level.h"
-#include "mc/NetWork.h"
-#include "mc/ScoreBoard.h"
-#include "mc/Structure.h"
-#include "mc/Tag.h"
-#include "mc/tool.h"
 #include "mod/Entity.h"
-#include "mod/Event.h"
+#include "mod/Tool.h"
 #include "mod/Module.h"
 #include "mod/Version.h"
 
@@ -21,6 +11,7 @@
 using namespace std;
 
 namespace fs = filesystem;
+
 #pragma region Function
 #if 0
 //Dll入口函数
@@ -213,6 +204,9 @@ public:
 	EventCallBackHelper& insert(string_view key, BlockPos* item) {
 		return insert(key, ToList(item));
 	}
+	EventCallBackHelper& insert(string_view key, BlockPos& item) {
+		return insert(key, ToList(&item));
+	}
 	EventCallBackHelper& insert(string_view key, Vec3* item) {
 		return insert(key, ToList(item));
 	}
@@ -236,8 +230,9 @@ private:
 #pragma endregion
 #pragma region Hook List
 //将Python解释器初始化插入bds主函数
-THOOK(BDS_Main, int, "main",
+THook(int, "main",
 	int argc, char* argv[], char* envp[]) {
+	Global<Level>;
 #if 0
 	while (true) {
 		Tag* t = ObjecttoTag(StringToJson(R"(
@@ -300,7 +295,7 @@ THOOK(BDS_Main, int, "main",
 			//ignore files starting with '_'
 			if (name.front() == '_')
 				continue;
-			cout << "[BDSpyrunner] Loading " << name << endl;
+			logger.info("[BDSpyrunner] Loading ", name);
 			PyImport_ImportModule(name.c_str());
 			PrintPythonError();
 		}
@@ -314,38 +309,33 @@ THOOK(BDS_Main, int, "main",
 	return original(argc, argv, envp);
 }
 //Level的构造函数
-THOOK(Level_construct, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$WeakRefT@UEntityRefTraits@@@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
+THook(Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$WeakRefT@UEntityRefTraits@@@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
 	Level* _this, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5, uintptr_t a6, uintptr_t a7, uintptr_t a8, uintptr_t a9, uintptr_t a10, uintptr_t a11, uintptr_t a12, uintptr_t a13) {
 	return global<Level> = original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13);
 }
-//SPSCQueue的构造函数
-THOOK(SPSCQueue_construct, SPSCQueue*, "??0?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@QEAA@_K@Z",
-	SPSCQueue* _this) {
-	return global<SPSCQueue> = original(_this);
-}
 //RakPeer的构造函数
-THOOK(RakPeer_construct, RakPeer*, "??0RakPeer@RakNet@@QEAA@XZ",
-	RakPeer* _this) {
+THook(RakNet::RakPeer*, "??0RakPeer@RakNet@@QEAA@XZ",
+	RakNet::RakPeer* _this) {
 	//会构造两次，取第一次值
-	if (global<RakPeer> == nullptr) {
-		global<RakPeer> = original(_this);
-		return global<RakPeer>;
+	if (global<RakNet::RakPeer> == nullptr) {
+		global<RakNet::RakPeer> = original(_this);
+		return global<RakNet::RakPeer>;
 	}
 	return original(_this);
 }
 //ServerNetworkHandler的构造函数
-THOOK(ServerNetworkHandler_construct, uintptr_t, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEBV?$NonOwnerPointer@VILevel@@@Bedrock@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@3@@Z",
+THook(uintptr_t, "??0ServerNetworkHandler@@QEAA@AEAVGameCallbacks@@AEBV?$NonOwnerPointer@VILevel@@@Bedrock@@AEAVNetworkHandler@@AEAVPrivateKeyManager@@AEAVServerLocator@@AEAVPacketSender@@AEAVAllowList@@PEAVPermissionsFile@@AEBVUUID@mce@@H_NAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@HAEAVMinecraftCommands@@AEAVIMinecraftApp@@AEBV?$unordered_map@UPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$hash@UPackIdVersion@@@3@U?$equal_to@UPackIdVersion@@@3@V?$allocator@U?$pair@$$CBUPackIdVersion@@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@@3@@std@@AEAVScheduler@@V?$NonOwnerPointer@VTextFilteringProcessor@@@3@@Z",
 	ServerNetworkHandler* _this, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5, uintptr_t a6, uintptr_t a7, uintptr_t a8, uintptr_t a9, uintptr_t a10, uintptr_t a11, uintptr_t a12, uintptr_t a13, uintptr_t a14, uintptr_t a15, uintptr_t a16, uintptr_t a17, uintptr_t a18, uintptr_t a19, uintptr_t a20) {
 	global<ServerNetworkHandler> = _this;
 	return original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20);
 }
 //Scoreboard的构造函数
-THOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnumRegistry@@PEAVLevelStorage@@@Z",
+THook(Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnumRegistry@@PEAVLevelStorage@@@Z",
 	Scoreboard* _this, uintptr_t a1, uintptr_t a2) {
 	return global<Scoreboard> = original(_this, a1, a2);
 }
 //改变设置命令的建立，用于注册命令
-THOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
+THook(void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
 	uintptr_t _this) {
 	for (auto& [cmd, des] : g_commands) {
 		SymCall("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
@@ -356,14 +346,14 @@ THOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCom
 #pragma endregion
 #pragma region Listener
 //开服完成
-THOOK(onServerStarted, void, "?startServerThread@ServerInstance@@QEAAXXZ",
+THook(void, "?startServerThread@ServerInstance@@QEAAXXZ",
 	uintptr_t _this) {
 	EventCallBackHelper h(EventCode::onServerStarted);
 	h.setArg(Py_None).call();
 	original(_this);
 }
 //控制台输出，实际上是ostrram::operator<<的底层调用
-THOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
+THook(ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 	ostream& _this, const char* str, uintptr_t size) {
 	EventCallBackHelper h(EventCode::onConsoleOutput);
 	if (&_this == &cout) {
@@ -374,8 +364,8 @@ THOOK(onConsoleOutput, ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@st
 	return original(_this, str, size);
 }
 //控制台输入，实际上是命令队列的底层
-THOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
-	SPSCQueue* _this, string* cmd) {
+THook(bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
+	uintptr_t _this, string* cmd) {
 	EventCallBackHelper h(EventCode::onConsoleInput);
 	static bool debug = false;
 	if (*cmd == "pydebug") {
@@ -401,17 +391,17 @@ THOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tr
 	return false;
 }
 //玩家加入发包
-THOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVSetLocalPlayerAsInitializedPacket@@@Z",
-	ServerNetworkHandler* _this, uintptr_t id,/*SetLocalPlayerAsInitializedPacket*/ uintptr_t pkt) {
+THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVSetLocalPlayerAsInitializedPacket@@@Z",
+	ServerNetworkHandler* _this, NetworkIdentifier& id,/*SetLocalPlayerAsInitializedPacket*/ uintptr_t pkt) {
 	EventCallBackHelper h(EventCode::onPlayerJoin);
-	Player* p = _this->_getServerPlayer(id, pkt);
+	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id, pkt));
 	if (p) {
 		h.setArg(ToEntity(p)).call();
 	}
 	original(_this, id, pkt);
 }
 //玩家退出
-THOOK(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
+THook(void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
 	uintptr_t _this, Player* p, char v3) {
 	EventCallBackHelper h(EventCode::onPlayerLeft);
 	h.setArg(ToEntity(p));
@@ -419,34 +409,34 @@ THOOK(onPlayerLeft, void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerP
 	return original(_this, p, v3);
 }
 //使用物品
-THOOK(onUseItem, bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@EAEBVVec3@@PEBVBlock@@@Z",
+THook(bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@EAEBVVec3@@PEBVBlock@@@Z",
 	uintptr_t _this, ItemStack* item, BlockPos* bp, char a4, uintptr_t a5, Block* b) {
 	EventCallBackHelper h(EventCode::onUseItem);
-	Player* p = Dereference<Player*>(_this, 8);
-	BlockLegacy* bl = b->getBlockLegacy();
+	Player* p = Fetch<Player*>(_this, 8);
+	const BlockLegacy& bl = b->getLegacyBlock();
 	h
 		.insert("player", p)
 		.insert("itemid", item->getId())
 		.insert("itemaux", item->getAuxValue())
 		.insert("itemcount", item->getCount())
 		.insert("itemname", item->getName())
-		.insert("blockname", bl->getBlockName())
-		.insert("blockid", bl->getBlockItemID())
+		.insert("blockname", bl.getBlockEntityType())
+		.insert("blockid", bl.getBlockItemId())
 		.insert("position", bp);
 	if (h.call())
 		return original(_this, item, bp, a4, a5, b);
 	return false;
 }
 //放置方块
-THOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@EPEAVActor@@_N@Z",
+THook(bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@EPEAVActor@@_N@Z",
 	BlockSource* _this, Block* b, BlockPos* bp, unsigned char a4, Actor* p, bool _bool) {
 	EventCallBackHelper h(EventCode::onPlaceBlock);
 	if (IsPlayer(p)) {
-		BlockLegacy* bl = b->getBlockLegacy();
+		auto& bl = b->getLegacyBlock();
 		h
 			.insert("player", p)
-			.insert("blockname", bl->getBlockName())
-			.insert("blockid", bl->getBlockItemID())
+			.insert("blockname", bl.getBlockEntityType())
+			.insert("blockid", bl.getBlockItemId())
 			.insert("position", bp);
 		if (!h.call())
 			return false;
@@ -454,15 +444,15 @@ THOOK(onPlaceBlock, bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@
 	return original(_this, b, bp, a4, p, _bool);
 }
 //破坏方块
-THOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
-	BlockSource* _this, Actor* a1, BlockPos* a2, ItemStack* a3, bool a4) {
+THook(bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlockPos@@AEBVItemStackBase@@_N@Z",
+	BlockSource& _this, Actor* a1, BlockPos& a2, ItemStack* a3, bool a4) {
 	EventCallBackHelper h(EventCode::onDestroyBlock);
 	if (IsPlayer(a1)) {
-		BlockLegacy* bl = _this->getBlock(a2)->getBlockLegacy();
+		auto& bl = _this.getBlock(a2).getLegacyBlock();
 		h
 			.insert("player", a1)
-			.insert("blockname", bl->getBlockName())
-			.insert("blockid", bl->getBlockItemID())
+			.insert("blockname", bl.getBlockEntityType())
+			.insert("blockid", bl.getBlockItemId())
 			.insert("position", a2);
 		if (!h.call())
 			return false;
@@ -470,7 +460,7 @@ THOOK(onDestroyBlock, bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAE
 	return original(_this, a1, a2, a3, a4);
 }
 //开箱
-THOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
+THook(bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* p, BlockPos* bp) {
 	EventCallBackHelper h(EventCode::onOpenChest);
 	h
@@ -481,7 +471,7 @@ THOOK(onOpenChest, bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	return false;
 }
 //开桶，不能拦截，拦截请看方块交互
-THOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
+THook(bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* p, BlockPos* bp) {
 	EventCallBackHelper h(EventCode::onOpenBarrel);
 	h
@@ -492,7 +482,7 @@ THOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z
 	return false;
 }
 //关箱
-THOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
+THook(void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	uintptr_t _this, Player* p) {
 	EventCallBackHelper h(EventCode::onCloseChest);
 	auto bp = (BlockPos*)(_this - 196);
@@ -502,7 +492,7 @@ THOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	original(_this, p);
 }
 //关桶
-THOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
+THook(void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	uintptr_t _this, Player* p) {
 	EventCallBackHelper h(EventCode::onCloseBarrel);
 	auto bp = (BlockPos*)(_this - 196);
@@ -512,25 +502,25 @@ THOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	original(_this, p);
 }
 //放入取出物品，实际上是容器改变
-THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEAAXH@Z",
+THook(void, "?containerContentChanged@LevelContainerModel@@UEAAXH@Z",
 	uintptr_t _this, unsigned slot) {
 	EventCallBackHelper h(EventCode::onContainerChange);
-	Player* p = Dereference<Player*>(_this, 208);//IDA LevelContainerModel::_getContainer line 15 25 v3
-	BlockSource* bs = p->getRegion();
-	BlockPos* bp = reinterpret_cast<BlockPos*>(_this + 216);
-	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
-	short bid = bl->getBlockItemID();
+	Player* p = Fetch<Player*>(_this, 208);//IDA LevelContainerModel::_getContainer line 15 25 v3
+	BlockSource& bs = p->getRegion();
+	BlockPos& bp = Fetch<BlockPos>(_this, 216);
+	auto& bl = bs.getBlock(bp).getLegacyBlock();
+	short bid = bl.getBlockItemId();
 	if (bid == 54 || bid == 130 || bid == 146 || bid == -203 || bid == 205 || bid == 218) {	//非箱子、桶、潜影盒的情况不作处理
-		uintptr_t v5 = (*reinterpret_cast<uintptr_t(**)(uintptr_t)>(Dereference<uintptr_t>(_this) + 160))(_this);
+		uintptr_t v5 = (*reinterpret_cast<uintptr_t(**)(uintptr_t)>(Fetch<uintptr_t>(_this) + 160))(_this);
 		if (v5) {
-			ItemStack* item = (*reinterpret_cast<ItemStack * (**)(uintptr_t, uintptr_t)>(Dereference<uintptr_t>(v5) + 40))(v5, slot);
+			ItemStack* item = (*reinterpret_cast<ItemStack * (**)(uintptr_t, uintptr_t)>(Fetch<uintptr_t>(v5) + 40))(v5, slot);
 			h
 				.insert("player", p)
 				.insert("itemid", item->getId())
 				.insert("itemaux", item->getAuxValue())
 				.insert("itemcount", item->getCount())
 				.insert("itemname", item->getName())
-				.insert("blockname", bl->getBlockName())
+				.insert("blockname", bl.getBlockEntityType())
 				.insert("blockid", bid)
 				.insert("position", bp)
 				.insert("slot", slot);
@@ -539,8 +529,8 @@ THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UE
 	original(_this, slot);
 }
 //玩家攻击
-THOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
-	Player* p, Actor* a, struct ActorDamageCause* c) {
+THook(bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
+	Player* p, Actor* a, ActorDamageCause* c) {
 	EventCallBackHelper h(EventCode::onPlayerAttack);
 	h
 		.insert("player", p)
@@ -550,7 +540,7 @@ THOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@
 	return false;
 }
 //切换纬度
-THOOK(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@AEAVChangeDimensionRequest@@@Z",
+THook(bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@AEAVChangeDimensionRequest@@@Z",
 	uintptr_t _this, Player* p, uintptr_t req) {
 	EventCallBackHelper h(EventCode::onChangeDimension);
 	bool result = original(_this, p, req);
@@ -560,30 +550,30 @@ THOOK(onChangeDimension, bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@
 	return result;
 }
 //生物死亡
-THOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
+THook(void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	Mob* _this, uintptr_t dmsg) {
 	EventCallBackHelper h(EventCode::onMobDie);
 	char v72;
-	Actor* sa = _this->getLevel()->fetchEntity(*(uintptr_t*)((*(uintptr_t(__fastcall**)(uintptr_t, char*))(*(uintptr_t*)dmsg + 64))(dmsg, &v72)));
+	Actor* sa = _this->getLevel().getEntity(*(uintptr_t*)((*(uintptr_t(__fastcall**)(uintptr_t, char*))(*(uintptr_t*)dmsg + 64))(dmsg, &v72)));
 	h
 		.insert("actor1", _this)
 		.insert("actor2", sa)
-		.insert("dmcase", Dereference<unsigned>(dmsg, 8))
+		.insert("dmcase", Fetch<unsigned>(dmsg, 8))
 		;
 	if (h.call())
 		original(_this, dmsg);
 }
 //生物受伤
-THOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
+THook(bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 	Mob* _this, uintptr_t dmsg, int a3, bool a4, bool a5) {
 	EventCallBackHelper h(EventCode::onMobHurt);
 	g_damage = a3;//将生物受伤的值设置为可调整
 	char v72;
-	Actor* sa = _this->getLevel()->fetchEntity(*(uintptr_t*)((*(uintptr_t(__fastcall**)(uintptr_t, char*))(*(uintptr_t*)dmsg + 64))(dmsg, &v72)));
+	Actor* sa = _this->getLevel().getEntity(*(uintptr_t*)((*(uintptr_t(__fastcall**)(uintptr_t, char*))(*(uintptr_t*)dmsg + 64))(dmsg, &v72)));
 	h
 		.insert("actor1", _this)
 		.insert("actor2", sa)
-		.insert("dmcase", Dereference<unsigned>(dmsg, 8))
+		.insert("dmcase", Fetch<unsigned>(dmsg, 8))
 		.insert("damage", a3)
 		;
 	if (h.call())
@@ -591,14 +581,14 @@ THOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 	return false;
 }
 //玩家重生
-THOOK(onRespawn, void, "?respawn@Player@@UEAAXXZ",
+THook(void, "?respawn@Player@@UEAAXXZ",
 	Player* p) {
 	EventCallBackHelper h(EventCode::onRespawn);
 	h.setArg(ToEntity(p)).call();
 	original(p);
 }
 //聊天，消息title msg w等...
-THOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@000@Z",
+THook(void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@000@Z",
 	uintptr_t _this, string& sender, string& target, string& msg, string& style) {
 	EventCallBackHelper h(EventCode::onChat);
 	h.insert("sender", sender)
@@ -609,12 +599,12 @@ THOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic
 	original(_this, sender, target, msg, style);
 }
 //玩家输入文本
-THOOK(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVTextPacket@@@Z",
-	ServerNetworkHandler* _this, uintptr_t id, /*TextPacket*/uintptr_t pkt) {
+THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVTextPacket@@@Z",
+	ServerNetworkHandler* _this, NetworkIdentifier& id, /*TextPacket*/uintptr_t pkt) {
 	EventCallBackHelper h(EventCode::onInputText);
-	Player* p = _this->_getServerPlayer(id, pkt);
+	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id, pkt));
 	if (p) {
-		const string& msg = Dereference<string>(pkt, 88);
+		const string& msg = Fetch<string>(pkt, 88);
 		h.insert("player", p)
 			.insert("msg", msg);
 		if (!h.call())
@@ -623,12 +613,12 @@ THOOK(onInputText, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifi
 	original(_this, id, pkt);
 }
 //玩家输入命令
-THOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
-	ServerNetworkHandler* _this, uintptr_t id, /*CommandRequestPacket*/uintptr_t pkt) {
+THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
+	ServerNetworkHandler* _this, NetworkIdentifier& id, /*CommandRequestPacket*/uintptr_t pkt) {
 	EventCallBackHelper h(EventCode::onInputCommand);
-	Player* p = _this->_getServerPlayer(id, pkt);
+	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id, pkt));
 	if (p) {
-		const string& cmd = Dereference<string>(pkt, 48);
+		const string& cmd = Fetch<string>(pkt, 48);
 		auto data = g_commands.find(cmd.c_str() + 1);
 		//如果有这条命令且回调函数不为nullptr
 		if (data != g_commands.end() && data->second.second) {
@@ -645,14 +635,14 @@ THOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdent
 	}
 }
 //玩家选择表单
-THOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormResponsePacket@@$0A@@@UEBAXAEBVNetworkIdentifier@@AEAVNetEventCallback@@AEAV?$shared_ptr@VPacket@@@std@@@Z",
-	uintptr_t _this, uintptr_t id, ServerNetworkHandler* handle,/*ModalFormResponsePacket*/uintptr_t* ppkt) {
+THook(void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormResponsePacket@@$0A@@@UEBAXAEBVNetworkIdentifier@@AEAVNetEventCallback@@AEAV?$shared_ptr@VPacket@@@std@@@Z",
+	uintptr_t _this, NetworkIdentifier& id, ServerNetworkHandler* handle,/*ModalFormResponsePacket*/uintptr_t* ppkt) {
 	EventCallBackHelper h(EventCode::onSelectForm);
 	uintptr_t pkt = *ppkt;
-	Player* p = handle->_getServerPlayer(id, pkt);
+	Player* p = reinterpret_cast<Player*>(handle->getServerPlayer(id, pkt));
 	if (p) {
-		unsigned fid = Dereference<unsigned>(pkt, 48);
-		string data = Dereference<string>(pkt, 56);
+		unsigned fid = Fetch<unsigned>(pkt, 48);
+		string data = Fetch<string>(pkt, 56);
 		if (data.back() == '\n')
 			data.pop_back();
 		h
@@ -664,19 +654,19 @@ THOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormR
 	original(_this, id, handle, ppkt);
 }
 //命令方块更新
-THOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandBlockUpdatePacket@@@Z",
-	ServerNetworkHandler* _this, uintptr_t id, /*CommandBlockUpdatePacket*/uintptr_t pkt) {
+THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandBlockUpdatePacket@@@Z",
+	ServerNetworkHandler* _this, NetworkIdentifier& id, /*CommandBlockUpdatePacket*/uintptr_t pkt) {
 	EventCallBackHelper h(EventCode::onCommandBlockUpdate);
-	Player* p = _this->_getServerPlayer(id, pkt);
+	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id, pkt));
 	if (p) {
-		BlockPos bp = Dereference<BlockPos>(pkt, 48);
-		unsigned short mode = Dereference<unsigned short>(pkt, 60);
-		bool condition = Dereference<bool>(pkt, 62);
-		bool redstone = Dereference<bool>(pkt, 63);
-		string cmd = Dereference<string>(pkt, 72);
-		string output = Dereference<string>(pkt, 104);
-		string rawname = Dereference<string>(pkt, 136);
-		int delay = Dereference<int>(pkt, 168);
+		BlockPos& bp = Fetch<BlockPos>(pkt, 48);
+		unsigned short mode = Fetch<unsigned short>(pkt, 60);
+		bool condition = Fetch<bool>(pkt, 62);
+		bool redstone = Fetch<bool>(pkt, 63);
+		string cmd = Fetch<string>(pkt, 72);
+		string output = Fetch<string>(pkt, 104);
+		string rawname = Fetch<string>(pkt, 136);
+		int delay = Fetch<int>(pkt, 168);
 		h.insert("player", ToEntity(p))
 			.insert("mode", mode)
 			.insert("condition", condition)
@@ -692,7 +682,7 @@ THOOK(onCommandBlockUpdate, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetwor
 	original(_this, id, pkt);
 }
 //爆炸
-THOOK(onLevelExplode, bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
+THook(bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
 	Level* _this, BlockSource* bs, Actor* a3, Vec3 pos, float a5, bool a6, bool a7, float a8, bool a9) {
 	EventCallBackHelper h(EventCode::onLevelExplode);
 	h
@@ -705,7 +695,7 @@ THOOK(onLevelExplode, bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AE
 	return false;
 }
 //命令方块执行
-THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@@AEAVCommandBlockActor@@AEBVBlockPos@@_N@Z",
+THook(bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@@AEAVCommandBlockActor@@AEBVBlockPos@@_N@Z",
 	uintptr_t _this, BlockSource* a2, uintptr_t a3, BlockPos* bp, bool a5) {
 	EventCallBackHelper h(EventCode::onCommandBlockPerform);
 	//脉冲:0,重复:1,链:2
@@ -715,8 +705,8 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 	//SymCall<string&>("?getName@BaseCommandBlock@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 	//	a3 + 200);
 	//a3 + 200 BaseCommandBlock
-	string cmd = Dereference<string>(a3, 256);
-	string rawname = Dereference<string>(a3, 288);
+	string cmd = Fetch<string>(a3, 256);
+	string rawname = Fetch<string>(a3, 288);
 	h
 		.insert("mode", mode)
 		.insert("condition", condition)
@@ -728,14 +718,14 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 	return false;
 }
 //玩家移动
-THOOK(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
+THook(void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
 	EventCallBackHelper h(EventCode::onMove);
 	h.setArg(ToEntity(p)).call();
 	return original(_this, p, a3, a4, a5);
 }
 //玩家穿戴
-THOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
+THook(void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 	Player* p, unsigned slot, ItemStack* i) {
 	EventCallBackHelper h(EventCode::onSetArmor);
 	h
@@ -750,19 +740,19 @@ THOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 	return;
 }
 //计分板改变监听
-THOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboardId@@AEBVObjective@@@Z",
-	Scoreboard* _this, ScoreboardId* a1, Objective* a2) {
+THook(void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboardId@@AEBVObjective@@@Z",
+	Scoreboard* _this, ScoreboardId& a1, Objective& a2) {
 	//创建计分板时：/scoreboard objectives <add|remove> <objectivename> dummy <objectivedisplayname>
 	//修改计分板时（此函数hook此处)：/scoreboard players <add|remove|set> <playersname> <objectivename> <playersnum>
 	EventCallBackHelper h(EventCode::onScoreChanged);
-	h.insert("scoreboardid", a1->id)
-		.insert("playersnum", a2->getPlayerScore(a1)->getCount())
-		.insert("objectivename", a2->getScoreName())
-		.insert("objectivedisname", a2->getScoreDisplayName());
+	h.insert("scoreboardid", a1.id)
+		.insert("playersnum", a2.getPlayerScore(a1).getCount())
+		.insert("objectivename", a2.getName())
+		.insert("objectivedisname", a2.getDisplayName());
 	original(_this, a1, a2);
 }
 //耕地破坏
-THOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@M@Z",
+THook(void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@M@Z",
 	uintptr_t _this, BlockSource* a1, BlockPos* a2, Actor* p, uintptr_t a4) {
 	EventCallBackHelper h(EventCode::onFallBlockTransform);
 	if (IsPlayer(p)) {
@@ -775,7 +765,7 @@ THOOK(onFallBlockTransform, void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSou
 	original(_this, a1, a2, p, a4);
 }
 //使用重生锚
-THOOK(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPlayer@@AEBVBlockPos@@AEAVBlockSource@@AEAVLevel@@@Z",
+THook(bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPlayer@@AEBVBlockPos@@AEAVBlockSource@@AEAVLevel@@@Z",
 	Player* p, BlockPos* a2, BlockSource* a3, Level* a4) {
 	EventCallBackHelper h(EventCode::onUseRespawnAnchorBlock);
 	h.insert("player", ToEntity(p))
@@ -786,24 +776,24 @@ THOOK(onUseRespawnAnchorBlock, bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVP
 	return false;
 }
 //活塞推
-THOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBlockSource@@AEBVBlockPos@@EE@Z",
-	BlockActor* _this, BlockSource* bs, BlockPos* bp, unsigned a3, unsigned a4) {
+THook(bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBlockSource@@AEBVBlockPos@@EE@Z",
+	BlockActor* _this, BlockSource& bs, BlockPos& bp, unsigned a3, unsigned a4) {
 	EventCallBackHelper h(EventCode::onPistonPush);
-	BlockLegacy* blg = bs->getBlock(bp)->getBlockLegacy();
-	string bn = blg->getBlockName();
-	short bid = blg->getBlockItemID();
-	BlockPos* bp2 = _this->getPosition();
+	auto& bl = bs.getBlock(bp).getLegacyBlock();
+	string bn = bl.getRawNameId();
+	short bid = bl.getBlockItemId();
+	BlockPos bp2 = _this->getPosition();
 	h.insert("blockname", bn)
 		.insert("blockid", bid)
 		.insert("blockpos", bp)
 		.insert("pistonpos", bp2)
-		.insert("dimensionid", bs->getDimensionId());
+		.insert("dimensionid", bs.getDimensionId());
 	if (h.call())
 		return original(_this, bs, bp, a3, a4);
 	return false;
 }
 //末影人随机传送（没人会用吧？）
-THOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_NAEAVActor@@@Z",
+THook(bool, "?randomTeleport@TeleportComponent@@QEAA_NAEAVActor@@@Z",
 	uintptr_t _this, Actor* a1) {
 	EventCallBackHelper h(EventCode::onEndermanRandomTeleport);
 	h.setArg(ToEntity(a1)).call();
@@ -812,7 +802,7 @@ THOOK(onEndermanRandomTeleport, bool, "?randomTeleport@TeleportComponent@@QEAA_N
 	return false;
 }
 //丢物品
-THOOK(onDropItem, bool, "?drop@Player@@UEAA_NAEBVItemStack@@_N@Z",
+THook(bool, "?drop@Player@@UEAA_NAEBVItemStack@@_N@Z",
 	Player* _this, ItemStack* a2, bool a3) {
 	EventCallBackHelper h(EventCode::onDropItem);
 	h.insert("player", _this)
@@ -825,7 +815,7 @@ THOOK(onDropItem, bool, "?drop@Player@@UEAA_NAEBVItemStack@@_N@Z",
 	return false;
 }
 //拿物品
-THOOK(onTakeItem, bool, "?take@Player@@QEAA_NAEAVActor@@HH@Z",
+THook(bool, "?take@Player@@QEAA_NAEAVActor@@HH@Z",
 	Player* _this, Actor* actor, int a2, int a3) {
 	EventCallBackHelper h(EventCode::onTakeItem);
 	h.insert("player", _this)
@@ -835,7 +825,7 @@ THOOK(onTakeItem, bool, "?take@Player@@QEAA_NAEAVActor@@HH@Z",
 	return false;
 }
 //骑
-THOOK(onRide, bool, "?canAddPassenger@Actor@@UEBA_NAEAV1@@Z",
+THook(bool, "?canAddPassenger@Actor@@UEBA_NAEAV1@@Z",
 	Actor* a1, Actor* a2) {
 	EventCallBackHelper h(EventCode::onRide);
 	h.insert("actor1", a1)
@@ -845,7 +835,7 @@ THOOK(onRide, bool, "?canAddPassenger@Actor@@UEBA_NAEAV1@@Z",
 	return false;
 }
 //放入取出物品展示框的物品
-THOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
+THook(bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	uintptr_t _this, Player* a2, BlockPos* a3) {
 	EventCallBackHelper h(EventCode::onUseFrameBlock);
 	h.insert("player", a2)
@@ -856,7 +846,7 @@ THOOK(onUseFrameBlock, bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPo
 	return false;
 }
 //点击物品展示框
-THOOK(onUseFrameBlock2, bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBlockPos@@@Z",
+THook(bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBlockPos@@@Z",
 	uintptr_t _this, Player* a2, BlockPos* a3) {
 	EventCallBackHelper h(EventCode::onUseFrameBlock);
 	h.insert("player", a2)
@@ -867,7 +857,7 @@ THOOK(onUseFrameBlock2, bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBlo
 	return false;
 }
 //玩家跳跃
-THOOK(onJump, void, "?jumpFromGround@Player@@UEAAXXZ",
+THook(void, "?jumpFromGround@Player@@UEAAXXZ",
 	Player* _this) {
 	EventCallBackHelper h(EventCode::onJump);
 	h.setArg(ToEntity(_this));
@@ -875,7 +865,7 @@ THOOK(onJump, void, "?jumpFromGround@Player@@UEAAXXZ",
 		return original(_this);
 }
 //玩家潜行
-THOOK(onSneak, void, "?sendActorSneakChanged@ActorEventCoordinator@@QEAAXAEAVActor@@_N@Z",
+THook(void, "?sendActorSneakChanged@ActorEventCoordinator@@QEAAXAEAVActor@@_N@Z",
 	uintptr_t _this, Actor* a1, bool a2) {
 	EventCallBackHelper h(EventCode::onSneak);
 	h.setArg(ToEntity(a1));
@@ -883,55 +873,56 @@ THOOK(onSneak, void, "?sendActorSneakChanged@ActorEventCoordinator@@QEAAXAEAVAct
 		return original(_this, a1, a2);
 }
 //火势蔓延
-THOOK(onFireSpread, bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@AEBVBlockPos@@@Z",
-	uintptr_t _this, BlockSource* bs, BlockPos* bp) {
+THook(bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@AEBVBlockPos@@@Z",
+	uintptr_t _this, BlockSource& bs, BlockPos& bp) {
 	EventCallBackHelper h(EventCode::onFireSpread);
-	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
-	h.insert("blockpos", bp)
-		.insert("blockname", bl->getBlockName())
-		.insert("blockid", bl->getBlockItemID())
-		.insert("dimensionid", bs->getDimensionId());
+	auto& bl = bs.getBlock(bp).getLegacyBlock();
+	h
+		.insert("blockpos", bp)
+		.insert("blockname", bl.getRawNameId())
+		.insert("blockid", bl.getBlockItemId())
+		.insert("dimensionid", bs.getDimensionId());
 	if (h.call())
 		return original(_this, bs, bp);
 	return false;
 }
 //方块交互（除箱子，工作台）
-THOOK(onBlockInteracted, void, "?onBlockInteractedWith@VanillaServerGameplayEventListener@@UEAA?AW4EventResult@@AEAVPlayer@@AEBVBlockPos@@@Z",
-	uintptr_t _this, Player* pl, BlockPos* bp) {
+THook(void, "?onBlockInteractedWith@VanillaServerGameplayEventListener@@UEAA?AW4EventResult@@AEAVPlayer@@AEBVBlockPos@@@Z",
+	uintptr_t _this, Player* pl, BlockPos& bp) {
 	EventCallBackHelper h(EventCode::onBlockInteracted);
-	BlockSource* bs = global<Level>->getBlockSource(pl->getDimensionId());
-	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
+	BlockSource* bs = Level::getBlockSource(pl->getDimensionId());
+	auto& bl = bs->getBlock(bp).getLegacyBlock();
 	h.insert("player", pl)
 		.insert("blockpos", bp)
-		.insert("blockname", bl->getBlockName())
-		.insert("blockid", bl->getBlockItemID())
+		.insert("blockname", bl.getRawNameId())
+		.insert("blockid", bl.getBlockItemId())
 		.insert("dimensionid", bs->getDimensionId());
 	if (h.call())
 		return original(_this, pl, bp);
 }
 //方块被爆炸破坏
-THOOK(onBlockExploded, void, "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@@Z",
-	Block* _this, BlockSource* bs, BlockPos* bp, Actor* actor) {
+THook(void, "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@@Z",
+	Block* _this, BlockSource& bs, BlockPos& bp, Actor* actor) {
 	EventCallBackHelper h(EventCode::onBlockExploded);
-	BlockLegacy* bl = bs->getBlock(bp)->getBlockLegacy();
+	auto& bl = bs.getBlock(bp).getLegacyBlock();
 	h.insert("actor", actor)
 		.insert("blockpos", bp)
-		.insert("blockname", bl->getBlockName())
-		.insert("blockid", bl->getBlockItemID())
-		.insert("dimensionid", bs->getDimensionId());
+		.insert("blockname", bl.getRawNameId())
+		.insert("blockid", bl.getBlockItemId())
+		.insert("dimensionid", bs.getDimensionId());
 	if (h.call())
 		return original(_this, bs, bp, actor);
 }
 //使用牌子
-THOOK(onUseSingBlock, uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
-	uintptr_t _this, Player* a1, BlockPos* a2) {
+THook(uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
+	uintptr_t _this, Player* a1, BlockPos& a2) {
 	EventCallBackHelper h(EventCode::onUseSignBlock);
-	BlockSource* bs = a1->getRegion();
-	BlockActor* ba = bs->getBlockEntity(a2);
+	BlockSource& bs = a1->getRegion();
+	BlockActor* ba = bs.getBlockEntity(a2);
 	string text;
 	//获取沉浸式文本内容
 	SymCall<string&>("?getImmersiveReaderText@SignBlockActor@@UEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAVBlockSource@@@Z",
-		ba, &text, bs);
+		ba, &text, &bs);
 	h.insert("player", a1)
 		.insert("text", text)
 		.insert("position", a2);

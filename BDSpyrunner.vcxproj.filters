@@ -51,6 +51,9 @@
     <ClCompile Include="mc\DataIO.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="mod\NBT.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mc\Actor.h">
@@ -65,10 +68,10 @@
     <ClInclude Include="mc\ItemStack.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mc\json.hpp">
+    <ClInclude Include="mod\json.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mc\json_tool.h">
+    <ClInclude Include="mod\JsonTool.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mc\Level.h">
@@ -92,7 +95,7 @@
     <ClInclude Include="mc\Tag.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mc\tool.h">
+    <ClInclude Include="mod\Tool.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\Event.h">
@@ -119,5 +122,15 @@
     <ClInclude Include="MinecraftHeaders\Core\BinaryStream.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="mod\NBT.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="lib\bedrock_server_api.lib" />
+    <Library Include="lib\bedrock_server_var.lib" />
+    <Library Include="lib\LiteLoader.lib" />
+    <Library Include="lib\python37.lib" />
+    <Library Include="lib\SymDBHelper.lib" />
   </ItemGroup>
 </Project>

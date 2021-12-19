@@ -1,13 +1,6 @@
 #include "Module.h"
 #include "Version.h"
-#include "../mc/tool.h"
-#include "../mc/Actor.h"
-#include "../mc/Block.h"
-#include "../mc/ItemStack.h"
-#include "../mc/ScoreBoard.h"
-#include "../mc/Structure.h"
-#include "../mc/Tag.h"
-#include "../mc/DataIO.h"
+#include "Tool.h"
 
 using namespace std;
 //是否为史莱姆区块
@@ -57,10 +50,11 @@ static PyObject* logout(PyObject*, PyObject* args) {
 static PyObject* runCommand(PyObject*, PyObject* args) {
 	const char* cmd = "";
 	Py_PARSE("s", &cmd);
-	if (global<SPSCQueue> == nullptr)
-		Py_RETURN_ERROR("Command queue is not initialized");
-	SymCall<bool, SPSCQueue*, const string&>("??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
-		global<SPSCQueue>, cmd);
+	Level::runcmd(cmd);
+	//if (global<SPSCQueue> == nullptr)
+	//	Py_RETURN_ERROR("Command queue is not initialized");
+	//SymCall<bool, SPSCQueue*, const string&>("??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
+	//	global<SPSCQueue>, cmd);
 	Py_RETURN_NONE;
 }
 //设置监听
@@ -100,8 +94,8 @@ static PyObject* getPlayerList(PyObject*, PyObject* args) {
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	global<Level>->forEachPlayer(
-		[list](Player* p)->bool {
-			PyList_Append(list, ToEntity(p));
+		[list](Player& p)->bool {
+			PyList_Append(list, ToEntity(&p));
 			return true;
 		}
 	);
