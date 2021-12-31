@@ -16,7 +16,8 @@
 #include <MC/RakNet.hpp>
 #include <MC/Scoreboard.hpp>
 #include <MC/ServerNetworkHandler.hpp>
-#include <MC/Actor.hpp>
+#include <MC/StructureSettings.hpp>
+#include <MC/StructureTemplate.hpp>
 
 #include <MC/Tag.hpp>
 #include <MC/CompoundTag.hpp>

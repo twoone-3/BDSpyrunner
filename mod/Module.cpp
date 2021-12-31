@@ -82,7 +82,8 @@ static PyObject* setCommandDescription(PyObject*, PyObject* args) {
 static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 	const char* xuid = "";
 	Py_PARSE("s", &xuid);
-	Player* p = global<Level>->getPlayerByXuid(xuid);
+	Player* p = nullptr;
+	//global<Level>->getPlayerByXuid(xuid);
 	if (p == nullptr)
 		Py_RETURN_ERROR("Failed to find player");
 	return ToEntity(p);
@@ -121,13 +122,13 @@ static PyObject* getBlock(PyObject*, PyObject* args) {
 	Py_PARSE("iiii", &bp.x, &bp.y, &bp.z, &did);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = global<Level>->getBlockSource(did);
+	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	BlockLegacy* bl = bs->getBlock(&bp)->getBlockLegacy();
+	auto& bl = bs->getBlock(bp).getLegacyBlock();
 	return Py_BuildValue("{s:s:s:i}",
-		"blockname", bl->getBlockName().c_str(),
-		"blockid", bl->getBlockItemID()
+		"blockname", bl.getRawNameId().c_str(),
+		"blockid", bl.getBlockItemId()
 	);
 }
 static PyObject* setBlock(PyObject*, PyObject* args) {
@@ -136,13 +137,13 @@ static PyObject* setBlock(PyObject*, PyObject* args) {
 	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &did);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = global<Level>->getBlockSource(did);
+	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	Block* b = *reinterpret_cast<Block**>(SYM((string("?m") + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()));
+	Block* b = Fetch<Block*>(SYM((string("?m") + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()));
 	if (b == nullptr)
 		Py_RETURN_ERROR("Unknown Block");
-	bs->setBlock(&bp, b);
+	bs->setBlock(bp, *b, 0, nullptr);
 	Py_RETURN_NONE;
 }
 //获取一个结构
@@ -154,7 +155,7 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 	);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = global<Level>->getBlockSource(did);
+	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	BlockPos start{
@@ -167,8 +168,8 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 		max(pos1.y, pos2.y) - start.y,
 		max(pos1.z, pos2.z) - start.z
 	};
-	StructureSettings ss(&size, false, false);
-	StructureTemplate st("tmp");
+	StructureSettings ss(size, false, false);
+	StructureTemplate st("tmp"s);
 	st.fillFromWorld(bs, &start, &ss);
 
 	return ToPyStr(CompoundTagtoJson(st.save()).dump(4));
@@ -181,7 +182,7 @@ static PyObject* setStructure(PyObject*, PyObject* args, PyObject* kwds) {
 	Py_PARSE_WITH_KERWORDS("siiii|b", &data, &pos.x, &pos.y, &pos.z, &did, &update);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = global<Level>->getBlockSource(did);
+	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	Json value = StringToJson(data);
@@ -218,7 +219,7 @@ static PyObject* getStructureRaw(PyObject*, PyObject* args) {
 	);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = global<Level>->getBlockSource(did);
+	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	BlockPos start{
@@ -253,7 +254,7 @@ static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
 	Py_PARSE_WITH_KERWORDS("y#iiii|b", &data, &datasize, &pos.x, &pos.y, &pos.z, &did, &update);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = global<Level>->getBlockSource(did);
+	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	ReadOnlyBinaryStream* stream = new ReadOnlyBinaryStream(new std::string(data, datasize));
@@ -298,7 +299,7 @@ static PyObject* explode(PyObject*, PyObject* args) {
 	);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = global<Level>->getBlockSource(did);
+	BlockSource* bs = Level::getBlockSource(did);
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	SymCall<bool>("?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
@@ -312,7 +313,7 @@ static PyObject* spawnItem(PyObject*, PyObject* args) {
 	Py_PARSE("sfffi", &data, &pos.x, &pos.y, &pos.z, &did);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = global<Level>->getBlockSource(did);
+	BlockSource* bs = Level::getBlockSource(did);
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	ItemStack item(StringToJson(data));
@@ -335,7 +336,7 @@ static PyObject* setSignBlockMessage(PyObject*, PyObject* args) {
 	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &did);
 	if (global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = global<Level>->getBlockSource(did);
+	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	BlockActor* sign = bs->getBlockEntity(&bp);
