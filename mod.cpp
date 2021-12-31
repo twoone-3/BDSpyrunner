@@ -219,6 +219,12 @@ public:
 	EventCallBackHelper& insert(string_view key, unsigned item) {
 		return insert(key, PyLong_FromUnsignedLong(item));
 	}
+	EventCallBackHelper& insert(string_view key, long long item) {
+		return insert(key, PyLong_FromLongLong(item));
+	}
+	EventCallBackHelper& insert(string_view key,unsigned long long item) {
+		return insert(key, PyLong_FromUnsignedLongLong(item));
+	}
 	EventCallBackHelper& insert(string_view key, float item) {
 		return insert(key, PyLong_FromDouble(item));
 	}

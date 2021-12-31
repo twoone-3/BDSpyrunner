@@ -6,7 +6,7 @@ using namespace std;
 json ToJson(ListTag& t) {
 	json value(json_t::array);
 	for (auto& c : t.value()) {
-		switch (t.type) {
+		switch (t.getElementType()) {
 		case Tag::Type::End:
 			break;
 		case Tag::Type::Byte:
@@ -72,8 +72,8 @@ json ToJson(CompoundTag& t) {
 			break;
 		case Tag::Type::ByteArray:
 			for (size_t i = 0; i < x.second.asByteArrayTag()->value().size; ++i) {
-				auto c = *x.second.asByteArrayTag()->value().data.get();
-				son.push_back(c[i]);
+				auto c = x.second.asByteArrayTag()->value().data[i];
+				son.push_back(c);
 			}
 			break;
 		case Tag::Type::String:
@@ -101,7 +101,7 @@ ListTag* ToListTag(const json& value) {
 		case json_t::null:
 			break;
 		case json_t::object:
-			list->add(ToCompoundTag(x));
+			list->add(ToCompoundTag(x)->asTag<Tag>());
 			break;
 		case json_t::array:
 			list->add(ToListTag(x));

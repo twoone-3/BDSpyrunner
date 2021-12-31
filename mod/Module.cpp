@@ -8,6 +8,7 @@
 #include <MC/BlockPalette.hpp>
 #include <MC/Spawner.hpp>
 #include <MC/Common.hpp>
+#include "DataIO.h"
 
 using namespace std;
 //是否为史莱姆区块
