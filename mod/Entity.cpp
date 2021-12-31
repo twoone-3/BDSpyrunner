@@ -1,5 +1,6 @@
 #include "Entity.h"
 #include "Tool.h"
+#include <MC/Scoreboard.hpp>
 
 using namespace std;
 struct PyEntity {
@@ -293,7 +294,7 @@ PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 		if (value.contains("OffHand")) {
 			p->getOffhandSlot()->fromJson(value["OffHand"]);
 		}
-		p->sendInventroy();
+		p->sendInventory(true);
 	}
 	Py_RETURN_NONE;
 }
@@ -306,7 +307,7 @@ PyObject* PyEntity_SetHand(PyObject* self, PyObject* args) {
 			return nullptr;
 		json json(StringToJson(x));
 		p->getSelectedItem()->fromJson(json);
-		p->sendInventroy();
+		p->sendInventory(true);
 	}
 	Py_RETURN_NONE;
 }
@@ -320,8 +321,8 @@ PyObject* PyEntity_AddItem(PyObject* self, PyObject* args) {
 			return nullptr;
 		ItemStack i;
 		i.fromJson(StringToJson(x));
-		p->addItem(&i);
-		p->sendInventroy();
+		p->giveItem(i);
+		p->sendInventory(true);
 	}
 	Py_RETURN_NONE;
 }
@@ -333,7 +334,7 @@ PyObject* PyEntity_RemoveItem(PyObject* self, PyObject* args) {
 		if (!p)
 			return nullptr;
 		p->getInventory()->clearItem(slot, num);
-		p->sendInventroy();
+		p->sendInventory(true); //idk what the true means
 	}
 	Py_RETURN_NONE;
 }
@@ -345,7 +346,7 @@ PyObject* PyEntity_Teleport(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->teleport(&pos, did);
+		p->teleport(pos, did);
 	}
 	Py_RETURN_NONE;
 }
@@ -358,7 +359,7 @@ PyObject* PyEntity_SendTextPacket(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->sendTextPacket(mode, msg);
+		p->sendTextPacket(msg, (TextType)mode);
 	}
 	Py_RETURN_NONE;
 }
@@ -388,7 +389,7 @@ PyObject* PyEntity_Disconnect(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->sendDisconnectPacket(msg);
+		p->kick(msg);
 	}
 	Py_RETURN_NONE;
 }
@@ -402,9 +403,9 @@ PyObject* PyEntity_GetScore(PyObject* self, PyObject* args) {
 			return nullptr;
 		Objective* testobj = global<Scoreboard>->getObjective(objname);
 		if (testobj) {
-			auto id = global<Scoreboard>->getScoreboardId(p);
+			auto id = global<Scoreboard>->getScoreboardId(*p);
 			auto score = testobj->getPlayerScore(id);
-			return PyLong_FromLong(score->getCount());
+			return PyLong_FromLong(score.getCount());
 		}
 	}
 	Py_RETURN_NONE;
@@ -419,7 +420,7 @@ PyObject* PyEntity_ModifyScore(PyObject* self, PyObject* args) {
 		Objective* testobj = global<Scoreboard>->getObjective(objname);
 		if (testobj) {
 			//mode:{set,add,remove}
-			global<Scoreboard>->modifyPlayerScore(global<Scoreboard>->getScoreboardId(p), testobj, count, mode);
+			global<Scoreboard>->modifyPlayerScore(global<Scoreboard>->getScoreboardId(*p), testobj, count, mode); // Todo
 		}
 	}
 	Py_RETURN_NONE;
@@ -432,7 +433,7 @@ PyObject* PyEntity_AddLevel(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->addLevel(level);
+		p->addLevels(level);
 	}
 	Py_RETURN_NONE;
 }
@@ -457,7 +458,7 @@ PyObject* PyEntity_SendCustomForm(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		return PyLong_FromLong(p->sendModalFormRequestPacket(str));
+		return PyLong_FromLong(p->sendModalFormPacket(str));
 	}
 	Py_RETURN_NONE;
 }
@@ -472,7 +473,7 @@ PyObject* PyEntity_SendSimpleForm(PyObject* self, PyObject* args) {
 			return nullptr;
 		char str[4096];
 		sprintf_s(str, 4096, R"({"title":"%s","content":"%s","buttons":%s,"type":"form"})", title, content, buttons);
-		return PyLong_FromLong(p->sendModalFormRequestPacket(str));
+		return PyLong_FromLong(p->sendModalFormPacket(str));
 	}
 	Py_RETURN_NONE;
 }
@@ -488,7 +489,7 @@ PyObject* PyEntity_SendModalForm(PyObject* self, PyObject* args) {
 			return nullptr;
 		char str[4096];
 		sprintf_s(str, 4096, R"({"title":"%s","content":"%s","button1":"%s","button2":"%s","type":"modal"})", title, content, button1, button2);
-		return PyLong_FromLong(p->sendModalFormRequestPacket(str));
+		return PyLong_FromLong(p->sendModalFormPacket(str));
 	}
 	Py_RETURN_NONE;
 }
@@ -501,12 +502,12 @@ PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->sendsetDisplayObjectivePacket(title);
+		p->sendSetDisplayObjectivePacket(title); // Todo
 		json value = StringToJson(data);
 		vector<ScorePacketInfo> info;
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {
-				ScorePacketInfo o(global<Scoreboard>->createScoreBoardId(key),
+				ScorePacketInfo o(Global<Scoreboard>()->createScoreboardId(key)); // Todo
 					val.get<int>(), key);
 				info.push_back(o);
 			}
@@ -519,7 +520,7 @@ PyObject* PyEntity_RemoveSidebar(PyObject* self, PyObject*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	p->sendsetDisplayObjectivePacket("", "");
+	p->sendSetDisplayObjectivePacket("", "");
 	Py_RETURN_NONE;
 }
 
@@ -531,7 +532,7 @@ PyObject* PyEntity_SetBossbar(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->sendBossEventCodePacket(name, per, 0);
+		p->sendBossEventPacket(name, per, 0); // Todo
 	}
 	Py_RETURN_NONE;
 }
@@ -540,7 +541,7 @@ PyObject* PyEntity_RemoveBossbar(PyObject* self, PyObject*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	p->sendBossEventCodePacket("", 0, 2);
+	p->sendBossEventPacket("", 0, 2); // Todo
 	Py_RETURN_NONE;
 }
 
