@@ -177,7 +177,7 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 	};
 	StructureSettings ss(size, false, false);
 	StructureTemplate st("tmp"s);
-	st.fillFromWorld(bs, &start, &ss);
+	st.fillFromWorld(*bs, start, ss);
 
 	return ToPyStr(CompoundTagtoJson(st.save()).dump(4));
 }

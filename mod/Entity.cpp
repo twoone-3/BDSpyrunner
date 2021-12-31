@@ -507,7 +507,7 @@ PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
 		vector<ScorePacketInfo> info;
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {
-				ScorePacketInfo o(Global<Scoreboard>()->createScoreboardId(key)); // Todo
+				ScorePacketInfo o(Global<Scoreboard>->createScoreboardId(key)); // Todo
 					val.get<int>(), key);
 				info.push_back(o);
 			}
