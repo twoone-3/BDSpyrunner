@@ -201,7 +201,7 @@ struct PyEntity {
 			Player* p = PyEntity::asPlayer(self);
 			if (!p)
 				return -1;
-			p->setPermissions(PyLong_AsLong(arg));
+			p->setPermissions((CommandPermissionLevel)PyLong_AsLong(arg));
 			return 0;
 		}
 		return PyErr_BadArgument(), -1;

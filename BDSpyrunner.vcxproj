@@ -34,7 +34,7 @@
     <LinkIncremental>false</LinkIncremental>
     <PublicIncludeDirectories>
     </PublicIncludeDirectories>
-    <IncludePath>Header;$(IncludePath)</IncludePath>
+    <IncludePath>SDK\Header;$(IncludePath)</IncludePath>
     <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -62,39 +62,16 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="mc\Actor.cpp" />
-    <ClCompile Include="mc\Block.cpp" />
-    <ClCompile Include="mc\DataIO.cpp" />
-    <ClCompile Include="mc\ItemStack.cpp" />
-    <ClCompile Include="mc\Level.cpp" />
-    <ClCompile Include="mc\NetWork.cpp" />
-    <ClCompile Include="mc\ScoreBoard.cpp" />
-    <ClCompile Include="mc\Structure.cpp" />
-    <ClCompile Include="mc\Tag.cpp" />
     <ClCompile Include="mod.cpp" />
     <ClCompile Include="mod\Module.cpp" />
     <ClCompile Include="mod\Entity.cpp" />
     <ClCompile Include="mod\NBT.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mc\DataIO.h" />
-    <ClInclude Include="MinecraftHeaders\Core\BinaryStream.h" />
-    <ClInclude Include="MinecraftHeaders\dll.h" />
     <ClInclude Include="mod\Module.h" />
     <ClInclude Include="mod\Event.h" />
-    <ClInclude Include="mc\Actor.h" />
-    <ClInclude Include="mc\Block.h" />
-    <ClInclude Include="mc\Command.h" />
-    <ClInclude Include="mc\ItemStack.h" />
     <ClInclude Include="mod\json.hpp" />
     <ClInclude Include="mod\JsonTool.h" />
-    <ClInclude Include="mc\Level.h" />
-    <ClInclude Include="mc\NetWork.h" />
-    <ClInclude Include="mc\Position.h" />
-    <ClInclude Include="mc\ScoreBoard.h" />
-    <ClInclude Include="mc\span.h" />
-    <ClInclude Include="mc\Structure.h" />
-    <ClInclude Include="mc\Tag.h" />
     <ClInclude Include="mod\NBT.h" />
     <ClInclude Include="mod\Tool.h" />
     <ClInclude Include="mod\Entity.h" />
@@ -102,11 +79,11 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClInclude Include="mod\CPython.h" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="lib\bedrock_server_api.lib" />
-    <Library Include="lib\bedrock_server_var.lib" />
-    <Library Include="lib\LiteLoader.lib" />
     <Library Include="lib\python37.lib" />
-    <Library Include="lib\SymDBHelper.lib" />
+    <Library Include="SDK\Lib\bedrock_server_api.lib" />
+    <Library Include="SDK\Lib\bedrock_server_var.lib" />
+    <Library Include="SDK\Lib\LiteLoader.lib" />
+    <Library Include="SDK\Lib\SymDBHelper.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
