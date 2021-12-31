@@ -13,32 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Library">
+      <UniqueIdentifier>{b5a862e5-3add-4a64-bbd2-2343fd629406}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mc\Actor.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="mc\Block.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="mc\ItemStack.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="mc\Level.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="mc\NetWork.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="mc\ScoreBoard.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="mc\Structure.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="mc\Tag.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="mod.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -48,51 +27,15 @@
     <ClCompile Include="mod\Module.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mc\DataIO.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="mod\NBT.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mc\Actor.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mc\Block.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mc\Command.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mc\ItemStack.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="mod\json.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\JsonTool.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mc\Level.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mc\NetWork.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mc\Position.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mc\ScoreBoard.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mc\span.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mc\Structure.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mc\Tag.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\Tool.h">
@@ -113,24 +56,25 @@
     <ClInclude Include="mod\CPython.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mc\DataIO.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="MinecraftHeaders\dll.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="MinecraftHeaders\Core\BinaryStream.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="mod\NBT.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="lib\bedrock_server_api.lib" />
-    <Library Include="lib\bedrock_server_var.lib" />
-    <Library Include="lib\LiteLoader.lib" />
-    <Library Include="lib\python37.lib" />
-    <Library Include="lib\SymDBHelper.lib" />
+    <Library Include="lib\python37.lib">
+      <Filter>Library</Filter>
+    </Library>
+    <Library Include="SDK\Lib\LiteLoader.lib">
+      <Filter>Library</Filter>
+    </Library>
+    <Library Include="SDK\Lib\SymDBHelper.lib">
+      <Filter>Library</Filter>
+    </Library>
+    <Library Include="SDK\Lib\bedrock_server_api.lib">
+      <Filter>Library</Filter>
+    </Library>
+    <Library Include="SDK\Lib\bedrock_server_var.lib">
+      <Filter>Library</Filter>
+    </Library>
   </ItemGroup>
 </Project>

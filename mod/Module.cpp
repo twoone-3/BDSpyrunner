@@ -1,6 +1,9 @@
 #include "Module.h"
 #include "Version.h"
 #include "Tool.h"
+#include <MC/BinaryStream.hpp>
+#include <MC/CompoundTag.hpp>
+#include <GlobalServiceAPI.h>
 
 using namespace std;
 //是否为史莱姆区块
@@ -317,7 +320,7 @@ static PyObject* spawnItem(PyObject*, PyObject* args) {
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	ItemStack item(StringToJson(data));
-	global<Level>->getSpawner()->spawnItem(bs, &item, &pos);
+	Global<Level>->getSpawner()->spawnItem(bs, &item, &pos);
 	Py_RETURN_NONE;
 }
 //是否为史莱姆区块
