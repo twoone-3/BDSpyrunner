@@ -90,7 +90,14 @@ static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 	const char* xuid = "";
 	Py_PARSE("s", &xuid);
 	Player* p = nullptr;
-	//Global<Level>->getPlayerByXuid(xuid);
+	p = Global<Level>->getPlayer(xuid);
+	/*auto players = Global<Level>->getAllPlayers();
+	for (Player* pl : players) {
+		if (pl->getXuid() == xuid) {
+			p = pl;
+			break;
+		}
+	}*/
 	if (p == nullptr)
 		Py_RETURN_ERROR("Failed to find player");
 	return ToEntity(p);
