@@ -1,12 +1,13 @@
 #include "Module.h"
 #include "Version.h"
 #include "Tool.h"
+#include "JsonTool.h"
 #include <MC/BinaryStream.hpp>
 #include <MC/CompoundTag.hpp>
 #include <GlobalServiceAPI.h>
 #include <MC/BlockPalette.hpp>
-#include <MC/Level.hpp>
 #include <MC/Spawner.hpp>
+#include <MC/Common.hpp>
 
 using namespace std;
 //是否为史莱姆区块
@@ -41,7 +42,7 @@ static PyObject* minVersionRequire(PyObject*, PyObject* args) {
 //获取BDS版本
 static PyObject* getBDSVersion(PyObject*, PyObject* args) {
 	args;
-	string version = SymCall<std::string>("?getServerVersionString@Common@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
+	string version = Common::getGameVersionString();
 	return ToPyStr(version);
 }
 //指令输出
@@ -89,7 +90,14 @@ static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 	const char* xuid = "";
 	Py_PARSE("s", &xuid);
 	Player* p = nullptr;
-	//global<Level>->getPlayerByXuid(xuid);
+	p = Global<Level>->getPlayer(xuid);
+	/*auto players = Global<Level>->getAllPlayers();
+	for (Player* pl : players) {
+		if (pl->getXuid() == xuid) {
+			p = pl;
+			break;
+		}
+	}*/
 	if (p == nullptr)
 		Py_RETURN_ERROR("Failed to find player");
 	return ToEntity(p);
@@ -98,9 +106,9 @@ static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 static PyObject* getPlayerList(PyObject*, PyObject* args) {
 	Py_PARSE("");
 	PyObject* list = PyList_New(0);
-	if (global<Level> == nullptr)
+	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	global<Level>->forEachPlayer(
+	Global<Level>->forEachPlayer(
 		[list](Player& p)->bool {
 			PyList_Append(list, ToEntity(&p));
 			return true;
@@ -116,17 +124,17 @@ static PyObject* setDamage(PyObject*, PyObject* args) {
 static PyObject* setServerMotd(PyObject*, PyObject* args) {
 	const char* name = "";
 	Py_PARSE("s", &name);
-	if (global<ServerNetworkHandler> == nullptr)
+	if (Global<ServerNetworkHandler> == nullptr)
 		Py_RETURN_ERROR("Server did not finish loading");
 	SymCall<uintptr_t, ServerNetworkHandler*, const string&, bool>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
-		global<ServerNetworkHandler>, name, true);
+		Global<ServerNetworkHandler>, name, true);
 	Py_RETURN_NONE;
 }
 //根据坐标设置方块
 static PyObject* getBlock(PyObject*, PyObject* args) {
 	BlockPos bp; int did;
 	Py_PARSE("iiii", &bp.x, &bp.y, &bp.z, &did);
-	if (global<Level> == nullptr)
+	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
@@ -141,7 +149,7 @@ static PyObject* setBlock(PyObject*, PyObject* args) {
 	const char* name = "";
 	BlockPos bp; int did;
 	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &did);
-	if (global<Level> == nullptr)
+	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
@@ -159,7 +167,7 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 		&pos1.x, &pos1.y, &pos1.z,
 		&pos2.x, &pos2.y, &pos2.z, &did
 	);
-	if (global<Level> == nullptr)
+	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
@@ -176,7 +184,7 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 	};
 	StructureSettings ss(size, false, false);
 	StructureTemplate st("tmp"s);
-	st.fillFromWorld(bs, &start, &ss);
+	st.fillFromWorld(*bs, start, ss);
 
 	return ToPyStr(CompoundTagtoJson(st.save()).dump(4));
 }
@@ -186,7 +194,7 @@ static PyObject* setStructure(PyObject*, PyObject* args, PyObject* kwds) {
 	const char* data = "";
 	BlockPos pos; int did;
 	Py_PARSE_WITH_KERWORDS("siiii|b", &data, &pos.x, &pos.y, &pos.z, &did, &update);
-	if (global<Level> == nullptr)
+	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
@@ -203,7 +211,7 @@ static PyObject* setStructure(PyObject*, PyObject* args, PyObject* kwds) {
 	StructureSettings ss(&size, true, false);
 	StructureTemplate st("tmp");
 	st.fromJson(value);
-	st.placeInWorld(bs, global<Level>->getBlockPalette(), &pos, &ss);
+	st.placeInWorld(bs, Global<Level>->getBlockPalette(), &pos, &ss);
 	if (update) {
 		for (int x = 0; x != size.x; ++x) {
 			for (int y = 0; y != size.y; ++y) {
@@ -223,7 +231,7 @@ static PyObject* getStructureRaw(PyObject*, PyObject* args) {
 		&pos1.x, &pos1.y, &pos1.z,
 		&pos2.x, &pos2.y, &pos2.z, &did
 	);
-	if (global<Level> == nullptr)
+	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
@@ -258,7 +266,7 @@ static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
 	//Py_buffer data;
 	BlockPos pos; int did;
 	Py_PARSE_WITH_KERWORDS("y#iiii|b", &data, &datasize, &pos.x, &pos.y, &pos.z, &did, &update);
-	if (global<Level> == nullptr)
+	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
@@ -303,13 +311,13 @@ static PyObject* explode(PyObject*, PyObject* args) {
 	Py_PARSE("fffifbfb",
 		&pos.x, &pos.y, &pos.z, &did, &power, &destroy, &range, &fire
 	);
-	if (global<Level> == nullptr)
+	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	SymCall<bool>("?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
-		global<Level>, bs, nullptr, pos, power, fire, destroy, range, true);
+		Global<Level>, bs, nullptr, pos, power, fire, destroy, range, true);
 	Py_RETURN_NONE;
 }
 //生成物品
@@ -317,13 +325,13 @@ static PyObject* spawnItem(PyObject*, PyObject* args) {
 	const char* data = "";
 	Vec3 pos; int did;
 	Py_PARSE("sfffi", &data, &pos.x, &pos.y, &pos.z, &did);
-	if (global<Level> == nullptr)
+	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	ItemStack item(StringToJson(data));
-	Global<Level>->getSpawner().spawnItem(bs, &item, &pos); // Todo
+	Global<Level>->getSpawner().spawnItem(pos, did, &item); // Todo
 	Py_RETURN_NONE;
 }
 //是否为史莱姆区块
@@ -340,7 +348,7 @@ static PyObject* setSignBlockMessage(PyObject*, PyObject* args) {
 	const char* name = "";
 	BlockPos bp; int did;
 	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &did);
-	if (global<Level> == nullptr)
+	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)

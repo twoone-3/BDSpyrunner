@@ -401,9 +401,9 @@ PyObject* PyEntity_GetScore(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		Objective* testobj = global<Scoreboard>->getObjective(objname);
+		Objective* testobj = Global<Scoreboard>->getObjective(objname);
 		if (testobj) {
-			auto id = global<Scoreboard>->getScoreboardId(*p);
+			auto id = Global<Scoreboard>->getScoreboardId(*p);
 			auto score = testobj->getPlayerScore(id);
 			return PyLong_FromLong(score.getCount());
 		}
@@ -417,10 +417,10 @@ PyObject* PyEntity_ModifyScore(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		Objective* testobj = global<Scoreboard>->getObjective(objname);
+		Objective* testobj = Global<Scoreboard>->getObjective(objname);
 		if (testobj) {
 			//mode:{set,add,remove}
-			global<Scoreboard>->modifyPlayerScore(global<Scoreboard>->getScoreboardId(*p), testobj, count, mode); // Todo
+			Global<Scoreboard>->modifyPlayerScore(Global<Scoreboard>->getScoreboardId(*p), testobj, count, mode); // Todo
 		}
 	}
 	Py_RETURN_NONE;
@@ -458,7 +458,7 @@ PyObject* PyEntity_SendCustomForm(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		return PyLong_FromLong(p->sendModalFormPacket(str));
+		return PyLong_FromLong(p->sendModalFormPacket(str)); // Todo
 	}
 	Py_RETURN_NONE;
 }
@@ -473,7 +473,7 @@ PyObject* PyEntity_SendSimpleForm(PyObject* self, PyObject* args) {
 			return nullptr;
 		char str[4096];
 		sprintf_s(str, 4096, R"({"title":"%s","content":"%s","buttons":%s,"type":"form"})", title, content, buttons);
-		return PyLong_FromLong(p->sendModalFormPacket(str));
+		return PyLong_FromLong(p->sendModalFormPacket(str)); // Todo
 	}
 	Py_RETURN_NONE;
 }
@@ -489,7 +489,7 @@ PyObject* PyEntity_SendModalForm(PyObject* self, PyObject* args) {
 			return nullptr;
 		char str[4096];
 		sprintf_s(str, 4096, R"({"title":"%s","content":"%s","button1":"%s","button2":"%s","type":"modal"})", title, content, button1, button2);
-		return PyLong_FromLong(p->sendModalFormPacket(str));
+		return PyLong_FromLong(p->sendModalFormPacket(str)); // Todo
 	}
 	Py_RETURN_NONE;
 }
@@ -507,7 +507,7 @@ PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
 		vector<ScorePacketInfo> info;
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {
-				ScorePacketInfo o(Global<Scoreboard>()->createScoreboardId(key)); // Todo
+				ScorePacketInfo o(Global<Scoreboard>->createScoreboardId(key)); // Todo
 					val.get<int>(), key);
 				info.push_back(o);
 			}
