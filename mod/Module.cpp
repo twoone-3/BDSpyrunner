@@ -4,6 +4,9 @@
 #include <MC/BinaryStream.hpp>
 #include <MC/CompoundTag.hpp>
 #include <GlobalServiceAPI.h>
+#include <MC/BlockPalette.hpp>
+#include <MC/Level.hpp>
+#include <MC/Spawner.hpp>
 
 using namespace std;
 //是否为史莱姆区块
@@ -235,14 +238,14 @@ static PyObject* getStructureRaw(PyObject*, PyObject* args) {
 		max(pos1.y, pos2.y) - start.y,
 		max(pos1.z, pos2.z) - start.z
 	};
-	StructureSettings ss(&size, false, false);
+	StructureSettings ss(size, false, false);
 	StructureTemplate st("tmp");
-	st.fillFromWorld(bs, &start, &ss);
-	CompoundTag* t = st.save();
+	st.fillFromWorld(*bs, start, ss);
+	CompoundTag* t = st.save().get();
 	BinaryStream* stream = new BinaryStream();
 	serialize<CompoundTag>::write(t, stream);
-	size_t sizet = stream->mBuffer->length();
-	auto result = PyBytes_FromStringAndSize(stream->GetAndReleaseData()->c_str(), sizet);
+	size_t sizet = stream->getLength();
+	auto result = PyBytes_FromStringAndSize(stream->getAndReleaseData().c_str(), sizet);
 	stream->~BinaryStream();
 	return result;
 }
@@ -264,9 +267,9 @@ static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
 	//printf("bufferlength: %d\n",stream->mBuffer->length());
 	CompoundTag* tag = serialize<CompoundTag>::read(stream);
 	//printf("deserialized.\n");
-	if (tag->getVariantType() != TagType::Compound)
+	if (tag->getTagType() != Tag::Type::Compound)
 		Py_RETURN_ERROR("Invalid Tag");
-	auto& t_C = tag->asCompound();
+	auto* t_C = tag->asCompoundTag();
 	if (t_C.find("size") == t_C.end() || t_C["size"].getVariantType() != TagType::List)
 		Py_RETURN_ERROR("Invalid Tag");
 	auto& t_C_Lsize = t_C["size"].asList();
@@ -276,16 +279,16 @@ static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
 		t_C_Lsize[1]->asInt(),
 		t_C_Lsize[2]->asInt()
 	};
-	StructureSettings ss(&size, true, false);
+	StructureSettings ss(size, true, false);
 	StructureTemplate st("tmp");
-	st.fromCompound(tag);
-	st.placeInWorld(bs, global<Level>->getBlockPalette(), &pos, &ss);
+	st.fromTag("", *tag);
+	st.placeInWorld(*bs, Global<Level>->getBlockPalette(), pos, ss);
 	if (update) {
 		for (int x = 0; x != size.x; ++x) {
 			for (int y = 0; y != size.y; ++y) {
 				for (int z = 0; z != size.z; ++z) {
 					BlockPos bp{ x, y, z };
-					bs->neighborChanged(&bp);
+					bs->neighborChanged(bp, bp); // idk what will happen, origin: neighborChanged(bp)
 				}
 			}
 		}
@@ -320,7 +323,7 @@ static PyObject* spawnItem(PyObject*, PyObject* args) {
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	ItemStack item(StringToJson(data));
-	Global<Level>->getSpawner()->spawnItem(bs, &item, &pos);
+	Global<Level>->getSpawner().spawnItem(bs, &item, &pos); // Todo
 	Py_RETURN_NONE;
 }
 //是否为史莱姆区块
@@ -342,7 +345,7 @@ static PyObject* setSignBlockMessage(PyObject*, PyObject* args) {
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	BlockActor* sign = bs->getBlockEntity(&bp);
+	BlockActor* sign = bs->getBlockEntity(bp);
 	SymCall<void, BlockActor*, const string&, const string&>("?setMessage@SignBlockActor@@QEAAXV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@0@Z",
 		sign, name, name);
 	sign->setChanged();
