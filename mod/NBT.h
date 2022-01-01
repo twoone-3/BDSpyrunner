@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <MC/Tag.hpp>
 #include <MC/ByteTag.hpp>
 #include <MC/ShortTag.hpp>
@@ -13,14 +13,14 @@
 #include <MC/IntArrayTag.hpp>
 #include "Tool.h"
 
-inline json ToJson(ListTag& t);
-inline json ToJson(CompoundTag& t);
-inline unique_ptr<ListTag> ToListTag(const json& value);
-inline unique_ptr<CompoundTag> ToCompoundTag(const json& value);
-inline json ToJson(ListTag& t) {
-	json value(json_t::array);
-	for (auto& c : t.value()) {
-		switch (t.getElementType()) {
+inline fifo_json ToJson(unique_ptr<ListTag> t);
+inline fifo_json ToJson(unique_ptr<CompoundTag> t);
+inline unique_ptr<ListTag> ToListTag(const fifo_json& value);
+inline unique_ptr<CompoundTag> ToCompoundTag(const fifo_json& value);
+inline fifo_json ToJson(unique_ptr<ListTag> t) {
+	fifo_json value(json_t::array);
+	for (auto& c : t->value()) {
+		switch (t->getElementType()) {
 		case Tag::Type::End:
 			break;
 		case Tag::Type::Byte:
@@ -48,20 +48,20 @@ inline json ToJson(ListTag& t) {
 			value.push_back(c->asStringTag()->value());
 			break;
 		case Tag::Type::List:
-			value.push_back(ToJson(*c->asListTag()));
+			value.push_back(ToJson(unique_ptr<ListTag>(c->asListTag())));
 			break;
 		case Tag::Type::Compound:
-			value.push_back(ToJson(*c->asCompoundTag()));
+			value.push_back(ToJson(unique_ptr<CompoundTag>(c->asCompoundTag())));
 			break;
 		}
 	}
 	return value;
 }
-inline json ToJson(CompoundTag& t) {
-	json value;
-	for (auto& x : t.value()) {
+inline fifo_json ToJson(unique_ptr<CompoundTag> t) {
+	fifo_json value;
+	for (auto& x : t->value()) {
 		Tag::Type type = x.second.getTagType();
-		json& son = value[x.first + std::to_string(static_cast<uint32_t>(type))];
+		fifo_json& son = value[x.first + std::to_string(static_cast<uint32_t>(type))];
 		switch (type) {
 		case Tag::Type::End:
 			break;
@@ -93,10 +93,10 @@ inline json ToJson(CompoundTag& t) {
 			son = x.second.asStringTag()->value();
 			break;
 		case Tag::Type::List:
-			son = ToJson(*x.second.asListTag());
+			son = ToJson(unique_ptr<ListTag>(x.second.asListTag()));
 			break;
 		case Tag::Type::Compound:
-			son = ToJson(*x.second.asCompoundTag());
+			son = ToJson(unique_ptr<CompoundTag>(x.second.asCompoundTag()));
 			break;
 		case Tag::Type::IntArray:
 			break;
@@ -106,7 +106,7 @@ inline json ToJson(CompoundTag& t) {
 	}
 	return value;
 }
-inline unique_ptr<ListTag> ToListTag(const json& value) {
+inline unique_ptr<ListTag> ToListTag(const fifo_json& value) {
 	auto list = ListTag::create();
 	for (auto& x : value) {
 		switch (x) {
@@ -141,7 +141,7 @@ inline unique_ptr<ListTag> ToListTag(const json& value) {
 	}
 	return list;
 }
-inline unique_ptr<CompoundTag> ToCompoundTag(const json& value) {
+inline unique_ptr<CompoundTag> ToCompoundTag(const fifo_json& value) {
 	unique_ptr<CompoundTag> c = CompoundTag::create();
 	for (auto& [key, val] : value.items()) {
 		string new_key = key;
@@ -211,6 +211,6 @@ inline unique_ptr<CompoundTag> ToCompoundTag(const json& value) {
 inline ItemStack LoadItemFromString(std::string_view str) {
 	return ItemStack::fromTag(*ToCompoundTag(StringToJson(str)));
 }
-inline ItemStack LoadItemFromJson(json data) {
+inline ItemStack LoadItemFromJson(fifo_json data) {
 	return ItemStack::fromTag(*ToCompoundTag(data));
 }

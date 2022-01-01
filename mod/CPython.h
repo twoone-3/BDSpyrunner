@@ -30,7 +30,7 @@ inline PyObject* ToPyStr(std::string_view str) {
 inline std::vector<std::string> ToStrArray(PyObject* list) {
 	std::vector<std::string> arr;
 	if (PyList_Check(list)) {
-		for (size_t i = 0; i < PyList_Size(list); i++) {
+		for (Py_ssize_t i = 0; i < PyList_Size(list); i++) {
 			arr.push_back(PyUnicode_AsUTF8(PyList_GetItem(list, i)));
 		}
 	}

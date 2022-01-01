@@ -302,7 +302,7 @@ THook(int, "main",
 	//增加一个模块
 	PyImport_AppendInittab("mc", mc_init);
 	//初始化解释器
-	Py_InitializeEx(0);
+	Py_Initialize();
 	logger.info("{} loaded.", PYR_VERSION);
 	//初始化类型
 	if (PyType_Ready(&PyEntity_Type) < 0)
@@ -416,7 +416,7 @@ THook(bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$a
 THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVSetLocalPlayerAsInitializedPacket@@@Z",
 	ServerNetworkHandler* _this, NetworkIdentifier& id,/*SetLocalPlayerAsInitializedPacket*/ uintptr_t pkt) {
 	EventCallBackHelper h(EventCode::onPlayerJoin);
-	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id, pkt));
+	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id));
 	if (p) {
 		h.setArg(ToEntity(p)).call();
 	}
@@ -624,7 +624,7 @@ THook(void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_string@
 THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVTextPacket@@@Z",
 	ServerNetworkHandler* _this, NetworkIdentifier& id, /*TextPacket*/uintptr_t pkt) {
 	EventCallBackHelper h(EventCode::onInputText);
-	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id, pkt));
+	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id));
 	if (p) {
 		const string& msg = Fetch<string>(pkt, 88);
 		h.insert("player", p)
@@ -638,7 +638,7 @@ THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVTextP
 THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandRequestPacket@@@Z",
 	ServerNetworkHandler* _this, NetworkIdentifier& id, /*CommandRequestPacket*/uintptr_t pkt) {
 	EventCallBackHelper h(EventCode::onInputCommand);
-	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id, pkt));
+	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id));
 	if (p) {
 		const string& cmd = Fetch<string>(pkt, 48);
 		auto data = g_commands.find(cmd.c_str() + 1);
@@ -661,7 +661,7 @@ THook(void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormResponsePacket@
 	uintptr_t _this, NetworkIdentifier& id, ServerNetworkHandler* handle,/*ModalFormResponsePacket*/uintptr_t* ppkt) {
 	EventCallBackHelper h(EventCode::onSelectForm);
 	uintptr_t pkt = *ppkt;
-	Player* p = reinterpret_cast<Player*>(handle->getServerPlayer(id, pkt));
+	Player* p = reinterpret_cast<Player*>(handle->getServerPlayer(id));
 	if (p) {
 		unsigned fid = Fetch<unsigned>(pkt, 48);
 		string data = Fetch<string>(pkt, 56);
@@ -679,7 +679,7 @@ THook(void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormResponsePacket@
 THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandBlockUpdatePacket@@@Z",
 	ServerNetworkHandler* _this, NetworkIdentifier& id, /*CommandBlockUpdatePacket*/uintptr_t pkt) {
 	EventCallBackHelper h(EventCode::onCommandBlockUpdate);
-	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id, pkt));
+	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id));
 	if (p) {
 		BlockPos& bp = Fetch<BlockPos>(pkt, 48);
 		unsigned short mode = Fetch<unsigned short>(pkt, 60);

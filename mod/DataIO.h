@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <memory>
 
-struct ReadOnlyBinaryStream {
+class ReadOnlyBinaryStream {
 public:
 	int (**_vptr$ReadOnlyBinaryStream)(void);
 	size_t mReadPointer;

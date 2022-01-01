@@ -1,6 +1,9 @@
-#include "Entity.h"
+Ôªø#include "Entity.h"
 #include "Tool.h"
 #include "NBT.h"
+
+#define Py_GET_PLAYER Player* p = asPlayer(self);if (p == nullptr)return nullptr
+#define Py_GET_ACTOR Actor* a = asActor(self);if (a == nullptr)return nullptr
 
 using namespace std;
 struct PyEntity {
@@ -21,23 +24,23 @@ struct PyEntity {
 	}
 	static int print(PyObject* self, FILE* file, int) {
 		Actor* a = asActor(self);
-		if (!a)
+		if (a == nullptr)
 			return -1;
 		fputs(a->getNameTag().c_str(), file);
 		return 0;
 	}
 	static PyObject* repr(PyObject* self) {
 		Actor* a = asActor(self);
-		if (!a)
+		if (a == nullptr)
 			return ToPyStr("");
 		return ToPyStr(a->getNameTag());
 	}
 	static Py_hash_t hash(PyObject* self) {
-		return reinterpret_cast<Py_hash_t>(asActor(self));
+		return reinterpret_cast<Py_hash_t>(self);
 	}
 	static PyObject* str(PyObject* self) {
 		Actor* a = asActor(self);
-		if (!a)
+		if (a == nullptr)
 			return ToPyStr("");
 		return ToPyStr(a->getNameTag());
 	}
@@ -69,11 +72,9 @@ struct PyEntity {
 		Py_RETURN_NOTIMPLEMENTED;
 	}
 
-	//ªÒ»°√˚◊÷
+	//Ëé∑ÂèñÂêçÂ≠ó
 	static PyObject* getName(PyObject* self, void*) {
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
+		Py_GET_ACTOR;
 		return ToPyStr(a->getNameTag());
 	}
 	static int setName(PyObject* self, PyObject* arg, void*) {
@@ -86,79 +87,59 @@ struct PyEntity {
 		}
 		return PyErr_BadArgument(), -1;
 	}
-	//ªÒ»°UUID
+	//Ëé∑ÂèñUUID
 	static PyObject* getUuid(PyObject* self, void*) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+		Py_GET_PLAYER;
 		return ToPyStr(p->getUuid());
 	}
-	//ªÒ»°XUID
+	//Ëé∑ÂèñXUID
 	static PyObject* getXuid(PyObject* self, void*) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+		Py_GET_PLAYER;
 		return ToPyStr(p->getXuid());
 	}
-	//ªÒ»°◊¯±Í
+	//Ëé∑ÂèñÂùêÊ†á
 	static PyObject* getPos(PyObject* self, void*) {
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
+		Py_GET_ACTOR;
 		return ToList(a->getPos());
 	}
-	//ªÒ»°Œ¨∂»ID
+	//Ëé∑ÂèñÁª¥Â∫¶ID
 	static PyObject* getDimensionId(PyObject* self, void*) {
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
+		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getDimensionId());
 	}
-	// «∑Ò◊≈µÿ
+	//ÊòØÂê¶ÁùÄÂú∞
 	static PyObject* getIsStand(PyObject* self, void*) {
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
+		Py_GET_ACTOR;
 		return PyBool_FromLong(a->isStanding());
 	}
-	// «∑Ò«±––
+	//ÊòØÂê¶ÊΩúË°å
 	static PyObject* getIsSneaking(PyObject* self, void*) {
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
+		Py_GET_ACTOR;
 		return PyBool_FromLong(a->isSneaking());
 	}
-	//ªÒ»°¿‡–Õ
+	//Ëé∑ÂèñÁ±ªÂûã
 	static PyObject* getTypeID(PyObject* self, void*) {
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
+		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getEntityTypeId());
 	}
-	//ªÒ»°¿‡–Õ◊÷∑˚¥Æ
+	//Ëé∑ÂèñÁ±ªÂûãÂ≠óÁ¨¶‰∏≤
 	static PyObject* getTypeName(PyObject* self, void*) {
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
+		Py_GET_ACTOR;
 		string type;
 		SymCall<string&>("?EntityTypeToString@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4ActorType@@W4ActorTypeNamespaceRules@@@Z",
 			&type, a->getEntityTypeId());
 		return ToPyStr(type);
 	}
-	//ªÒ»°nbt ˝æ›
+	//Ëé∑ÂèñnbtÊï∞ÊçÆ
 	static PyObject* getNBTInfo(PyObject* self, void*) {
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
-		CompoundTag t;
-		a->save(t);
-		return ToPyStr(t.toSNBT());
+		Py_GET_ACTOR;
+		unique_ptr<CompoundTag> t = CompoundTag::create();
+		a->save(*t);
+		return ToPyStr(ToJson(move(t)));
 	}
-	//ªÒ»°…˙√¸÷µ
+	//Ëé∑ÂèñÁîüÂëΩÂÄº
 	static PyObject* getHealth(PyObject* self, void*) {
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
+		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getHealth());
 	}
 	static int setHealth(PyObject* self, PyObject* arg, void*) {
@@ -166,17 +147,15 @@ struct PyEntity {
 			Actor* a = PyEntity::asActor(self);
 			if (!a)
 				return -1;
-			//≤ª÷™––≤ª––
+			//‰∏çÁü•Ë°å‰∏çË°å
 			a->serializationSetHealth(PyLong_AsLong(arg));
 			return 0;
 		}
 		return PyErr_BadArgument(), -1;
 	}
-	//ªÒ»°◊Ó¥Û…˙√¸÷µ
+	//Ëé∑ÂèñÊúÄÂ§ßÁîüÂëΩÂÄº
 	static PyObject* getMaxHealth(PyObject* self, void*) {
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
+		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getMaxHealth());
 	}
 	static int setMaxHealth(PyObject* self, PyObject* arg, void*) {
@@ -184,17 +163,15 @@ struct PyEntity {
 			Actor* a = PyEntity::asActor(self);
 			if (!a)
 				return -1;
-			logger.error(__FILE__, __LINE__, "¥À∫Ø ˝ƒø«∞Œﬁ∑® π”√");
+			logger.error(__FILE__, __LINE__, "Ê≠§ÂáΩÊï∞ÁõÆÂâçÊó†Ê≥ï‰ΩøÁî®");
 			//a->setMaxHealth(PyLong_AsLong(arg));
 			return 0;
 		}
 		return PyErr_BadArgument(), -1;
 	}
-	//ªÒ»°»®œﬁ
+	//Ëé∑ÂèñÊùÉÈôê
 	static PyObject* getPermissions(PyObject* self, void*) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+		Py_GET_PLAYER;
 		return PyLong_FromLong(static_cast<int>(p->getPlayerPermissionLevel()));
 	}
 	static int setPermissions(PyObject* self, PyObject* arg, void*) {
@@ -207,69 +184,58 @@ struct PyEntity {
 		}
 		return PyErr_BadArgument(), -1;
 	}
-	//ªÒ»°…Ë±∏id
+	//Ëé∑ÂèñËÆæÂ§áid
 	static PyObject* getPlatformOnlineId(PyObject* self, void*) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+		Py_GET_PLAYER;
 		return ToPyStr(p->getPlatformOnlineId());
 	}
-	//ªÒ»°…Ë±∏¿‡–Õ
+	//Ëé∑ÂèñËÆæÂ§áÁ±ªÂûã
 	static PyObject* getPlatform(PyObject* self, void*) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+		Py_GET_PLAYER;
 		return PyLong_FromLong(p->getPlatform());
 	}
-	//ªÒ»°IP
+	//Ëé∑ÂèñIP
 	static PyObject* getIP(PyObject* self, void*) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+		Py_GET_PLAYER;
 		auto& ni = *p->getNetworkIdentifier();
 		return ToPyStr(Global<RakNet::RakPeer>->getAdr(ni).ToString(false, ':'));
 	}
-};
 
-//ªÒ»°/…Ë÷√ÕÊº“À˘”–ŒÔ∆∑
-PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
-	Player* p = PyEntity::asPlayer(self);
-	if (!p)
-		return nullptr;
-	json value;
+	//Ëé∑ÂèñÁé©ÂÆ∂ÊâÄÊúâÁâ©ÂìÅ
+	static PyObject* getAllItem(PyObject* self, PyObject*) {
+		Py_GET_PLAYER;
+		fifo_json value;
 
-	json& inventory = value["Inventory"];
-	for (auto& i : p->getInventory().getSlots()) {
-		inventory.push_back(ToJson(*i->save()));
+		fifo_json& inventory = value["Inventory"];
+		for (auto& i : p->getInventory().getSlots()) {
+			inventory.push_back(ToJson(i->save()));
+		}
+
+		fifo_json& endchest = value["EndChest"];
+		for (auto& i : p->getEnderChestContainer()->getSlots()) {
+			endchest.push_back(ToJson(i->save()));
+		}
+
+		fifo_json& armor = value["Armor"];
+		for (auto& i : p->getArmorContainer().getSlots()) {
+			armor.push_back(ToJson(i->save()));
+		}
+
+		value["OffHand"] = ToJson(p->getOffhandSlot().save());
+		value["Hand"] = ToJson(p->getSelectedItem().save());
+
+		return ToPyStr(value.dump(4));
 	}
-
-	json& endchest = value["EndChest"];
-	for (auto& i : p->getEnderChestContainer()->getSlots()) {
-		endchest.push_back(ToJson(*i->save()));
-	}
-
-	json& armor = value["Armor"];
-	for (auto& i : p->getArmorContainer().getSlots()) {
-		armor.push_back(ToJson(*i->save()));
-	}
-
-	value["OffHand"] = ToJson(*p->getOffhandSlot().save());
-	value["Hand"] = ToJson(*p->getSelectedItem().save());
-
-	return ToPyStr(value.dump(4));
-}
-
-PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
-	const char* x = "";
-	if (PyArg_ParseTuple(args, "s:setAllItem", &x)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
-		json value(StringToJson(x));
+	//ËÆæÁΩÆÁé©ÂÆ∂ÊâÄÊúâÁâ©ÂìÅ
+	static PyObject* setAllItem(PyObject* self, PyObject* args) {
+		const char* x = "";
+		Py_PARSE("s", &x);
+		Py_GET_PLAYER;
+		fifo_json value(StringToJson(x));
 
 		if (value.contains("Inventory")) {
 			auto& items = p->getInventory();
-			json& inventory = value["Inventory"];
+			fifo_json& inventory = value["Inventory"];
 			for (unsigned i = 0; i < inventory.size(); i++) {
 				*items.getSlot(i) = LoadItemFromJson(inventory[i]);
 			}
@@ -277,7 +243,7 @@ PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 
 		if (value.contains("EndChest")) {
 			auto items = p->getEnderChestContainer();
-			json& endchest = value["EndChest"];
+			fifo_json& endchest = value["EndChest"];
 			for (unsigned i = 0; i < endchest.size(); i++) {
 				*items->getSlot(i) = LoadItemFromJson(endchest[i]);
 			}
@@ -285,7 +251,7 @@ PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 
 		if (value.contains("Armor")) {
 			auto& items = p->getArmorContainer();
-			json& armor = value["Armor"];
+			fifo_json& armor = value["Armor"];
 			for (unsigned i = 0; i < armor.size(); i++) {
 				*items.getSlot(i) = LoadItemFromJson(armor[i]);
 			}
@@ -295,169 +261,113 @@ PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 			p->setOffhandSlot(LoadItemFromJson(value["OffHand"]));
 		}
 		p->sendInventory(true);
-	}
-	Py_RETURN_NONE;
-}
 
-PyObject* PyEntity_SetHand(PyObject* self, PyObject* args) {
-	const char* x = "";
-	if (PyArg_ParseTuple(args, "s:setHand", &x)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+		Py_RETURN_NONE;
+	}
+	//ËÆæÁΩÆÁé©ÂÆ∂Êâã‰∏äÁâ©ÂìÅ
+	static PyObject* setHand(PyObject* self, PyObject* args) {
+		const char* x = "";
+		Py_PARSE("s", &x);
+		Py_GET_PLAYER;
 		const_cast<ItemStack&>(p->getSelectedItem()) = LoadItemFromString(x);
 		p->sendInventory(true);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-//‘ˆº”/“∆≥˝ŒÔ∆∑
-PyObject* PyEntity_AddItem(PyObject* self, PyObject* args) {
-	const char* x = "";
-	if (PyArg_ParseTuple(args, "s:addItem", &x)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	//Â¢ûÂä†Áé©ÂÆ∂ËÉåÂåÖÁâ©ÂìÅ
+	static PyObject* addItem(PyObject* self, PyObject* args) {
+		const char* x = "";
+		Py_PARSE("s", &x);
+		Py_GET_PLAYER;
 		auto item = LoadItemFromString(x);
 		p->giveItem(&item);
 		p->sendInventory(true);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-PyObject* PyEntity_RemoveItem(PyObject* self, PyObject* args) {
-	int slot, num;
-	if (PyArg_ParseTuple(args, "ii:removeItem", &slot, &num)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	//ÁßªÈô§Áé©ÂÆ∂ËÉåÂåÖÁâ©ÂìÅ
+	static PyObject* removeItem(PyObject* self, PyObject* args) {
+		int slot, num;
+		Py_PARSE("ii", &slot, &num);
+		Py_GET_PLAYER;
 		p->getInventory().removeItem(slot, num);
-		p->sendInventory(true); //idk what the true means
+		p->sendInventory(true);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-//¥´ÀÕ
-PyObject* PyEntity_Teleport(PyObject* self, PyObject* args) {
-	Vec3 pos; int did;
-	if (PyArg_ParseTuple(args, "fffi:teleport", &pos.x, &pos.y, &pos.z, &did)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	//‰º†ÈÄÅ
+	static PyObject* teleport(PyObject* self, PyObject* args) {
+		Vec3 pos; int did;
+		Py_PARSE("fffi", &pos.x, &pos.y, &pos.z, &did);
+		Py_GET_PLAYER;
 		p->teleport(pos, did);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-//∑¢ÀÕ ˝æ›∞¸
-PyObject* PyEntity_SendTextPacket(PyObject* self, PyObject* args) {
-	const char* msg = "";
-	int mode = 0;
-	if (PyArg_ParseTuple(args, "s|i:sendTextPacket", &msg, &mode)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
-		p->sendTextPacket(msg, (TextType)mode);
+	//ÂèëÈÄÅÊï∞ÊçÆÂåÖ
+	static PyObject* sendTextPacket(PyObject* self, PyObject* args) {
+		const char* msg = "";
+		int mode = 0;
+		Py_PARSE("s|i", &msg, &mode);
+		Py_GET_PLAYER;
+		p->sendTextPacket(msg, TextType(mode));
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-PyObject* PyEntity_SendCommandPacket(PyObject* self, PyObject* args) {
-	const char* cmd = "";
-	if (PyArg_ParseTuple(args, "s:sendCommandPacket", &cmd)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	static PyObject* sendCommandPacket(PyObject* self, PyObject* args) {
+		const char* cmd = "";
+		Py_PARSE("s", &cmd);
+		Py_GET_PLAYER;
 		p->sendCommandRequestPacket(cmd);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-PyObject* PyEntity_ResendAllChunks(PyObject* self, PyObject*) {
-	Player* p = PyEntity::asPlayer(self);
-	if (!p)
-		return nullptr;
-	p->resendAllChunks();
-	Py_RETURN_NONE;
-}
-
-PyObject* PyEntity_Disconnect(PyObject* self, PyObject* args) {
-	const char* msg = "";
-	if (PyArg_ParseTuple(args, "|s:disconnect", &msg)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	//ÈáçÊñ∞ÂèëÈÄÅÊâÄÊúâÂå∫Âùó
+	static PyObject* resendAllChunks(PyObject* self, PyObject*) {
+		Py_GET_PLAYER;
+		p->resendAllChunks();
+		Py_RETURN_NONE;
+	}
+	//Êñ≠ÂºÄËøûÊé•
+	static PyObject* disconnect(PyObject* self, PyObject* args) {
+		const char* msg = "";
+		Py_PARSE("|s", &msg);
+		Py_GET_PLAYER;
 		p->kick(msg);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-//º∆∑÷∞Â≤Ÿ◊˜
-PyObject* PyEntity_GetScore(PyObject* self, PyObject* args) {
-	const char* objname = "";
-	if (PyArg_ParseTuple(args, "s:getScore", &objname)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
-		Objective* testobj = Global<Scoreboard>->getObjective(objname);
-		if (testobj) {
-			auto id = Global<Scoreboard>->getScoreboardId(*p);
-			auto score = testobj->getPlayerScore(id);
-			return PyLong_FromLong(score.getCount());
-		}
+	//ËÆ°ÂàÜÊùøÊìç‰Ωú
+	static PyObject* getScore(PyObject* self, PyObject* args) {
+		const char* objname = "";
+		Py_PARSE("s", &objname);
+		Py_GET_PLAYER;
+		return PyLong_FromLong(p->getScore(objname));
 	}
-	Py_RETURN_NONE;
-}
-
-PyObject* PyEntity_ModifyScore(PyObject* self, PyObject* args) {
-	const char* objname = ""; int count; PlayerScoreSetFunction mode;
-	if (PyArg_ParseTuple(args, "sii:modifyScore", &objname, &count, &mode)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
-		Objective* testobj = Global<Scoreboard>->getObjective(objname);
-		if (testobj) {
-			bool s;
-			//mode:{set,add,remove}
-			Global<Scoreboard>->modifyPlayerScore(s, Global<Scoreboard>->getScoreboardId(*p), *testobj, count, mode); // Todo
-		}
+	//todo add reduce set
+	static PyObject* modifyScore(PyObject* self, PyObject* args) {
+		const char* objname = "";
+		int count; PlayerScoreSetFunction mode;
+		Py_PARSE("sii", &objname, &count, &mode);
+		Py_GET_PLAYER;
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-//‘ˆº”µ»º∂
-PyObject* PyEntity_AddLevel(PyObject* self, PyObject* args) {
-	int level;
-	if (PyArg_ParseTuple(args, "i:addLevel", &level)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	//Â¢ûÂä†Á≠âÁ∫ß
+	static PyObject* addLevel(PyObject* self, PyObject* args) {
+		int level;
+		Py_PARSE("i", &level);
+		Py_GET_PLAYER;
 		p->addLevels(level);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-//øÁ∑˛¥´ÀÕ
-PyObject* PyEntity_TransferServer(PyObject* self, PyObject* args) {
-	const char* address = "";
-	unsigned short port;
-	if (PyArg_ParseTuple(args, "sH:transferServer", &address, &port)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	//Ë∑®Êúç‰º†ÈÄÅ
+	static PyObject* transferServer(PyObject* self, PyObject* args) {
+		const char* address = "";
+		unsigned short port;
+		Py_PARSE("sH", &address, &port);
+		Py_GET_PLAYER;
 		p->sendTransferPacket(address, port);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-//∑¢ÀÕ±Ìµ•
-PyObject* PyEntity_SendCustomForm(PyObject* self, PyObject* args) {
-	const char* str = "";
-	PyObject* callback = nullptr;
-	if (PyArg_ParseTuple(args, "sO:sendCustomForm", &str, &callback)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	//ÂèëÈÄÅË°®Âçï
+	static PyObject* sendCustomForm(PyObject* self, PyObject* args) {
+		const char* str = "";
+		PyObject* callback = nullptr;
+		Py_PARSE("sO", &str, &callback);
+		Py_GET_PLAYER;
 		if (!PyFunction_Check(callback))
 			return nullptr;
 		p->sendCustomFormPacket(str,
@@ -467,20 +377,16 @@ PyObject* PyEntity_SendCustomForm(PyObject* self, PyObject* args) {
 				Py_XDECREF(result);
 			}
 		);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-PyObject* PyEntity_SendSimpleForm(PyObject* self, PyObject* args) {
-	const char* title = "";
-	const char* content = "";
-	PyObject* buttons = nullptr;
-	PyObject* images = nullptr;
-	PyObject* callback = nullptr;
-	if (PyArg_ParseTuple(args, "ssOOO:sendSimpleForm", &title, &content, &buttons, &images, &callback)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	static PyObject* sendSimpleForm(PyObject* self, PyObject* args) {
+		const char* title = "";
+		const char* content = "";
+		PyObject* buttons = nullptr;
+		PyObject* images = nullptr;
+		PyObject* callback = nullptr;
+		Py_PARSE("ssOOO", &title, &content, &buttons, &images, &callback);
+		Py_GET_PLAYER;
 		if (!PyFunction_Check(callback))
 			return nullptr;
 		p->sendSimpleFormPacket(title, content, ToStrArray(buttons), ToStrArray(images),
@@ -490,20 +396,16 @@ PyObject* PyEntity_SendSimpleForm(PyObject* self, PyObject* args) {
 				Py_XDECREF(result);
 			}
 		);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-PyObject* PyEntity_SendModalForm(PyObject* self, PyObject* args) {
-	const char* title = "";
-	const char* content = "";
-	const char* button1 = "";
-	const char* button2 = "";
-	PyObject* callback = nullptr;
-	if (PyArg_ParseTuple(args, "ssssO:sendModalForm", &title, &content, &button1, &button2, &callback)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	static PyObject* sendModalForm(PyObject* self, PyObject* args) {
+		const char* title = "";
+		const char* content = "";
+		const char* button1 = "";
+		const char* button2 = "";
+		PyObject* callback = nullptr;
+		Py_PARSE("ssssO", &title, &content, &button1, &button2, &callback);
+		Py_GET_PLAYER;
 		if (!PyFunction_Check(callback))
 			return nullptr;
 		p->sendModalFormPacket(title, content, button1, button2,
@@ -513,162 +415,138 @@ PyObject* PyEntity_SendModalForm(PyObject* self, PyObject* args) {
 				Py_XDECREF(result);
 			}
 		);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-//…Ë÷√≤‡±ﬂ¿∏
-PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
-	const char* title = "";
-	const char* side_data = "";
-	ObjectiveSortOrder order = ObjectiveSortOrder::Ascending;
-	if (PyArg_ParseTuple(args, "ss|i:setSidebar", &title, &side_data, &order)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	//ËÆæÁΩÆ‰æßËæπÊ†è
+	static PyObject* setSidebar(PyObject* self, PyObject* args) {
+		const char* title = "";
+		const char* side_data = "";
+		ObjectiveSortOrder order = ObjectiveSortOrder::Ascending;
+		Py_PARSE("ss|i", &title, &side_data, &order);
+		Py_GET_PLAYER;
 		vector<pair<string, int>> data;
-		json value = StringToJson(side_data);
+		fifo_json value = StringToJson(side_data);
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {
 				data.push_back({ key, val });
 			}
 		p->setSidebar(title, data, order);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-PyObject* PyEntity_RemoveSidebar(PyObject* self, PyObject*) {
-	Player* p = PyEntity::asPlayer(self);
-	if (!p)
-		return nullptr;
-	p->removeSidebar();
-	Py_RETURN_NONE;
-}
-
-//Boss¿∏
-PyObject* PyEntity_SetBossbar(PyObject* self, PyObject* args) {
-	const char* name = "";
-	float per;
-	if (PyArg_ParseTuple(args, "sf:setBossbar", &name, &per)) {
-		Player* p = PyEntity::asPlayer(self);
-		if (!p)
-			return nullptr;
+	static PyObject* removeSidebar(PyObject* self, PyObject*) {
+		Py_GET_PLAYER;
+		p->removeSidebar();
+		Py_RETURN_NONE;
+	}
+	//BossÊ†è
+	static PyObject* setBossbar(PyObject* self, PyObject* args) {
+		const char* name = "";
+		float per;
+		Py_PARSE("sf", &name, &per);
+		Py_GET_PLAYER;
 		p->sendBossEventPacket(BossEvent::Show, name, per, BossEventColour::Red); // Todo
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-PyObject* PyEntity_RemoveBossbar(PyObject* self, PyObject* args) {
-	const char* name = "";
-	Py_PARSE("s:removeBossbar", &name);
-	Player* p = PyEntity::asPlayer(self);
-	if (!p)
-		return nullptr;
-	p->sendBossEventPacket(BossEvent::Hide, name, 0, BossEventColour::Red); // Todo
-	Py_RETURN_NONE;
-}
-
-//±Í«©
-PyObject* PyEntity_AddTag(PyObject* self, PyObject* args) {
-	const char* tag = "";
-	if (PyArg_ParseTuple(args, "s:addTag", &tag)) {
+	static PyObject* removeBossbar(PyObject* self, PyObject* args) {
+		const char* name = "";
+		Py_PARSE("s:removeBossbar", &name);
+		Py_GET_PLAYER;
+		p->sendBossEventPacket(BossEvent::Hide, name, 0, BossEventColour::Red); // Todo
+		Py_RETURN_NONE;
+	}
+	//Ê†áÁ≠æ
+	static PyObject* addTag(PyObject* self, PyObject* args) {
+		const char* tag = "";
+		Py_PARSE("s", &tag);
 		Actor* a = PyEntity::asActor(self);
 		if (!a)
 			return nullptr;
 		a->addTag(tag);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-PyObject* PyEntity_RemoveTag(PyObject* self, PyObject* args) {
-	const char* tag = "";
-	if (PyArg_ParseTuple(args, "s:removeTag", &tag)) {
+	static PyObject* removeTag(PyObject* self, PyObject* args) {
+		const char* tag = "";
+		Py_PARSE("s", &tag);
 		Actor* a = PyEntity::asActor(self);
 		if (!a)
 			return nullptr;
 		a->removeTag(tag);
+		Py_RETURN_NONE;
 	}
-	Py_RETURN_NONE;
-}
-
-PyObject* PyEntity_GetTags(PyObject* self, PyObject*) {
-	Actor* a = PyEntity::asActor(self);
-	if (!a)
-		return nullptr;
-	auto tags = a->getTags();
-	PyObject* list = PyList_New(0);
-	for (size_t i = 0; i < tags.size(); i++) {
-		PyList_Append(list, ToPyStr(tags[i]));
+	static PyObject* getTags(PyObject* self, PyObject*) {
+		Py_GET_ACTOR;
+		auto tags = a->getTags();
+		PyObject* list = PyList_New(0);
+		for (size_t i = 0; i < tags.size(); i++) {
+			PyList_Append(list, ToPyStr(tags[i]));
+		}
+		return list;
 	}
-	return list;
-}
+	//ÊùÄÊ≠ªÂÆû‰Ωì
+	static PyObject* kill(PyObject* self, PyObject*) {
+		Py_GET_ACTOR;
+		a->kill();
+		Py_RETURN_NONE;
+	}
 
-//…±À¿ µÃÂ
-PyObject* PyEntity_Kill(PyObject* self, PyObject*) {
-	Actor* a = PyEntity::asActor(self);
-	if (!a)
-		return nullptr;
-	a->kill();
-	Py_RETURN_NONE;
-}
-
-//ªÒ»° Ù–‘∑Ω∑®
-PyGetSetDef PyEntity_GetSet[]{
-	{ "name", PyEntity::getName, PyEntity::setName, nullptr },
-	{ "uuid", PyEntity::getUuid, nullptr, nullptr },
-	{ "xuid", PyEntity::getXuid, nullptr, nullptr },
-	{ "pos", PyEntity::getPos, nullptr, nullptr },
-	{ "did", PyEntity::getDimensionId, nullptr, nullptr },
-	{ "is_standing", PyEntity::getIsStand, nullptr, nullptr },
-	/*“—∆˙”√*/{ "isstand", PyEntity::getIsStand, nullptr, nullptr },
-	{ "is_sneaking", PyEntity::getIsSneaking, nullptr, nullptr },
-	/*“—∆˙”√*/{ "issneak", PyEntity::getIsSneaking, nullptr, nullptr },
-	{ "typeid", PyEntity::getTypeID, nullptr, nullptr },
-	{ "typename", PyEntity::getTypeName, nullptr, nullptr },
-	{ "NBT", PyEntity::getNBTInfo, nullptr, nullptr },
-	/*“—∆˙”√*/{ "nbt", PyEntity::getNBTInfo, nullptr, nullptr },
-	{ "health", PyEntity::getHealth, PyEntity::setHealth, nullptr },
-	{ "maxhealth", PyEntity::getMaxHealth, PyEntity::setMaxHealth, nullptr },
-	{ "perm", PyEntity::getPermissions, PyEntity::setPermissions, nullptr },
-	{ "platform_online_id", PyEntity::getPlatformOnlineId, nullptr, nullptr },
-	/*“—∆˙”√*/{ "deviceid", PyEntity::getPlatformOnlineId, nullptr, nullptr },
-	{ "platform", PyEntity::getPlatform, nullptr, nullptr },
-	/*“—∆˙”√*/{ "deviceos", PyEntity::getPlatform, nullptr, nullptr },
-	{ "IP", PyEntity::getIP, nullptr, nullptr },
-	/*“—∆˙”√*/{ "ip", PyEntity::getIP, nullptr, nullptr },
-	{ nullptr }
+	//Ëé∑ÂèñÂ±ûÊÄßÊñπÊ≥ï
+	inline static PyGetSetDef GetSet[]{
+		{ "name", PyEntity::getName, PyEntity::setName, nullptr },
+		{ "uuid", PyEntity::getUuid, nullptr, nullptr },
+		{ "xuid", PyEntity::getXuid, nullptr, nullptr },
+		{ "pos", PyEntity::getPos, nullptr, nullptr },
+		{ "did", PyEntity::getDimensionId, nullptr, nullptr },
+		{ "is_standing", PyEntity::getIsStand, nullptr, nullptr },
+		/*Â∑≤ÂºÉÁî®*/{ "isstand", PyEntity::getIsStand, nullptr, nullptr },
+		{ "is_sneaking", PyEntity::getIsSneaking, nullptr, nullptr },
+		/*Â∑≤ÂºÉÁî®*/{ "issneak", PyEntity::getIsSneaking, nullptr, nullptr },
+		{ "typeid", PyEntity::getTypeID, nullptr, nullptr },
+		{ "typename", PyEntity::getTypeName, nullptr, nullptr },
+		{ "NBT", PyEntity::getNBTInfo, nullptr, nullptr },
+		/*Â∑≤ÂºÉÁî®*/{ "nbt", PyEntity::getNBTInfo, nullptr, nullptr },
+		{ "health", PyEntity::getHealth, PyEntity::setHealth, nullptr },
+		{ "maxhealth", PyEntity::getMaxHealth, PyEntity::setMaxHealth, nullptr },
+		{ "perm", PyEntity::getPermissions, PyEntity::setPermissions, nullptr },
+		{ "platform_online_id", PyEntity::getPlatformOnlineId, nullptr, nullptr },
+		/*Â∑≤ÂºÉÁî®*/{ "deviceid", PyEntity::getPlatformOnlineId, nullptr, nullptr },
+		{ "platform", PyEntity::getPlatform, nullptr, nullptr },
+		/*Â∑≤ÂºÉÁî®*/{ "deviceos", PyEntity::getPlatform, nullptr, nullptr },
+		{ "IP", PyEntity::getIP, nullptr, nullptr },
+		/*Â∑≤ÂºÉÁî®*/{ "ip", PyEntity::getIP, nullptr, nullptr },
+		{ nullptr }
+	};
+	//EntityÊñπÊ≥ï
+	inline static PyMethodDef Methods[]{
+		//{"getItem", (PyCFunction)GetItem, METH_VARARGS | METH_KEYWORDS, nullptr},
+		{ "getAllItem", getAllItem, METH_VARARGS, nullptr },
+		{ "setAllItem", setAllItem, METH_VARARGS, nullptr },
+		{ "setHand", setHand, METH_VARARGS, nullptr },
+		{ "addItem", addItem, METH_VARARGS, nullptr },
+		{ "removeItem", removeItem, METH_VARARGS, nullptr },
+		{ "teleport", teleport, METH_VARARGS, nullptr },
+		{ "sendTextPacket", sendTextPacket, METH_VARARGS, nullptr },
+		{ "sendCommandPacket", sendCommandPacket, METH_VARARGS, nullptr },
+		{ "resendAllChunks", resendAllChunks, METH_NOARGS, nullptr },
+		{ "disconnect", disconnect, METH_VARARGS, nullptr },
+		{ "getScore", getScore, METH_VARARGS, nullptr },
+		{ "modifyScore", modifyScore, METH_VARARGS, nullptr },
+		{ "addLevel", addLevel, METH_VARARGS, nullptr },
+		{ "transferServer", transferServer, METH_VARARGS, nullptr },
+		{ "sendCustomForm", sendCustomForm, METH_VARARGS, nullptr },
+		{ "sendSimpleForm", sendSimpleForm, METH_VARARGS, nullptr },
+		{ "sendModalForm", sendModalForm, METH_VARARGS, nullptr },
+		{ "setSidebar", setSidebar, METH_VARARGS, nullptr },
+		{ "removeSidebar", removeSidebar, METH_NOARGS, nullptr },
+		{ "setBossbar", setBossbar, METH_VARARGS, nullptr },
+		{ "removeBossbar", removeBossbar, METH_NOARGS, nullptr },
+		{ "addTag", addTag, METH_VARARGS, nullptr },
+		{ "removeTag", removeTag, METH_VARARGS, nullptr },
+		{ "getTags", getTags, METH_NOARGS, nullptr },
+		{ "kill", kill, METH_NOARGS, nullptr },
+		{ nullptr }
+	};
 };
-//Entity∑Ω∑®
-PyMethodDef PyEntity_Methods[]{
-	//{"getItem", (PyCFunction)PyEntity_GetItem, METH_VARARGS | METH_KEYWORDS, nullptr},
-	{ "getAllItem", PyEntity_GetAllItem, METH_VARARGS, nullptr },
-	{ "setAllItem", PyEntity_SetAllItem, METH_VARARGS, nullptr },
-	{ "setHand", PyEntity_SetHand, METH_VARARGS, nullptr },
-	{ "addItem", PyEntity_AddItem, METH_VARARGS, nullptr },
-	{ "removeItem", PyEntity_RemoveItem, METH_VARARGS, nullptr },
-	{ "teleport", PyEntity_Teleport, METH_VARARGS, nullptr },
-	{ "sendTextPacket", PyEntity_SendTextPacket, METH_VARARGS, nullptr },
-	{ "sendCommandPacket", PyEntity_SendCommandPacket, METH_VARARGS, nullptr },
-	{ "resendAllChunks", PyEntity_ResendAllChunks, METH_NOARGS, nullptr },
-	{ "disconnect", PyEntity_Disconnect, METH_VARARGS, nullptr },
-	{ "getScore", PyEntity_GetScore, METH_VARARGS, nullptr },
-	{ "modifyScore", PyEntity_ModifyScore, METH_VARARGS, nullptr },
-	{ "addLevel", PyEntity_AddLevel, METH_VARARGS, nullptr },
-	{ "transferServer", PyEntity_TransferServer, METH_VARARGS, nullptr },
-	{ "sendCustomForm", PyEntity_SendCustomForm, METH_VARARGS, nullptr },
-	{ "sendSimpleForm", PyEntity_SendSimpleForm, METH_VARARGS, nullptr },
-	{ "sendModalForm", PyEntity_SendModalForm, METH_VARARGS, nullptr },
-	{ "setSidebar", PyEntity_SetSidebar, METH_VARARGS, nullptr },
-	{ "removeSidebar", PyEntity_RemoveSidebar, METH_NOARGS, nullptr },
-	{ "setBossbar", PyEntity_SetBossbar, METH_VARARGS, nullptr },
-	{ "removeBossbar", PyEntity_RemoveBossbar, METH_NOARGS, nullptr },
-	{ "addTag", PyEntity_AddTag, METH_VARARGS, nullptr },
-	{ "removeTag", PyEntity_RemoveTag, METH_VARARGS, nullptr },
-	{ "getTags", PyEntity_GetTags, METH_NOARGS, nullptr },
-	{ "kill", PyEntity_Kill, METH_NOARGS, nullptr },
-	{ nullptr }
-};
-//Entity¿‡–Õ
+//EntityÁ±ªÂûã
 PyTypeObject PyEntity_Type{
 	PyVarObject_HEAD_INIT(nullptr, 0)
 	"Entity",				/* tp_name */
@@ -697,9 +575,9 @@ PyTypeObject PyEntity_Type{
 	0,						/* tp_weaklistoffset */
 	nullptr,				/* tp_iter */
 	nullptr,				/* tp_iternext */
-	PyEntity_Methods,		/* tp_methods */
+	PyEntity::Methods,		/* tp_methods */
 	nullptr,				/* tp_members */
-	PyEntity_GetSet,		/* tp_getset */
+	PyEntity::GetSet,		/* tp_getset */
 	nullptr,				/* tp_base */
 	nullptr,				/* tp_dict */
 	nullptr,				/* tp_descr_get */
@@ -719,7 +597,6 @@ PyTypeObject PyEntity_Type{
 	0,						/* tp_version_tag */
 	nullptr,				/* tp_finalize */
 };
-
 PyObject* ToEntity(Actor* ptr) {
 	PyEntity* obj = nullptr;
 	//Py_BEGIN_CALL;

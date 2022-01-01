@@ -32,9 +32,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mod\json.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="mod\Tool.h">
       <Filter>头文件</Filter>
     </ClInclude>
