@@ -1,9 +1,17 @@
 #include "DataIO.h"
 #include "Tool.h"
+#include "NBT.h"
 
 void serialize<CompoundTag>::write(CompoundTag* item, BinaryStream* stream) {
 	return SymCall("?write@?$serialize@VCompoundTag@@@@SAXAEBVCompoundTag@@AEAVBinaryStream@@@Z",
 		item, stream);
+}
+
+std::unique_ptr<CompoundTag> serialize<CompoundTag>::read(BinaryStream* stream) {
+	auto tag = CompoundTag::create();
+	SymCall("?read@?$serialize@VCompoundTag@@@@SA?AVCompoundTag@@AEAVReadOnlyBinaryStream@@@Z",
+		tag.get(), stream);
+	return tag;
 }
 
 BinaryStream::BinaryStream() {
@@ -19,7 +27,7 @@ BinaryStream::BinaryStream(std::string* buffer, bool copy) {
 std::string BinaryStream::getAndReleaseData() {
 	std::string data;
 	SymCall("?getAndReleaseData@BinaryStream@@QEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
-		this,&data);
+		this, &data);
 	return data;
 }
 

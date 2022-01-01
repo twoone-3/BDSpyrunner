@@ -66,14 +66,12 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClCompile Include="mod\DataIO.cpp" />
     <ClCompile Include="mod\Module.cpp" />
     <ClCompile Include="mod\Entity.cpp" />
-    <ClCompile Include="mod\NBT.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mod\DataIO.h" />
     <ClInclude Include="mod\Module.h" />
     <ClInclude Include="mod\Event.h" />
     <ClInclude Include="mod\json.hpp" />
-    <ClInclude Include="mod\JsonTool.h" />
     <ClInclude Include="mod\NBT.h" />
     <ClInclude Include="mod\Tool.h" />
     <ClInclude Include="mod\Entity.h" />
@@ -82,7 +80,8 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\python37.lib" />
-    <Library Include="SDK\Lib\Chakra.lib" />
+    <Library Include="SDK\Lib\bedrock_server_api.lib" />
+    <Library Include="SDK\Lib\bedrock_server_var.lib" />
     <Library Include="SDK\Lib\LiteLoader.lib" />
     <Library Include="SDK\Lib\SymDBHelper.lib" />
   </ItemGroup>

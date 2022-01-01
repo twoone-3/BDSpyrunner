@@ -1,7 +1,6 @@
 #include "Module.h"
 #include "Version.h"
 #include "Tool.h"
-#include "JsonTool.h"
 #include "NBT.h"
 #include <GlobalServiceAPI.h>
 #include <MC/BlockPalette.hpp>
@@ -209,9 +208,7 @@ static PyObject* setStructure(PyObject*, PyObject* args, PyObject* kwds) {
 	};
 	StructureSettings ss(size, false, false);
 	StructureTemplate st("tmp");
-	CompoundTag* t = ToCompoundTag(value);
-	st.fromTag("tmp", *t);
-	delete t;
+	st.fromTag("tmp", *ToCompoundTag(value));
 	st.placeInWorld(*bs, *Global<Level>->getBlockPalette(), pos, ss, nullptr, true);
 	for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {
@@ -271,7 +268,7 @@ static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
 		Py_RETURN_ERROR("Unknown dimension ID");
 	ReadOnlyBinaryStream* stream = new ReadOnlyBinaryStream(new std::string(data, datasize));
 	//printf("bufferlength: %d\n",stream->mBuffer->length());
-	CompoundTag* tag = serialize<CompoundTag>::read(static_cast<BinaryStream*>(stream));
+	auto tag = serialize<CompoundTag>::read(static_cast<BinaryStream*>(stream));
 	//printf("deserialized.\n");
 	if (tag->getTagType() != Tag::Type::Compound)
 		Py_RETURN_ERROR("Invalid Tag");
@@ -325,10 +322,7 @@ static PyObject* spawnItem(PyObject*, PyObject* args) {
 	BlockSource* bs = Level::getBlockSource(did);
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	ItemStack item;
-	CompoundTag* t = ToCompoundTag(StringToJson(data));
-	item.fromTag(*t);
-	delete t;
+	ItemStack item = LoadItemFromString(data);
 	Global<Level>->getSpawner().spawnItem(pos, did, &item); // Todo
 	Py_RETURN_NONE;
 }

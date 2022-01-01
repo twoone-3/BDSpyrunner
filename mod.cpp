@@ -5,6 +5,7 @@
 #include "mod/Tool.h"
 #include "mod/Module.h"
 #include "mod/Version.h"
+#include "mod/NBT.h"
 
 #define PLUGIN_PATH "plugins\\py\\"
 
@@ -12,7 +13,8 @@ using namespace std;
 
 namespace fs = filesystem;
 
-Logger logger;
+Logger logger("BDSpyrunner");
+
 #pragma region Function
 #if 0
 //Dll入口函数
@@ -236,12 +238,20 @@ private:
 };
 #pragma endregion
 #pragma region Hook List
+#if 0
+decltype(HeapAlloc)* HeapAlloc_ptr = nullptr;
+LPVOID WINAPI _HeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes) {
+	auto p = HeapAlloc_ptr(hHeap, dwFlags, dwBytes);
+	printf("%p %d %d", hHeap, dwFlags, dwBytes);
+	return p;
+}
+#endif
 //将Python解释器初始化插入bds主函数
 THook(int, "main",
 	int argc, char* argv[], char* envp[]) {
 #if 0
 	while (true) {
-		Tag* t = ObjecttoTag(StringToJson(R"(
+		CompoundTag* t = ToCompoundTag(StringToJson(R"(
 	             {
 	                "Block10": {
 	                    "name8": "minecraft:crafting_table",
@@ -262,11 +272,15 @@ THook(int, "main",
 	                }
 	            }
 	)"));
-		cout << CompoundTagtoJson(t).dump(4) << endl;
-		t->deleteCompound();
+		cout << ToJson(*t).dump(4) << endl;
 		delete t;
 	}
 #endif
+	//HookFunction(
+	//	HeapAlloc,
+	//	(void**)&HeapAlloc_ptr,
+	//	_HeapAlloc
+	//);
 	//如果目录不存在创建目录
 	if (!fs::exists(PLUGIN_PATH))
 		fs::create_directory(PLUGIN_PATH);
@@ -289,6 +303,7 @@ THook(int, "main",
 	PyImport_AppendInittab("mc", mc_init);
 	//初始化解释器
 	Py_InitializeEx(0);
+	logger.info("{} loaded.", PYR_VERSION);
 	//初始化类型
 	if (PyType_Ready(&PyEntity_Type) < 0)
 		Py_FatalError("Can't initialize entity type");
@@ -301,7 +316,7 @@ THook(int, "main",
 			//ignore files starting with '_'
 			if (name.front() == '_')
 				continue;
-			logger.info("[BDSpyrunner] Loading ", name);
+			logger.info("Loading {}", name);
 			PyImport_ImportModule(name.c_str());
 			PrintPythonError();
 		}
@@ -311,9 +326,9 @@ THook(int, "main",
 	//释放当前线程
 	//PyEval_SaveThread();
 	//输出版本号信息
-	cout << "[BDSpyrunner] " << PYR_VERSION << " loaded." << endl;
 	return original(argc, argv, envp);
 }
+#if 0
 //Level的构造函数
 THook(Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$WeakRefT@UEntityRefTraits@@@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",
 	Level* _this, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5, uintptr_t a6, uintptr_t a7, uintptr_t a8, uintptr_t a9, uintptr_t a10, uintptr_t a11, uintptr_t a12, uintptr_t a13) {
@@ -340,6 +355,7 @@ THook(Scoreboard*, "??0ServerScoreboard@@QEAA@VCommandSoftEnumRegistry@@PEAVLeve
 	Scoreboard* _this, uintptr_t a1, uintptr_t a2) {
 	return global<Scoreboard> = original(_this, a1, a2);
 }
+#endif
 //改变设置命令的建立，用于注册命令
 THook(void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
 	uintptr_t _this) {

@@ -27,18 +27,12 @@
     <ClCompile Include="mod\Module.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mod\NBT.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="mod\DataIO.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mod\json.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mod\JsonTool.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\Tool.h">
@@ -82,6 +76,7 @@
     <Library Include="SDK\Lib\bedrock_server_var.lib">
       <Filter>Library</Filter>
     </Library>
-    <Library Include="SDK\Lib\Chakra.lib" />
+    <Library Include="SDK\Lib\bedrock_server_var.lib" />
+    <Library Include="SDK\Lib\bedrock_server_api.lib" />
   </ItemGroup>
 </Project>

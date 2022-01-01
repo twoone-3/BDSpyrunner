@@ -3,18 +3,6 @@
 #include "NBT.h"
 
 using namespace std;
-inline ItemStack LoadItemFromString(std::string_view str) {
-	CompoundTag* t = ToCompoundTag(StringToJson(str));
-	ItemStack item = ItemStack::fromTag(*t);
-	delete t;
-	return item;
-}
-inline ItemStack LoadItemFromJson(json data) {
-	CompoundTag* t = ToCompoundTag(data);
-	ItemStack item = ItemStack::fromTag(*t);
-	delete t;
-	return item;
-}
 struct PyEntity {
 	PyObject_HEAD;
 	Actor* actor;
@@ -239,7 +227,7 @@ struct PyEntity {
 		if (!p)
 			return nullptr;
 		auto& ni = *p->getNetworkIdentifier();
-		return ToPyStr(global<RakNet::RakPeer>->getAdr(ni).ToString(false, ':'));
+		return ToPyStr(Global<RakNet::RakPeer>->getAdr(ni).ToString(false, ':'));
 	}
 };
 
@@ -465,11 +453,20 @@ PyObject* PyEntity_TransferServer(PyObject* self, PyObject* args) {
 //·¢ËÍ±íµ¥
 PyObject* PyEntity_SendCustomForm(PyObject* self, PyObject* args) {
 	const char* str = "";
-	if (PyArg_ParseTuple(args, "s:sendCustomForm", &str)) {
+	PyObject* callback = nullptr;
+	if (PyArg_ParseTuple(args, "sO:sendCustomForm", &str, &callback)) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->sendCustomFormPacket(str, [](string) {});
+		if (!PyFunction_Check(callback))
+			return nullptr;
+		p->sendCustomFormPacket(str,
+			[callback](string arg) {
+				PyObject* result = PyObject_CallFunction(callback, "s", arg.c_str());
+				PrintPythonError();
+				Py_XDECREF(result);
+			}
+		);
 	}
 	Py_RETURN_NONE;
 }
@@ -479,11 +476,20 @@ PyObject* PyEntity_SendSimpleForm(PyObject* self, PyObject* args) {
 	const char* content = "";
 	PyObject* buttons = nullptr;
 	PyObject* images = nullptr;
-	if (PyArg_ParseTuple(args, "ss|OO:sendSimpleForm", &title, &content, &buttons, &images)) {
+	PyObject* callback = nullptr;
+	if (PyArg_ParseTuple(args, "ssOOO:sendSimpleForm", &title, &content, &buttons, &images, &callback)) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->sendSimpleFormPacket(title, content, ToStrArray(buttons), ToStrArray(images), [](int) {});
+		if (!PyFunction_Check(callback))
+			return nullptr;
+		p->sendSimpleFormPacket(title, content, ToStrArray(buttons), ToStrArray(images),
+			[callback](int arg) {
+				PyObject* result = PyObject_CallFunction(callback, "i", arg);
+				PrintPythonError();
+				Py_XDECREF(result);
+			}
+		);
 	}
 	Py_RETURN_NONE;
 }
@@ -493,11 +499,20 @@ PyObject* PyEntity_SendModalForm(PyObject* self, PyObject* args) {
 	const char* content = "";
 	const char* button1 = "";
 	const char* button2 = "";
-	if (PyArg_ParseTuple(args, "ssss:sendModalForm", &title, &content, &button1, &button2)) {
+	PyObject* callback = nullptr;
+	if (PyArg_ParseTuple(args, "ssssO:sendModalForm", &title, &content, &button1, &button2, &callback)) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->sendModalFormPacket(title, content, button1, button2, [](bool) {});
+		if (!PyFunction_Check(callback))
+			return nullptr;
+		p->sendModalFormPacket(title, content, button1, button2,
+			[callback](bool arg) {
+				PyObject* result = PyObject_CallFunction(callback, "O", arg ? Py_True : Py_False);
+				PrintPythonError();
+				Py_XDECREF(result);
+			}
+		);
 	}
 	Py_RETURN_NONE;
 }

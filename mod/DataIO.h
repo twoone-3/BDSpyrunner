@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <memory>
 
 struct ReadOnlyBinaryStream {
 public:
@@ -42,6 +43,6 @@ template <typename T>
 class serialize {
 public:
 	static void write(T* val, BinaryStream* stream);
-	static T* read(BinaryStream* stream);
+	static std::unique_ptr<T> read(BinaryStream* stream);
 };
 

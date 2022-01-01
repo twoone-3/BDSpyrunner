@@ -1,8 +1,6 @@
 #pragma once
 #pragma execution_character_set("utf-8")
 #pragma warning(disable:4996)
-//#include <iostream>
-//#include <Global.h>
 #include <MC/Actor.hpp>
 #include <MC/Block.hpp>
 #include <MC/BlockActor.hpp>
@@ -20,7 +18,20 @@
 #include <MC/StructureSettings.hpp>
 #include <MC/StructureTemplate.hpp>
 
-#include "JsonTool.h"
+#include "json.hpp"
+
+using std::unique_ptr;
+using json = nlohmann::basic_json<>;
+using json_t = nlohmann::detail::value_t;
+//字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库3.10.4版本
+inline json StringToJson(std::string_view str) {
+	try { return json::parse(str); }
+	catch (const std::exception& e) {
+		std::cerr << e.what() << std::endl;
+		return nullptr;
+	}
+}
+
 #undef SymCall
 template <typename T>
 inline T& Fetch(void* ptr, uintptr_t offset) {
@@ -59,10 +70,6 @@ template<typename Return = void, typename... Args>
 inline Return SymCall(const char* sym, Args... args) {
 	return reinterpret_cast<Return(*)(Args...)>(SYM(sym))(std::forward<Args>(args)...);
 }
-//全局变量
-template <typename T>
-inline T* global = nullptr;
-
 inline bool IsPlayer(Actor* ptr) {
 	if (ptr == nullptr)
 		return false;
@@ -70,4 +77,3 @@ inline bool IsPlayer(Actor* ptr) {
 		return false;
 	return true;
 }
-
