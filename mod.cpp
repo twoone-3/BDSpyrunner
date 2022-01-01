@@ -12,6 +12,7 @@ using namespace std;
 
 namespace fs = filesystem;
 
+Logger logger;
 #pragma region Function
 #if 0
 //Dll入口函数
@@ -222,7 +223,7 @@ public:
 	EventCallBackHelper& insert(string_view key, long long item) {
 		return insert(key, PyLong_FromLongLong(item));
 	}
-	EventCallBackHelper& insert(string_view key,unsigned long long item) {
+	EventCallBackHelper& insert(string_view key, unsigned long long item) {
 		return insert(key, PyLong_FromUnsignedLongLong(item));
 	}
 	EventCallBackHelper& insert(string_view key, float item) {
@@ -238,7 +239,6 @@ private:
 //将Python解释器初始化插入bds主函数
 THook(int, "main",
 	int argc, char* argv[], char* envp[]) {
-	Global<Level>;
 #if 0
 	while (true) {
 		Tag* t = ObjecttoTag(StringToJson(R"(

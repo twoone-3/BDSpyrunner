@@ -1,5 +1,10 @@
 #include "DataIO.h"
-#include "tool.h"
+#include "Tool.h"
+
+void serialize<CompoundTag>::write(CompoundTag* item, BinaryStream* stream) {
+	return SymCall("?write@?$serialize@VCompoundTag@@@@SAXAEBVCompoundTag@@AEAVBinaryStream@@@Z",
+		item, stream);
+}
 
 BinaryStream::BinaryStream() {
 	SymCall("??0BinaryStream@@QEAA@XZ",
@@ -11,9 +16,11 @@ BinaryStream::BinaryStream(std::string* buffer, bool copy) {
 		this, buffer, copy);
 }
 
-std::string* BinaryStream::GetAndReleaseData() {
-	return SymCall<std::string*>("?getAndReleaseData@BinaryStream@@QEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
-		this);
+std::string BinaryStream::getAndReleaseData() {
+	std::string data;
+	SymCall("?getAndReleaseData@BinaryStream@@QEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+		this,&data);
+	return data;
 }
 
 void BinaryStream::writeUnsignedInt(unsigned int num) {

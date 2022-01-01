@@ -1,6 +1,9 @@
 #pragma once
 #define PY_SSIZE_T_CLEAN
 #include "../include/Python.h"
+#include <vector>
+#include <string>
+#include <Global.h>
 
 #define Py_PARSE(format,...) if (!PyArg_ParseTuple(args, format ":" __FUNCTION__, __VA_ARGS__))return nullptr
 #define Py_KERWORDS_LIST(...) static const char* kwlist[]{ __VA_ARGS__,nullptr }
@@ -23,6 +26,39 @@
 inline PyObject* ToPyStr(std::string_view str) {
 	return PyUnicode_InternFromString(str.data());
 	//return PyUnicode_FromStringAndSize(str.data(), str.length());
+}
+inline std::vector<std::string> ToStrArray(PyObject* list) {
+	std::vector<std::string> arr;
+	if (PyList_Check(list)) {
+		for (size_t i = 0; i < PyList_Size(list); i++) {
+			arr.push_back(PyUnicode_AsUTF8(PyList_GetItem(list, i)));
+		}
+	}
+	return arr;
+}
+//Vec3转list
+inline PyObject* ToList(Vec3 vec) {
+	PyObject* list = PyList_New(3);
+	PyList_SetItem(list, 0, PyFloat_FromDouble(vec.x));
+	PyList_SetItem(list, 1, PyFloat_FromDouble(vec.y));
+	PyList_SetItem(list, 2, PyFloat_FromDouble(vec.z));
+	return list;
+}
+//Vec3转list
+inline PyObject* ToList(Vec3* vec) {
+	PyObject* list = PyList_New(3);
+	PyList_SetItem(list, 0, PyFloat_FromDouble(vec->x));
+	PyList_SetItem(list, 1, PyFloat_FromDouble(vec->y));
+	PyList_SetItem(list, 2, PyFloat_FromDouble(vec->z));
+	return list;
+}
+//方块坐标转list
+inline PyObject* ToList(BlockPos* bp) {
+	PyObject* list = PyList_New(3);
+	PyList_SetItem(list, 0, PyLong_FromLong(bp->x));
+	PyList_SetItem(list, 1, PyLong_FromLong(bp->y));
+	PyList_SetItem(list, 2, PyLong_FromLong(bp->z));
+	return list;
 }
 //打印错误信息
 inline void PrintPythonError() {

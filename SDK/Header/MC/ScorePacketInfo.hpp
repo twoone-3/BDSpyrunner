@@ -14,32 +14,32 @@ struct ScorePacketInfo {
 public:
 #define DISABLE_CONSTRUCTOR_PREVENTION_SCOREPACKETINFO
 
-    ScoreboardId sid;
-    std::string obj_name;
-    uint32_t score;
-    IdentityDefinition::Type type;
-    unsigned long long pid;
-    ActorUniqueID aid;
-    std::string fake_name;
+	ScoreboardId sid;
+	std::string obj_name;
+	uint32_t score;
+	IdentityDefinition::Type type;
+	unsigned long long pid;
+	ActorUniqueID aid;
+	std::string fake_name;
 
-    ScorePacketInfo(ScoreboardId* s, string obj_name, IdentityDefinition::Type type, unsigned num, const string& fake)
-        : sid(*s)
-        , obj_name(obj_name)
-        , type(type)
-        , score(num)
-        , fake_name(fake) {
-    }
+	ScorePacketInfo(ScoreboardId* s, string obj_name, IdentityDefinition::Type type, unsigned num, const string& fake)
+		: sid(*s)
+		, obj_name(obj_name)
+		, type(type)
+		, score(num)
+		, fake_name(fake) {
+	}
 #undef AFTER_EXTRA
 
 #ifndef DISABLE_CONSTRUCTOR_PREVENTION_SCOREPACKETINFO
 public:
-    struct ScorePacketInfo& operator=(struct ScorePacketInfo const&) = delete;
-    ScorePacketInfo(struct ScorePacketInfo const&) = delete;
-    ScorePacketInfo() = delete;
+	struct ScorePacketInfo& operator=(struct ScorePacketInfo const&) = delete;
+	ScorePacketInfo(struct ScorePacketInfo const&) = delete;
+	ScorePacketInfo() = delete;
 #endif
 
 public:
-    MCAPI ~ScorePacketInfo();
+	MCAPI ~ScorePacketInfo();
 
 protected:
 

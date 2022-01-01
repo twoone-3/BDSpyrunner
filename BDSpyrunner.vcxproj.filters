@@ -82,5 +82,6 @@
     <Library Include="SDK\Lib\bedrock_server_var.lib">
       <Filter>Library</Filter>
     </Library>
+    <Library Include="SDK\Lib\Chakra.lib" />
   </ItemGroup>
 </Project>

@@ -2,8 +2,7 @@
 #include "Version.h"
 #include "Tool.h"
 #include "JsonTool.h"
-#include <MC/BinaryStream.hpp>
-#include <MC/CompoundTag.hpp>
+#include "NBT.h"
 #include <GlobalServiceAPI.h>
 #include <MC/BlockPalette.hpp>
 #include <MC/Spawner.hpp>
@@ -187,21 +186,20 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 	StructureTemplate st("tmp"s);
 	st.fillFromWorld(*bs, start, ss);
 
-	return ToPyStr(CompoundTagtoJson(st.save()).dump(4));
+	return ToPyStr(ToJson(*st.save()).dump(4));
 }
 static PyObject* setStructure(PyObject*, PyObject* args, PyObject* kwds) {
-	Py_KERWORDS_LIST("data", "x", "y", "x", "dim", "update");
-	bool update = true;
+	Py_KERWORDS_LIST("data", "x", "y", "x", "dim");
 	const char* data = "";
 	BlockPos pos; int did;
-	Py_PARSE_WITH_KERWORDS("siiii|b", &data, &pos.x, &pos.y, &pos.z, &did, &update);
+	Py_PARSE_WITH_KERWORDS("siiii|b", &data, &pos.x, &pos.y, &pos.z, &did);
 	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	Json value = StringToJson(data);
-	Json& arr = value["size9"];
+	json value = StringToJson(data);
+	json& arr = value["size9"];
 	if (!arr.is_array())
 		Py_RETURN_ERROR("Invalid json string");
 	BlockPos size{
@@ -209,17 +207,17 @@ static PyObject* setStructure(PyObject*, PyObject* args, PyObject* kwds) {
 		arr[1].get<int>(),
 		arr[2].get<int>()
 	};
-	StructureSettings ss(&size, true, false);
+	StructureSettings ss(size, false, false);
 	StructureTemplate st("tmp");
-	st.fromJson(value);
-	st.placeInWorld(bs, Global<Level>->getBlockPalette(), &pos, &ss);
-	if (update) {
-		for (int x = 0; x != size.x; ++x) {
-			for (int y = 0; y != size.y; ++y) {
-				for (int z = 0; z != size.z; ++z) {
-					BlockPos bp{ x, y, z };
-					bs->neighborChanged(&bp);
-				}
+	CompoundTag* t = ToCompoundTag(value);
+	st.fromTag("tmp", *t);
+	delete t;
+	st.placeInWorld(*bs, *Global<Level>->getBlockPalette(), pos, ss, nullptr, true);
+	for (int x = 0; x != size.x; ++x) {
+		for (int y = 0; y != size.y; ++y) {
+			for (int z = 0; z != size.z; ++z) {
+				BlockPos bp{ x, y, z };
+				bs->neighborChanged(bp, bp);
 			}
 		}
 	}
@@ -260,13 +258,12 @@ static PyObject* getStructureRaw(PyObject*, PyObject* args) {
 }
 //从二进制NBT结构数据导出结构到指定地点
 static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
-	Py_KERWORDS_LIST("data", "x", "y", "x", "dim", "update");
-	bool update = true;
+	Py_KERWORDS_LIST("data", "x", "y", "x", "dim");
 	const char* data;
 	Py_ssize_t datasize;
 	//Py_buffer data;
 	BlockPos pos; int did;
-	Py_PARSE_WITH_KERWORDS("y#iiii|b", &data, &datasize, &pos.x, &pos.y, &pos.z, &did, &update);
+	Py_PARSE_WITH_KERWORDS("y#iiii|b", &data, &datasize, &pos.x, &pos.y, &pos.z, &did);
 	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
@@ -274,31 +271,28 @@ static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
 		Py_RETURN_ERROR("Unknown dimension ID");
 	ReadOnlyBinaryStream* stream = new ReadOnlyBinaryStream(new std::string(data, datasize));
 	//printf("bufferlength: %d\n",stream->mBuffer->length());
-	CompoundTag* tag = serialize<CompoundTag>::read(stream);
+	CompoundTag* tag = serialize<CompoundTag>::read(static_cast<BinaryStream*>(stream));
 	//printf("deserialized.\n");
 	if (tag->getTagType() != Tag::Type::Compound)
 		Py_RETURN_ERROR("Invalid Tag");
-	auto* t_C = tag->asCompoundTag();
-	if (t_C.find("size") == t_C.end() || t_C["size"].getVariantType() != TagType::List)
+	auto& t = *tag->asCompoundTag();
+	if (t.contains("size") || t["size"]->getTagType() != Tag::Type::List)
 		Py_RETURN_ERROR("Invalid Tag");
-	auto& t_C_Lsize = t_C["size"].asList();
-
+	auto& t_size = *t["size"]->asListTag();
 	BlockPos size{
-		t_C_Lsize[0]->asInt(),
-		t_C_Lsize[1]->asInt(),
-		t_C_Lsize[2]->asInt()
+		const_cast<Tag*>(t_size[0])->asIntTag()->value(),
+		const_cast<Tag*>(t_size[1])->asIntTag()->value(),
+		const_cast<Tag*>(t_size[2])->asIntTag()->value(),
 	};
 	StructureSettings ss(size, true, false);
 	StructureTemplate st("tmp");
 	st.fromTag("", *tag);
-	st.placeInWorld(*bs, Global<Level>->getBlockPalette(), pos, ss);
-	if (update) {
-		for (int x = 0; x != size.x; ++x) {
-			for (int y = 0; y != size.y; ++y) {
-				for (int z = 0; z != size.z; ++z) {
-					BlockPos bp{ x, y, z };
-					bs->neighborChanged(bp, bp); // idk what will happen, origin: neighborChanged(bp)
-				}
+	st.placeInWorld(*bs, *Global<Level>->getBlockPalette(), pos, ss, nullptr, true);
+	for (int x = 0; x != size.x; ++x) {
+		for (int y = 0; y != size.y; ++y) {
+			for (int z = 0; z != size.z; ++z) {
+				BlockPos bp{ x, y, z };
+				bs->neighborChanged(bp, bp); // idk what will happen, origin: neighborChanged(bp)
 			}
 		}
 	}
@@ -331,7 +325,10 @@ static PyObject* spawnItem(PyObject*, PyObject* args) {
 	BlockSource* bs = Level::getBlockSource(did);
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	ItemStack item(StringToJson(data));
+	ItemStack item;
+	CompoundTag* t = ToCompoundTag(StringToJson(data));
+	item.fromTag(*t);
+	delete t;
 	Global<Level>->getSpawner().spawnItem(pos, did, &item); // Todo
 	Py_RETURN_NONE;
 }

@@ -1,8 +1,20 @@
 #include "Entity.h"
 #include "Tool.h"
-#include <MC/Scoreboard.hpp>
+#include "NBT.h"
 
 using namespace std;
+inline ItemStack LoadItemFromString(std::string_view str) {
+	CompoundTag* t = ToCompoundTag(StringToJson(str));
+	ItemStack item = ItemStack::fromTag(*t);
+	delete t;
+	return item;
+}
+inline ItemStack LoadItemFromJson(json data) {
+	CompoundTag* t = ToCompoundTag(data);
+	ItemStack item = ItemStack::fromTag(*t);
+	delete t;
+	return item;
+}
 struct PyEntity {
 	PyObject_HEAD;
 	Actor* actor;
@@ -227,7 +239,7 @@ struct PyEntity {
 		if (!p)
 			return nullptr;
 		auto& ni = *p->getNetworkIdentifier();
-		return ToPyStr(global<RakNet::RakPeer>->getAdr(ni).ToString(false,':'));
+		return ToPyStr(global<RakNet::RakPeer>->getAdr(ni).ToString(false, ':'));
 	}
 };
 
@@ -240,21 +252,21 @@ PyObject* PyEntity_GetAllItem(PyObject* self, PyObject*) {
 
 	json& inventory = value["Inventory"];
 	for (auto& i : p->getInventory().getSlots()) {
-		inventory.push_back(i->save()->toSNBT());
+		inventory.push_back(ToJson(*i->save()));
 	}
 
 	json& endchest = value["EndChest"];
 	for (auto& i : p->getEnderChestContainer()->getSlots()) {
-		endchest.push_back(i->save()->toSNBT());
+		endchest.push_back(ToJson(*i->save()));
 	}
 
 	json& armor = value["Armor"];
-	for (auto& i : p->getArmorContainer()->getSlots()) {
-		armor.push_back(i->save()->toSNBT());
+	for (auto& i : p->getArmorContainer().getSlots()) {
+		armor.push_back(ToJson(*i->save()));
 	}
 
-	value["OffHand"] = CompoundTagtoJson(p->getOffhandSlot()->save());
-	value["Hand"] = CompoundTagtoJson(p->getSelectedItem()->save());
+	value["OffHand"] = ToJson(*p->getOffhandSlot().save());
+	value["Hand"] = ToJson(*p->getSelectedItem().save());
 
 	return ToPyStr(value.dump(4));
 }
@@ -268,31 +280,31 @@ PyObject* PyEntity_SetAllItem(PyObject* self, PyObject* args) {
 		json value(StringToJson(x));
 
 		if (value.contains("Inventory")) {
-			const vector<ItemStack*>& items = p->getInventory()->getSlots();
+			auto& items = p->getInventory();
 			json& inventory = value["Inventory"];
 			for (unsigned i = 0; i < inventory.size(); i++) {
-				items[i]->fromJson(inventory[i]);
+				*items.getSlot(i) = LoadItemFromJson(inventory[i]);
 			}
 		}
 
 		if (value.contains("EndChest")) {
-			const vector<ItemStack*>& items = p->getEnderChestContainer()->getSlots();
+			auto items = p->getEnderChestContainer();
 			json& endchest = value["EndChest"];
 			for (unsigned i = 0; i < endchest.size(); i++) {
-				items[i]->fromJson(endchest[i]);
+				*items->getSlot(i) = LoadItemFromJson(endchest[i]);
 			}
 		}
 
 		if (value.contains("Armor")) {
-			const vector<ItemStack*>& items = p->getArmorContainer()->getSlots();
+			auto& items = p->getArmorContainer();
 			json& armor = value["Armor"];
 			for (unsigned i = 0; i < armor.size(); i++) {
-				items[i]->fromJson(armor[i]);
+				*items.getSlot(i) = LoadItemFromJson(armor[i]);
 			}
 		}
 
 		if (value.contains("OffHand")) {
-			p->getOffhandSlot()->fromJson(value["OffHand"]);
+			p->setOffhandSlot(LoadItemFromJson(value["OffHand"]));
 		}
 		p->sendInventory(true);
 	}
@@ -305,8 +317,7 @@ PyObject* PyEntity_SetHand(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		json json(StringToJson(x));
-		p->getSelectedItem()->fromJson(json);
+		const_cast<ItemStack&>(p->getSelectedItem()) = LoadItemFromString(x);
 		p->sendInventory(true);
 	}
 	Py_RETURN_NONE;
@@ -319,9 +330,8 @@ PyObject* PyEntity_AddItem(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		ItemStack i;
-		i.fromJson(StringToJson(x));
-		p->giveItem(i);
+		auto item = LoadItemFromString(x);
+		p->giveItem(&item);
 		p->sendInventory(true);
 	}
 	Py_RETURN_NONE;
@@ -333,7 +343,7 @@ PyObject* PyEntity_RemoveItem(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->getInventory()->clearItem(slot, num);
+		p->getInventory().removeItem(slot, num);
 		p->sendInventory(true); //idk what the true means
 	}
 	Py_RETURN_NONE;
@@ -412,15 +422,16 @@ PyObject* PyEntity_GetScore(PyObject* self, PyObject* args) {
 }
 
 PyObject* PyEntity_ModifyScore(PyObject* self, PyObject* args) {
-	const char* objname = ""; int count; int mode;
+	const char* objname = ""; int count; PlayerScoreSetFunction mode;
 	if (PyArg_ParseTuple(args, "sii:modifyScore", &objname, &count, &mode)) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
 		Objective* testobj = Global<Scoreboard>->getObjective(objname);
 		if (testobj) {
+			bool s;
 			//mode:{set,add,remove}
-			Global<Scoreboard>->modifyPlayerScore(Global<Scoreboard>->getScoreboardId(*p), testobj, count, mode); // Todo
+			Global<Scoreboard>->modifyPlayerScore(s, Global<Scoreboard>->getScoreboardId(*p), *testobj, count, mode); // Todo
 		}
 	}
 	Py_RETURN_NONE;
@@ -458,7 +469,7 @@ PyObject* PyEntity_SendCustomForm(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		return PyLong_FromLong(p->sendModalFormPacket(str)); // Todo
+		p->sendCustomFormPacket(str, [](string) {});
 	}
 	Py_RETURN_NONE;
 }
@@ -466,14 +477,13 @@ PyObject* PyEntity_SendCustomForm(PyObject* self, PyObject* args) {
 PyObject* PyEntity_SendSimpleForm(PyObject* self, PyObject* args) {
 	const char* title = "";
 	const char* content = "";
-	const char* buttons = "";
-	if (PyArg_ParseTuple(args, "sss:sendSimpleForm", &title, &content, &buttons)) {
+	PyObject* buttons = nullptr;
+	PyObject* images = nullptr;
+	if (PyArg_ParseTuple(args, "ss|OO:sendSimpleForm", &title, &content, &buttons, &images)) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		char str[4096];
-		sprintf_s(str, 4096, R"({"title":"%s","content":"%s","buttons":%s,"type":"form"})", title, content, buttons);
-		return PyLong_FromLong(p->sendModalFormPacket(str)); // Todo
+		p->sendSimpleFormPacket(title, content, ToStrArray(buttons), ToStrArray(images), [](int) {});
 	}
 	Py_RETURN_NONE;
 }
@@ -487,9 +497,7 @@ PyObject* PyEntity_SendModalForm(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		char str[4096];
-		sprintf_s(str, 4096, R"({"title":"%s","content":"%s","button1":"%s","button2":"%s","type":"modal"})", title, content, button1, button2);
-		return PyLong_FromLong(p->sendModalFormPacket(str)); // Todo
+		p->sendModalFormPacket(title, content, button1, button2, [](bool) {});
 	}
 	Py_RETURN_NONE;
 }
@@ -497,21 +505,19 @@ PyObject* PyEntity_SendModalForm(PyObject* self, PyObject* args) {
 //ÉèÖÃ²à±ßÀ¸
 PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
 	const char* title = "";
-	const char* data = "";
-	if (PyArg_ParseTuple(args, "ss:setSidebar", &title, &data)) {
+	const char* side_data = "";
+	ObjectiveSortOrder order = ObjectiveSortOrder::Ascending;
+	if (PyArg_ParseTuple(args, "ss|i:setSidebar", &title, &side_data, &order)) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->sendSetDisplayObjectivePacket(title); // Todo
-		json value = StringToJson(data);
-		vector<ScorePacketInfo> info;
+		vector<pair<string, int>> data;
+		json value = StringToJson(side_data);
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {
-				ScorePacketInfo o(Global<Scoreboard>->createScoreboardId(key)); // Todo
-					val.get<int>(), key);
-				info.push_back(o);
+				data.push_back({ key, val });
 			}
-		p->sendSetScorePacket(0, info);
+		p->setSidebar(title, data, order);
 	}
 	Py_RETURN_NONE;
 }
@@ -520,7 +526,7 @@ PyObject* PyEntity_RemoveSidebar(PyObject* self, PyObject*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	p->sendSetDisplayObjectivePacket("", "");
+	p->removeSidebar();
 	Py_RETURN_NONE;
 }
 
@@ -532,16 +538,18 @@ PyObject* PyEntity_SetBossbar(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->sendBossEventPacket(name, per, 0); // Todo
+		p->sendBossEventPacket(BossEvent::Show, name, per, BossEventColour::Red); // Todo
 	}
 	Py_RETURN_NONE;
 }
 
-PyObject* PyEntity_RemoveBossbar(PyObject* self, PyObject*) {
+PyObject* PyEntity_RemoveBossbar(PyObject* self, PyObject* args) {
+	const char* name = "";
+	Py_PARSE("s:removeBossbar", &name);
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
-	p->sendBossEventPacket("", 0, 2); // Todo
+	p->sendBossEventPacket(BossEvent::Hide, name, 0, BossEventColour::Red); // Todo
 	Py_RETURN_NONE;
 }
 
@@ -572,10 +580,10 @@ PyObject* PyEntity_GetTags(PyObject* self, PyObject*) {
 	Actor* a = PyEntity::asActor(self);
 	if (!a)
 		return nullptr;
-	span<string> tags = a->getTags();
+	auto tags = a->getTags();
 	PyObject* list = PyList_New(0);
-	for (size_t i = 0; i < tags.size; i++) {
-		PyList_Append(list, ToPyStr(tags.data[i]));
+	for (size_t i = 0; i < tags.size(); i++) {
+		PyList_Append(list, ToPyStr(tags[i]));
 	}
 	return list;
 }

@@ -1,7 +1,6 @@
 #include "NBT.h"
 #include "Tool.h"
 
-
 using namespace std;
 json ToJson(ListTag& t) {
 	json value(json_t::array);
@@ -101,10 +100,10 @@ ListTag* ToListTag(const json& value) {
 		case json_t::null:
 			break;
 		case json_t::object:
-			list->add(ToCompoundTag(x)->asTag<Tag>());
+			list->add(ToCompoundTag(x)->copy());
 			break;
 		case json_t::array:
-			list->add(ToListTag(x));
+			list->add(ToListTag(x)->copyList());
 			break;
 		case json_t::string:
 			list->addString(x.get<string>());

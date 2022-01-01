@@ -29,7 +29,7 @@ public:
 	BinaryStream();
 	BinaryStream(std::string* buffer, bool copy);
 	~BinaryStream();
-	std::string* GetAndReleaseData();
+	std::string getAndReleaseData();
 	void writeUnsignedInt(unsigned int num);
 	inline void reset() {
 		mOwnedBuffer.clear();
@@ -41,7 +41,7 @@ public:
 template <typename T>
 class serialize {
 public:
-	virtual void write(T* val, BinaryStream* stream) = 0;
-	virtual T* read(BinaryStream* stream) = 0;
+	static void write(T* val, BinaryStream* stream);
+	static T* read(BinaryStream* stream);
 };
 

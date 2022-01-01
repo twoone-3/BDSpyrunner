@@ -1,8 +1,8 @@
 #pragma once
 #pragma execution_character_set("utf-8")
 #pragma warning(disable:4996)
-#include <iostream>
-#include <Global.h>
+//#include <iostream>
+//#include <Global.h>
 #include <MC/Actor.hpp>
 #include <MC/Block.hpp>
 #include <MC/BlockActor.hpp>
@@ -16,12 +16,11 @@
 #include <MC/RakNet.hpp>
 #include <MC/Scoreboard.hpp>
 #include <MC/ServerNetworkHandler.hpp>
+#include <MC/SimpleContainer.hpp>
 #include <MC/StructureSettings.hpp>
 #include <MC/StructureTemplate.hpp>
 
-#include <MC/Tag.hpp>
-#include <MC/CompoundTag.hpp>
-
+#include "JsonTool.h"
 #undef SymCall
 template <typename T>
 inline T& Fetch(void* ptr, uintptr_t offset) {
@@ -63,35 +62,12 @@ inline Return SymCall(const char* sym, Args... args) {
 //全局变量
 template <typename T>
 inline T* global = nullptr;
-//Vec3转list
-inline PyObject* ToList(Vec3 vec) {
-	PyObject* list = PyList_New(3);
-	PyList_SetItem(list, 0, PyFloat_FromDouble(vec.x));
-	PyList_SetItem(list, 1, PyFloat_FromDouble(vec.y));
-	PyList_SetItem(list, 2, PyFloat_FromDouble(vec.z));
-	return list;
-}
-//Vec3转list
-inline PyObject* ToList(Vec3* vec) {
-	PyObject* list = PyList_New(3);
-	PyList_SetItem(list, 0, PyFloat_FromDouble(vec->x));
-	PyList_SetItem(list, 1, PyFloat_FromDouble(vec->y));
-	PyList_SetItem(list, 2, PyFloat_FromDouble(vec->z));
-	return list;
-}
-//方块坐标转list
-inline PyObject* ToList(BlockPos* bp) {
-	PyObject* list = PyList_New(3);
-	PyList_SetItem(list, 0, PyLong_FromLong(bp->x));
-	PyList_SetItem(list, 1, PyLong_FromLong(bp->y));
-	PyList_SetItem(list, 2, PyLong_FromLong(bp->z));
-	return list;
-}
 
-bool IsPlayer(Actor* ptr) {
+inline bool IsPlayer(Actor* ptr) {
 	if (ptr == nullptr)
 		return false;
 	if (ptr->getEntityTypeId() != 319)
 		return false;
 	return true;
 }
+

@@ -82,8 +82,7 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\python37.lib" />
-    <Library Include="SDK\Lib\bedrock_server_api.lib" />
-    <Library Include="SDK\Lib\bedrock_server_var.lib" />
+    <Library Include="SDK\Lib\Chakra.lib" />
     <Library Include="SDK\Lib\LiteLoader.lib" />
     <Library Include="SDK\Lib\SymDBHelper.lib" />
   </ItemGroup>
