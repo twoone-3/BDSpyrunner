@@ -135,7 +135,7 @@ struct PyEntity {
 		Py_GET_ACTOR;
 		unique_ptr<CompoundTag> t = CompoundTag::create();
 		a->save(*t);
-		return ToPyStr(ToJson(move(t)));
+		return ToPyStr(ToJson(*t).dump(4));
 	}
 	//获取生命值
 	static PyObject* getHealth(PyObject* self, void*) {
@@ -204,81 +204,71 @@ struct PyEntity {
 	//获取玩家所有物品
 	static PyObject* getAllItem(PyObject* self, PyObject*) {
 		Py_GET_PLAYER;
-		fifo_json value;
-
-		fifo_json& inventory = value["Inventory"];
+		fifo_json items_json = fifo_json::object();
+		fifo_json& inventory = items_json["Inventory"];
 		for (auto& i : p->getInventory().getSlots()) {
-			inventory.push_back(ToJson(i->save()));
+			inventory.push_back(ToJson(*i->save()));
 		}
-
-		fifo_json& endchest = value["EndChest"];
+		fifo_json& endchest = items_json["EndChest"];
 		for (auto& i : p->getEnderChestContainer()->getSlots()) {
-			endchest.push_back(ToJson(i->save()));
+			endchest.push_back(ToJson(*i->save()));
 		}
-
-		fifo_json& armor = value["Armor"];
+		fifo_json& armor = items_json["Armor"];
 		for (auto& i : p->getArmorContainer().getSlots()) {
-			armor.push_back(ToJson(i->save()));
+			armor.push_back(ToJson(*i->save()));
 		}
-
-		value["OffHand"] = ToJson(p->getOffhandSlot().save());
-		value["Hand"] = ToJson(p->getSelectedItem().save());
-
-		return ToPyStr(value.dump(4));
+		items_json["OffHand"] = ToJson(*p->getOffhandSlot().save());
+		items_json["Hand"] = ToJson(*p->getSelectedItem().save());
+		return ToPyStr(items_json.dump(4));
 	}
 	//设置玩家所有物品
 	static PyObject* setAllItem(PyObject* self, PyObject* args) {
-		const char* x = "";
-		Py_PARSE("s", &x);
+		const char* items_data = "";
+		Py_PARSE("s", &items_data);
 		Py_GET_PLAYER;
-		fifo_json value(StringToJson(x));
-
-		if (value.contains("Inventory")) {
+		fifo_json items_json(ToJson(items_data));
+		if (items_json.contains("Inventory")) {
 			auto& items = p->getInventory();
-			fifo_json& inventory = value["Inventory"];
+			fifo_json& inventory = items_json["Inventory"];
 			for (unsigned i = 0; i < inventory.size(); i++) {
 				*items.getSlot(i) = LoadItemFromJson(inventory[i]);
 			}
 		}
-
-		if (value.contains("EndChest")) {
+		if (items_json.contains("EndChest")) {
 			auto items = p->getEnderChestContainer();
-			fifo_json& endchest = value["EndChest"];
+			fifo_json& endchest = items_json["EndChest"];
 			for (unsigned i = 0; i < endchest.size(); i++) {
 				*items->getSlot(i) = LoadItemFromJson(endchest[i]);
 			}
 		}
-
-		if (value.contains("Armor")) {
+		if (items_json.contains("Armor")) {
 			auto& items = p->getArmorContainer();
-			fifo_json& armor = value["Armor"];
+			fifo_json& armor = items_json["Armor"];
 			for (unsigned i = 0; i < armor.size(); i++) {
 				*items.getSlot(i) = LoadItemFromJson(armor[i]);
 			}
 		}
-
-		if (value.contains("OffHand")) {
-			p->setOffhandSlot(LoadItemFromJson(value["OffHand"]));
+		if (items_json.contains("OffHand")) {
+			p->setOffhandSlot(LoadItemFromJson(items_json["OffHand"]));
 		}
 		p->sendInventory(true);
-
 		Py_RETURN_NONE;
 	}
 	//设置玩家手上物品
 	static PyObject* setHand(PyObject* self, PyObject* args) {
-		const char* x = "";
-		Py_PARSE("s", &x);
+		const char* item_data = "";
+		Py_PARSE("s", &item_data);
 		Py_GET_PLAYER;
-		const_cast<ItemStack&>(p->getSelectedItem()) = LoadItemFromString(x);
+		const_cast<ItemStack&>(p->getSelectedItem()) = LoadItemFromString(item_data);
 		p->sendInventory(true);
 		Py_RETURN_NONE;
 	}
 	//增加玩家背包物品
 	static PyObject* addItem(PyObject* self, PyObject* args) {
-		const char* x = "";
-		Py_PARSE("s", &x);
+		const char* item_data = "";
+		Py_PARSE("s", &item_data);
 		Py_GET_PLAYER;
-		auto item = LoadItemFromString(x);
+		auto item = LoadItemFromString(item_data);
 		p->giveItem(&item);
 		p->sendInventory(true);
 		Py_RETURN_NONE;
@@ -294,7 +284,8 @@ struct PyEntity {
 	}
 	//传送
 	static PyObject* teleport(PyObject* self, PyObject* args) {
-		Vec3 pos; int did;
+		Vec3 pos;
+		int did;
 		Py_PARSE("fffi", &pos.x, &pos.y, &pos.z, &did);
 		Py_GET_PLAYER;
 		p->teleport(pos, did);
@@ -330,19 +321,38 @@ struct PyEntity {
 		p->kick(msg);
 		Py_RETURN_NONE;
 	}
-	//计分板操作
+	//获取玩家分数
 	static PyObject* getScore(PyObject* self, PyObject* args) {
 		const char* objname = "";
 		Py_PARSE("s", &objname);
 		Py_GET_PLAYER;
 		return PyLong_FromLong(p->getScore(objname));
 	}
-	//todo add reduce set
-	static PyObject* modifyScore(PyObject* self, PyObject* args) {
+	//设置玩家分数
+	static PyObject* setScore(PyObject* self, PyObject* args) {
 		const char* objname = "";
-		int count; PlayerScoreSetFunction mode;
-		Py_PARSE("sii", &objname, &count, &mode);
+		int count;
+		Py_PARSE("si", &objname, &count);
 		Py_GET_PLAYER;
+		p->setScore(objname, count);
+		Py_RETURN_NONE;
+	}
+	//增加玩家分数
+	static PyObject* addScore(PyObject* self, PyObject* args) {
+		const char* objname = "";
+		int count;
+		Py_PARSE("si", &objname, &count);
+		Py_GET_PLAYER;
+		p->addScore(objname, count);
+		Py_RETURN_NONE;
+	}
+	//减少玩家分数
+	static PyObject* reduceScore(PyObject* self, PyObject* args) {
+		const char* objname = "";
+		int count;
+		Py_PARSE("si", &objname, &count);
+		Py_GET_PLAYER;
+		p->reduceScore(objname, count);
 		Py_RETURN_NONE;
 	}
 	//增加等级
@@ -425,7 +435,7 @@ struct PyEntity {
 		Py_PARSE("ss|i", &title, &side_data, &order);
 		Py_GET_PLAYER;
 		vector<pair<string, int>> data;
-		fifo_json value = StringToJson(side_data);
+		fifo_json value = ToJson(side_data);
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {
 				data.push_back({ key, val });
@@ -529,7 +539,9 @@ struct PyEntity {
 		{ "resendAllChunks", resendAllChunks, METH_NOARGS, nullptr },
 		{ "disconnect", disconnect, METH_VARARGS, nullptr },
 		{ "getScore", getScore, METH_VARARGS, nullptr },
-		{ "modifyScore", modifyScore, METH_VARARGS, nullptr },
+		{ "setScore", setScore, METH_VARARGS, nullptr },
+		{ "addScore", addScore, METH_VARARGS, nullptr },
+		{ "reduceScore", reduceScore, METH_VARARGS, nullptr },
 		{ "addLevel", addLevel, METH_VARARGS, nullptr },
 		{ "transferServer", transferServer, METH_VARARGS, nullptr },
 		{ "sendCustomForm", sendCustomForm, METH_VARARGS, nullptr },
@@ -597,11 +609,9 @@ PyTypeObject PyEntity_Type{
 	0,						/* tp_version_tag */
 	nullptr,				/* tp_finalize */
 };
+
 PyObject* ToEntity(Actor* ptr) {
-	PyEntity* obj = nullptr;
-	//Py_BEGIN_CALL;
-	obj = PyObject_New(PyEntity, &PyEntity_Type);
-	//Py_END_CALL;
+	PyEntity* obj = PyObject_New(PyEntity, &PyEntity_Type);
 	obj->actor = ptr;
 	return reinterpret_cast<PyObject*>(obj);
 }

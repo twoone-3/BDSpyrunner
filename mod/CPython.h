@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 #define PY_SSIZE_T_CLEAN
 #include "../include/Python.h"
 #include <vector>
@@ -10,7 +10,7 @@
 #define Py_PARSE_WITH_KERWORDS(format,...) if (!PyArg_ParseTupleAndKeywords(args, kwds, format ":" __FUNCTION__, const_cast<char**>(kwlist), __VA_ARGS__))return nullptr
 
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
-#define Py_PRINT_REFCOUNT(obj) cout << "“˝”√º∆ ˝£∫" << obj->ob_refcnt << endl
+#define Py_PRINT_REFCOUNT(obj) cout << "ÂºïÁî®ËÆ°Êï∞Ôºö" << obj->ob_refcnt << endl
 //#define Py_BEGIN_CALL\
 //	int _has_gil = PyGILState_Check();\
 //	PyGILState_STATE _gil_state = PyGILState_LOCKED;\
@@ -22,7 +22,7 @@
 //	Py_END_ALLOW_THREADS;\
 //	if (!_has_gil)PyGILState_Release(_gil_state)
 
-//◊÷∑˚¥Æ◊™Unicode
+//Â≠óÁ¨¶‰∏≤ËΩ¨Unicode
 inline PyObject* ToPyStr(std::string_view str) {
 	return PyUnicode_InternFromString(str.data());
 	//return PyUnicode_FromStringAndSize(str.data(), str.length());
@@ -36,7 +36,7 @@ inline std::vector<std::string> ToStrArray(PyObject* list) {
 	}
 	return arr;
 }
-//Vec3◊™list
+//Vec3ËΩ¨list
 inline PyObject* ToList(Vec3 vec) {
 	PyObject* list = PyList_New(3);
 	PyList_SetItem(list, 0, PyFloat_FromDouble(vec.x));
@@ -44,7 +44,7 @@ inline PyObject* ToList(Vec3 vec) {
 	PyList_SetItem(list, 2, PyFloat_FromDouble(vec.z));
 	return list;
 }
-//Vec3◊™list
+//Vec3ËΩ¨list
 inline PyObject* ToList(Vec3* vec) {
 	PyObject* list = PyList_New(3);
 	PyList_SetItem(list, 0, PyFloat_FromDouble(vec->x));
@@ -52,7 +52,7 @@ inline PyObject* ToList(Vec3* vec) {
 	PyList_SetItem(list, 2, PyFloat_FromDouble(vec->z));
 	return list;
 }
-//∑ΩøÈ◊¯±Í◊™list
+//ÊñπÂùóÂùêÊ†áËΩ¨list
 inline PyObject* ToList(BlockPos* bp) {
 	PyObject* list = PyList_New(3);
 	PyList_SetItem(list, 0, PyLong_FromLong(bp->x));
@@ -60,7 +60,7 @@ inline PyObject* ToList(BlockPos* bp) {
 	PyList_SetItem(list, 2, PyLong_FromLong(bp->z));
 	return list;
 }
-//¥Ú”°¥ÌŒÛ–≈œ¢
+//ÊâìÂç∞ÈîôËØØ‰ø°ÊÅØ
 inline void PrintPythonError() {
 	if (PyErr_Occurred()) {
 		PyErr_Print();

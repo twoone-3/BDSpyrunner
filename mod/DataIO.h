@@ -42,7 +42,7 @@ public:
 template <typename T>
 class serialize {
 public:
-	static void write(T* val, BinaryStream* stream);
-	static std::unique_ptr<T> read(BinaryStream* stream);
+	static void write(const std::unique_ptr<T>& val, BinaryStream* stream);
+	static std::unique_ptr<T> read(ReadOnlyBinaryStream* stream);
 };
 

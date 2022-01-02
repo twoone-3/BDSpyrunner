@@ -13,98 +13,102 @@
 #include <MC/IntArrayTag.hpp>
 #include "Tool.h"
 
-inline fifo_json ToJson(unique_ptr<ListTag> t);
-inline fifo_json ToJson(unique_ptr<CompoundTag> t);
+inline fifo_json ToJson(const ListTag& t);
+inline fifo_json ToJson(const CompoundTag& t);
 inline unique_ptr<ListTag> ToListTag(const fifo_json& value);
 inline unique_ptr<CompoundTag> ToCompoundTag(const fifo_json& value);
-inline fifo_json ToJson(unique_ptr<ListTag> t) {
-	fifo_json value(json_t::array);
-	for (auto& c : t->value()) {
-		switch (t->getElementType()) {
+inline fifo_json ToJson(const ListTag& t) {
+	fifo_json json = fifo_json::array();
+	for (auto& c : t) {
+		switch (t.getElementType()) {
 		case Tag::Type::End:
+			logger.error("EndTag in ListTag");
 			break;
 		case Tag::Type::Byte:
-			value.push_back(c->asByteTag()->value());
+			json.push_back(c->asByteTag()->value());
 			break;
 		case Tag::Type::Short:
-			value.push_back(c->asShortTag()->value());
+			json.push_back(c->asShortTag()->value());
 			break;
 		case Tag::Type::Int:
-			value.push_back(c->asIntTag()->value());
+			json.push_back(c->asIntTag()->value());
 			break;
 		case Tag::Type::Int64:
-			value.push_back(c->asInt64Tag()->value());
+			json.push_back(c->asInt64Tag()->value());
 			break;
 		case Tag::Type::Float:
-			value.push_back(c->asFloatTag()->value());
+			json.push_back(c->asFloatTag()->value());
 			break;
 		case Tag::Type::Double:
-			value.push_back(c->asDoubleTag()->value());
+			json.push_back(c->asDoubleTag()->value());
 			break;
 		case Tag::Type::ByteArray:
-
+			logger.error("ByteArrayTag in ListTag");
 			break;
 		case Tag::Type::String:
-			value.push_back(c->asStringTag()->value());
+			json.push_back(c->asStringTag()->value());
 			break;
 		case Tag::Type::List:
-			value.push_back(ToJson(unique_ptr<ListTag>(c->asListTag())));
+			json.push_back(ToJson(*c->asListTag()));
 			break;
 		case Tag::Type::Compound:
-			value.push_back(ToJson(unique_ptr<CompoundTag>(c->asCompoundTag())));
+			json.push_back(ToJson(*c->asCompoundTag()));
 			break;
 		}
 	}
-	return value;
+	return json;
 }
-inline fifo_json ToJson(unique_ptr<CompoundTag> t) {
-	fifo_json value;
-	for (auto& x : t->value()) {
-		Tag::Type type = x.second.getTagType();
-		fifo_json& son = value[x.first + std::to_string(static_cast<uint32_t>(type))];
+inline fifo_json ToJson(const CompoundTag& t) {
+	fifo_json json = fifo_json::object();
+	for (auto& [key, val] : t) {
+		Tag* tag = const_cast<Tag*>(val.get());
+		Tag::Type type = tag->getTagType();
+		fifo_json& son = json[key + std::to_string(static_cast<uint32_t>(type))];
 		switch (type) {
 		case Tag::Type::End:
+			logger.error("EndTag in CompoundTag");
 			break;
 		case Tag::Type::Byte:
-			son = x.second.asByteTag()->value();
+			son = tag->asByteTag()->value();
 			break;
 		case Tag::Type::Short:
-			son = x.second.asShortTag()->value();
+			son = tag->asShortTag()->value();
 			break;
 		case Tag::Type::Int:
-			son = x.second.asIntTag()->value();
+			son = tag->asIntTag()->value();
 			break;
 		case Tag::Type::Int64:
-			son = x.second.asInt64Tag()->value();
+			son = tag->asInt64Tag()->value();
 			break;
 		case Tag::Type::Float:
-			son = x.second.asFloatTag()->value();
+			son = tag->asFloatTag()->value();
 			break;
 		case Tag::Type::Double:
-			son = x.second.asDoubleTag()->value();
+			son = tag->asDoubleTag()->value();
 			break;
 		case Tag::Type::ByteArray:
-			for (size_t i = 0; i < x.second.asByteArrayTag()->value().size; ++i) {
-				auto c = x.second.asByteArrayTag()->value().data[i];
+			for (size_t i = 0; i < tag->asByteArrayTag()->value().size; ++i) {
+				auto c = tag->asByteArrayTag()->value().data[i];
 				son.push_back(c);
 			}
 			break;
 		case Tag::Type::String:
-			son = x.second.asStringTag()->value();
+			son = tag->asStringTag()->value();
 			break;
 		case Tag::Type::List:
-			son = ToJson(unique_ptr<ListTag>(x.second.asListTag()));
+			son = ToJson(*tag->asListTag());
 			break;
 		case Tag::Type::Compound:
-			son = ToJson(unique_ptr<CompoundTag>(x.second.asCompoundTag()));
+			son = ToJson(*tag->asCompoundTag());
 			break;
 		case Tag::Type::IntArray:
+			logger.error("IntArrayTag in CompoundTag");
 			break;
 		default:
 			break;
 		}
 	}
-	return value;
+	return json;
 }
 inline unique_ptr<ListTag> ToListTag(const fifo_json& value) {
 	auto list = ListTag::create();
@@ -209,7 +213,7 @@ inline unique_ptr<CompoundTag> ToCompoundTag(const fifo_json& value) {
 }
 
 inline ItemStack LoadItemFromString(std::string_view str) {
-	return ItemStack::fromTag(*ToCompoundTag(StringToJson(str)));
+	return ItemStack::fromTag(*ToCompoundTag(ToJson(str)));
 }
 inline ItemStack LoadItemFromJson(fifo_json data) {
 	return ItemStack::fromTag(*ToCompoundTag(data));

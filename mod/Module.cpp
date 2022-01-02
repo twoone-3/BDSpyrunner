@@ -156,140 +156,92 @@ static PyObject* setBlock(PyObject*, PyObject* args) {
 	bs->setBlock(bp, *b, 0, nullptr);
 	Py_RETURN_NONE;
 }
-//获取一个结构
+//从指定地点获取JSON字符串NBT结构数据
 static PyObject* getStructure(PyObject*, PyObject* args) {
-	BlockPos pos1, pos2; int did;
-	Py_PARSE("iiiiiii",
+	BlockPos pos1, pos2;
+	int did;
+	bool ignore_entities = true;
+	bool ignore_blocks = false;
+	Py_PARSE("iiiiiii|bb",
 		&pos1.x, &pos1.y, &pos1.z,
-		&pos2.x, &pos2.y, &pos2.z, &did
+		&pos2.x, &pos2.y, &pos2.z, &did,
+		&ignore_entities, &ignore_blocks
 	);
-	if (Global<Level> == nullptr)
-		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Level::getBlockSource(did);
-	if (bs == nullptr)
-		Py_RETURN_ERROR("Unknown dimension ID");
-	BlockPos start{
-		min(pos1.x, pos2.x),
-		min(pos1.y, pos2.y),
-		min(pos1.z, pos2.z)
-	};
-	BlockPos size{
-		max(pos1.x, pos2.x) - start.x,
-		max(pos1.y, pos2.y) - start.y,
-		max(pos1.z, pos2.z) - start.z
-	};
-	StructureSettings ss(size, false, false);
-	StructureTemplate st("tmp"s);
-	st.fillFromWorld(*bs, start, ss);
-
-	return ToPyStr(ToJson(st.save()).dump(4));
+	auto st = StructureTemplate::fromWorld("name", did, pos1, pos2, ignore_entities, ignore_blocks);
+	return ToPyStr(ToJson(*st.save()).dump(4));
 }
-static PyObject* setStructure(PyObject*, PyObject* args, PyObject* kwds) {
-	Py_KERWORDS_LIST("data", "x", "y", "x", "dim");
+//从JSON字符串NBT结构数据导出结构到指定地点
+static PyObject* setStructure(PyObject*, PyObject* args) {
 	const char* data = "";
-	BlockPos pos; int did;
-	Py_PARSE_WITH_KERWORDS("siiii|b", &data, &pos.x, &pos.y, &pos.z, &did);
-	if (Global<Level> == nullptr)
-		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Level::getBlockSource(did);
-	if (bs == nullptr)
-		Py_RETURN_ERROR("Unknown dimension ID");
-	fifo_json value = StringToJson(data);
-	fifo_json& arr = value["size9"];
-	if (!arr.is_array())
-		Py_RETURN_ERROR("Invalid json string");
-	BlockPos size{
-		arr[0].get<int>(),
-		arr[1].get<int>(),
-		arr[2].get<int>()
-	};
-	StructureSettings ss(size, false, false);
-	StructureTemplate st("tmp");
-	st.fromTag("tmp", *ToCompoundTag(value));
-	st.placeInWorld(*bs, *Global<Level>->getBlockPalette(), pos, ss, nullptr, true);
-	for (int x = 0; x != size.x; ++x) {
+	BlockPos pos;
+	int did;
+	Mirror mir = None_15;
+	Rotation rot = None_14;
+	Py_PARSE("siiii|ii",
+		&data, &pos.x, &pos.y, &pos.z,
+		&did, &mir, &rot
+	);
+	StructureTemplate::fromTag("name", *ToCompoundTag(ToJson(data)))
+		.toWorld(did, pos, mir, rot);
+	/*for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {
 			for (int z = 0; z != size.z; ++z) {
 				BlockPos bp{ x, y, z };
 				bs->neighborChanged(bp, bp);
 			}
 		}
-	}
+	}*/
 	Py_RETURN_NONE;
 }
 //从指定地点获取二进制NBT结构数据
-static PyObject* getStructureRaw(PyObject*, PyObject* args) {
-	BlockPos pos1, pos2; int did;
-	Py_PARSE("iiiiiii",
+static PyObject* getStructureBinary(PyObject*, PyObject* args) {
+	BlockPos pos1, pos2;
+	int did;
+	bool ignore_entities = true;
+	bool ignore_blocks = false;
+	Py_PARSE("iiiiiii|bb",
 		&pos1.x, &pos1.y, &pos1.z,
-		&pos2.x, &pos2.y, &pos2.z, &did
+		&pos2.x, &pos2.y, &pos2.z, &did,
+		&ignore_entities, &ignore_blocks
 	);
-	if (Global<Level> == nullptr)
-		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Level::getBlockSource(did);
-	if (bs == nullptr)
-		Py_RETURN_ERROR("Unknown dimension ID");
-	BlockPos start{
-		min(pos1.x, pos2.x),
-		min(pos1.y, pos2.y),
-		min(pos1.z, pos2.z)
-	};
-	BlockPos size{
-		max(pos1.x, pos2.x) - start.x,
-		max(pos1.y, pos2.y) - start.y,
-		max(pos1.z, pos2.z) - start.z
-	};
-	StructureSettings ss(size, false, false);
-	StructureTemplate st("tmp");
-	st.fillFromWorld(*bs, start, ss);
-	CompoundTag* t = st.save().get();
-	BinaryStream* stream = new BinaryStream();
-	serialize<CompoundTag>::write(t, stream);
-	size_t sizet = stream->getLength();
-	auto result = PyBytes_FromStringAndSize(stream->getAndReleaseData().c_str(), sizet);
-	stream->~BinaryStream();
-	return result;
+	auto st = StructureTemplate::fromWorld("name", did, pos1, pos2, ignore_entities, ignore_blocks);
+	BinaryStream binary_stream;
+	serialize<CompoundTag>::write(st.save(), &binary_stream);
+	return PyBytes_FromStringAndSize(
+		binary_stream.getAndReleaseData().c_str(),
+		binary_stream.getLength()
+	);
 }
 //从二进制NBT结构数据导出结构到指定地点
-static PyObject* setStructureRaw(PyObject*, PyObject* args, PyObject* kwds) {
-	Py_KERWORDS_LIST("data", "x", "y", "x", "dim");
-	const char* data;
-	Py_ssize_t datasize;
-	//Py_buffer data;
-	BlockPos pos; int did;
-	Py_PARSE_WITH_KERWORDS("y#iiii|b", &data, &datasize, &pos.x, &pos.y, &pos.z, &did);
-	if (Global<Level> == nullptr)
-		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Level::getBlockSource(did);
-	if (bs == nullptr)
-		Py_RETURN_ERROR("Unknown dimension ID");
-	ReadOnlyBinaryStream* stream = new ReadOnlyBinaryStream(new std::string(data, datasize));
+static PyObject* setStructureBinary(PyObject*, PyObject* args) {
+	const char* data = "";
+	Py_ssize_t data_size;
+	BlockPos pos;
+	int did;
+	Mirror mir = None_15;
+	Rotation rot = None_14;
+	Py_PARSE("y#iiii|ii",
+		&data, &data_size, &pos.x, &pos.y, &pos.z,
+		&did, &mir, &rot
+	);
+	ReadOnlyBinaryStream binary_stream = new string(data, data_size);
 	//printf("bufferlength: %d\n",stream->mBuffer->length());
-	auto tag = serialize<CompoundTag>::read(static_cast<BinaryStream*>(stream));
+	auto tag = serialize<CompoundTag>::read(&binary_stream);
 	//printf("deserialized.\n");
 	if (tag->getTagType() != Tag::Type::Compound)
 		Py_RETURN_ERROR("Invalid Tag");
-	auto& t = *tag->asCompoundTag();
-	if (t.contains("size") || t["size"]->getTagType() != Tag::Type::List)
+	if (tag->contains("size") || (*tag)["size"]->getTagType() != Tag::Type::List)
 		Py_RETURN_ERROR("Invalid Tag");
-	auto& t_size = *t["size"]->asListTag();
-	BlockPos size{
-		const_cast<Tag*>(t_size[0])->asIntTag()->value(),
-		const_cast<Tag*>(t_size[1])->asIntTag()->value(),
-		const_cast<Tag*>(t_size[2])->asIntTag()->value(),
-	};
-	StructureSettings ss(size, true, false);
-	StructureTemplate st("tmp");
-	st.fromTag("", *tag);
-	st.placeInWorld(*bs, *Global<Level>->getBlockPalette(), pos, ss, nullptr, true);
-	for (int x = 0; x != size.x; ++x) {
+	StructureTemplate::fromTag("name", *tag)
+		.toWorld(did, pos, mir, rot);
+	/*for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {
 			for (int z = 0; z != size.z; ++z) {
 				BlockPos bp{ x, y, z };
 				bs->neighborChanged(bp, bp); // idk what will happen, origin: neighborChanged(bp)
 			}
 		}
-	}
+	}*/
 	Py_RETURN_NONE;
 }
 //产生爆炸
@@ -298,29 +250,26 @@ static PyObject* explode(PyObject*, PyObject* args) {
 	float power; bool destroy;
 	float range; bool fire;
 	Py_PARSE("fffifbfb",
-		&pos.x, &pos.y, &pos.z, &did, &power, &destroy, &range, &fire
+		&pos.x, &pos.y, &pos.z, &did,
+		&power, &destroy, &range, &fire
 	);
 	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	SymCall<bool>("?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z",
-		Global<Level>, bs, nullptr, pos, power, fire, destroy, range, true);
+	Global<Level>->explode(*bs, nullptr, pos, power, fire, destroy, range, true);
 	Py_RETURN_NONE;
 }
 //生成物品
 static PyObject* spawnItem(PyObject*, PyObject* args) {
-	const char* data = "";
+	const char* item_data = "";
 	Vec3 pos; int did;
-	Py_PARSE("sfffi", &data, &pos.x, &pos.y, &pos.z, &did);
+	Py_PARSE("sfffi", &item_data, &pos.x, &pos.y, &pos.z, &did);
+	ItemStack item = LoadItemFromString(item_data);
 	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Level::getBlockSource(did);
-	if (!bs)
-		Py_RETURN_ERROR("Unknown dimension ID");
-	ItemStack item = LoadItemFromString(data);
-	Global<Level>->getSpawner().spawnItem(pos, did, &item); // Todo
+	Global<Level>->getSpawner().spawnItem(pos, did, &item);
 	Py_RETURN_NONE;
 }
 //是否为史莱姆区块
@@ -342,9 +291,8 @@ static PyObject* setSignBlockMessage(PyObject*, PyObject* args) {
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	BlockActor* sign = bs->getBlockEntity(bp);
-	SymCall<void, BlockActor*, const string&, const string&>("?setMessage@SignBlockActor@@QEAAXV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@0@Z",
-		sign, name, name);
+	SignBlockActor* sign = static_cast<SignBlockActor*>(bs->getBlockEntity(bp));
+	sign->setMessage(name, name);
 	sign->setChanged();
 	Py_RETURN_NONE;
 }
@@ -363,9 +311,9 @@ static PyMethodDef Methods[]{
 	{ "getBlock", getBlock, METH_VARARGS, nullptr },
 	{ "setBlock", setBlock, METH_VARARGS, nullptr },
 	{ "getStructure", getStructure, METH_VARARGS, nullptr },
-	{ "setStructure", (PyCFunction)setStructure, METH_VARARGS | METH_KEYWORDS, nullptr },
-	{ "getStructureRaw", getStructureRaw, METH_VARARGS, nullptr },
-	{ "setStructureRaw", (PyCFunction)setStructureRaw, METH_VARARGS | METH_KEYWORDS, nullptr },
+	{ "setStructure", setStructure, METH_VARARGS, nullptr },
+	{ "getStructureBinary", getStructureBinary, METH_VARARGS, nullptr },
+	{ "setStructureBinary", setStructureBinary, METH_VARARGS, nullptr },
 	{ "explode", explode, METH_VARARGS, nullptr },
 	{ "spawnItem", spawnItem, METH_VARARGS, nullptr },
 	{ "isSlimeChunk", isSlimeChunk, METH_VARARGS, nullptr },

@@ -105,7 +105,7 @@ static Json AccessUrlForJson(const wchar_t* url) {
 	} while (size);
 	InternetCloseHandle(handle2);
 	InternetCloseHandle(hSession);
-	return StringToJson(data);
+	return ToJson(data);
 }
 //访问url
 static void AccessUrlForFile(const wchar_t* url, string_view filename) {
@@ -251,7 +251,7 @@ THook(int, "main",
 	int argc, char* argv[], char* envp[]) {
 #if 0
 	while (true) {
-		CompoundTag* t = ToCompoundTag(StringToJson(R"(
+		CompoundTag* t = ToCompoundTag(ToJson(R"(
 	             {
 	                "Block10": {
 	                    "name8": "minecraft:crafting_table",
