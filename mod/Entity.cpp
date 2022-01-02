@@ -392,19 +392,23 @@ struct PyEntity {
 	static PyObject* sendSimpleForm(PyObject* self, PyObject* args) {
 		const char* title = "";
 		const char* content = "";
-		PyObject* buttons = nullptr;
-		PyObject* images = nullptr;
+		PyObject* buttons_list = nullptr;
+		PyObject* images_list = nullptr;
 		PyObject* callback = nullptr;
-		Py_PARSE("ssOOO", &title, &content, &buttons, &images, &callback);
+		Py_PARSE("ssOOO", &title, &content, &buttons_list, &images_list, &callback);
 		Py_GET_PLAYER;
 		if (!PyFunction_Check(callback))
 			return nullptr;
-		p->sendSimpleFormPacket(title, content, ToStrArray(buttons), ToStrArray(images),
+		auto buttons = ToStrArray(buttons_list);
+		auto images = ToStrArray(images_list);
+		if (buttons.size() != images.size())
+			Py_RETURN_ERROR("The number of buttons is not equal to the number of images");
+		p->sendSimpleFormPacket(title, content, buttons, images,
 			[callback](int arg) {
 				PyObject* result = PyObject_CallFunction(callback, "i", arg);
 				PrintPythonError();
 				Py_XDECREF(result);
-			}
+		}
 		);
 		Py_RETURN_NONE;
 	}
