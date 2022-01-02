@@ -11,6 +11,7 @@
 
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
 #define Py_PRINT_REFCOUNT(obj) cout << "引用计数：" << obj->ob_refcnt << endl
+
 //#define Py_BEGIN_CALL\
 //	int _has_gil = PyGILState_Check();\
 //	PyGILState_STATE _gil_state = PyGILState_LOCKED;\
@@ -21,12 +22,25 @@
 //	Py_UNBLOCK_THREADS\
 //	Py_END_ALLOW_THREADS;\
 //	if (!_has_gil)PyGILState_Release(_gil_state)
+class PyGILGuard {
+public:
+	PyGILGuard() {
+		gil_ = PyGILState_Ensure();
+	}
+	~PyGILGuard() {
+		PyGILState_Release(gil_);
+	}
+
+private:
+	PyGILState_STATE gil_;
+};
 
 //字符串转Unicode
 inline PyObject* ToPyStr(std::string_view str) {
 	return PyUnicode_InternFromString(str.data());
 	//return PyUnicode_FromStringAndSize(str.data(), str.length());
 }
+//list转vector
 inline std::vector<std::string> ToStrArray(PyObject* list) {
 	std::vector<std::string> arr;
 	if (PyList_Check(list)) {

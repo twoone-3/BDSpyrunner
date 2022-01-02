@@ -152,26 +152,21 @@ static void CheckPluginVersion() {
 	exit(0);
 }
 #endif 
-//事件回调助手
-//创建会申请GIL
+//事件回调助手，创建会申请GIL
 class EventCallBackHelper {
 public:
 	EventCallBackHelper(EventCode t) :
-		type_(t), arg_(nullptr), gil_(PyGILState_Ensure()) {
+		type_(t), arg_(nullptr), gil_() {
 	}
 	~EventCallBackHelper() {
-		if (arg_) {
+		if (arg_)
 			Py_XDECREF(arg_);
-		}
-		PyGILState_Release(gil_);
 	}
 	//事件回调
 	bool call() {
 		bool intercept = true;
 		//如果没有则跳过
 		auto& cbs = g_callback_functions[type_];
-		//Py_BEGIN_CALL;
-		//Py_XINCREF(arg_);
 		for (auto cb : cbs) {
 			PyObject* result = PyObject_CallFunction(cb, "O", arg_);
 			PrintPythonError();
@@ -179,7 +174,6 @@ public:
 				intercept = false;
 			Py_XDECREF(result);
 		}
-		//Py_END_CALL;
 		return intercept;
 	}
 	EventCallBackHelper& setArg(PyObject* arg) {
@@ -195,7 +189,6 @@ public:
 			arg_ = PyDict_New();
 		PyDict_SetItemString(arg_, key.data(), item);
 		Py_DECREF(item);
-		//Py_PRINT_REFCOUNT(item);
 		return *this;
 	}
 	EventCallBackHelper& insert(string_view key, string_view item) {
@@ -234,18 +227,10 @@ public:
 private:
 	EventCode type_;
 	PyObject* arg_;
-	PyGILState_STATE gil_;
+	PyGILGuard gil_;
 };
 #pragma endregion
 #pragma region Hook List
-#if 0
-decltype(HeapAlloc)* HeapAlloc_ptr = nullptr;
-LPVOID WINAPI _HeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes) {
-	auto p = HeapAlloc_ptr(hHeap, dwFlags, dwBytes);
-	printf("%p %d %d", hHeap, dwFlags, dwBytes);
-	return p;
-}
-#endif
 //将Python解释器初始化插入bds主函数
 THook(int, "main",
 	int argc, char* argv[], char* envp[]) {
@@ -276,11 +261,6 @@ THook(int, "main",
 		delete t;
 	}
 #endif
-	//HookFunction(
-	//	HeapAlloc,
-	//	(void**)&HeapAlloc_ptr,
-	//	_HeapAlloc
-	//);
 	//如果目录不存在创建目录
 	if (!fs::exists(PLUGIN_PATH))
 		fs::create_directory(PLUGIN_PATH);
@@ -327,7 +307,7 @@ THook(int, "main",
 	//PyEval_SaveThread();
 	//输出版本号信息
 	return original(argc, argv, envp);
-}
+	}
 #if 0
 //Level的构造函数
 THook(Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$WeakRefT@UEntityRefTraits@@@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@@Z",

@@ -382,6 +382,7 @@ struct PyEntity {
 			return nullptr;
 		p->sendCustomFormPacket(str,
 			[callback](string arg) {
+				PyGILGuard gil;
 				PyObject* result = PyObject_CallFunction(callback, "s", arg.c_str());
 				PrintPythonError();
 				Py_XDECREF(result);
@@ -405,6 +406,7 @@ struct PyEntity {
 			Py_RETURN_ERROR("The number of buttons is not equal to the number of images");
 		p->sendSimpleFormPacket(title, content, buttons, images,
 			[callback](int arg) {
+				PyGILGuard gil;
 				PyObject* result = PyObject_CallFunction(callback, "i", arg);
 				PrintPythonError();
 				Py_XDECREF(result);
@@ -424,6 +426,7 @@ struct PyEntity {
 			return nullptr;
 		p->sendModalFormPacket(title, content, button1, button2,
 			[callback](bool arg) {
+				PyGILGuard gil;
 				PyObject* result = PyObject_CallFunction(callback, "O", arg ? Py_True : Py_False);
 				PrintPythonError();
 				Py_XDECREF(result);
