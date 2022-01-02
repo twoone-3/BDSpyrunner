@@ -2,6 +2,7 @@
 #pragma execution_character_set("utf-8")
 
 #include <MC/Actor.hpp>
+#include <MC/BinaryStream.hpp>
 #include <MC/Block.hpp>
 #include <MC/BlockActor.hpp>
 #include <MC/BlockLegacy.hpp>
@@ -22,6 +23,19 @@
 #include <MC/StructureSettings.hpp>
 #include <MC/StructureTemplate.hpp>
 
+#include <MC/Tag.hpp>
+#include <MC/ByteTag.hpp>
+#include <MC/ShortTag.hpp>
+#include <MC/IntTag.hpp>
+#include <MC/Int64Tag.hpp>
+#include <MC/FloatTag.hpp>
+#include <MC/DoubleTag.hpp>
+#include <MC/ByteArrayTag.hpp>
+#include <MC/StringTag.hpp>
+#include <MC/ListTag.hpp>
+#include <MC/CompoundTag.hpp>
+#include <MC/IntArrayTag.hpp>
+
 #include <third-party/Nlohmann/fifo_json.hpp>
 
 using std::unique_ptr;
@@ -30,7 +44,7 @@ using json_t = nlohmann::detail::value_t;
 inline fifo_json ToJson(std::string_view str) {
 	try { return fifo_json::parse(str); }
 	catch (const std::exception& e) {
-		std::cerr << e.what() << std::endl;
+		logger.error("Parsing JSON failed! {}", e.what());
 		return nullptr;
 	}
 }

@@ -46,7 +46,7 @@
       <PreprocessorDefinitions>NDEBUG;_AMD64_;_CONSOLE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <DisableSpecificWarnings>4996;4471;4499</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996;4471;4499;4244</DisableSpecificWarnings>
       <UseFullPaths>false</UseFullPaths>
     </ClCompile>
     <Link>
@@ -64,13 +64,13 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="mod.cpp" />
-    <ClCompile Include="mod\DataIO.cpp" />
+    <ClCompile Include="mod\Main.cpp" />
     <ClCompile Include="mod\Module.cpp" />
     <ClCompile Include="mod\Entity.cpp" />
+    <ClCompile Include="mod\Listener.cpp" />
+    <ClCompile Include="mod\NBT.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mod\DataIO.h" />
     <ClInclude Include="mod\Module.h" />
     <ClInclude Include="mod\Event.h" />
     <ClInclude Include="mod\NBT.h" />

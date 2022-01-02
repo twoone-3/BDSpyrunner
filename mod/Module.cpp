@@ -1,9 +1,6 @@
 ﻿#include "Module.h"
 #include "Version.h"
-#include "Tool.h"
 #include "NBT.h"
-#include <GlobalServiceAPI.h>
-#include "DataIO.h"
 
 using namespace std;
 //是否为史莱姆区块
@@ -224,7 +221,7 @@ static PyObject* setStructureBinary(PyObject*, PyObject* args) {
 		&data, &data_size, &pos.x, &pos.y, &pos.z,
 		&did, &mir, &rot
 	);
-	ReadOnlyBinaryStream binary_stream = new string(data, data_size);
+	ReadOnlyBinaryStream binary_stream = string(data, data_size);
 	//printf("bufferlength: %d\n",stream->mBuffer->length());
 	auto tag = serialize<CompoundTag>::read(&binary_stream);
 	//printf("deserialized.\n");
