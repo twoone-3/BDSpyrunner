@@ -1,15 +1,51 @@
-name: Build and Release
+﻿name: Build and Release
 
 on:
   push:
     tags: v*
 
 jobs:
-  build:
+  build_lib:
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: "LiteLDev/LiteLoaderBDS"
+
+      - name: Download Server
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          mkdir Tools/Server
+          ServerLink=$(curl -s https://raw.githubusercontent.com/LiteLDev/LiteLoaderBDS/main/LINK.txt)
+          curl -L -o Tools/Server/server.zip "$ServerLink"
+          unzip -q Tools/Server/server.zip -d Tools/Server/
+        shell: bash
+
+      - name: Build Library
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          cd Tools
+          LibraryBuilder.exe Server
+        shell: cmd
+
+      - name: Temporarily Save Libs
+        uses: actions/upload-artifact@v2
+        with:
+          name: libs
+          path: LiteLoader/Lib
+
+  build_pyr:
     runs-on: windows-2022
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Retrieve Saved Libs
+        uses: actions/download-artifact@v2
+        with:
+          name: libs
+          path: SDK/Lib/
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
@@ -26,3 +62,4 @@ jobs:
           files: |
             ./x64/Release/BDSpyrunner.dll
             ./x64/Release/BDSpyrunner.pdb
+
