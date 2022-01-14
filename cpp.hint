@@ -1,3 +1,4 @@
 #define METH_NOARGS
 #define METH_VARARGS
 #define METH_KEYWORDS
+#define GET_PLAYER Player* p = asPlayer(self);if (p == nullptr)return nullptr

@@ -1,14 +1,13 @@
-#pragma once
-#include <unordered_map>
+ï»¿#pragma once
 #include <vector>
 #include "Entity.h"
 #include "Event.h"
 
-//Pyº¯Êı±í
+//Pyå‡½æ•°è¡¨
 inline std::unordered_map<EventCode, std::vector<PyObject*>> g_callback_functions;
-//×¢²áÃüÁî
+//æ³¨å†Œå‘½ä»¤
 inline std::unordered_map<std::string, std::pair<std::string, PyObject*>> g_commands;
-//ÉËº¦
+//ä¼¤å®³
 inline static int g_damage = 0;
 
 extern "C" PyObject * mc_init();

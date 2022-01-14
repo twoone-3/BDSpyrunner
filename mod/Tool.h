@@ -1,11 +1,14 @@
-#pragma once
+ï»¿#pragma once
 #pragma execution_character_set("utf-8")
-#pragma warning(disable:4996)
+
 #include <MC/Actor.hpp>
+#include <MC/BinaryStream.hpp>
 #include <MC/Block.hpp>
 #include <MC/BlockActor.hpp>
 #include <MC/BlockLegacy.hpp>
+#include <MC/BlockPalette.hpp>
 #include <MC/BlockSource.hpp>
+#include <MC/Common.hpp>
 #include <MC/Container.hpp>
 #include <MC/ItemStack.hpp>
 #include <MC/Level.hpp>
@@ -15,19 +18,33 @@
 #include <MC/Scoreboard.hpp>
 #include <MC/ServerNetworkHandler.hpp>
 #include <MC/SimpleContainer.hpp>
+#include <MC/SignBlockActor.hpp>
+#include <MC/Spawner.hpp>
 #include <MC/StructureSettings.hpp>
 #include <MC/StructureTemplate.hpp>
 
-#include "json.hpp"
+#include <MC/Tag.hpp>
+#include <MC/ByteTag.hpp>
+#include <MC/ShortTag.hpp>
+#include <MC/IntTag.hpp>
+#include <MC/Int64Tag.hpp>
+#include <MC/FloatTag.hpp>
+#include <MC/DoubleTag.hpp>
+#include <MC/ByteArrayTag.hpp>
+#include <MC/StringTag.hpp>
+#include <MC/ListTag.hpp>
+#include <MC/CompoundTag.hpp>
+#include <MC/IntArrayTag.hpp>
+
+#include <third-party/Nlohmann/fifo_json.hpp>
 
 using std::unique_ptr;
-using json = nlohmann::basic_json<>;
 using json_t = nlohmann::detail::value_t;
-//×Ö·û´®×ªJSON£¬±¾²å¼ş²ÉÓÃ https://json.nlohmann.me µÄJSON¿â3.10.4°æ±¾
-inline json StringToJson(std::string_view str) {
-	try { return json::parse(str); }
+//å­—ç¬¦ä¸²è½¬JSONï¼Œæœ¬æ’ä»¶é‡‡ç”¨ https://json.nlohmann.me çš„JSONåº“3.10.4ç‰ˆæœ¬
+inline fifo_json ToJson(std::string_view str) {
+	try { return fifo_json::parse(str); }
 	catch (const std::exception& e) {
-		std::cerr << e.what() << std::endl;
+		logger.error("Parsing JSON failed! {}", e.what());
 		return nullptr;
 	}
 }

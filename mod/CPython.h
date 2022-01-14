@@ -1,8 +1,6 @@
-#pragma once
+Ôªø#pragma once
 #define PY_SSIZE_T_CLEAN
 #include "../include/Python.h"
-#include <vector>
-#include <string>
 #include <Global.h>
 
 #define Py_PARSE(format,...) if (!PyArg_ParseTuple(args, format ":" __FUNCTION__, __VA_ARGS__))return nullptr
@@ -10,7 +8,8 @@
 #define Py_PARSE_WITH_KERWORDS(format,...) if (!PyArg_ParseTupleAndKeywords(args, kwds, format ":" __FUNCTION__, const_cast<char**>(kwlist), __VA_ARGS__))return nullptr
 
 #define Py_RETURN_ERROR(str) return PyErr_SetString(PyExc_Exception, str), nullptr
-#define Py_PRINT_REFCOUNT(obj) cout << "“˝”√º∆ ˝£∫" << obj->ob_refcnt << endl
+#define Py_PRINT_REFCOUNT(obj) logger.info(#obj " ÁöÑÂºïÁî®ËÆ°Êï∞ : {}",  obj->ob_refcnt)
+
 //#define Py_BEGIN_CALL\
 //	int _has_gil = PyGILState_Check();\
 //	PyGILState_STATE _gil_state = PyGILState_LOCKED;\
@@ -21,22 +20,35 @@
 //	Py_UNBLOCK_THREADS\
 //	Py_END_ALLOW_THREADS;\
 //	if (!_has_gil)PyGILState_Release(_gil_state)
+class PyGILGuard {
+public:
+	PyGILGuard() {
+		gil_ = PyGILState_Ensure();
+	}
+	~PyGILGuard() {
+		PyGILState_Release(gil_);
+	}
 
-//◊÷∑˚¥Æ◊™Unicode
+private:
+	PyGILState_STATE gil_;
+};
+
+//Â≠óÁ¨¶‰∏≤ËΩ¨Unicode
 inline PyObject* ToPyStr(std::string_view str) {
 	return PyUnicode_InternFromString(str.data());
 	//return PyUnicode_FromStringAndSize(str.data(), str.length());
 }
+//listËΩ¨vector
 inline std::vector<std::string> ToStrArray(PyObject* list) {
 	std::vector<std::string> arr;
 	if (PyList_Check(list)) {
-		for (size_t i = 0; i < PyList_Size(list); i++) {
+		for (Py_ssize_t i = 0; i < PyList_Size(list); i++) {
 			arr.push_back(PyUnicode_AsUTF8(PyList_GetItem(list, i)));
 		}
 	}
 	return arr;
 }
-//Vec3◊™list
+//Vec3ËΩ¨list
 inline PyObject* ToList(Vec3 vec) {
 	PyObject* list = PyList_New(3);
 	PyList_SetItem(list, 0, PyFloat_FromDouble(vec.x));
@@ -44,7 +56,7 @@ inline PyObject* ToList(Vec3 vec) {
 	PyList_SetItem(list, 2, PyFloat_FromDouble(vec.z));
 	return list;
 }
-//Vec3◊™list
+//Vec3ËΩ¨list
 inline PyObject* ToList(Vec3* vec) {
 	PyObject* list = PyList_New(3);
 	PyList_SetItem(list, 0, PyFloat_FromDouble(vec->x));
@@ -52,7 +64,7 @@ inline PyObject* ToList(Vec3* vec) {
 	PyList_SetItem(list, 2, PyFloat_FromDouble(vec->z));
 	return list;
 }
-//∑ΩøÈ◊¯±Í◊™list
+//ÊñπÂùóÂùêÊ†áËΩ¨list
 inline PyObject* ToList(BlockPos* bp) {
 	PyObject* list = PyList_New(3);
 	PyList_SetItem(list, 0, PyLong_FromLong(bp->x));
@@ -60,7 +72,7 @@ inline PyObject* ToList(BlockPos* bp) {
 	PyList_SetItem(list, 2, PyLong_FromLong(bp->z));
 	return list;
 }
-//¥Ú”°¥ÌŒÛ–≈œ¢
+//ÊâìÂç∞ÈîôËØØ‰ø°ÊÅØ
 inline void PrintPythonError() {
 	if (PyErr_Occurred()) {
 		PyErr_Print();

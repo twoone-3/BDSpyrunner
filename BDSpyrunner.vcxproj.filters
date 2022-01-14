@@ -18,7 +18,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mod.cpp">
+    <ClCompile Include="mod\Main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="mod\Entity.cpp">
@@ -27,14 +27,14 @@
     <ClCompile Include="mod\Module.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mod\DataIO.cpp">
+    <ClCompile Include="mod\Listener.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mod\NBT.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mod\json.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="mod\Tool.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -54,9 +54,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\NBT.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mod\DataIO.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

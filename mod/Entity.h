@@ -1,6 +1,5 @@
-#pragma once
-#include <string>
+ï»¿#pragma once
 #include "CPython.h"
-//EntityÀàÐÍ
+//Entityç±»åž‹
 extern PyTypeObject PyEntity_Type;
 PyObject* ToEntity(class Actor* ptr);
