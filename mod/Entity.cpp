@@ -381,9 +381,9 @@ struct PyEntity {
 		if (!PyFunction_Check(callback))
 			return nullptr;
 		p->sendCustomFormPacket(str,
-			[callback](string arg) {
+			[p, callback](string arg) {
 				PyGILGuard gil;
-				PyObject* result = PyObject_CallFunction(callback, "s", arg.c_str());
+				PyObject* result = PyObject_CallFunction(callback, "Os", ToEntity(p), arg.c_str());
 				PrintPythonError();
 				Py_XDECREF(result);
 			}
@@ -405,9 +405,9 @@ struct PyEntity {
 		if (buttons.size() != images.size())
 			Py_RETURN_ERROR("The number of buttons is not equal to the number of images");
 		p->sendSimpleFormPacket(title, content, buttons, images,
-			[callback](int arg) {
+			[p, callback](int arg) {
 				PyGILGuard gil;
-				PyObject* result = PyObject_CallFunction(callback, "i", arg);
+				PyObject* result = PyObject_CallFunction(callback, "Oi", ToEntity(p), arg);
 				PrintPythonError();
 				Py_XDECREF(result);
 		}
@@ -425,9 +425,9 @@ struct PyEntity {
 		if (!PyFunction_Check(callback))
 			return nullptr;
 		p->sendModalFormPacket(title, content, button1, button2,
-			[callback](bool arg) {
+			[p, callback](bool arg) {
 				PyGILGuard gil;
-				PyObject* result = PyObject_CallFunction(callback, "O", arg ? Py_True : Py_False);
+				PyObject* result = PyObject_CallFunction(callback, "OO", ToEntity(p), arg ? Py_True : Py_False);
 				PrintPythonError();
 				Py_XDECREF(result);
 			}
