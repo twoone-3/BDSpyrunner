@@ -66,18 +66,20 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
   <ItemGroup>
     <ClCompile Include="mod\Main.cpp" />
     <ClCompile Include="mod\Module.cpp" />
-    <ClCompile Include="mod\Entity.cpp" />
-    <ClCompile Include="mod\Listener.cpp" />
+    <ClCompile Include="mod\PyEntity.cpp" />
+    <ClCompile Include="mod\Event.cpp" />
     <ClCompile Include="mod\NBT.cpp" />
+    <ClCompile Include="mod\PyItem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mod\Module.h" />
     <ClInclude Include="mod\Event.h" />
     <ClInclude Include="mod\NBT.h" />
     <ClInclude Include="mod\Tool.h" />
-    <ClInclude Include="mod\Entity.h" />
+    <ClInclude Include="mod\PyEntity.h" />
     <ClInclude Include="mod\Version.h" />
     <ClInclude Include="mod\CPython.h" />
+    <ClInclude Include="mod\PyItem.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\python37.lib" />

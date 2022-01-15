@@ -1,9 +1,11 @@
-﻿#include "Entity.h"
+﻿#include "PyEntity.h"
 #include "Tool.h"
 #include "NBT.h"
 
-#define Py_GET_PLAYER Player* p = asPlayer(self);if (p == nullptr)return nullptr
-#define Py_GET_ACTOR Actor* a = asActor(self);if (a == nullptr)return nullptr
+#define Py_GET_PLAYER  Py_GET_PLAYER2(nullptr)
+#define Py_GET_PLAYER2(ret) Player* p = asPlayer(self);if (p == nullptr)return ret
+#define Py_GET_ACTOR Py_GET_ACTOR2(nullptr)
+#define Py_GET_ACTOR2(ret) Actor* a = asActor(self);if (a == nullptr)return ret
 
 using namespace std;
 struct PyEntity {
@@ -23,25 +25,19 @@ struct PyEntity {
 			Py_RETURN_ERROR("This entity pointer is nullptr or is not player pointer");
 	}
 	static int print(PyObject* self, FILE* file, int) {
-		Actor* a = asActor(self);
-		if (a == nullptr)
-			return -1;
+		Py_GET_ACTOR2(-1);
 		fputs(a->getNameTag().c_str(), file);
 		return 0;
 	}
 	static PyObject* repr(PyObject* self) {
-		Actor* a = asActor(self);
-		if (a == nullptr)
-			return ToPyStr("");
+		Py_GET_ACTOR2(ToPyStr(""));
 		return ToPyStr(a->getNameTag());
 	}
 	static Py_hash_t hash(PyObject* self) {
 		return reinterpret_cast<Py_hash_t>(self);
 	}
 	static PyObject* str(PyObject* self) {
-		Actor* a = asActor(self);
-		if (a == nullptr)
-			return ToPyStr("");
+		Py_GET_ACTOR2(ToPyStr(""));
 		return ToPyStr(a->getNameTag());
 	}
 	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
@@ -52,14 +48,14 @@ struct PyEntity {
 		case Py_LE:break;
 			//==
 		case Py_EQ:
-			if (PyEntity::asActor(self) == PyEntity::asActor(other))
+			if (asActor(self) == asActor(other))
 				Py_RETURN_TRUE;
 			else
 				Py_RETURN_FALSE;
 			break;
 			//!=
 		case Py_NE:
-			if (PyEntity::asActor(self) != PyEntity::asActor(other))
+			if (asActor(self) != asActor(other))
 				Py_RETURN_TRUE;
 			else
 				Py_RETURN_FALSE;
@@ -79,9 +75,7 @@ struct PyEntity {
 	}
 	static int setName(PyObject* self, PyObject* arg, void*) {
 		if (PyUnicode_Check(arg)) {
-			Player* p = PyEntity::asPlayer(self);
-			if (!p)
-				return -1;
+			Py_GET_PLAYER2(-1);
 			p->setName(PyUnicode_AsUTF8(arg));
 			return 0;
 		}
@@ -144,9 +138,7 @@ struct PyEntity {
 	}
 	static int setHealth(PyObject* self, PyObject* arg, void*) {
 		if (PyLong_Check(arg)) {
-			Actor* a = PyEntity::asActor(self);
-			if (!a)
-				return -1;
+			Py_GET_ACTOR2(-1);
 			//不知行不行
 			a->serializationSetHealth(PyLong_AsLong(arg));
 			return 0;
@@ -160,9 +152,7 @@ struct PyEntity {
 	}
 	static int setMaxHealth(PyObject* self, PyObject* arg, void*) {
 		if (PyLong_Check(arg)) {
-			Actor* a = PyEntity::asActor(self);
-			if (!a)
-				return -1;
+			Py_GET_ACTOR2(-1);
 			logger.error(__FILE__, __LINE__, "此函数目前无法使用");
 			//a->setMaxHealth(PyLong_AsLong(arg));
 			return 0;
@@ -176,9 +166,7 @@ struct PyEntity {
 	}
 	static int setPermissions(PyObject* self, PyObject* arg, void*) {
 		if (PyLong_Check(arg)) {
-			Player* p = PyEntity::asPlayer(self);
-			if (!p)
-				return -1;
+			Py_GET_PLAYER2(-1);
 			p->setPermissions((CommandPermissionLevel)PyLong_AsLong(arg));
 			return 0;
 		}
@@ -475,18 +463,14 @@ struct PyEntity {
 	static PyObject* addTag(PyObject* self, PyObject* args) {
 		const char* tag = "";
 		Py_PARSE("s", &tag);
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
+		Py_GET_ACTOR;
 		a->addTag(tag);
 		Py_RETURN_NONE;
 	}
 	static PyObject* removeTag(PyObject* self, PyObject* args) {
 		const char* tag = "";
 		Py_PARSE("s", &tag);
-		Actor* a = PyEntity::asActor(self);
-		if (!a)
-			return nullptr;
+		Py_GET_ACTOR;
 		a->removeTag(tag);
 		Py_RETURN_NONE;
 	}
@@ -508,28 +492,28 @@ struct PyEntity {
 
 	//获取属性方法
 	inline static PyGetSetDef GetSet[]{
-		{ "name", PyEntity::getName, PyEntity::setName, nullptr },
-		{ "uuid", PyEntity::getUuid, nullptr, nullptr },
-		{ "xuid", PyEntity::getXuid, nullptr, nullptr },
-		{ "pos", PyEntity::getPos, nullptr, nullptr },
-		{ "did", PyEntity::getDimensionId, nullptr, nullptr },
-		{ "is_standing", PyEntity::getIsStand, nullptr, nullptr },
-		/*已弃用*/{ "isstand", PyEntity::getIsStand, nullptr, nullptr },
-		{ "is_sneaking", PyEntity::getIsSneaking, nullptr, nullptr },
-		/*已弃用*/{ "issneak", PyEntity::getIsSneaking, nullptr, nullptr },
-		{ "typeid", PyEntity::getTypeID, nullptr, nullptr },
-		{ "typename", PyEntity::getTypeName, nullptr, nullptr },
-		{ "NBT", PyEntity::getNBTInfo, nullptr, nullptr },
-		/*已弃用*/{ "nbt", PyEntity::getNBTInfo, nullptr, nullptr },
-		{ "health", PyEntity::getHealth, PyEntity::setHealth, nullptr },
-		{ "maxhealth", PyEntity::getMaxHealth, PyEntity::setMaxHealth, nullptr },
-		{ "perm", PyEntity::getPermissions, PyEntity::setPermissions, nullptr },
-		{ "platform_online_id", PyEntity::getPlatformOnlineId, nullptr, nullptr },
-		/*已弃用*/{ "deviceid", PyEntity::getPlatformOnlineId, nullptr, nullptr },
-		{ "platform", PyEntity::getPlatform, nullptr, nullptr },
-		/*已弃用*/{ "deviceos", PyEntity::getPlatform, nullptr, nullptr },
-		{ "IP", PyEntity::getIP, nullptr, nullptr },
-		/*已弃用*/{ "ip", PyEntity::getIP, nullptr, nullptr },
+		{ "name", getName, setName, nullptr },
+		{ "uuid", getUuid, nullptr, nullptr },
+		{ "xuid", getXuid, nullptr, nullptr },
+		{ "pos", getPos, nullptr, nullptr },
+		{ "did", getDimensionId, nullptr, nullptr },
+		{ "is_standing", getIsStand, nullptr, nullptr },
+		/*已弃用*/{ "isstand", getIsStand, nullptr, nullptr },
+		{ "is_sneaking", getIsSneaking, nullptr, nullptr },
+		/*已弃用*/{ "issneak", getIsSneaking, nullptr, nullptr },
+		{ "typeid", getTypeID, nullptr, nullptr },
+		{ "typename", getTypeName, nullptr, nullptr },
+		{ "NBT", getNBTInfo, nullptr, nullptr },
+		/*已弃用*/{ "nbt", getNBTInfo, nullptr, nullptr },
+		{ "health", getHealth, setHealth, nullptr },
+		{ "maxhealth", getMaxHealth, setMaxHealth, nullptr },
+		{ "perm", getPermissions, setPermissions, nullptr },
+		{ "platform_online_id", getPlatformOnlineId, nullptr, nullptr },
+		/*已弃用*/{ "deviceid", getPlatformOnlineId, nullptr, nullptr },
+		{ "platform", getPlatform, nullptr, nullptr },
+		/*已弃用*/{ "deviceos", getPlatform, nullptr, nullptr },
+		{ "IP", getIP, nullptr, nullptr },
+		/*已弃用*/{ "ip", getIP, nullptr, nullptr },
 		{ nullptr }
 	};
 	//Entity方法

@@ -1,7 +1,4 @@
-﻿//#include <filesystem>
-//#include <fstream>
-//#include <thread>
-#include "Module.h"
+﻿#include "Module.h"
 #include "Version.h"
 #include "NBT.h"
 
@@ -151,7 +148,12 @@ static void CheckPluginVersion() {
 }
 #endif 
 #pragma endregion
-#pragma region Hook List
+void PyClassInit() {
+	if (PyType_Ready(&PyEntity_Type) < 0)
+		Py_FatalError("Can't initialize entity type");
+	if (PyType_Ready(&PyItem_Type) < 0)
+		Py_FatalError("Can't initialize iem type");
+}
 //将Python解释器初始化插入bds主函数
 THook(int, "main",
 	int argc, char* argv[], char* envp[]) {
@@ -202,14 +204,13 @@ THook(int, "main",
 	Py_PreInitialize(&cfg);
 #endif
 	//增加一个模块
-	PyImport_AppendInittab("mc", mc_init);
+	PyImport_AppendInittab("mc", McInit);
 	//初始化解释器
 	Py_Initialize();
 	//输出版本号信息
 	logger.info("{} loaded.", PYR_VERSION);
 	//初始化类型
-	if (PyType_Ready(&PyEntity_Type) < 0)
-		Py_FatalError("Can't initialize entity type");
+	PyClassInit();
 	//启用线程支持
 	PyEval_InitThreads();
 	for (auto& info : fs::directory_iterator(PLUGIN_PATH)) {
@@ -243,4 +244,3 @@ THook(void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
 	}
 	original(_this);
 }
-#pragma endregion

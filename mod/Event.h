@@ -1,12 +1,9 @@
-#pragma once
-#include <unordered_map>
-#include <string>
+﻿#pragma once
+#include <EventAPI.h>
 
 enum class EventCode {
-	None,
 	onConsoleInput,
 	onConsoleOutput,
-	onSelectForm,
 	onUseItem,
 	onPlaceBlock,
 	onDestroyBlock,
@@ -48,47 +45,6 @@ enum class EventCode {
 	onUseSignBlock,
 };
 
-inline const std::unordered_map<std::string, EventCode> events{
-	{ "onConsoleInput", EventCode::onConsoleInput },
-	{ "onConsoleOutput", EventCode::onConsoleOutput },
-	{ "onSelectForm", EventCode::onSelectForm },
-	{ "onUseItem", EventCode::onUseItem },
-	{ "onPlaceBlock", EventCode::onPlaceBlock },
-	{ "onDestroyBlock", EventCode::onDestroyBlock },
-	{ "onOpenChest", EventCode::onOpenChest },
-	{ "onOpenBarrel", EventCode::onOpenBarrel },
-	{ "onCloseChest", EventCode::onCloseChest },
-	{ "onCloseBarrel", EventCode::onCloseBarrel },
-	{ "onContainerChange", EventCode::onContainerChange },
-	{ "onChangeDimension", EventCode::onChangeDimension },
-	{ "onMobDie", EventCode::onMobDie },
-	{ "onMobHurt", EventCode::onMobHurt },
-	{ "onRespawn", EventCode::onRespawn },
-	{ "onChat", EventCode::onChat },
-	{ "onInputText", EventCode::onInputText },
-	{ "onCommandBlockUpdate", EventCode::onCommandBlockUpdate },
-	{ "onInputCommand", EventCode::onInputCommand },
-	{ "onCommandBlockPerform", EventCode::onCommandBlockPerform },
-	{ "onPlayerJoin", EventCode::onPlayerJoin },
-	{ "onPlayerLeft", EventCode::onPlayerLeft },
-	{ "onPlayerAttack", EventCode::onPlayerAttack },
-	{ "onLevelExplode", EventCode::onLevelExplode },
-	{ "onSetArmor", EventCode::onSetArmor },
-	{ "onFallBlockTransform", EventCode::onFallBlockTransform },
-	{ "onUseRespawnAnchorBlock", EventCode::onUseRespawnAnchorBlock },
-	{ "onScoreChanged", EventCode::onScoreChanged },
-	{ "onMove", EventCode::onMove },
-	{ "onPistonPush", EventCode::onPistonPush },
-	{ "onEndermanRandomTeleport", EventCode::onEndermanRandomTeleport },
-	{ "onServerStarted", EventCode::onServerStarted },
-	{ "onDropItem", EventCode::onDropItem },
-	{ "onTakeItem", EventCode::onTakeItem },
-	{ "onRide", EventCode::onRide },
-	{ "onUseFrameBlock", EventCode::onUseFrameBlock },
-	{ "onJump", EventCode::onJump },
-	{ "onSneak", EventCode::onSneak },
-	{ "onBlockInteracted", EventCode::onBlockInteracted },
-	{ "onFireSpread", EventCode::onFireSpread },
-	{ "onBlockExploded", EventCode::onBlockExploded },
-	{ "onUseSignBlock", EventCode::onUseSignBlock },
-};
+std::optional<EventCode> StringToEventCode(const std::string& s);
+
+void EnableEventListener(EventCode e);

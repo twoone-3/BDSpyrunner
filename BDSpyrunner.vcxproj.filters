@@ -21,16 +21,19 @@
     <ClCompile Include="mod\Main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mod\Entity.cpp">
+    <ClCompile Include="mod\PyEntity.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="mod\Module.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mod\Listener.cpp">
+    <ClCompile Include="mod\Event.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="mod\NBT.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mod\PyItem.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,7 +44,7 @@
     <ClInclude Include="mod\Event.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mod\Entity.h">
+    <ClInclude Include="mod\PyEntity.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\Module.h">
@@ -54,6 +57,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\NBT.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mod\PyItem.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

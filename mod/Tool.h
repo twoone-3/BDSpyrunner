@@ -5,6 +5,7 @@
 #include <MC/BinaryStream.hpp>
 #include <MC/Block.hpp>
 #include <MC/BlockActor.hpp>
+#include <MC/BlockInstance.hpp>
 #include <MC/BlockLegacy.hpp>
 #include <MC/BlockPalette.hpp>
 #include <MC/BlockSource.hpp>

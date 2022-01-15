@@ -59,14 +59,15 @@ static PyObject* runCommand(PyObject*, PyObject* args) {
 }
 //设置监听
 static PyObject* setListener(PyObject*, PyObject* args) {
-	const char* name = ""; PyObject* func;
-	Py_PARSE("sO", &name, &func);
-	auto it = events.find(name);
+	const char* key = "";
+	PyObject* func = nullptr;
+	Py_PARSE("sO", &key, &func);
 	if (!PyFunction_Check(func))
 		Py_RETURN_ERROR("Parameter 2 is not callable");
-	if (it == events.end())
+	auto code = StringToEventCode(key);
+	if (!code)
 		Py_RETURN_ERROR("Invalid Listener key words");
-	g_callback_functions[it->second].push_back(func);
+	g_callback_functions[code.value()].push_back(func);
 	Py_RETURN_NONE;
 }
 //设置指令说明
@@ -330,7 +331,7 @@ static PyModuleDef Module{
 	nullptr
 };
 //模块初始化
-extern "C" PyObject * mc_init() {
+extern "C" PyObject * McInit() {
 	PyObject* module = PyModule_Create(&Module);
 	PyModule_AddObject(module, "Entity", reinterpret_cast<PyObject*>(&PyEntity_Type));
 	return module;

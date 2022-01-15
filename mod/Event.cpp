@@ -1,4 +1,5 @@
-﻿#include "Tool.h"
+﻿#include "Event.h"
+#include "Tool.h"
 #include "Module.h"
 
 using namespace std;
@@ -29,10 +30,6 @@ public:
 		arg_ = arg;
 		return *this;
 	}
-	Callbacker& setDict() {
-		arg_ = PyDict_New();
-		return *this;
-	}
 	Callbacker& insert(string_view key, PyObject* item) {
 		if (arg_ == nullptr)
 			arg_ = PyDict_New();
@@ -45,6 +42,9 @@ public:
 	}
 	Callbacker& insert(string_view key, Actor* item) {
 		return insert(key, ToEntity(item));
+	}
+	Callbacker& insert(string_view key, ItemStack* item) {
+		return insert(key, ToItem(item));
 	}
 	Callbacker& insert(string_view key, BlockPos* item) {
 		return insert(key, ToList(item));
@@ -79,6 +79,171 @@ private:
 	PyGILGuard gil_;
 };
 
+std::optional<EventCode> StringToEventCode(const std::string& s) {
+	static const std::unordered_map<std::string, EventCode> events{
+		{ "onConsoleInput", EventCode::onConsoleInput },
+		{ "onConsoleOutput", EventCode::onConsoleOutput },
+		{ "onUseItem", EventCode::onUseItem },
+		{ "onPlaceBlock", EventCode::onPlaceBlock },
+		{ "onDestroyBlock", EventCode::onDestroyBlock },
+		{ "onOpenChest", EventCode::onOpenChest },
+		{ "onOpenBarrel", EventCode::onOpenBarrel },
+		{ "onCloseChest", EventCode::onCloseChest },
+		{ "onCloseBarrel", EventCode::onCloseBarrel },
+		{ "onContainerChange", EventCode::onContainerChange },
+		{ "onChangeDimension", EventCode::onChangeDimension },
+		{ "onMobDie", EventCode::onMobDie },
+		{ "onMobHurt", EventCode::onMobHurt },
+		{ "onRespawn", EventCode::onRespawn },
+		{ "onChat", EventCode::onChat },
+		{ "onInputText", EventCode::onInputText },
+		{ "onCommandBlockUpdate", EventCode::onCommandBlockUpdate },
+		{ "onInputCommand", EventCode::onInputCommand },
+		{ "onCommandBlockPerform", EventCode::onCommandBlockPerform },
+		{ "onPlayerJoin", EventCode::onPlayerJoin },
+		{ "onPlayerLeft", EventCode::onPlayerLeft },
+		{ "onPlayerAttack", EventCode::onPlayerAttack },
+		{ "onLevelExplode", EventCode::onLevelExplode },
+		{ "onSetArmor", EventCode::onSetArmor },
+		{ "onFallBlockTransform", EventCode::onFallBlockTransform },
+		{ "onUseRespawnAnchorBlock", EventCode::onUseRespawnAnchorBlock },
+		{ "onScoreChanged", EventCode::onScoreChanged },
+		{ "onMove", EventCode::onMove },
+		{ "onPistonPush", EventCode::onPistonPush },
+		{ "onEndermanRandomTeleport", EventCode::onEndermanRandomTeleport },
+		{ "onServerStarted", EventCode::onServerStarted },
+		{ "onDropItem", EventCode::onDropItem },
+		{ "onTakeItem", EventCode::onTakeItem },
+		{ "onRide", EventCode::onRide },
+		{ "onUseFrameBlock", EventCode::onUseFrameBlock },
+		{ "onJump", EventCode::onJump },
+		{ "onSneak", EventCode::onSneak },
+		{ "onBlockInteracted", EventCode::onBlockInteracted },
+		{ "onFireSpread", EventCode::onFireSpread },
+		{ "onBlockExploded", EventCode::onBlockExploded },
+		{ "onUseSignBlock", EventCode::onUseSignBlock },
+	};
+	auto x = events.find(s);
+	if (x == events.end())
+		return nullopt;
+	else
+		return x->second;
+}
+
+void EnableEventListener(EventCode code) {
+	using namespace Event;
+	switch (code) {
+	case EventCode::onConsoleInput:
+		ConsoleCmdEvent::subscribe(
+			[code](const ConsoleCmdEvent& e) {
+				Callbacker h(code);
+				h.setArg(ToPyStr(e.mCommand));
+				return h.call();
+			});
+		break;
+	case EventCode::onConsoleOutput:
+		ConsoleOutputEvent::subscribe(
+			[code](const ConsoleOutputEvent& e) {
+				Callbacker h(code);
+				h.setArg(ToPyStr(e.mOutput));
+				return h.call();
+			});
+		break;
+	case EventCode::onUseItem:
+		PlayerUseItemEvent::subscribe(
+			[code](const PlayerUseItemEvent& e) {
+				Callbacker h(code);
+				h.insert("player", e.mPlayer);
+				h.insert("item", e.mItemStack);
+				return h.call();
+			});
+		break;
+	case EventCode::onPlaceBlock:
+		PlayerPlaceBlockEvent::subscribe([code](const PlayerPlaceBlockEvent& e) {
+			Callbacker h(code);
+			h.insert("player", e.mPlayer);
+			const_cast<BlockInstance*>(&e.mBlockInstance)->getBlock();
+			return h.call();
+			});
+		break;
+	case EventCode::onDestroyBlock:
+		break;
+	case EventCode::onOpenChest:
+		break;
+	case EventCode::onOpenBarrel:
+		break;
+	case EventCode::onCloseChest:
+		break;
+	case EventCode::onCloseBarrel:
+		break;
+	case EventCode::onContainerChange:
+		break;
+	case EventCode::onChangeDimension:
+		break;
+	case EventCode::onMobDie:
+		break;
+	case EventCode::onMobHurt:
+		break;
+	case EventCode::onRespawn:
+		break;
+	case EventCode::onChat:
+		break;
+	case EventCode::onInputText:
+		break;
+	case EventCode::onCommandBlockUpdate:
+		break;
+	case EventCode::onInputCommand:
+		break;
+	case EventCode::onCommandBlockPerform:
+		break;
+	case EventCode::onPlayerJoin:
+		break;
+	case EventCode::onPlayerLeft:
+		break;
+	case EventCode::onPlayerAttack:
+		break;
+	case EventCode::onLevelExplode:
+		break;
+	case EventCode::onSetArmor:
+		break;
+	case EventCode::onFallBlockTransform:
+		break;
+	case EventCode::onUseRespawnAnchorBlock:
+		break;
+	case EventCode::onScoreChanged:
+		break;
+	case EventCode::onMove:
+		break;
+	case EventCode::onPistonPush:
+		break;
+	case EventCode::onEndermanRandomTeleport:
+		break;
+	case EventCode::onServerStarted:
+		break;
+	case EventCode::onDropItem:
+		break;
+	case EventCode::onTakeItem:
+		break;
+	case EventCode::onRide:
+		break;
+	case EventCode::onUseFrameBlock:
+		break;
+	case EventCode::onJump:
+		break;
+	case EventCode::onSneak:
+		break;
+	case EventCode::onBlockInteracted:
+		break;
+	case EventCode::onFireSpread:
+		break;
+	case EventCode::onBlockExploded:
+		break;
+	case EventCode::onUseSignBlock:
+		break;
+	default:
+		break;
+	}
+}
 //开服完成
 THook(void, "?startServerThread@ServerInstance@@QEAAXXZ",
 	uintptr_t _this) {
@@ -362,25 +527,6 @@ THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVComma
 			original(_this, id, pkt);
 	}
 }
-//玩家选择表单
-THook(void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormResponsePacket@@$0A@@@UEBAXAEBVNetworkIdentifier@@AEAVNetEventCallback@@AEAV?$shared_ptr@VPacket@@@std@@@Z",
-	uintptr_t _this, NetworkIdentifier& id, ServerNetworkHandler* handle,/*ModalFormResponsePacket*/uintptr_t* ppkt) {
-	Callbacker h(EventCode::onSelectForm);
-	uintptr_t pkt = *ppkt;
-	Player* p = reinterpret_cast<Player*>(handle->getServerPlayer(id));
-	if (p) {
-		unsigned fid = Fetch<unsigned>(pkt, 48);
-		string data = Fetch<string>(pkt, 56);
-		if (data.back() == '\n')
-			data.pop_back();
-		h
-			.insert("player", p)
-			.insert("selected", data)
-			.insert("formid", fid);
-		h.call();
-	}
-	original(_this, id, handle, ppkt);
-}
 //命令方块更新
 THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandBlockUpdatePacket@@@Z",
 	ServerNetworkHandler* _this, NetworkIdentifier& id, /*CommandBlockUpdatePacket*/uintptr_t pkt) {
@@ -658,3 +804,4 @@ THook(uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 		return original(_this, a1, a2);
 	return 0;
 }
+
