@@ -247,24 +247,60 @@ void EnableEventListener(EventCode code) {
 		EVENT_END;
 		break;
 	case EventCode::onChangeSprinting:
+		EVENT_BEGIN(Event::PlayerSprintEvent);
+		EVENT_INSERT(IsSprinting);
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onSpawnProjectile:
+		EVENT_BEGIN(Event::ProjectileSpawnEvent);
+		//EVENT_INSERT(Identifier);
+		EVENT_INSERT(Shooter);
+		EVENT_INSERT(Type);
+		EVENT_END;
 		break;
 	case EventCode::onFireworkShootWithCrossbow:
 		break;
 	case EventCode::onSetArmor:
+		EVENT_BEGIN(Event::PlayerSetArmorEvent);
+		EVENT_INSERT(ArmorItem);
+		EVENT_INSERT(Player);
+		EVENT_INSERT(Slot);
+		EVENT_END;
 		break;
 	case EventCode::onRide:
+		EVENT_BEGIN(Event::EntityRideEvent);
+		EVENT_INSERT(Rider);
+		EVENT_INSERT(Vehicle);
+		EVENT_END;
 		break;
 	case EventCode::onStepOnPressurePlate:
 		break;
 	case EventCode::onUseItem:
+		EVENT_BEGIN(Event::PlayerUseItemEvent);
+		EVENT_INSERT(ItemStack);
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onTakeItem:
+		EVENT_BEGIN(Event::PlayerTakeItemEvent);
+		EVENT_INSERT(ItemEntity);
+		EVENT_INSERT(ItemStack);
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onDropItem:
+		EVENT_BEGIN(Event::PlayerDropItemEvent);
+		EVENT_INSERT(ItemStack);
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onUseItemOn:
+		EVENT_BEGIN(Event::PlayerUseItemOnEvent);
+		EVENT_INSERT(ItemStack);
+		EVENT_INSERT(Player);
+		//todo
+		EVENT_END;
 		break;
 	case EventCode::onInventoryChange:
 		break;
