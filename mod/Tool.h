@@ -2,6 +2,7 @@
 #pragma execution_character_set("utf-8")
 
 #include <MC/Actor.hpp>
+#include <MC/ActorDamageSource.hpp>
 #include <MC/BinaryStream.hpp>
 #include <MC/Block.hpp>
 #include <MC/BlockActor.hpp>
@@ -10,6 +11,8 @@
 #include <MC/BlockPalette.hpp>
 #include <MC/BlockSource.hpp>
 #include <MC/Common.hpp>
+#include <MC/CommandRegistry.hpp>
+#include <MC/CommandParameterData.hpp>
 #include <MC/Container.hpp>
 #include <MC/ItemStack.hpp>
 #include <MC/Level.hpp>

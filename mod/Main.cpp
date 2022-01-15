@@ -228,19 +228,15 @@ THook(int, "main",
 			}
 		}
 	}
-	// 启动子线程前执行，为了释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
+	//启动子线程前执行，释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
 	PyEval_ReleaseThread(PyThreadState_Get());
-	//释放当前线程
-	//PyEval_SaveThread();
+	Event::RegCmdEvent::subscribe(
+		[](const Event::RegCmdEvent& e) {
+			for (auto& [cmd, des] : g_commands) {
+				const_cast<CommandRegistry*>(e.mCommandRegistry)->registerCommand(cmd, des.first.c_str(), CommandPermissionLevel::Any, { (CommandFlagValue)0 }, { (CommandFlagValue)0x80 });
+				return true;
+			}
+		}
+	);
 	return original(argc, argv, envp);
-}
-//改变设置命令的建立，用于注册命令
-THook(void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
-	uintptr_t _this) {
-
-	for (auto& [cmd, des] : g_commands) {
-		SymCall("?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
-			_this, &cmd, des.first.c_str(), 0, 0, 0x80/*CommandFlag*/);
-	}
-	original(_this);
 }

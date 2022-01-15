@@ -52,7 +52,7 @@ public:
 	Callbacker& insert(string_view key, BlockPos& item) {
 		return insert(key, ToList(&item));
 	}
-	Callbacker& insert(string_view key, Vec3* item) {
+	Callbacker& insert(string_view key, const Vec3& item) {
 		return insert(key, ToList(item));
 	}
 	Callbacker& insert(string_view key, short item) {
@@ -79,171 +79,294 @@ private:
 	PyGILGuard gil_;
 };
 
+static const std::unordered_map<string, EventCode> g_events{
+	{ "onPreJoin", EventCode::onPreJoin },
+	{ "onJoin", EventCode::onJoin },
+	{ "onLeft", EventCode::onLeft },
+	{ "onPlayerCmd", EventCode::onPlayerCmd },
+	{ "onChat", EventCode::onChat },
+	{ "onPlayerDie", EventCode::onPlayerDie },
+	{ "onRespawn", EventCode::onRespawn },
+	{ "onChangeDim", EventCode::onChangeDim },
+	{ "onJump", EventCode::onJump },
+	{ "onSneak", EventCode::onSneak },
+	{ "onAttack", EventCode::onAttack },
+	{ "onEat", EventCode::onEat },
+	{ "onMove", EventCode::onMove },
+	{ "onChangeSprinting", EventCode::onChangeSprinting },
+	{ "onSpawnProjectile", EventCode::onSpawnProjectile },
+	{ "onFireworkShootWithCrossbow", EventCode::onFireworkShootWithCrossbow },
+	{ "onSetArmor", EventCode::onSetArmor },
+	{ "onRide", EventCode::onRide },
+	{ "onStepOnPressurePlate", EventCode::onStepOnPressurePlate },
+	{ "onMobDie", EventCode::onMobDie },
+	{ "onMobHurt", EventCode::onMobHurt },
+	{ "onUseItem", EventCode::onUseItem },
+	{ "onTakeItem", EventCode::onTakeItem },
+	{ "onDropItem", EventCode::onDropItem },
+	{ "onUseItemOn", EventCode::onUseItemOn },
+	{ "onInventoryChange", EventCode::onInventoryChange },
+	{ "onChangeArmorStand", EventCode::onChangeArmorStand },
+	{ "onStartDestroyBlock", EventCode::onStartDestroyBlock },
+	{ "onDestroyBlock", EventCode::onDestroyBlock },
+	{ "onWitherBossDestroy", EventCode::onWitherBossDestroy },
+	{ "onPlaceBlock", EventCode::onPlaceBlock },
+	{ "onExplode", EventCode::onExplode },
+	{ "onBedExplode", EventCode::onBedExplode },
+	{ "onRespawnAnchorExplode", EventCode::onRespawnAnchorExplode },
+	{ "onBlockExploded", EventCode::onBlockExploded },
+	{ "onEntityExplode", EventCode::onEntityExplode },
+	{ "onBlockExplode", EventCode::onBlockExplode },
+	{ "onLiquidFlow", EventCode::onLiquidFlow },
+	{ "onOpenContainer", EventCode::onOpenContainer },
+	{ "onCloseContainer", EventCode::onCloseContainer },
+	{ "onContainerChangeSlot", EventCode::onContainerChange },
+	{ "onContainerChange", EventCode::onContainerChange },
+	{ "onOpenContainerScreen", EventCode::onOpenContainerScreen },
+	{ "onCmdBlockExecute", EventCode::onCmdBlockExecute },
+	{ "onRedStoneUpdate", EventCode::onRedStoneUpdate },
+	{ "onProjectileHitBlock", EventCode::onProjectileHitBlock },
+	{ "onProjectileHitEntity", EventCode::onProjectileHitEntity },
+	{ "onBlockInteracted", EventCode::onBlockInteracted },
+	{ "onUseRespawnAnchor", EventCode::onUseRespawnAnchor },
+	{ "onFarmLandDecay", EventCode::onFarmLandDecay },
+	{ "onUseFrameBlock", EventCode::onUseFrameBlock },
+	{ "onPistonPush", EventCode::onPistonPush },
+	{ "onHopperSearchItem", EventCode::onHopperSearchItem },
+	{ "onHopperPushOut", EventCode::onHopperPushOut },
+	{ "onFireSpread", EventCode::onFireSpread },
+	{ "onBlockChanged", EventCode::onBlockChanged },
+	{ "onNpcCmd", EventCode::onNpcCmd },
+	{ "onScoreChanged", EventCode::onScoreChanged },
+	{ "onServerStarted", EventCode::onServerStarted },
+	{ "onConsoleCmd", EventCode::onConsoleCmd },
+	{ "onConsoleOutput", EventCode::onConsoleOutput },
+	{ "onTick", EventCode::onTick },
+	{ "onMoneyAdd", EventCode::onMoneyAdd },
+	{ "onMoneyReduce", EventCode::onMoneyReduce },
+	{ "onMoneyTrans", EventCode::onMoneyTrans },
+	{ "onMoneySet", EventCode::onMoneySet },
+	{ "onFormSelected", EventCode::onFormSelected },
+	{ "onConsumeTotem", EventCode::onConsumeTotem },
+	{ "onEffectAdded", EventCode::onEffectAdded },
+	{ "onEffectRemoved", EventCode::onEffectRemoved },
+	{ "onEffectUpdated", EventCode::onEffectUpdated }
+};
 std::optional<EventCode> StringToEventCode(const std::string& s) {
-	static const std::unordered_map<std::string, EventCode> events{
-		{ "onConsoleInput", EventCode::onConsoleInput },
-		{ "onConsoleOutput", EventCode::onConsoleOutput },
-		{ "onUseItem", EventCode::onUseItem },
-		{ "onPlaceBlock", EventCode::onPlaceBlock },
-		{ "onDestroyBlock", EventCode::onDestroyBlock },
-		{ "onOpenChest", EventCode::onOpenChest },
-		{ "onOpenBarrel", EventCode::onOpenBarrel },
-		{ "onCloseChest", EventCode::onCloseChest },
-		{ "onCloseBarrel", EventCode::onCloseBarrel },
-		{ "onContainerChange", EventCode::onContainerChange },
-		{ "onChangeDimension", EventCode::onChangeDimension },
-		{ "onMobDie", EventCode::onMobDie },
-		{ "onMobHurt", EventCode::onMobHurt },
-		{ "onRespawn", EventCode::onRespawn },
-		{ "onChat", EventCode::onChat },
-		{ "onInputText", EventCode::onInputText },
-		{ "onCommandBlockUpdate", EventCode::onCommandBlockUpdate },
-		{ "onInputCommand", EventCode::onInputCommand },
-		{ "onCommandBlockPerform", EventCode::onCommandBlockPerform },
-		{ "onPlayerJoin", EventCode::onPlayerJoin },
-		{ "onPlayerLeft", EventCode::onPlayerLeft },
-		{ "onPlayerAttack", EventCode::onPlayerAttack },
-		{ "onLevelExplode", EventCode::onLevelExplode },
-		{ "onSetArmor", EventCode::onSetArmor },
-		{ "onFallBlockTransform", EventCode::onFallBlockTransform },
-		{ "onUseRespawnAnchorBlock", EventCode::onUseRespawnAnchorBlock },
-		{ "onScoreChanged", EventCode::onScoreChanged },
-		{ "onMove", EventCode::onMove },
-		{ "onPistonPush", EventCode::onPistonPush },
-		{ "onEndermanRandomTeleport", EventCode::onEndermanRandomTeleport },
-		{ "onServerStarted", EventCode::onServerStarted },
-		{ "onDropItem", EventCode::onDropItem },
-		{ "onTakeItem", EventCode::onTakeItem },
-		{ "onRide", EventCode::onRide },
-		{ "onUseFrameBlock", EventCode::onUseFrameBlock },
-		{ "onJump", EventCode::onJump },
-		{ "onSneak", EventCode::onSneak },
-		{ "onBlockInteracted", EventCode::onBlockInteracted },
-		{ "onFireSpread", EventCode::onFireSpread },
-		{ "onBlockExploded", EventCode::onBlockExploded },
-		{ "onUseSignBlock", EventCode::onUseSignBlock },
-	};
-	auto x = events.find(s);
-	if (x == events.end())
+	auto x = g_events.find(s);
+	if (x == g_events.end())
 		return nullopt;
 	else
 		return x->second;
 }
 
+#define EVENT_BEGIN(evt) if(!evt::hasListener())evt::subscribe([code](evt e){Callbacker h(code)
+#define EVENT_INSERT(key) h.insert(#key, e.m##key)
+#define EVENT_INSERT2(key,value) h.insert(#key, value)
+#define EVENT_END return h.call();})
+
 void EnableEventListener(EventCode code) {
-	using namespace Event;
 	switch (code) {
-	case EventCode::onConsoleInput:
-		ConsoleCmdEvent::subscribe(
-			[code](const ConsoleCmdEvent& e) {
-				Callbacker h(code);
-				h.setArg(ToPyStr(e.mCommand));
-				return h.call();
-			});
+	case EventCode::onPreJoin:
+		EVENT_BEGIN(Event::PlayerPreJoinEvent);
+		EVENT_INSERT(IP);
+		EVENT_INSERT(Player);
+		EVENT_INSERT(XUID);
+		EVENT_END;
 		break;
-	case EventCode::onConsoleOutput:
-		ConsoleOutputEvent::subscribe(
-			[code](const ConsoleOutputEvent& e) {
-				Callbacker h(code);
-				h.setArg(ToPyStr(e.mOutput));
-				return h.call();
-			});
+	case EventCode::onJoin:
+		EVENT_BEGIN(Event::PlayerJoinEvent);
+		EVENT_INSERT(Player);
+		EVENT_END;
+		break;
+	case EventCode::onLeft:
+		EVENT_BEGIN(Event::PlayerLeftEvent);
+		EVENT_INSERT(Player);
+		EVENT_INSERT(XUID);
+		EVENT_END;
+		break;
+	case EventCode::onPlayerCmd:
+		EVENT_BEGIN(Event::PlayerCmdEvent);
+		EVENT_INSERT(Command);
+		EVENT_INSERT(Player);
+		EVENT_INSERT2(isSuccess, e.mResult->isSuccess());
+		EVENT_END;
+		break;
+	case EventCode::onChat:
+		EVENT_BEGIN(Event::PlayerChatEvent);
+		EVENT_INSERT(Message);
+		EVENT_INSERT(Player);
+		EVENT_END;
+		break;
+	case EventCode::onPlayerDie:
+		EVENT_BEGIN(Event::PlayerDieEvent);
+		EVENT_INSERT(Player);
+		EVENT_INSERT2(Cause, int(e.mDamageSource->getCause()));
+		EVENT_INSERT2(Entity, e.mDamageSource->getEntity());
+		EVENT_END;
+		break;
+	case EventCode::onRespawn:
+		EVENT_BEGIN(Event::PlayerRespawnEvent);
+		EVENT_INSERT(Player);
+		EVENT_END;
+		break;
+	case EventCode::onChangeDim:
+		EVENT_BEGIN(Event::PlayerChangeDimEvent);
+		EVENT_INSERT(Player);
+		EVENT_INSERT(ToDimensionId);
+		EVENT_END;
+		break;
+	case EventCode::onJump:
+		EVENT_BEGIN(Event::PlayerJumpEvent);
+		EVENT_INSERT(Player);
+		EVENT_END;
+		break;
+	case EventCode::onSneak:
+		EVENT_BEGIN(Event::PlayerSneakEvent);
+		EVENT_INSERT(Player);
+		EVENT_INSERT(IsSneaking);
+		EVENT_END;
+		break;
+	case EventCode::onAttack:
+		EVENT_BEGIN(Event::PlayerAttackEvent);
+		EVENT_INSERT(AttackDamage);
+		EVENT_INSERT(Player);
+		EVENT_INSERT(Target);
+		EVENT_END;
+		break;
+	case EventCode::onEat:
+		EVENT_BEGIN(Event::PlayerEatEvent);
+		EVENT_INSERT(FoodItem);
+		EVENT_INSERT(Player);
+		EVENT_END;
+		break;
+	case EventCode::onMove:
+		EVENT_BEGIN(Event::PlayerMoveEvent);
+		EVENT_INSERT(Player);
+		EVENT_INSERT(Pos);
+		EVENT_END;
+		break;
+	case EventCode::onChangeSprinting:
+		break;
+	case EventCode::onSpawnProjectile:
+		break;
+	case EventCode::onFireworkShootWithCrossbow:
+		break;
+	case EventCode::onSetArmor:
+		break;
+	case EventCode::onRide:
+		break;
+	case EventCode::onStepOnPressurePlate:
 		break;
 	case EventCode::onUseItem:
-		PlayerUseItemEvent::subscribe(
-			[code](const PlayerUseItemEvent& e) {
-				Callbacker h(code);
-				h.insert("player", e.mPlayer);
-				h.insert("item", e.mItemStack);
-				return h.call();
-			});
 		break;
-	case EventCode::onPlaceBlock:
-		PlayerPlaceBlockEvent::subscribe([code](const PlayerPlaceBlockEvent& e) {
-			Callbacker h(code);
-			h.insert("player", e.mPlayer);
-			const_cast<BlockInstance*>(&e.mBlockInstance)->getBlock();
-			return h.call();
-			});
+	case EventCode::onTakeItem:
+		break;
+	case EventCode::onDropItem:
+		break;
+	case EventCode::onUseItemOn:
+		break;
+	case EventCode::onInventoryChange:
+		break;
+	case EventCode::onChangeArmorStand:
+		break;
+	case EventCode::onStartDestroyBlock:
 		break;
 	case EventCode::onDestroyBlock:
 		break;
-	case EventCode::onOpenChest:
+	case EventCode::onWitherBossDestroy:
 		break;
-	case EventCode::onOpenBarrel:
+	case EventCode::onPlaceBlock:
 		break;
-	case EventCode::onCloseChest:
+	case EventCode::onLiquidFlow:
 		break;
-	case EventCode::onCloseBarrel:
+	case EventCode::onOpenContainer:
+		break;
+	case EventCode::onCloseContainer:
 		break;
 	case EventCode::onContainerChange:
 		break;
-	case EventCode::onChangeDimension:
+	case EventCode::onOpenContainerScreen:
+		break;
+	case EventCode::onExplode:
+		break;
+	case EventCode::onBlockExploded:
+		break;
+	case EventCode::onBedExplode:
+		break;
+	case EventCode::onRespawnAnchorExplode:
+		break;
+	case EventCode::onEntityExplode:
+		break;
+	case EventCode::onBlockExplode:
 		break;
 	case EventCode::onMobDie:
 		break;
 	case EventCode::onMobHurt:
 		break;
-	case EventCode::onRespawn:
+	case EventCode::onCmdBlockExecute:
 		break;
-	case EventCode::onChat:
+	case EventCode::onRedStoneUpdate:
 		break;
-	case EventCode::onInputText:
+	case EventCode::onProjectileHitEntity:
 		break;
-	case EventCode::onCommandBlockUpdate:
-		break;
-	case EventCode::onInputCommand:
-		break;
-	case EventCode::onCommandBlockPerform:
-		break;
-	case EventCode::onPlayerJoin:
-		break;
-	case EventCode::onPlayerLeft:
-		break;
-	case EventCode::onPlayerAttack:
-		break;
-	case EventCode::onLevelExplode:
-		break;
-	case EventCode::onSetArmor:
-		break;
-	case EventCode::onFallBlockTransform:
-		break;
-	case EventCode::onUseRespawnAnchorBlock:
-		break;
-	case EventCode::onScoreChanged:
-		break;
-	case EventCode::onMove:
-		break;
-	case EventCode::onPistonPush:
-		break;
-	case EventCode::onEndermanRandomTeleport:
-		break;
-	case EventCode::onServerStarted:
-		break;
-	case EventCode::onDropItem:
-		break;
-	case EventCode::onTakeItem:
-		break;
-	case EventCode::onRide:
-		break;
-	case EventCode::onUseFrameBlock:
-		break;
-	case EventCode::onJump:
-		break;
-	case EventCode::onSneak:
+	case EventCode::onProjectileHitBlock:
 		break;
 	case EventCode::onBlockInteracted:
 		break;
+	case EventCode::onUseRespawnAnchor:
+		break;
+	case EventCode::onFarmLandDecay:
+		break;
+	case EventCode::onUseFrameBlock:
+		break;
+	case EventCode::onPistonPush:
+		break;
+	case EventCode::onHopperSearchItem:
+		break;
+	case EventCode::onHopperPushOut:
+		break;
 	case EventCode::onFireSpread:
 		break;
-	case EventCode::onBlockExploded:
+	case EventCode::onBlockChanged:
 		break;
-	case EventCode::onUseSignBlock:
+	case EventCode::onNpcCmd:
+		break;
+	case EventCode::onScoreChanged:
+		break;
+	case EventCode::onServerStarted:
+		break;
+	case EventCode::onConsoleCmd:
+		break;
+	case EventCode::onFormSelected:
+		break;
+	case EventCode::onConsoleOutput:
+		break;
+	case EventCode::onTick:
+		break;
+	case EventCode::onMoneyAdd:
+		break;
+	case EventCode::onMoneyReduce:
+		break;
+	case EventCode::onMoneyTrans:
+		break;
+	case EventCode::onMoneySet:
+		break;
+	case EventCode::onConsumeTotem:
+		break;
+	case EventCode::onEffectAdded:
+		break;
+	case EventCode::onEffectUpdated:
+		break;
+	case EventCode::onEffectRemoved:
+		break;
+	case EventCode::EVENT_COUNT:
 		break;
 	default:
 		break;
 	}
 }
+#if 0
 //开服完成
 THook(void, "?startServerThread@ServerInstance@@QEAAXXZ",
 	uintptr_t _this) {
@@ -265,7 +388,7 @@ THook(ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_
 //控制台输入，实际上是命令队列的底层
 THook(bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
 	uintptr_t _this, string* cmd) {
-	Callbacker h(EventCode::onConsoleInput);
+	Callbacker h(EventCode::ConsoleCmdEvent);
 	static bool debug = false;
 	if (*cmd == "pydebug") {
 		if (debug)
@@ -804,4 +927,4 @@ THook(uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 		return original(_this, a1, a2);
 	return 0;
 }
-
+#endif

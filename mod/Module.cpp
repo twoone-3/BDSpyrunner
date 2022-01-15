@@ -20,23 +20,9 @@ constexpr int IsSlimeChunk(unsigned x, unsigned z) {
 	mt0 ^= (mt0 >> 18u);
 	return !(mt0 % 10);
 }
-//最小版本要求
-static PyObject* minVersionRequire(PyObject*, PyObject* args) {
-	int major, minor, micro;
-	Py_PARSE("iii", &major, &minor, &micro);
-	if (major > PYR_MAJOR_VERSION)
-		Py_RETURN_ERROR("The plugin version does not meet the minimum requirements");
-	if (minor > PYR_MINOR_VERSION)
-		Py_RETURN_ERROR("The plugin version does not meet the minimum requirements");
-	if (micro > PYR_MICRO_VERSION)
-		Py_RETURN_ERROR("The plugin version does not meet the minimum requirements");
-	Py_RETURN_NONE;
-}
 //获取BDS版本
-static PyObject* getBDSVersion(PyObject*, PyObject* args) {
-	args;
-	string version = Common::getGameVersionString();
-	return ToPyStr(version);
+static PyObject* getBDSVersion(PyObject*, PyObject*) {
+	return ToPyStr(Common::getGameVersionString());
 }
 //指令输出
 static PyObject* logout(PyObject*, PyObject* args) {
@@ -66,8 +52,9 @@ static PyObject* setListener(PyObject*, PyObject* args) {
 		Py_RETURN_ERROR("Parameter 2 is not callable");
 	auto code = StringToEventCode(key);
 	if (!code)
-		Py_RETURN_ERROR("Invalid Listener key words");
+		Py_RETURN_ERROR_FORMAT("Invalid Listener key words : %s", key);
 	g_callback_functions[code.value()].push_back(func);
+	EnableEventListener(code.value());
 	Py_RETURN_NONE;
 }
 //设置指令说明
@@ -296,7 +283,6 @@ static PyObject* setSignBlockMessage(PyObject*, PyObject* args) {
 }
 //模块方法列表
 static PyMethodDef Methods[]{
-	{ "minVersionRequire", minVersionRequire, METH_VARARGS, nullptr },
 	{ "getBDSVersion", getBDSVersion, METH_NOARGS, nullptr },
 	{ "logout", logout, METH_VARARGS, nullptr },
 	{ "runcmd", runCommand, METH_VARARGS, nullptr },
