@@ -1,5 +1,4 @@
 ﻿#include "Module.h"
-#include "Version.h"
 #include "NBT.h"
 
 using namespace std;
@@ -97,11 +96,6 @@ static PyObject* getPlayerList(PyObject*, PyObject* args) {
 	);
 	return list;
 }
-//修改生物受伤的伤害值
-static PyObject* setDamage(PyObject*, PyObject* args) {
-	Py_PARSE("i", &g_damage);
-	Py_RETURN_NONE;
-}
 static PyObject* setServerMotd(PyObject*, PyObject* args) {
 	const char* name = "";
 	Py_PARSE("s", &name);
@@ -128,14 +122,15 @@ static PyObject* getBlock(PyObject*, PyObject* args) {
 }
 static PyObject* setBlock(PyObject*, PyObject* args) {
 	const char* name = "";
-	BlockPos bp; int did;
+	BlockPos bp;
+	int did;
 	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &did);
 	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	Block* b = Fetch<Block*>(SYM((string("?m") + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()));
+	Block* b = dAccess<Block*, 0>(SYM((string("?m") + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()));
 	if (b == nullptr)
 		Py_RETURN_ERROR("Unknown Block");
 	bs->setBlock(bp, *b, 0, nullptr);
@@ -290,7 +285,6 @@ static PyMethodDef Methods[]{
 	{ "setCommandDescription", setCommandDescription, METH_VARARGS, nullptr },
 	{ "getPlayerByXuid", getPlayerByXuid, METH_VARARGS, nullptr },
 	{ "getPlayerList", getPlayerList, METH_NOARGS, nullptr },
-	{ "setDamage", setDamage, METH_VARARGS, nullptr },
 	{ "setServerMotd", setServerMotd, METH_VARARGS, nullptr },
 	{ "getBlock", getBlock, METH_VARARGS, nullptr },
 	{ "setBlock", setBlock, METH_VARARGS, nullptr },

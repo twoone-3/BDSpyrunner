@@ -1,51 +1,8 @@
 ﻿#pragma once
 #include <EventAPI.h>
 
-//enum class EventCode {
-//	ConsoleCmdEvent,
-//	onConsoleOutput,
-//	onUseItem,
-//	onPlaceBlock,
-//	onDestroyBlock,
-//	onOpenChest,
-//	onOpenBarrel,
-//	onCloseChest,
-//	onCloseBarrel,
-//	onContainerChange,
-//	onChangeDimension,
-//	onMobDie,
-//	onMobHurt,
-//	onRespawn,
-//	onChat,
-//	onInputText,
-//	onCommandBlockUpdate,
-//	onInputCommand,
-//	onCommandBlockPerform,
-//	onPlayerJoin,
-//	onPlayerLeft,
-//	onPlayerAttack,
-//	onLevelExplode,
-//	onSetArmor,
-//	onFallBlockTransform,
-//	onUseRespawnAnchorBlock,
-//	onScoreChanged,
-//	onMove,
-//	onPistonPush,
-//	onEndermanRandomTeleport,
-//	onServerStarted,
-//	onDropItem,
-//	onTakeItem,
-//	onRide,
-//	onUseFrameBlock,
-//	onJump,
-//	onSneak,
-//	onBlockInteracted,
-//	onFireSpread,
-//	onBlockExploded,
-//	onUseSignBlock,
-//};
 enum class EventCode : int {
-	onPreJoin = 0, onJoin, onLeft, onPlayerCmd, onChat, onPlayerDie,
+	onPreJoin, onJoin, onLeft, onPlayerCmd, onChat, onPlayerDie,
 	onRespawn, onChangeDim, onJump, onSneak, onAttack, onEat, onMove, onChangeSprinting, onSpawnProjectile,
 	onFireworkShootWithCrossbow, onSetArmor, onRide, onStepOnPressurePlate,
 	onUseItem, onTakeItem, onDropItem, onUseItemOn, onInventoryChange, onChangeArmorStand,
@@ -59,6 +16,7 @@ enum class EventCode : int {
 	onMoneyAdd, onMoneyReduce, onMoneyTrans, onMoneySet, onConsumeTotem, onEffectAdded, onEffectUpdated, onEffectRemoved,
 	EVENT_COUNT
 };
+
 std::optional<EventCode> StringToEventCode(const std::string& s);
 
 void EnableEventListener(EventCode e);

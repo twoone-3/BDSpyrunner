@@ -77,7 +77,6 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClInclude Include="mod\NBT.h" />
     <ClInclude Include="mod\Tool.h" />
     <ClInclude Include="mod\PyEntity.h" />
-    <ClInclude Include="mod\Version.h" />
     <ClInclude Include="mod\CPython.h" />
     <ClInclude Include="mod\PyItem.h" />
   </ItemGroup>

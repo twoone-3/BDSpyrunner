@@ -1,5 +1,4 @@
 ﻿#include "Module.h"
-#include "Version.h"
 #include "NBT.h"
 
 #define PLUGIN_PATH "plugins\\py\\"
@@ -152,7 +151,7 @@ void PyClassInit() {
 	if (PyType_Ready(&PyEntity_Type) < 0)
 		Py_FatalError("Can't initialize entity type");
 	if (PyType_Ready(&PyItem_Type) < 0)
-		Py_FatalError("Can't initialize iem type");
+		Py_FatalError("Can't initialize item type");
 }
 //将Python解释器初始化插入bds主函数
 THook(int, "main",
@@ -230,12 +229,13 @@ THook(int, "main",
 	}
 	//启动子线程前执行，释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
 	PyEval_ReleaseThread(PyThreadState_Get());
+	//注册命令监听
 	Event::RegCmdEvent::subscribe(
-		[](const Event::RegCmdEvent& e) {
+		[](Event::RegCmdEvent e) {
 			for (auto& [cmd, des] : g_commands) {
-				const_cast<CommandRegistry*>(e.mCommandRegistry)->registerCommand(cmd, des.first.c_str(), CommandPermissionLevel::Any, { (CommandFlagValue)0 }, { (CommandFlagValue)0x80 });
-				return true;
+				e.mCommandRegistry->registerCommand(cmd, des.first.c_str(), CommandPermissionLevel::Any, { CommandFlagValue::None }, { static_cast<CommandFlagValue>(0x80) });
 			}
+			return true;
 		}
 	);
 	return original(argc, argv, envp);

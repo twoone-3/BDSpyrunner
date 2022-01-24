@@ -303,12 +303,31 @@ void EnableEventListener(EventCode code) {
 		EVENT_END;
 		break;
 	case EventCode::onInventoryChange:
+		EVENT_BEGIN(Event::PlayerInventoryChangeEvent);
+		EVENT_INSERT(NewItemStack);
+		EVENT_INSERT(Player);
+		EVENT_INSERT(PreviousItemStack);
+		EVENT_INSERT(Slot);
+		EVENT_END;
 		break;
 	case EventCode::onChangeArmorStand:
+		EVENT_BEGIN(Event::ArmorStandChangeEvent);
+		//EVENT_INSERT(ArmorStand); todo
+		EVENT_INSERT(Player);
+		EVENT_INSERT(Slot);
+		EVENT_END;
 		break;
 	case EventCode::onStartDestroyBlock:
+		EVENT_BEGIN(Event::PlayerStartDestroyBlockEvent);
+		//e.mBlockInstance. todo
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onDestroyBlock:
+		EVENT_BEGIN(Event::PlayerDestroyBlockEvent);
+		// todo
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onWitherBossDestroy:
 		break;
@@ -373,10 +392,16 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onServerStarted:
 		break;
 	case EventCode::onConsoleCmd:
+		EVENT_BEGIN(Event::ConsoleCmdEvent);
+		EVENT_INSERT(Command);
+		EVENT_END;
 		break;
 	case EventCode::onFormSelected:
 		break;
 	case EventCode::onConsoleOutput:
+		EVENT_BEGIN(Event::ConsoleOutputEvent);
+		EVENT_INSERT(Output);
+		EVENT_END;
 		break;
 	case EventCode::onTick:
 		break;
@@ -962,5 +987,5 @@ THook(uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	if (h.call())
 		return original(_this, a1, a2);
 	return 0;
-}
+	}
 #endif

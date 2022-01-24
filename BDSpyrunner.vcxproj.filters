@@ -50,9 +50,6 @@
     <ClInclude Include="mod\Module.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mod\Version.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="mod\CPython.h">
       <Filter>头文件</Filter>
     </ClInclude>
