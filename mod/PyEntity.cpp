@@ -3,22 +3,22 @@
 #include "NBT.h"
 
 #define Py_GET_PLAYER  Py_GET_PLAYER2(nullptr)
-#define Py_GET_PLAYER2(ret) Player* p = asPlayer(self);if (p == nullptr)return ret
+#define Py_GET_PLAYER2(ret) Player* p = getPlayer(self);if (p == nullptr)return ret
 #define Py_GET_ACTOR Py_GET_ACTOR2(nullptr)
-#define Py_GET_ACTOR2(ret) Actor* a = asActor(self);if (a == nullptr)return ret
+#define Py_GET_ACTOR2(ret) Actor* a = getActor(self);if (a == nullptr)return ret
 
 using namespace std;
 struct PyEntity {
 	PyObject_HEAD;
 	Actor* actor;
 
-	static Actor* asActor(PyObject* self) {
+	static Actor* getActor(PyObject* self) {
 		if (reinterpret_cast<PyEntity*>(self)->actor)
 			return reinterpret_cast<PyEntity*>(self)->actor;
 		else
 			Py_RETURN_ERROR("This entity pointer is nullptr");
 	}
-	static Player* asPlayer(PyObject* self) {
+	static Player* getPlayer(PyObject* self) {
 		if (IsPlayer(reinterpret_cast<PyEntity*>(self)->actor))
 			return reinterpret_cast<Player*>(reinterpret_cast<PyEntity*>(self)->actor);
 		else
@@ -48,14 +48,14 @@ struct PyEntity {
 		case Py_LE:break;
 			//==
 		case Py_EQ:
-			if (asActor(self) == asActor(other))
+			if (getActor(self) == getActor(other))
 				Py_RETURN_TRUE;
 			else
 				Py_RETURN_FALSE;
 			break;
 			//!=
 		case Py_NE:
-			if (asActor(self) != asActor(other))
+			if (getActor(self) != getActor(other))
 				Py_RETURN_TRUE;
 			else
 				Py_RETURN_FALSE;
@@ -119,10 +119,11 @@ struct PyEntity {
 	//获取类型字符串
 	static PyObject* getTypeName(PyObject* self, void*) {
 		Py_GET_ACTOR;
-		string type;
-		SymCall<string&>("?EntityTypeToString@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4ActorType@@W4ActorTypeNamespaceRules@@@Z",
-			&type, a->getEntityTypeId());
-		return ToPyStr(type);
+		//旧办法
+		//string type;
+		//SymCall<string&>("?EntityTypeToString@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4ActorType@@W4ActorTypeNamespaceRules@@@Z",
+		//	&type, a->getEntityTypeId());
+		return ToPyStr(a->getTypeName());
 	}
 	//获取nbt数据
 	static PyObject* getNBTInfo(PyObject* self, void*) {
@@ -167,7 +168,7 @@ struct PyEntity {
 	static int setPermissions(PyObject* self, PyObject* arg, void*) {
 		if (PyLong_Check(arg)) {
 			Py_GET_PLAYER2(-1);
-			p->setPermissions((CommandPermissionLevel)PyLong_AsLong(arg));
+			p->setPermissions(static_cast<CommandPermissionLevel>(PyLong_AsLong(arg)));
 			return 0;
 		}
 		return PyErr_BadArgument(), -1;
@@ -185,8 +186,8 @@ struct PyEntity {
 	//获取IP
 	static PyObject* getIP(PyObject* self, void*) {
 		Py_GET_PLAYER;
-		auto& ni = *p->getNetworkIdentifier();
-		return ToPyStr(Global<RakNet::RakPeer>->getAdr(ni).ToString(false, ':'));
+		auto ni = p->getNetworkIdentifier();
+		return ToPyStr(Global<RakNet::RakPeer>->getAdr(*ni).ToString(false, ':'));
 	}
 
 	//获取玩家所有物品

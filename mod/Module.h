@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "PyEntity.h"
 #include "PyItem.h"
+#include "PyBlockInstance.h"
 #include "Event.h"
 
 //Py函数表

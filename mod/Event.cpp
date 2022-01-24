@@ -52,6 +52,9 @@ public:
 	Callbacker& insert(string_view key, BlockPos& item) {
 		return insert(key, ToList(&item));
 	}
+	Callbacker& insert(string_view key, BlockInstance& item) {
+		return insert(key, ToBlockInstance(&item));
+	}
 	Callbacker& insert(string_view key, const Vec3& item) {
 		return insert(key, ToList(item));
 	}
@@ -297,9 +300,9 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onUseItemOn:
 		EVENT_BEGIN(Event::PlayerUseItemOnEvent);
+		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(ItemStack);
 		EVENT_INSERT(Player);
-		//todo
 		EVENT_END;
 		break;
 	case EventCode::onInventoryChange:
@@ -319,25 +322,39 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onStartDestroyBlock:
 		EVENT_BEGIN(Event::PlayerStartDestroyBlockEvent);
-		//e.mBlockInstance. todo
+		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onDestroyBlock:
 		EVENT_BEGIN(Event::PlayerDestroyBlockEvent);
-		// todo
+		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onWitherBossDestroy:
 		break;
 	case EventCode::onPlaceBlock:
+		EVENT_BEGIN(Event::PlayerPlaceBlockEvent);
+		EVENT_INSERT(BlockInstance);
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onLiquidFlow:
 		break;
 	case EventCode::onOpenContainer:
+		EVENT_BEGIN(Event::PlayerOpenContainerEvent);
+		// todo container
+		EVENT_INSERT(BlockInstance);
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onCloseContainer:
+		EVENT_BEGIN(Event::PlayerCloseContainerEvent);
+		//todo
+		EVENT_INSERT(BlockInstance);
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onContainerChange:
 		break;

@@ -36,6 +36,9 @@
     <ClCompile Include="mod\PyItem.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="mod\PyBlockInstance.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mod\Tool.h">
@@ -57,6 +60,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\PyItem.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mod\PyBlockInstance.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

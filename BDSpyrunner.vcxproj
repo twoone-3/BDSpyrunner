@@ -70,6 +70,7 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClCompile Include="mod\Event.cpp" />
     <ClCompile Include="mod\NBT.cpp" />
     <ClCompile Include="mod\PyItem.cpp" />
+    <ClCompile Include="mod\PyBlockInstance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mod\Module.h" />
@@ -79,6 +80,7 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClInclude Include="mod\PyEntity.h" />
     <ClInclude Include="mod\CPython.h" />
     <ClInclude Include="mod\PyItem.h" />
+    <ClInclude Include="mod\PyBlockInstance.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\python37.lib" />

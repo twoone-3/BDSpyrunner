@@ -1,37 +1,39 @@
-﻿#include "PyItem.h"
+﻿#include "PyBlockInstance.h"
 #include "Tool.h"
 #include "NBT.h"
 
-#define Py_GET_ITEM Py_GET_ITEM2(nullptr)
-#define Py_GET_ITEM2(ret) ItemStack* i = getItemStack(self);if (i == nullptr)return ret
+#define Py_GET_BLOCK Py_GET_BLOCK2(nullptr)
+#define Py_GET_BLOCK2(ret) Block* i = getBlock(self);if (i == nullptr)return ret
 
 using namespace std;
 
-struct PyItem {
+struct PyBlockInstance {
 	PyObject_HEAD;
-	ItemStack* item;
+	Block* block;
+	BlockPos pos;
+	int dim;
 
-	static ItemStack* getItemStack(PyObject* self) {
-		if (reinterpret_cast<PyItem*>(self)->item)
-			return reinterpret_cast<PyItem*>(self)->item;
+	static Block* getBlock(PyObject* self) {
+		if (reinterpret_cast<PyBlockInstance*>(self)->block)
+			return reinterpret_cast<PyBlockInstance*>(self)->block;
 		else
-			Py_RETURN_ERROR("This item pointer is nullptr");
+			Py_RETURN_ERROR("This block pointer is nullptr");
 	}
 	static int print(PyObject* self, FILE* file, int) {
-		Py_GET_ITEM2(-1);
+		Py_GET_BLOCK2(-1);
 		fputs(i->getName().c_str(), file);
 		return 0;
 	}
 	static PyObject* repr(PyObject* self) {
-		Py_GET_ITEM2(ToPyStr(""));
-		return ToPyStr(i->getName());
+		Py_GET_BLOCK2(ToPyStr(""));
+		return ToPyStr(i->getName().getString());
 	}
 	static Py_hash_t hash(PyObject* self) {
 		return reinterpret_cast<Py_hash_t>(self);
 	}
 	static PyObject* str(PyObject* self) {
-		Py_GET_ITEM2(ToPyStr(""));
-		return ToPyStr(i->getName());
+		Py_GET_BLOCK2(ToPyStr(""));
+		return ToPyStr(i->getName().getString());
 	}
 	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
 		switch (op) {
@@ -41,14 +43,14 @@ struct PyItem {
 		case Py_LE:break;
 			//==
 		case Py_EQ:
-			if (getItemStack(self) == getItemStack(other))
+			if (getBlock(self) == getBlock(other))
 				Py_RETURN_TRUE;
 			else
 				Py_RETURN_FALSE;
 			break;
 			//!=
 		case Py_NE:
-			if (getItemStack(self) != getItemStack(other))
+			if (getBlock(self) != getBlock(other))
 				Py_RETURN_TRUE;
 			else
 				Py_RETURN_FALSE;
@@ -62,8 +64,8 @@ struct PyItem {
 	}
 
 	static PyObject* getName(PyObject* self, PyObject*) {
-		Py_GET_ITEM;
-		return ToPyStr(i->getName());
+		Py_GET_BLOCK;
+		return ToPyStr(i->getName().getString());
 	}
 
 	inline static PyMethodDef Methods[]{
@@ -72,23 +74,23 @@ struct PyItem {
 	};
 };
 
-PyTypeObject PyItem_Type{
+PyTypeObject PyBlockInstance_Type{
 	PyVarObject_HEAD_INIT(nullptr, 0)
-	"Item",					/* tp_name */
-	sizeof(PyItem),			/* tp_basicsize */
-	0,						/* tp_itemsize */
+	"BlockInstance",				/* tp_name */
+	sizeof(PyBlockInstance),		/* tp_basicsize */
+	0,						/* tp_blocksize */
 	nullptr,				/* tp_dealloc */
-	PyItem::print,			/* tp_print */
+	PyBlockInstance::print,			/* tp_print */
 	nullptr,				/* tp_getattr */
 	nullptr,				/* tp_setattr */
 	nullptr,				/* tp_reserved */
-	PyItem::repr,			/* tp_repr */
+	PyBlockInstance::repr,			/* tp_repr */
 	nullptr,				/* tp_as_number */
 	nullptr,				/* tp_as_sequence */
 	nullptr,				/* tp_as_mapping */
-	PyItem::hash,			/* tp_hash */
+	PyBlockInstance::hash,			/* tp_hash */
 	nullptr,				/* tp_call */
-	PyItem::str,			/* tp_str */
+	PyBlockInstance::str,			/* tp_str */
 	nullptr,				/* tp_getattro */
 	nullptr,				/* tp_setattro */
 	nullptr,				/* tp_as_buffer */
@@ -96,11 +98,11 @@ PyTypeObject PyItem_Type{
 	nullptr,				/* tp_doc */
 	nullptr,				/* tp_traverse */
 	nullptr,				/* tp_clear */
-	PyItem::rich_compare,	/* tp_richcompare */
+	PyBlockInstance::rich_compare,	/* tp_richcompare */
 	0,						/* tp_weaklistoffset */
 	nullptr,				/* tp_iter */
 	nullptr,				/* tp_iternext */
-	PyItem::Methods,		/* tp_methods */
+	PyBlockInstance::Methods,		/* tp_methods */
 	nullptr,				/* tp_members */
 	nullptr,				/* tp_getset */
 	nullptr,				/* tp_base */
@@ -123,8 +125,10 @@ PyTypeObject PyItem_Type{
 	nullptr,				/* tp_finalize */
 };
 
-PyObject* ToItem(ItemStack* ptr) {
-	PyItem* obj = PyObject_New(PyItem, &PyItem_Type);
-	obj->item = ptr;
+PyObject* ToBlockInstance(BlockInstance* ptr) {
+	PyBlockInstance* obj = PyObject_New(PyBlockInstance, &PyBlockInstance_Type);
+	obj->block = ptr->getBlock();
+	obj->pos = ptr->getPosition();
+	obj->dim = ptr->getDimensionId();
 	return reinterpret_cast<PyObject*>(obj);
 }
