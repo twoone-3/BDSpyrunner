@@ -73,9 +73,28 @@ inline PyObject* ToList(BlockPos* bp) {
 	PyList_SetItem(list, 2, PyLong_FromLong(bp->z));
 	return list;
 }
+inline void TupleToString(string& s, PyObject* t) {
+	for (size_t i = 0; i < PyTuple_Size(t); i++) {
+		s += PyUnicode_AsUTF8(PyObject_Repr(PyTuple_GetItem(t, i)));
+		s += '\n';
+	}
+}
 //打印错误信息
 inline void PrintPythonError() {
 	if (PyErr_Occurred()) {
-		PyErr_Print();
+		PyObject* type, * value, * traceback;
+		PyErr_Fetch(&type, &value, &traceback);
+
+		PyObject* info = reinterpret_cast<PyBaseExceptionObject*>(value)->args;
+
+		string errs;
+
+		errs += PyUnicode_AsUTF8(PyTuple_GetItem(info, 0));
+		errs += '\n';
+		TupleToString(errs, PyTuple_GetItem(info, 1));
+
+		logger.error("{}", errs);
+
+		PyErr_Restore(type, value, traceback);
 	}
 }

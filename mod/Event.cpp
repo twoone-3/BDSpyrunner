@@ -18,7 +18,7 @@ public:
 		//如果没有则跳过
 		auto& cbs = g_callback_functions[type_];
 		for (auto cb : cbs) {
-			PyObject* result = PyObject_CallFunction(cb, "O", arg_);
+			PyObject* result = _PyObject_FastCall(cb, &arg_, 1);
 			PrintPythonError();
 			if (result == Py_False)
 				intercept = false;
@@ -371,10 +371,27 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onEntityExplode:
 		break;
 	case EventCode::onBlockExplode:
+		EVENT_BEGIN(Event::BlockExplodeEvent);
+		EVENT_INSERT(BlockInstance);
+		EVENT_INSERT(Breaking);
+		EVENT_INSERT(Fire);
+		EVENT_INSERT(MaxResistance);
+		EVENT_INSERT(Radius);
+		EVENT_END;
 		break;
 	case EventCode::onMobDie:
+		EVENT_BEGIN(Event::MobDieEvent);
+		EVENT_INSERT(Mob);
+		EVENT_INSERT2(Cause, int(e.mDamageSource->getCause()));
+		EVENT_INSERT2(Entity, e.mDamageSource->getEntity());
+		EVENT_END;
 		break;
 	case EventCode::onMobHurt:
+		EVENT_BEGIN(Event::MobDieEvent);
+		EVENT_INSERT(Mob);
+		EVENT_INSERT2(Cause, int(e.mDamageSource->getCause()));
+		EVENT_INSERT2(Entity, e.mDamageSource->getEntity());
+		EVENT_END;
 		break;
 	case EventCode::onCmdBlockExecute:
 		break;
@@ -393,20 +410,44 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onUseFrameBlock:
 		break;
 	case EventCode::onPistonPush:
+		EVENT_BEGIN(Event::PistonPushEvent);
+		EVENT_INSERT(PistonBlockInstance);
+		EVENT_INSERT(TargetBlockInstance);
+		EVENT_END;
 		break;
 	case EventCode::onHopperSearchItem:
+		EVENT_BEGIN(Event::HopperSearchItemEvent);
+		EVENT_INSERT(DimensionId);
+		EVENT_INSERT(HopperBlock);
+		EVENT_INSERT(MinecartPos);
+		EVENT_END;
 		break;
 	case EventCode::onHopperPushOut:
+		EVENT_BEGIN(Event::HopperPushOutEvent);
+		EVENT_INSERT(DimensionId);
+		EVENT_INSERT(Pos);
+		EVENT_END;
 		break;
 	case EventCode::onFireSpread:
 		break;
 	case EventCode::onBlockChanged:
 		break;
 	case EventCode::onNpcCmd:
+		EVENT_BEGIN(Event::NpcCmdEvent);
+		EVENT_INSERT(Command);
+		EVENT_INSERT(Npc);
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onScoreChanged:
+		EVENT_BEGIN(Event::PlayerScoreChangedEvent);
+		EVENT_INSERT(Player);
+		//todo
+		EVENT_END;
 		break;
 	case EventCode::onServerStarted:
+		EVENT_BEGIN(Event::ServerStartedEvent);
+		EVENT_END;
 		break;
 	case EventCode::onConsoleCmd:
 		EVENT_BEGIN(Event::ConsoleCmdEvent);
@@ -1004,5 +1045,5 @@ THook(uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	if (h.call())
 		return original(_this, a1, a2);
 	return 0;
-	}
+}
 #endif

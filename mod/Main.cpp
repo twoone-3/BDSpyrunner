@@ -10,7 +10,6 @@ namespace fs = filesystem;
 Logger logger("BDSpyrunner");
 
 #pragma region Function
-#if 0
 //Dll入口函数
 BOOL WINAPI DllMain(
 	HINSTANCE hinstDLL	/* handle to DLL module */,
@@ -22,6 +21,11 @@ BOOL WINAPI DllMain(
 	case DLL_PROCESS_ATTACH:
 		// Initialize once for each new process.
 		// Return FALSE to fail DLL load.
+		LL::registerPlugin(
+			"BDSpyrunner", "For .py plugins' loading",
+			LL::Version(1, 9, 1, LL::Version::Beta),
+			{ { "Author", "twoone3" } }
+		);
 		break;
 	case DLL_THREAD_ATTACH:
 		// Do thread-specific initialization.
@@ -35,6 +39,7 @@ BOOL WINAPI DllMain(
 	}
 	return TRUE;  // Successful DLL_PROCESS_ATTACH.
 }
+#if 0
 //GBK转UTF8
 static string GbkToUtf8(const char* src_str) {
 	int len = MultiByteToWideChar(CP_ACP, 0, src_str, -1, NULL, 0);
@@ -181,7 +186,7 @@ THook(int, "main",
 	)"));
 		cout << ToJson(*t).dump(4) << endl;
 		delete t;
-	}
+}
 #endif
 	//如果目录不存在创建目录
 	if (!fs::exists(PLUGIN_PATH))
