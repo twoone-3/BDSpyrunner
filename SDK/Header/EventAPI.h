@@ -1,4 +1,32 @@
 #pragma once
+////////////////////////////////////////////////////////////////////////
+//  Event System - Make it easier to subscribe game events
+//
+//  [Examples]
+// 
+//  Event::PlayerJoinEvent::subscribe([](const Event::PlayerJoinEvent& ev) {        //Common situation - Const parameter "ev"
+//      ev.mPlayer->sendText("hello world~");
+//      return true;
+//  });
+//  
+//  Event::PlayerChatEvent::subscribe([](Event::PlayerChatEvent& ev) {          //Need to modify event's parameters - Reference parameter "ev"
+//      ev.mMessage = "[Plugin Modified] " + ev.mMessage;
+//      return true;
+//  });
+// 
+//  auto listener = Event::PlayerTakeItemEvent::subscribe([](const Event::PlayerTakeItemEvent& ev) {     
+//      if(ev.mPlayer->getName() == "Jack")
+//          return false;                           //Prevent events to be done - return false
+//      else
+//          return true;
+//  });
+//  ......
+//  ......
+//  listener.remove();                  //Remove this event listener
+// 
+////////////////////////////////////////////////////////////////////////
+
+
 #include "Global.h"
 #include "LoggerAPI.h"
 #include "MC/BlockInstance.hpp"
@@ -26,7 +54,7 @@ class CommandRegistry;
 class MobEffectInstance;
 class Container;
 class WitherBoss;
-class ArmStand;
+class ArmorStand;
 class Objective;
 struct ScoreboardId;
 
@@ -35,6 +63,8 @@ namespace Event {
 
 constexpr bool Ok = true;
 constexpr bool Cancel = false;
+
+LIAPI void OutputEventError(const string& errorMsg, const string& eventName, const string& pluginName);
 
 template <typename ListenersContainer>
 class EventListener {
@@ -87,6 +117,7 @@ public:
     bool call()
     {
         bool passToBDS = true;
+
         auto i = listeners.begin();
         try {
             for (; i != listeners.end(); ++i)
@@ -95,17 +126,16 @@ public:
                     passToBDS = false;
             }
             return passToBDS;
-        } catch (const seh_exception& e) {
-            logger.error("Uncaught SEH Exception Detected!");
-            logger.error("In Event ({})", typeid(EVENT).name());
-            if(!i->first.empty())
-                logger.error("In Plugin <{}>", i->first);
-        } catch (const std::exception& e) {
-            logger.error("Uncaught Exception Detected!");
-            logger.error("In Event ({})", typeid(EVENT).name());
-            if (!i->first.empty())
-                logger.error("In Plugin <{}>", i->first);
         }
+        catch (const seh_exception& e)
+        {
+            OutputEventError("Uncaught SEH Exception Detected!", typeid(EVENT).name(), i->first);
+        }
+        catch (const std::exception& e)
+        {
+            OutputEventError(string("Uncaught Exception Detected! ") + e.what(), typeid(EVENT).name(), i->first);
+        }
+
         return passToBDS;
     }
 };
@@ -178,6 +208,13 @@ public:
     Player* mPlayer;
     Actor* mTarget;
     int mAttackDamage;
+};
+
+class PlayerAttackBlockEvent : public EventTemplate<PlayerAttackBlockEvent> {
+public:
+    Player* mPlayer;
+    ItemStack* mItemStack;
+    BlockInstance mBlockInstance;
 };
 
 class PlayerDieEvent : public EventTemplate<PlayerDieEvent> {
@@ -314,6 +351,12 @@ public:
     ScoreboardId* mScoreboardId;
 };
 
+class PlayerExperienceAddEvent : public EventTemplate<PlayerExperienceAddEvent> {
+public:
+    Player* mPlayer;
+    int mExp;
+};
+
 
 ///////////////////////////// Block Events /////////////////////////////
 
@@ -377,6 +420,12 @@ class HopperPushOutEvent : public EventTemplate<HopperPushOutEvent> {
 public:
     Vec3 mPos;
     int mDimensionId;
+};
+
+class PistonTryPushEvent : public EventTemplate<PistonTryPushEvent> {
+public:
+    BlockInstance mPistonBlockInstance;
+    BlockInstance mTargetBlockInstance;
 };
 
 class PistonPushEvent : public EventTemplate<PistonPushEvent> {
@@ -483,7 +532,7 @@ public:
 
 class ArmorStandChangeEvent : public EventTemplate<ArmorStandChangeEvent> {
 public:
-    ArmStand* mArmorStand;
+    ArmorStand* mArmorStand;
     Player* mPlayer;
     int mSlot;
 };
