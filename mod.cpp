@@ -796,7 +796,7 @@ THOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBlo
 	h.insert("blockname", bn)
 		.insert("blockid", bid)
 		.insert("blockpos", bp)
-		.insert("pistonpos", bp2)
+		//.insert("pistonpos", bp2)//will cause a crash
 		.insert("dimensionid", bs->getDimensionId());
 	if (h.call())
 		return original(_this, bs, bp, a3, a4);
