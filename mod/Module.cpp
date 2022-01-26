@@ -95,16 +95,11 @@ static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 }
 //获取玩家列表
 static PyObject* getPlayerList(PyObject*, PyObject* args) {
-	Py_PARSE("");
 	PyObject* list = PyList_New(0);
-	if (global<Level> == nullptr)
-		Py_RETURN_ERROR("Level is not set");
-	global<Level>->forEachPlayer(
-		[list](Player* p)->bool {
-			PyList_Append(list, ToEntity(p));
-			return true;
-		}
-	);
+	for (std::vector<Player*>::iterator iter = global<std::vector<Player*>>->begin();
+		iter != global<std::vector<Player*>>->end(); iter++) {
+		PyList_Append(list, ToEntity(*iter));
+	}
 	return list;
 }
 //修改生物受伤的伤害值
