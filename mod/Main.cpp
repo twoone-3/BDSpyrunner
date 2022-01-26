@@ -8,17 +8,13 @@ using namespace std;
 namespace fs = filesystem;
 
 #pragma region Function
-//Dll入口函数
-BOOL WINAPI DllMain(
-	HINSTANCE hinstDLL	/* handle to DLL module */,
-	DWORD fdwReason		/* reason for calling function */,
-	LPVOID lpReserved	/* reserved */
-) {
-	// Perform actions based on the reason for calling.
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
+	hinstDLL;
+	lpReserved;
 	switch (fdwReason) {
 	case DLL_PROCESS_ATTACH:
-		// Initialize once for each new process.
-		// Return FALSE to fail DLL load.
+		//Initialize once for each new process.
+		//Return FALSE to fail DLL load.
 		LL::registerPlugin(
 			"BDSpyrunner", "For .py plugins' loading",
 			LL::Version(1, 9, 1, LL::Version::Beta),
@@ -26,16 +22,16 @@ BOOL WINAPI DllMain(
 		);
 		break;
 	case DLL_THREAD_ATTACH:
-		// Do thread-specific initialization.
+		//Do thread-specific initialization.
 		break;
 	case DLL_THREAD_DETACH:
-		// Do thread-specific cleanup.
+		//Do thread-specific cleanup.
 		break;
 	case DLL_PROCESS_DETACH:
-		// Perform any necessary cleanup.
+		//Perform any necessary cleanup.
 		break;
 	}
-	return TRUE;  // Successful DLL_PROCESS_ATTACH.
+	return TRUE;//Successful DLL_PROCESS_ATTACH.
 }
 #if 0
 //GBK转UTF8

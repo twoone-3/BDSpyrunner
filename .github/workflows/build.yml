@@ -42,6 +42,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Update SDK
+        run: git submodule update --init --recursive --remote
+      
       - name: Retrieve Saved Libs
         uses: actions/download-artifact@v2
         with:
@@ -63,4 +66,3 @@ jobs:
           files: |
             ./x64/Release/BDSpyrunner.dll
             ./x64/Release/BDSpyrunner.pdb
-
