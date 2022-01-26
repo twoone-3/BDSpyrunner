@@ -285,7 +285,10 @@ THOOK(BDS_Main, int, "main",
 	Py_PreInitialize(&cfg);
 #endif
 	//增加一个模块
-	PyImport_AppendInittab("mc", mc_init);
+	if((fopen("plugins/py/mc.py", "r")) == NULL)
+		PyImport_AppendInittab("mc", mc_init);
+	else
+		PyImport_AppendInittab("mco", mc_init);
 	//初始化解释器
 	Py_InitializeEx(0);
 	//初始化类型
