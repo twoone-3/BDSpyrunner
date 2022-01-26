@@ -1,13 +1,13 @@
 ﻿#include "NBT.h"
 
 void serialize<CompoundTag>::write(const std::unique_ptr<CompoundTag>& item, BinaryStream* stream) {
-	return SymCall("?write@?$serialize@VCompoundTag@@@@SAXAEBVCompoundTag@@AEAVBinaryStream@@@Z",
-		item.get(), stream);
+	SymCall("?write@?$serialize@VCompoundTag@@@@SAXAEBVCompoundTag@@AEAVBinaryStream@@@Z",
+		void, CompoundTag*, BinaryStream*)(item.get(), stream);
 }
 std::unique_ptr<CompoundTag> serialize<CompoundTag>::read(ReadOnlyBinaryStream* stream) {
 	auto tag = CompoundTag::create();
 	SymCall("?read@?$serialize@VCompoundTag@@@@SA?AVCompoundTag@@AEAVReadOnlyBinaryStream@@@Z",
-		tag.get(), stream);
+		void, CompoundTag*, ReadOnlyBinaryStream*)(tag.get(), stream);
 	return tag;
 }
 fifo_json ToJson(const ListTag& t) {

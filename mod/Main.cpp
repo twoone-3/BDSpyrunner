@@ -7,8 +7,6 @@ using namespace std;
 
 namespace fs = filesystem;
 
-Logger logger("BDSpyrunner");
-
 #pragma region Function
 //Dll入口函数
 BOOL WINAPI DllMain(
@@ -186,7 +184,7 @@ THook(int, "main",
 	)"));
 		cout << ToJson(*t).dump(4) << endl;
 		delete t;
-}
+	}
 #endif
 	//如果目录不存在创建目录
 	if (!fs::exists(PLUGIN_PATH))

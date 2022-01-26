@@ -1,6 +1,9 @@
 ﻿#pragma once
 #pragma execution_character_set("utf-8")
 
+#include <Global.h>
+#include <LoggerAPI.h>
+
 #include <MC/Actor.hpp>
 #include <MC/ActorDamageSource.hpp>
 #include <MC/BinaryStream.hpp>
@@ -51,3 +54,6 @@ constexpr const char* PYR_VERSION = "v1.9.1";
 fifo_json ToJson(std::string_view str);
 
 bool IsPlayer(Actor* ptr);
+
+inline Logger logger("BDSpyrunner");
+

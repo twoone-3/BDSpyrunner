@@ -3,7 +3,7 @@
 #include "Module.h"
 
 using namespace std;
-//事件回调助手，创建会申请GIL
+//事件回调助手，初始化对象将申请GIL
 class Callbacker {
 public:
 	Callbacker(EventCode t) :
@@ -13,7 +13,7 @@ public:
 		Py_XDECREF(arg_);
 	}
 	//事件回调
-	bool call() {
+	bool callback() {
 		bool intercept = true;
 		//如果没有则跳过
 		auto& cbs = g_callback_functions[type_];
@@ -38,7 +38,7 @@ public:
 		return *this;
 	}
 	Callbacker& insert(string_view key, string_view item) {
-		return insert(key, ToPyStr(item));
+		return insert(key, StrToPyUnicode(item));
 	}
 	Callbacker& insert(string_view key, Actor* item) {
 		return insert(key, ToEntity(item));
@@ -155,6 +155,7 @@ static const std::unordered_map<string, EventCode> g_events{
 	{ "onEffectRemoved", EventCode::onEffectRemoved },
 	{ "onEffectUpdated", EventCode::onEffectUpdated }
 };
+
 std::optional<EventCode> StringToEventCode(const std::string& s) {
 	auto x = g_events.find(s);
 	if (x == g_events.end())
@@ -163,100 +164,101 @@ std::optional<EventCode> StringToEventCode(const std::string& s) {
 		return x->second;
 }
 
-#define EVENT_BEGIN(evt) if(!evt::hasListener())evt::subscribe([code](evt e){Callbacker h(code)
+#define EVENT_BEGIN(evt) if(!evt::hasListener())evt::subscribe([code](evt e){Callbacker h(code); h.insert("Event",#evt)
 #define EVENT_INSERT(key) h.insert(#key, e.m##key)
 #define EVENT_INSERT2(key,value) h.insert(#key, value)
-#define EVENT_END return h.call();})
+#define EVENT_END return h.callback();})
 
 void EnableEventListener(EventCode code) {
+	using namespace Event;
 	switch (code) {
 	case EventCode::onPreJoin:
-		EVENT_BEGIN(Event::PlayerPreJoinEvent);
+		EVENT_BEGIN(PlayerPreJoinEvent);
 		EVENT_INSERT(IP);
 		EVENT_INSERT(Player);
 		EVENT_INSERT(XUID);
 		EVENT_END;
 		break;
 	case EventCode::onJoin:
-		EVENT_BEGIN(Event::PlayerJoinEvent);
+		EVENT_BEGIN(PlayerJoinEvent);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onLeft:
-		EVENT_BEGIN(Event::PlayerLeftEvent);
+		EVENT_BEGIN(PlayerLeftEvent);
 		EVENT_INSERT(Player);
 		EVENT_INSERT(XUID);
 		EVENT_END;
 		break;
 	case EventCode::onPlayerCmd:
-		EVENT_BEGIN(Event::PlayerCmdEvent);
+		EVENT_BEGIN(PlayerCmdEvent);
 		EVENT_INSERT(Command);
 		EVENT_INSERT(Player);
 		EVENT_INSERT2(isSuccess, e.mResult->isSuccess());
 		EVENT_END;
 		break;
 	case EventCode::onChat:
-		EVENT_BEGIN(Event::PlayerChatEvent);
+		EVENT_BEGIN(PlayerChatEvent);
 		EVENT_INSERT(Message);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onPlayerDie:
-		EVENT_BEGIN(Event::PlayerDieEvent);
+		EVENT_BEGIN(PlayerDieEvent);
 		EVENT_INSERT(Player);
 		EVENT_INSERT2(Cause, int(e.mDamageSource->getCause()));
 		EVENT_INSERT2(Entity, e.mDamageSource->getEntity());
 		EVENT_END;
 		break;
 	case EventCode::onRespawn:
-		EVENT_BEGIN(Event::PlayerRespawnEvent);
+		EVENT_BEGIN(PlayerRespawnEvent);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onChangeDim:
-		EVENT_BEGIN(Event::PlayerChangeDimEvent);
+		EVENT_BEGIN(PlayerChangeDimEvent);
 		EVENT_INSERT(Player);
 		EVENT_INSERT(ToDimensionId);
 		EVENT_END;
 		break;
 	case EventCode::onJump:
-		EVENT_BEGIN(Event::PlayerJumpEvent);
+		EVENT_BEGIN(PlayerJumpEvent);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onSneak:
-		EVENT_BEGIN(Event::PlayerSneakEvent);
+		EVENT_BEGIN(PlayerSneakEvent);
 		EVENT_INSERT(Player);
 		EVENT_INSERT(IsSneaking);
 		EVENT_END;
 		break;
 	case EventCode::onAttack:
-		EVENT_BEGIN(Event::PlayerAttackEvent);
+		EVENT_BEGIN(PlayerAttackEvent);
 		EVENT_INSERT(AttackDamage);
 		EVENT_INSERT(Player);
 		EVENT_INSERT(Target);
 		EVENT_END;
 		break;
 	case EventCode::onEat:
-		EVENT_BEGIN(Event::PlayerEatEvent);
+		EVENT_BEGIN(PlayerEatEvent);
 		EVENT_INSERT(FoodItem);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onMove:
-		EVENT_BEGIN(Event::PlayerMoveEvent);
+		EVENT_BEGIN(PlayerMoveEvent);
 		EVENT_INSERT(Player);
 		EVENT_INSERT(Pos);
 		EVENT_END;
 		break;
 	case EventCode::onChangeSprinting:
-		EVENT_BEGIN(Event::PlayerSprintEvent);
+		EVENT_BEGIN(PlayerSprintEvent);
 		EVENT_INSERT(IsSprinting);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onSpawnProjectile:
-		EVENT_BEGIN(Event::ProjectileSpawnEvent);
+		EVENT_BEGIN(ProjectileSpawnEvent);
 		//EVENT_INSERT(Identifier);
 		EVENT_INSERT(Shooter);
 		EVENT_INSERT(Type);
@@ -265,14 +267,14 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onFireworkShootWithCrossbow:
 		break;
 	case EventCode::onSetArmor:
-		EVENT_BEGIN(Event::PlayerSetArmorEvent);
+		EVENT_BEGIN(PlayerSetArmorEvent);
 		EVENT_INSERT(ArmorItem);
 		EVENT_INSERT(Player);
 		EVENT_INSERT(Slot);
 		EVENT_END;
 		break;
 	case EventCode::onRide:
-		EVENT_BEGIN(Event::EntityRideEvent);
+		EVENT_BEGIN(EntityRideEvent);
 		EVENT_INSERT(Rider);
 		EVENT_INSERT(Vehicle);
 		EVENT_END;
@@ -280,33 +282,33 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onStepOnPressurePlate:
 		break;
 	case EventCode::onUseItem:
-		EVENT_BEGIN(Event::PlayerUseItemEvent);
+		EVENT_BEGIN(PlayerUseItemEvent);
 		EVENT_INSERT(ItemStack);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onTakeItem:
-		EVENT_BEGIN(Event::PlayerTakeItemEvent);
+		EVENT_BEGIN(PlayerTakeItemEvent);
 		EVENT_INSERT(ItemEntity);
 		EVENT_INSERT(ItemStack);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onDropItem:
-		EVENT_BEGIN(Event::PlayerDropItemEvent);
+		EVENT_BEGIN(PlayerDropItemEvent);
 		EVENT_INSERT(ItemStack);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onUseItemOn:
-		EVENT_BEGIN(Event::PlayerUseItemOnEvent);
+		EVENT_BEGIN(PlayerUseItemOnEvent);
 		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(ItemStack);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onInventoryChange:
-		EVENT_BEGIN(Event::PlayerInventoryChangeEvent);
+		EVENT_BEGIN(PlayerInventoryChangeEvent);
 		EVENT_INSERT(NewItemStack);
 		EVENT_INSERT(Player);
 		EVENT_INSERT(PreviousItemStack);
@@ -314,20 +316,20 @@ void EnableEventListener(EventCode code) {
 		EVENT_END;
 		break;
 	case EventCode::onChangeArmorStand:
-		EVENT_BEGIN(Event::ArmorStandChangeEvent);
+		EVENT_BEGIN(ArmorStandChangeEvent);
 		//EVENT_INSERT(ArmorStand); todo
 		EVENT_INSERT(Player);
 		EVENT_INSERT(Slot);
 		EVENT_END;
 		break;
 	case EventCode::onStartDestroyBlock:
-		EVENT_BEGIN(Event::PlayerStartDestroyBlockEvent);
+		EVENT_BEGIN(PlayerStartDestroyBlockEvent);
 		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onDestroyBlock:
-		EVENT_BEGIN(Event::PlayerDestroyBlockEvent);
+		EVENT_BEGIN(PlayerDestroyBlockEvent);
 		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(Player);
 		EVENT_END;
@@ -335,7 +337,7 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onWitherBossDestroy:
 		break;
 	case EventCode::onPlaceBlock:
-		EVENT_BEGIN(Event::PlayerPlaceBlockEvent);
+		EVENT_BEGIN(PlayerPlaceBlockEvent);
 		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(Player);
 		EVENT_END;
@@ -343,14 +345,14 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onLiquidFlow:
 		break;
 	case EventCode::onOpenContainer:
-		EVENT_BEGIN(Event::PlayerOpenContainerEvent);
+		EVENT_BEGIN(PlayerOpenContainerEvent);
 		// todo container
 		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onCloseContainer:
-		EVENT_BEGIN(Event::PlayerCloseContainerEvent);
+		EVENT_BEGIN(PlayerCloseContainerEvent);
 		//todo
 		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(Player);
@@ -371,7 +373,7 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onEntityExplode:
 		break;
 	case EventCode::onBlockExplode:
-		EVENT_BEGIN(Event::BlockExplodeEvent);
+		EVENT_BEGIN(BlockExplodeEvent);
 		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(Breaking);
 		EVENT_INSERT(Fire);
@@ -380,14 +382,14 @@ void EnableEventListener(EventCode code) {
 		EVENT_END;
 		break;
 	case EventCode::onMobDie:
-		EVENT_BEGIN(Event::MobDieEvent);
+		EVENT_BEGIN(MobDieEvent);
 		EVENT_INSERT(Mob);
 		EVENT_INSERT2(Cause, int(e.mDamageSource->getCause()));
 		EVENT_INSERT2(Entity, e.mDamageSource->getEntity());
 		EVENT_END;
 		break;
 	case EventCode::onMobHurt:
-		EVENT_BEGIN(Event::MobDieEvent);
+		EVENT_BEGIN(MobDieEvent);
 		EVENT_INSERT(Mob);
 		EVENT_INSERT2(Cause, int(e.mDamageSource->getCause()));
 		EVENT_INSERT2(Entity, e.mDamageSource->getEntity());
@@ -410,20 +412,20 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onUseFrameBlock:
 		break;
 	case EventCode::onPistonPush:
-		EVENT_BEGIN(Event::PistonPushEvent);
+		EVENT_BEGIN(PistonPushEvent);
 		EVENT_INSERT(PistonBlockInstance);
 		EVENT_INSERT(TargetBlockInstance);
 		EVENT_END;
 		break;
 	case EventCode::onHopperSearchItem:
-		EVENT_BEGIN(Event::HopperSearchItemEvent);
+		EVENT_BEGIN(HopperSearchItemEvent);
 		EVENT_INSERT(DimensionId);
 		EVENT_INSERT(HopperBlock);
 		EVENT_INSERT(MinecartPos);
 		EVENT_END;
 		break;
 	case EventCode::onHopperPushOut:
-		EVENT_BEGIN(Event::HopperPushOutEvent);
+		EVENT_BEGIN(HopperPushOutEvent);
 		EVENT_INSERT(DimensionId);
 		EVENT_INSERT(Pos);
 		EVENT_END;
@@ -433,31 +435,32 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onBlockChanged:
 		break;
 	case EventCode::onNpcCmd:
-		EVENT_BEGIN(Event::NpcCmdEvent);
+		EVENT_BEGIN(NpcCmdEvent);
 		EVENT_INSERT(Command);
 		EVENT_INSERT(Npc);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onScoreChanged:
-		EVENT_BEGIN(Event::PlayerScoreChangedEvent);
+		EVENT_BEGIN(PlayerScoreChangedEvent);
 		EVENT_INSERT(Player);
 		//todo
 		EVENT_END;
 		break;
 	case EventCode::onServerStarted:
-		EVENT_BEGIN(Event::ServerStartedEvent);
+		EVENT_BEGIN(ServerStartedEvent);
+		e;
 		EVENT_END;
 		break;
 	case EventCode::onConsoleCmd:
-		EVENT_BEGIN(Event::ConsoleCmdEvent);
+		EVENT_BEGIN(ConsoleCmdEvent);
 		EVENT_INSERT(Command);
 		EVENT_END;
 		break;
 	case EventCode::onFormSelected:
 		break;
 	case EventCode::onConsoleOutput:
-		EVENT_BEGIN(Event::ConsoleOutputEvent);
+		EVENT_BEGIN(ConsoleOutputEvent);
 		EVENT_INSERT(Output);
 		EVENT_END;
 		break;
@@ -490,7 +493,7 @@ void EnableEventListener(EventCode code) {
 THook(void, "?startServerThread@ServerInstance@@QEAAXXZ",
 	uintptr_t _this) {
 	Callbacker h(EventCode::onServerStarted);
-	h.setArg(Py_None).call();
+	h.setArg(Py_None).callback();
 	original(_this);
 }
 //控制台输出，实际上是ostrram::operator<<的底层调用
@@ -498,8 +501,8 @@ THook(ostream&, "??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_
 	ostream& _this, const char* str, uintptr_t size) {
 	Callbacker h(EventCode::onConsoleOutput);
 	if (&_this == &cout) {
-		h.setArg(ToPyStr(str));
-		if (!h.call())
+		h.setArg(StrToPyUnicode(str));
+		if (!h.callback())
 			return _this;
 	}
 	return original(_this, str, size);
@@ -520,8 +523,8 @@ THook(bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$a
 		PyRun_SimpleString(cmd->c_str());
 		return false;
 	}
-	h.setArg(ToPyStr(*cmd));
-	if (h.call())
+	h.setArg(StrToPyUnicode(*cmd));
+	if (h.callback())
 		return original(_this, cmd);
 	return false;
 }
@@ -531,7 +534,7 @@ THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVSetLo
 	Callbacker h(EventCode::onPlayerJoin);
 	Player* p = reinterpret_cast<Player*>(_this->getServerPlayer(id));
 	if (p) {
-		h.setArg(ToEntity(p)).call();
+		h.setArg(ToEntity(p)).callback();
 	}
 	original(_this, id, pkt);
 }
@@ -540,7 +543,7 @@ THook(void, "?_onPlayerLeft@ServerNetworkHandler@@AEAAXPEAVServerPlayer@@_N@Z",
 	uintptr_t _this, Player* p, char v3) {
 	Callbacker h(EventCode::onPlayerLeft);
 	h.setArg(ToEntity(p));
-	h.call();
+	h.callback();
 	return original(_this, p, v3);
 }
 //使用物品
@@ -558,7 +561,7 @@ THook(bool, "?useItemOn@GameMode@@UEAA_NAEAVItemStack@@AEBVBlockPos@@EAEBVVec3@@
 		.insert("blockname", bl.getBlockEntityType())
 		.insert("blockid", bl.getBlockItemId())
 		.insert("position", bp);
-	if (h.call())
+	if (h.callback())
 		return original(_this, item, bp, a4, a5, b);
 	return false;
 }
@@ -573,7 +576,7 @@ THook(bool, "?mayPlace@BlockSource@@QEAA_NAEBVBlock@@AEBVBlockPos@@EPEAVActor@@_
 			.insert("blockname", bl.getBlockEntityType())
 			.insert("blockid", bl.getBlockItemId())
 			.insert("position", bp);
-		if (!h.call())
+		if (!h.callback())
 			return false;
 	}
 	return original(_this, b, bp, a4, p, _bool);
@@ -589,7 +592,7 @@ THook(bool, "?checkBlockDestroyPermissions@BlockSource@@QEAA_NAEAVActor@@AEBVBlo
 			.insert("blockname", bl.getBlockEntityType())
 			.insert("blockid", bl.getBlockItemId())
 			.insert("position", a2);
-		if (!h.call())
+		if (!h.callback())
 			return false;
 	}
 	return original(_this, a1, a2, a3, a4);
@@ -601,7 +604,7 @@ THook(bool, "?use@ChestBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	h
 		.insert("player", p)
 		.insert("position", bp);
-	if (h.call())
+	if (h.callback())
 		return original(_this, p, bp);
 	return false;
 }
@@ -612,7 +615,7 @@ THook(bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	h
 		.insert("player", p)
 		.insert("position", bp);
-	if (h.call())
+	if (h.callback())
 		return original(_this, p, bp);
 	return false;
 }
@@ -670,7 +673,7 @@ THook(bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
 	h
 		.insert("player", p)
 		.insert("actor", a);
-	if (h.call())
+	if (h.callback())
 		return original(p, a, c);
 	return false;
 }
@@ -680,7 +683,7 @@ THook(bool, "?_playerChangeDimension@Level@@AEAA_NPEAVPlayer@@AEAVChangeDimensio
 	Callbacker h(EventCode::onChangeDimension);
 	bool result = original(_this, p, req);
 	if (result) {
-		h.setArg(ToEntity(p)).call();
+		h.setArg(ToEntity(p)).callback();
 	}
 	return result;
 }
@@ -695,7 +698,7 @@ THook(void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 		.insert("actor2", sa)
 		.insert("dmcase", Fetch<unsigned>(dmsg, 8))
 		;
-	if (h.call())
+	if (h.callback())
 		original(_this, dmsg);
 }
 //生物受伤
@@ -711,7 +714,7 @@ THook(bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 		.insert("dmcase", Fetch<unsigned>(dmsg, 8))
 		.insert("damage", a3)
 		;
-	if (h.call())
+	if (h.callback())
 		return original(_this, dmsg, g_damage, a4, a5);
 	return false;
 }
@@ -719,7 +722,7 @@ THook(bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
 THook(void, "?respawn@Player@@UEAAXXZ",
 	Player* p) {
 	Callbacker h(EventCode::onRespawn);
-	h.setArg(ToEntity(p)).call();
+	h.setArg(ToEntity(p)).callback();
 	original(p);
 }
 //聊天，消息title msg w等...
@@ -730,7 +733,7 @@ THook(void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_string@
 		.insert("target", target)
 		.insert("msg", msg)
 		.insert("style", style);
-	h.call();
+	h.callback();
 	original(_this, sender, target, msg, style);
 }
 //玩家输入文本
@@ -742,7 +745,7 @@ THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVTextP
 		const string& msg = Fetch<string>(pkt, 88);
 		h.insert("player", p)
 			.insert("msg", msg);
-		if (!h.call())
+		if (!h.callback())
 			return;
 	}
 	original(_this, id, pkt);
@@ -765,7 +768,7 @@ THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVComma
 		}
 		h.insert("player", p)
 			.insert("cmd", cmd);
-		if (h.call())
+		if (h.callback())
 			original(_this, id, pkt);
 	}
 }
@@ -792,7 +795,7 @@ THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVComma
 			.insert("rawname", rawname)
 			.insert("delay", delay)
 			.insert("position", &bp);
-		if (!h.call())
+		if (!h.callback())
 			return;
 	}
 	original(_this, id, pkt);
@@ -806,7 +809,7 @@ THook(bool, "?explode@Level@@UEAAXAEAVBlockSource@@PEAVActor@@AEBVVec3@@M_N3M3@Z
 		.insert("position", &pos)
 		.insert("dimensionid", bs->getDimensionId())
 		.insert("power", a5);
-	if (h.call())
+	if (h.callback())
 		return original(_this, bs, a3, pos, a5, a6, a7, a8, a9);
 	return false;
 }
@@ -829,7 +832,7 @@ THook(bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@@AEAVCommandBlockActor
 		.insert("cmd", cmd)
 		.insert("rawname", rawname)
 		.insert("position", bp);
-	if (h.call())
+	if (h.callback())
 		return original(_this, a2, a3, bp, a5);
 	return false;
 }
@@ -837,7 +840,7 @@ THook(bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource@@AEAVCommandBlockActor
 THook(void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
 	Callbacker h(EventCode::onMove);
-	h.setArg(ToEntity(p)).call();
+	h.setArg(ToEntity(p)).callback();
 	return original(_this, p, a3, a4, a5);
 }
 //玩家穿戴
@@ -851,7 +854,7 @@ THook(void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 		.insert("itemname", i->getName())
 		.insert("itemaux", i->getAuxValue())
 		.insert("slot", slot);
-	if (h.call())
+	if (h.callback())
 		return original(p, slot, i);
 	return;
 }
@@ -875,7 +878,7 @@ THook(void, "?transformOnFall@FarmBlock@@UEBAXAEAVBlockSource@@AEBVBlockPos@@PEA
 		h.insert("player", p)
 			.insert("position", a2)
 			.insert("dimensionid", a1->getDimensionId());
-		if (!h.call())
+		if (!h.callback())
 			return;
 	}
 	original(_this, a1, a2, p, a4);
@@ -887,7 +890,7 @@ THook(bool, "?trySetSpawn@RespawnAnchorBlock@@CA_NAEAVPlayer@@AEBVBlockPos@@AEAV
 	h.insert("player", ToEntity(p))
 		.insert("position", ToList(a2))
 		.insert("dimensionid", a3->getDimensionId());
-	if (h.call())
+	if (h.callback())
 		return original(p, a2, a3, a4);
 	return false;
 }
@@ -904,7 +907,7 @@ THook(bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBlockSource@@AEBV
 		.insert("blockpos", bp)
 		.insert("pistonpos", bp2)
 		.insert("dimensionid", bs.getDimensionId());
-	if (h.call())
+	if (h.callback())
 		return original(_this, bs, bp, a3, a4);
 	return false;
 }
@@ -912,8 +915,8 @@ THook(bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBlockSource@@AEBV
 THook(bool, "?randomTeleport@TeleportComponent@@QEAA_NAEAVActor@@@Z",
 	uintptr_t _this, Actor* a1) {
 	Callbacker h(EventCode::onEndermanRandomTeleport);
-	h.setArg(ToEntity(a1)).call();
-	if (h.call())
+	h.setArg(ToEntity(a1)).callback();
+	if (h.callback())
 		return original(_this, a1);
 	return false;
 }
@@ -926,7 +929,7 @@ THook(bool, "?drop@Player@@UEAA_NAEBVItemStack@@_N@Z",
 		.insert("itemcount", a2->getCount())
 		.insert("itemname", a2->getName())
 		.insert("itemaux", a2->getAuxValue());
-	if (h.call())
+	if (h.callback())
 		return original(_this, a2, a3);
 	return false;
 }
@@ -936,7 +939,7 @@ THook(bool, "?take@Player@@QEAA_NAEAVActor@@HH@Z",
 	Callbacker h(EventCode::onTakeItem);
 	h.insert("player", _this)
 		.insert("actor", actor);
-	if (h.call())
+	if (h.callback())
 		return original(_this, actor, a2, a3);
 	return false;
 }
@@ -946,7 +949,7 @@ THook(bool, "?canAddPassenger@Actor@@UEBA_NAEAV1@@Z",
 	Callbacker h(EventCode::onRide);
 	h.insert("actor1", a1)
 		.insert("actor2", a2);
-	if (h.call())
+	if (h.callback())
 		return original(a1, a2);
 	return false;
 }
@@ -957,7 +960,7 @@ THook(bool, "?use@ItemFrameBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	h.insert("player", a2)
 		.insert("blockpos", a3)
 		.insert("dimensionid", a2->getDimensionId());
-	if (h.call())
+	if (h.callback())
 		return original(_this, a2, a3);
 	return false;
 }
@@ -968,7 +971,7 @@ THook(bool, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBlockPos@@@Z",
 	h.insert("player", a2)
 		.insert("blockpos", a3)
 		.insert("dimensionid", a2->getDimensionId());
-	if (h.call())
+	if (h.callback())
 		return original(_this, a2, a3);
 	return false;
 }
@@ -977,7 +980,7 @@ THook(void, "?jumpFromGround@Player@@UEAAXXZ",
 	Player* _this) {
 	Callbacker h(EventCode::onJump);
 	h.setArg(ToEntity(_this));
-	if (h.call())
+	if (h.callback())
 		return original(_this);
 }
 //玩家潜行
@@ -985,7 +988,7 @@ THook(void, "?sendActorSneakChanged@ActorEventCoordinator@@QEAAXAEAVActor@@_N@Z"
 	uintptr_t _this, Actor* a1, bool a2) {
 	Callbacker h(EventCode::onSneak);
 	h.setArg(ToEntity(a1));
-	if (h.call())
+	if (h.callback())
 		return original(_this, a1, a2);
 }
 //火势蔓延
@@ -998,7 +1001,7 @@ THook(bool, "?_trySpawnBlueFire@FireBlock@@AEBA_NAEAVBlockSource@@AEBVBlockPos@@
 		.insert("blockname", bl.getRawNameId())
 		.insert("blockid", bl.getBlockItemId())
 		.insert("dimensionid", bs.getDimensionId());
-	if (h.call())
+	if (h.callback())
 		return original(_this, bs, bp);
 	return false;
 }
@@ -1013,7 +1016,7 @@ THook(void, "?onBlockInteractedWith@VanillaServerGameplayEventListener@@UEAA?AW4
 		.insert("blockname", bl.getRawNameId())
 		.insert("blockid", bl.getBlockItemId())
 		.insert("dimensionid", bs->getDimensionId());
-	if (h.call())
+	if (h.callback())
 		return original(_this, pl, bp);
 }
 //方块被爆炸破坏
@@ -1026,7 +1029,7 @@ THook(void, "?onExploded@Block@@QEBAXAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@@
 		.insert("blockname", bl.getRawNameId())
 		.insert("blockid", bl.getBlockItemId())
 		.insert("dimensionid", bs.getDimensionId());
-	if (h.call())
+	if (h.callback())
 		return original(_this, bs, bp, actor);
 }
 //使用牌子
@@ -1042,7 +1045,7 @@ THook(uintptr_t, "?use@SignBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z",
 	h.insert("player", a1)
 		.insert("text", text)
 		.insert("position", a2);
-	if (h.call())
+	if (h.callback())
 		return original(_this, a1, a2);
 	return 0;
 }

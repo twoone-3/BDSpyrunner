@@ -1,7 +1,4 @@
 ﻿#include "Tool.h"
-#include <LoggerAPI.h>
-
-extern Logger logger;
 
 //字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库
 fifo_json ToJson(std::string_view str) {

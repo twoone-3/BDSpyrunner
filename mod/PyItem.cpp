@@ -23,15 +23,15 @@ struct PyItem {
 		return 0;
 	}
 	static PyObject* repr(PyObject* self) {
-		Py_GET_ITEM2(ToPyStr(""));
-		return ToPyStr(i->getName());
+		Py_GET_ITEM2(StrToPyUnicode(""));
+		return StrToPyUnicode(i->getName());
 	}
 	static Py_hash_t hash(PyObject* self) {
 		return reinterpret_cast<Py_hash_t>(self);
 	}
 	static PyObject* str(PyObject* self) {
-		Py_GET_ITEM2(ToPyStr(""));
-		return ToPyStr(i->getName());
+		Py_GET_ITEM2(StrToPyUnicode(""));
+		return StrToPyUnicode(i->getName());
 	}
 	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
 		switch (op) {
@@ -63,7 +63,7 @@ struct PyItem {
 
 	static PyObject* getName(PyObject* self, PyObject*) {
 		Py_GET_ITEM;
-		return ToPyStr(i->getName());
+		return StrToPyUnicode(i->getName());
 	}
 
 	inline static PyMethodDef Methods[]{

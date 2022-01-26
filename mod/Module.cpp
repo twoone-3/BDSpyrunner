@@ -21,15 +21,14 @@ constexpr int IsSlimeChunk(unsigned x, unsigned z) {
 }
 //获取BDS版本
 static PyObject* getBDSVersion(PyObject*, PyObject*) {
-	return ToPyStr(Common::getGameVersionString());
+	return StrToPyUnicode(Common::getGameVersionString());
 }
 //指令输出
 static PyObject* logout(PyObject*, PyObject* args) {
 	const char* msg = "";
 	Py_PARSE("s", &msg);
-
-	SymCall<ostream&>("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
-		&cout, msg, strlen(msg));
+	SymCall("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
+		ostream&, ostream&, const char*, size_t)(cout, msg, strlen(msg));
 	Py_RETURN_NONE;
 }
 //执行指令
@@ -103,8 +102,7 @@ static PyObject* setServerMotd(PyObject*, PyObject* args) {
 	if (Global<ServerNetworkHandler> == nullptr)
 		Py_RETURN_ERROR("Server did not finish loading");
 	SymCall("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
-			uintptr_t, ServerNetworkHandler*, const string&, bool)
-		(Global<ServerNetworkHandler>, name, true);
+			uintptr_t, ServerNetworkHandler*, const string&, bool)(Global<ServerNetworkHandler>, name, true);
 	Py_RETURN_NONE;
 }
 //根据坐标设置方块
@@ -150,7 +148,7 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 		&ignore_entities, &ignore_blocks
 	);
 	auto st = StructureTemplate::fromWorld("name", did, pos1, pos2, ignore_entities, ignore_blocks);
-	return ToPyStr(ToJson(*st.save()).dump(4));
+	return StrToPyUnicode(ToJson(*st.save()).dump(4));
 }
 //从JSON字符串NBT结构数据导出结构到指定地点
 static PyObject* setStructure(PyObject*, PyObject* args) {

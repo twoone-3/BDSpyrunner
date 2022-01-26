@@ -30,15 +30,15 @@ struct PyEntity {
 		return 0;
 	}
 	static PyObject* repr(PyObject* self) {
-		Py_GET_ACTOR2(ToPyStr(""));
-		return ToPyStr(a->getNameTag());
+		Py_GET_ACTOR2(StrToPyUnicode(""));
+		return StrToPyUnicode(a->getNameTag());
 	}
 	static Py_hash_t hash(PyObject* self) {
 		return reinterpret_cast<Py_hash_t>(self);
 	}
 	static PyObject* str(PyObject* self) {
-		Py_GET_ACTOR2(ToPyStr(""));
-		return ToPyStr(a->getNameTag());
+		Py_GET_ACTOR2(StrToPyUnicode(""));
+		return StrToPyUnicode(a->getNameTag());
 	}
 	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
 		switch (op) {
@@ -71,7 +71,7 @@ struct PyEntity {
 	//获取名字
 	static PyObject* getName(PyObject* self, void*) {
 		Py_GET_ACTOR;
-		return ToPyStr(a->getNameTag());
+		return StrToPyUnicode(a->getNameTag());
 	}
 	static int setName(PyObject* self, PyObject* arg, void*) {
 		if (PyUnicode_Check(arg)) {
@@ -84,12 +84,12 @@ struct PyEntity {
 	//获取UUID
 	static PyObject* getUuid(PyObject* self, void*) {
 		Py_GET_PLAYER;
-		return ToPyStr(p->getUuid());
+		return StrToPyUnicode(p->getUuid());
 	}
 	//获取XUID
 	static PyObject* getXuid(PyObject* self, void*) {
 		Py_GET_PLAYER;
-		return ToPyStr(p->getXuid());
+		return StrToPyUnicode(p->getXuid());
 	}
 	//获取坐标
 	static PyObject* getPos(PyObject* self, void*) {
@@ -123,14 +123,14 @@ struct PyEntity {
 		//string type;
 		//SymCall<string&>("?EntityTypeToString@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4ActorType@@W4ActorTypeNamespaceRules@@@Z",
 		//	&type, a->getEntityTypeId());
-		return ToPyStr(a->getTypeName());
+		return StrToPyUnicode(a->getTypeName());
 	}
 	//获取nbt数据
 	static PyObject* getNBTInfo(PyObject* self, void*) {
 		Py_GET_ACTOR;
 		unique_ptr<CompoundTag> t = CompoundTag::create();
 		a->save(*t);
-		return ToPyStr(ToJson(*t).dump(4));
+		return StrToPyUnicode(ToJson(*t).dump(4));
 	}
 	//获取生命值
 	static PyObject* getHealth(PyObject* self, void*) {
@@ -176,7 +176,7 @@ struct PyEntity {
 	//获取设备id
 	static PyObject* getPlatformOnlineId(PyObject* self, void*) {
 		Py_GET_PLAYER;
-		return ToPyStr(p->getPlatformOnlineId());
+		return StrToPyUnicode(p->getPlatformOnlineId());
 	}
 	//获取设备类型
 	static PyObject* getPlatform(PyObject* self, void*) {
@@ -187,7 +187,7 @@ struct PyEntity {
 	static PyObject* getIP(PyObject* self, void*) {
 		Py_GET_PLAYER;
 		auto ni = p->getNetworkIdentifier();
-		return ToPyStr(Global<RakNet::RakPeer>->getAdr(*ni).ToString(false, ':'));
+		return StrToPyUnicode(Global<RakNet::RakPeer>->getAdr(*ni).ToString(false, ':'));
 	}
 
 	//获取玩家所有物品
@@ -208,7 +208,7 @@ struct PyEntity {
 		}
 		items_json["OffHand"] = ToJson(*p->getOffhandSlot().save());
 		items_json["Hand"] = ToJson(*p->getSelectedItem().save());
-		return ToPyStr(items_json.dump(4));
+		return StrToPyUnicode(items_json.dump(4));
 	}
 	//设置玩家所有物品
 	static PyObject* setAllItem(PyObject* self, PyObject* args) {
@@ -480,7 +480,7 @@ struct PyEntity {
 		auto tags = a->getTags();
 		PyObject* list = PyList_New(0);
 		for (size_t i = 0; i < tags.size(); i++) {
-			PyList_Append(list, ToPyStr(tags[i]));
+			PyList_Append(list, StrToPyUnicode(tags[i]));
 		}
 		return list;
 	}
