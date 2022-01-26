@@ -728,7 +728,7 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 	return false;
 }
 //玩家移动
-THOOK(onMove, void, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
+THOOK(onMove, void*, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
 	EventCallBackHelper h(EventCode::onMove);
 	h.setArg(ToEntity(p)).call();
