@@ -27,6 +27,7 @@ static PyObject* getBDSVersion(PyObject*, PyObject*) {
 static PyObject* logout(PyObject*, PyObject* args) {
 	const char* msg = "";
 	Py_PARSE("s", &msg);
+
 	SymCall<ostream&>("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
 		&cout, msg, strlen(msg));
 	Py_RETURN_NONE;
@@ -101,8 +102,9 @@ static PyObject* setServerMotd(PyObject*, PyObject* args) {
 	Py_PARSE("s", &name);
 	if (Global<ServerNetworkHandler> == nullptr)
 		Py_RETURN_ERROR("Server did not finish loading");
-	SymCall<uintptr_t, ServerNetworkHandler*, const string&, bool>("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
-		Global<ServerNetworkHandler>, name, true);
+	SymCall("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
+			uintptr_t, ServerNetworkHandler*, const string&, bool)
+		(Global<ServerNetworkHandler>, name, true);
 	Py_RETURN_NONE;
 }
 //根据坐标设置方块

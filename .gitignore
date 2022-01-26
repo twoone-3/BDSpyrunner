@@ -1,5 +1,4 @@
 .vs/
 x64/
 *.user
-**/bedrock_server_var.lib
-**/bedrock_server_api.lib
+SDK/

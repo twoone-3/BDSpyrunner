@@ -39,6 +39,9 @@
     <ClCompile Include="mod\PyBlockInstance.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="mod\Tool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mod\Tool.h">

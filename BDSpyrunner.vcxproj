@@ -71,6 +71,7 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClCompile Include="mod\NBT.cpp" />
     <ClCompile Include="mod\PyItem.cpp" />
     <ClCompile Include="mod\PyBlockInstance.cpp" />
+    <ClCompile Include="mod\Tool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mod\Module.h" />
