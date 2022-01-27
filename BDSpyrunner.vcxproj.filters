@@ -33,7 +33,7 @@
     <ClCompile Include="mod\NBT.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mod\PyItem.cpp">
+    <ClCompile Include="mod\PyItemStack.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="mod\PyBlockInstance.cpp">
@@ -65,7 +65,7 @@
     <ClInclude Include="mod\NBT.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mod\PyItem.h">
+    <ClInclude Include="mod\PyItemStack.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\PyBlockInstance.h">

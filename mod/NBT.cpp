@@ -10,7 +10,7 @@ std::unique_ptr<CompoundTag> serialize<CompoundTag>::read(ReadOnlyBinaryStream* 
 		void, CompoundTag*, ReadOnlyBinaryStream*)(tag.get(), stream);
 	return tag;
 }
-fifo_json ToJson(const ListTag& t) {
+fifo_json StrToJson(const ListTag& t) {
 	fifo_json json = fifo_json::array();
 	for (auto& c : t) {
 		switch (t.getElementType()) {
@@ -42,16 +42,16 @@ fifo_json ToJson(const ListTag& t) {
 			json.push_back(c->asStringTag()->value());
 			break;
 		case Tag::Type::List:
-			json.push_back(ToJson(*c->asListTag()));
+			json.push_back(StrToJson(*c->asListTag()));
 			break;
 		case Tag::Type::Compound:
-			json.push_back(ToJson(*c->asCompoundTag()));
+			json.push_back(StrToJson(*c->asCompoundTag()));
 			break;
 		}
 	}
 	return json;
 }
-fifo_json ToJson(const CompoundTag& t) {
+fifo_json StrToJson(const CompoundTag& t) {
 	fifo_json json = fifo_json::object();
 	for (auto& [key, val] : t) {
 		Tag* tag = const_cast<Tag*>(val.get());
@@ -89,10 +89,10 @@ fifo_json ToJson(const CompoundTag& t) {
 			son = tag->asStringTag()->value();
 			break;
 		case Tag::Type::List:
-			son = ToJson(*tag->asListTag());
+			son = StrToJson(*tag->asListTag());
 			break;
 		case Tag::Type::Compound:
-			son = ToJson(*tag->asCompoundTag());
+			son = StrToJson(*tag->asCompoundTag());
 			break;
 		case Tag::Type::IntArray:
 			logger.error("IntArrayTag in CompoundTag");

@@ -51,17 +51,17 @@ static PyObject* setListener(PyObject*, PyObject* args) {
 		Py_RETURN_ERROR("Parameter 2 is not callable");
 	auto code = StringToEventCode(key);
 	if (!code)
-		Py_RETURN_ERROR_FORMAT("Invalid Listener key words : %s", key);
+		Py_RETURN_ERROR_FORMAT("Invalid Listener key words %s", key);
 	g_callback_functions[code.value()].push_back(func);
 	EnableEventListener(code.value());
 	Py_RETURN_NONE;
 }
 //设置指令说明
-static PyObject* setCommandDescription(PyObject*, PyObject* args) {
+static PyObject* registerCommand(PyObject*, PyObject* args) {
 	const char* cmd = "";
-	const char* des = "";
 	PyObject* callback = nullptr;
-	Py_PARSE("ss|O", &cmd, &des, &callback);
+	const char* des = "";
+	Py_PARSE("sOs", &cmd, &callback, &des);
 	g_commands[cmd] = { des, callback };
 	Py_RETURN_NONE;
 }
@@ -70,27 +70,18 @@ static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 	const char* xuid = "";
 	Py_PARSE("s", &xuid);
 	Player* p = nullptr;
-	p = Global<Level>->getPlayer(xuid);
-	/*auto players = Global<Level>->getAllPlayers();
-	for (Player* pl : players) {
-		if (pl->getXuid() == xuid) {
-			p = pl;
-			break;
-		}
-	}*/
+	p = Level::getPlayer(xuid);
 	if (p == nullptr)
 		Py_RETURN_ERROR("Failed to find player");
-	return ToEntity(p);
+	return ToPyEntity(p);
 }
 //获取玩家列表
 static PyObject* getPlayerList(PyObject*, PyObject* args) {
 	Py_PARSE("");
 	PyObject* list = PyList_New(0);
-	if (Global<Level> == nullptr)
-		Py_RETURN_ERROR("Level is not set");
-	Global<Level>->forEachPlayer(
+	Level::forEachPlayer(
 		[list](Player& p)->bool {
-			PyList_Append(list, ToEntity(&p));
+			PyList_Append(list, ToPyEntity(&p));
 			return true;
 		}
 	);
@@ -109,8 +100,6 @@ static PyObject* setServerMotd(PyObject*, PyObject* args) {
 static PyObject* getBlock(PyObject*, PyObject* args) {
 	BlockPos bp; int did;
 	Py_PARSE("iiii", &bp.x, &bp.y, &bp.z, &did);
-	if (Global<Level> == nullptr)
-		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
@@ -125,8 +114,6 @@ static PyObject* setBlock(PyObject*, PyObject* args) {
 	BlockPos bp;
 	int did;
 	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &did);
-	if (Global<Level> == nullptr)
-		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
@@ -148,7 +135,7 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 		&ignore_entities, &ignore_blocks
 	);
 	auto st = StructureTemplate::fromWorld("name", did, pos1, pos2, ignore_entities, ignore_blocks);
-	return StrToPyUnicode(ToJson(*st.save()).dump(4));
+	return StrToPyUnicode(StrToJson(*st.save()).dump(4));
 }
 //从JSON字符串NBT结构数据导出结构到指定地点
 static PyObject* setStructure(PyObject*, PyObject* args) {
@@ -161,7 +148,7 @@ static PyObject* setStructure(PyObject*, PyObject* args) {
 		&data, &pos.x, &pos.y, &pos.z,
 		&did, &mir, &rot
 	);
-	StructureTemplate::fromTag("name", *ToCompoundTag(ToJson(data)))
+	StructureTemplate::fromTag("name", *ToCompoundTag(StrToJson(data)))
 		.toWorld(did, pos, mir, rot);
 	/*for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {
@@ -233,8 +220,6 @@ static PyObject* explode(PyObject*, PyObject* args) {
 		&pos.x, &pos.y, &pos.z, &did,
 		&power, &destroy, &range, &fire
 	);
-	if (Global<Level> == nullptr)
-		Py_RETURN_ERROR("Level is not set");
 	BlockSource* bs = Level::getBlockSource(did);
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
@@ -247,8 +232,6 @@ static PyObject* spawnItem(PyObject*, PyObject* args) {
 	Vec3 pos; int did;
 	Py_PARSE("sfffi", &item_data, &pos.x, &pos.y, &pos.z, &did);
 	ItemStack item = LoadItemFromString(item_data);
-	if (Global<Level> == nullptr)
-		Py_RETURN_ERROR("Level is not set");
 	Global<Level>->getSpawner().spawnItem(pos, did, &item);
 	Py_RETURN_NONE;
 }
@@ -278,11 +261,11 @@ static PyObject* setSignBlockMessage(PyObject*, PyObject* args) {
 }
 //模块方法列表
 static PyMethodDef Methods[]{
-	{ "getBDSVersion", getBDSVersion, METH_NOARGS, nullptr },
+	Py_METHOD_NOARGS(getBDSVersion),
 	{ "logout", logout, METH_VARARGS, nullptr },
 	{ "runcmd", runCommand, METH_VARARGS, nullptr },
 	{ "setListener", setListener, METH_VARARGS, nullptr },
-	{ "setCommandDescription", setCommandDescription, METH_VARARGS, nullptr },
+	{ "registerCommand", registerCommand, METH_VARARGS, nullptr },
 	{ "getPlayerByXuid", getPlayerByXuid, METH_VARARGS, nullptr },
 	{ "getPlayerList", getPlayerList, METH_NOARGS, nullptr },
 	{ "setServerMotd", setServerMotd, METH_VARARGS, nullptr },

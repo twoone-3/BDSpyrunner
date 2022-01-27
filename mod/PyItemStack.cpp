@@ -1,36 +1,36 @@
-﻿#include "PyItem.h"
+﻿#include "PyItemStack.h"
 #include "Tool.h"
 #include "NBT.h"
 
-#define Py_GET_ITEM Py_GET_ITEM2(nullptr)
-#define Py_GET_ITEM2(ret) ItemStack* i = getItemStack(self);if (i == nullptr)return ret
+#define Py_GET_ITEMSTACK Py_GET_ITEMSTACK2(nullptr)
+#define Py_GET_ITEMSTACK2(ret) ItemStack* i = getItemStack(self);if (i == nullptr)return ret
 
 using namespace std;
 
-struct PyItem {
+struct PyItemStack {
 	PyObject_HEAD;
 	ItemStack* item;
 
 	static ItemStack* getItemStack(PyObject* self) {
-		if (reinterpret_cast<PyItem*>(self)->item)
-			return reinterpret_cast<PyItem*>(self)->item;
+		if (reinterpret_cast<PyItemStack*>(self)->item)
+			return reinterpret_cast<PyItemStack*>(self)->item;
 		else
 			Py_RETURN_ERROR("This item pointer is nullptr");
 	}
 	static int print(PyObject* self, FILE* file, int) {
-		Py_GET_ITEM2(-1);
+		Py_GET_ITEMSTACK2(-1);
 		fputs(i->getName().c_str(), file);
 		return 0;
 	}
 	static PyObject* repr(PyObject* self) {
-		Py_GET_ITEM2(StrToPyUnicode(""));
+		Py_GET_ITEMSTACK2(StrToPyUnicode(""));
 		return StrToPyUnicode(i->getName());
 	}
 	static Py_hash_t hash(PyObject* self) {
 		return reinterpret_cast<Py_hash_t>(self);
 	}
 	static PyObject* str(PyObject* self) {
-		Py_GET_ITEM2(StrToPyUnicode(""));
+		Py_GET_ITEMSTACK2(StrToPyUnicode(""));
 		return StrToPyUnicode(i->getName());
 	}
 	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
@@ -62,7 +62,7 @@ struct PyItem {
 	}
 
 	static PyObject* getName(PyObject* self, PyObject*) {
-		Py_GET_ITEM;
+		Py_GET_ITEMSTACK;
 		return StrToPyUnicode(i->getName());
 	}
 
@@ -72,23 +72,23 @@ struct PyItem {
 	};
 };
 
-PyTypeObject PyItem_Type{
+PyTypeObject PyItemStack_Type{
 	PyVarObject_HEAD_INIT(nullptr, 0)
 	"Item",					/* tp_name */
-	sizeof(PyItem),			/* tp_basicsize */
+	sizeof(PyItemStack),	/* tp_basicsize */
 	0,						/* tp_itemsize */
 	nullptr,				/* tp_dealloc */
-	PyItem::print,			/* tp_print */
+	PyItemStack::print,		/* tp_print */
 	nullptr,				/* tp_getattr */
 	nullptr,				/* tp_setattr */
 	nullptr,				/* tp_reserved */
-	PyItem::repr,			/* tp_repr */
+	PyItemStack::repr,		/* tp_repr */
 	nullptr,				/* tp_as_number */
 	nullptr,				/* tp_as_sequence */
 	nullptr,				/* tp_as_mapping */
-	PyItem::hash,			/* tp_hash */
+	PyItemStack::hash,		/* tp_hash */
 	nullptr,				/* tp_call */
-	PyItem::str,			/* tp_str */
+	PyItemStack::str,		/* tp_str */
 	nullptr,				/* tp_getattro */
 	nullptr,				/* tp_setattro */
 	nullptr,				/* tp_as_buffer */
@@ -96,11 +96,11 @@ PyTypeObject PyItem_Type{
 	nullptr,				/* tp_doc */
 	nullptr,				/* tp_traverse */
 	nullptr,				/* tp_clear */
-	PyItem::rich_compare,	/* tp_richcompare */
+	PyItemStack::rich_compare,/* tp_richcompare */
 	0,						/* tp_weaklistoffset */
 	nullptr,				/* tp_iter */
 	nullptr,				/* tp_iternext */
-	PyItem::Methods,		/* tp_methods */
+	PyItemStack::Methods,	/* tp_methods */
 	nullptr,				/* tp_members */
 	nullptr,				/* tp_getset */
 	nullptr,				/* tp_base */
@@ -123,8 +123,8 @@ PyTypeObject PyItem_Type{
 	nullptr,				/* tp_finalize */
 };
 
-PyObject* ToItem(ItemStack* ptr) {
-	PyItem* obj = PyObject_New(PyItem, &PyItem_Type);
+PyObject* ToPyItemStack(ItemStack* ptr) {
+	PyItemStack* obj = PyObject_New(PyItemStack, &PyItemStack_Type);
 	obj->item = ptr;
 	return reinterpret_cast<PyObject*>(obj);
 }

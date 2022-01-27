@@ -24,20 +24,11 @@ std::vector<std::string> ToStrArray(PyObject* list) {
 }
 
 //Vec3转list
-PyObject* ToList(Vec3 vec) {
+PyObject* ToList(const Vec3& vec) {
 	PyObject* list = PyList_New(3);
 	PyList_SetItem(list, 0, PyFloat_FromDouble(vec.x));
 	PyList_SetItem(list, 1, PyFloat_FromDouble(vec.y));
 	PyList_SetItem(list, 2, PyFloat_FromDouble(vec.z));
-	return list;
-}
-
-//Vec3转list
-PyObject* ToList(Vec3* vec) {
-	PyObject* list = PyList_New(3);
-	PyList_SetItem(list, 0, PyFloat_FromDouble(vec->x));
-	PyList_SetItem(list, 1, PyFloat_FromDouble(vec->y));
-	PyList_SetItem(list, 2, PyFloat_FromDouble(vec->z));
 	return list;
 }
 
@@ -62,19 +53,27 @@ void PrintPythonError() {
 
 		auto size = PyTuple_Size(info);
 		if (size == 1) {
-			logger.error("{} : {}", Py_TYPE(value)->tp_name, PyUnicodeToStr(PyTuple_GetItem(info, 0)));
+			logger.error("{} occurred!", Py_TYPE(value)->tp_name);
+			logger.error("Reason: {}", PyUnicodeToStr(PyTuple_GetItem(info, 0)));
 		}
 		else if (size == 2) {
 			logger.error("{} : {}", Py_TYPE(value)->tp_name, PyUnicodeToStr(PyTuple_GetItem(info, 0)));
 			PyObject* location = PyTuple_GetItem(info, 1);
-			logger.error("File {} Line {} Character {}",
+			logger.error("File {}\tLine {}\tCharacter {}",
 				PyUnicodeToStr(PyTuple_GetItem(location, 0)),
 				PyObjectToStr(PyTuple_GetItem(location, 1)),
 				PyObjectToStr(PyTuple_GetItem(location, 2))
 			);
-			logger.error("	{}", PyObjectToStr(PyTuple_GetItem(location, 3)));
+			logger.error("\t{}", PyObjectToStr(PyTuple_GetItem(location, 3)));
 		}
-
 		PyErr_Restore(type, info, traceback);
 	}
+}
+
+PyGILGuard::PyGILGuard() {
+	gil_ = PyGILState_Ensure();
+}
+
+PyGILGuard::~PyGILGuard() {
+	PyGILState_Release(gil_);
 }

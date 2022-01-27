@@ -11,6 +11,12 @@
 #define Py_RETURN_ERROR_FORMAT(str,...) return PyErr_Format(PyExc_Exception, str, __VA_ARGS__), nullptr
 #define Py_PRINT_REFCOUNT(obj) logger.info(#obj " 的引用计数 : {}",  obj->ob_refcnt)
 
+#define Py_METHOD_VARARGS(name) {#name, reinterpret_cast<PyCFunction>(name), METH_VARARGS, nullptr}
+#define Py_METHOD_NOARGS(name) {#name, reinterpret_cast<PyCFunction>(name), METH_NOARGS, nullptr}
+#define Py_METHOD_KEYWORDS(name) {#name, reinterpret_cast<PyCFunction>(name), METH_VARARGS | METH_KEYWORDS, nullptr}
+
+#define Py_METHOD_DEFINE(name) static PyObject* name(PyObject * self, PyObject* args)
+
 //#define Py_BEGIN_CALL\
 //	int _has_gil = PyGILState_Check();\
 //	PyGILState_STATE _gil_state = PyGILState_LOCKED;\
@@ -24,13 +30,8 @@
 
 class PyGILGuard {
 public:
-	PyGILGuard() {
-		gil_ = PyGILState_Ensure();
-	}
-	~PyGILGuard() {
-		PyGILState_Release(gil_);
-	}
-
+	PyGILGuard();
+	~PyGILGuard();
 private:
 	PyGILState_STATE gil_;
 };
@@ -40,9 +41,7 @@ PyObject* StrToPyUnicode(std::string_view str);
 //list转vector
 std::vector<std::string> ToStrArray(PyObject* list);
 //Vec3转list
-PyObject* ToList(Vec3 vec);
-//Vec3转list
-PyObject* ToList(Vec3* vec);
+PyObject* ToList(const Vec3& vec);
 //方块坐标转list
 PyObject* ToList(BlockPos* bp);
 //打印错误信息

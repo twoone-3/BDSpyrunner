@@ -51,7 +51,7 @@ using json_t = nlohmann::detail::value_t;
 constexpr const char* PYR_VERSION = "v1.9.1";
 
 //字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库
-fifo_json ToJson(std::string_view str);
+fifo_json StrToJson(std::string_view str);
 
 bool IsPlayer(Actor* ptr);
 

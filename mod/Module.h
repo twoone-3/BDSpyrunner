@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "PyEntity.h"
-#include "PyItem.h"
+#include "PyItemStack.h"
 #include "PyBlockInstance.h"
 #include "Event.h"
 

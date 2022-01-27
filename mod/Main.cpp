@@ -98,7 +98,7 @@ static Json AccessUrlForJson(const wchar_t* url) {
 	} while (size);
 	InternetCloseHandle(handle2);
 	InternetCloseHandle(hSession);
-	return ToJson(data);
+	return StrToJson(data);
 }
 //访问url
 static void AccessUrlForFile(const wchar_t* url, string_view filename) {
@@ -149,7 +149,7 @@ static void CheckPluginVersion() {
 void PyClassInit() {
 	if (PyType_Ready(&PyEntity_Type) < 0)
 		Py_FatalError("Can't initialize entity type");
-	if (PyType_Ready(&PyItem_Type) < 0)
+	if (PyType_Ready(&PyItemStack_Type) < 0)
 		Py_FatalError("Can't initialize item type");
 }
 //将Python解释器初始化插入bds主函数
@@ -157,7 +157,7 @@ THook(int, "main",
 	int argc, char* argv[], char* envp[]) {
 #if 0
 	while (true) {
-		CompoundTag* t = ToCompoundTag(ToJson(R"(
+		CompoundTag* t = ToCompoundTag(StrToJson(R"(
 	             {
 	                "Block10": {
 	                    "name8": "minecraft:crafting_table",
@@ -178,7 +178,7 @@ THook(int, "main",
 	                }
 	            }
 	)"));
-		cout << ToJson(*t).dump(4) << endl;
+		cout << StrToJson(*t).dump(4) << endl;
 		delete t;
 	}
 #endif

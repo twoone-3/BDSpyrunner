@@ -69,55 +69,62 @@ struct PyEntity {
 	}
 
 	//获取名字
-	static PyObject* getName(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getName) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		return StrToPyUnicode(a->getNameTag());
 	}
-	static int setName(PyObject* self, PyObject* arg, void*) {
-		if (PyUnicode_Check(arg)) {
-			Py_GET_PLAYER2(-1);
-			p->setName(PyUnicode_AsUTF8(arg));
-			return 0;
-		}
-		return PyErr_BadArgument(), -1;
+	Py_METHOD_DEFINE(setName) {
+		const char* name = "";
+		Py_PARSE("s", &name);
+		Py_GET_PLAYER;
+		p->setName(name);
 	}
 	//获取UUID
-	static PyObject* getUuid(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getUuid) {
+		Py_PARSE("");
 		Py_GET_PLAYER;
 		return StrToPyUnicode(p->getUuid());
 	}
 	//获取XUID
-	static PyObject* getXuid(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getXuid) {
+		Py_PARSE("");
 		Py_GET_PLAYER;
 		return StrToPyUnicode(p->getXuid());
 	}
 	//获取坐标
-	static PyObject* getPos(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getPos) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		return ToList(a->getPos());
 	}
 	//获取维度ID
-	static PyObject* getDimensionId(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getDimensionId) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getDimensionId());
 	}
 	//是否着地
-	static PyObject* getIsStand(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getIsStand) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		return PyBool_FromLong(a->isStanding());
 	}
 	//是否潜行
-	static PyObject* getIsSneaking(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getIsSneaking) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		return PyBool_FromLong(a->isSneaking());
 	}
 	//获取类型
-	static PyObject* getTypeID(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getTypeID) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getEntityTypeId());
 	}
 	//获取类型字符串
-	static PyObject* getTypeName(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getTypeName) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		//旧办法
 		//string type;
@@ -126,96 +133,99 @@ struct PyEntity {
 		return StrToPyUnicode(a->getTypeName());
 	}
 	//获取nbt数据
-	static PyObject* getNBTInfo(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getNBT) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		unique_ptr<CompoundTag> t = CompoundTag::create();
 		a->save(*t);
-		return StrToPyUnicode(ToJson(*t).dump(4));
+		return StrToPyUnicode(StrToJson(*t).dump(4));
 	}
 	//获取生命值
-	static PyObject* getHealth(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getHealth) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getHealth());
 	}
-	static int setHealth(PyObject* self, PyObject* arg, void*) {
-		if (PyLong_Check(arg)) {
-			Py_GET_ACTOR2(-1);
-			//不知行不行
-			a->serializationSetHealth(PyLong_AsLong(arg));
-			return 0;
-		}
-		return PyErr_BadArgument(), -1;
+	Py_METHOD_DEFINE(setHealth) {
+		int value;
+		Py_PARSE("i", &value);
+		Py_GET_ACTOR;
+		a->serializationSetHealth(value);
+		Py_RETURN_NONE;
 	}
 	//获取最大生命值
-	static PyObject* getMaxHealth(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getMaxHealth) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getMaxHealth());
 	}
-	static int setMaxHealth(PyObject* self, PyObject* arg, void*) {
-		if (PyLong_Check(arg)) {
-			Py_GET_ACTOR2(-1);
-			logger.error(__FILE__, __LINE__, "此函数目前无法使用");
-			//a->setMaxHealth(PyLong_AsLong(arg));
-			return 0;
-		}
-		return PyErr_BadArgument(), -1;
+	Py_METHOD_DEFINE(setMaxHealth) {
+		int value;
+		Py_PARSE("i", &value);
+		Py_GET_PLAYER;
+		logger.error(__FILE__, __LINE__, "此函数目前无法使用");
+		Py_RETURN_NONE;
 	}
 	//获取权限
-	static PyObject* getPermissions(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getPermissions) {
+		Py_PARSE("");
 		Py_GET_PLAYER;
 		return PyLong_FromLong(static_cast<int>(p->getPlayerPermissionLevel()));
 	}
-	static int setPermissions(PyObject* self, PyObject* arg, void*) {
-		if (PyLong_Check(arg)) {
-			Py_GET_PLAYER2(-1);
-			p->setPermissions(static_cast<CommandPermissionLevel>(PyLong_AsLong(arg)));
-			return 0;
-		}
-		return PyErr_BadArgument(), -1;
+	Py_METHOD_DEFINE(setPermissions) {
+		int perm;
+		Py_PARSE("i", &perm);
+		Py_GET_PLAYER;
+		p->setPermissions(static_cast<CommandPermissionLevel>(perm));
+		Py_RETURN_NONE;
 	}
 	//获取设备id
-	static PyObject* getPlatformOnlineId(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getPlatformOnlineId) {
+		Py_PARSE("");
 		Py_GET_PLAYER;
 		return StrToPyUnicode(p->getPlatformOnlineId());
 	}
 	//获取设备类型
-	static PyObject* getPlatform(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getPlatform) {
+		Py_PARSE("");
 		Py_GET_PLAYER;
 		return PyLong_FromLong(p->getPlatform());
 	}
 	//获取IP
-	static PyObject* getIP(PyObject* self, void*) {
+	Py_METHOD_DEFINE(getIP) {
+		Py_PARSE("");
 		Py_GET_PLAYER;
 		auto ni = p->getNetworkIdentifier();
 		return StrToPyUnicode(Global<RakNet::RakPeer>->getAdr(*ni).ToString(false, ':'));
 	}
 
 	//获取玩家所有物品
-	static PyObject* getAllItem(PyObject* self, PyObject*) {
+	Py_METHOD_DEFINE(getAllItem) {
+		Py_PARSE("");
 		Py_GET_PLAYER;
 		fifo_json items_json = fifo_json::object();
 		fifo_json& inventory = items_json["Inventory"];
 		for (auto& i : p->getInventory().getSlots()) {
-			inventory.push_back(ToJson(*i->save()));
+			inventory.push_back(StrToJson(*i->save()));
 		}
 		fifo_json& endchest = items_json["EndChest"];
 		for (auto& i : p->getEnderChestContainer()->getSlots()) {
-			endchest.push_back(ToJson(*i->save()));
+			endchest.push_back(StrToJson(*i->save()));
 		}
 		fifo_json& armor = items_json["Armor"];
 		for (auto& i : p->getArmorContainer().getSlots()) {
-			armor.push_back(ToJson(*i->save()));
+			armor.push_back(StrToJson(*i->save()));
 		}
-		items_json["OffHand"] = ToJson(*p->getOffhandSlot().save());
-		items_json["Hand"] = ToJson(*p->getSelectedItem().save());
+		items_json["OffHand"] = StrToJson(*p->getOffhandSlot().save());
+		items_json["Hand"] = StrToJson(*p->getSelectedItem().save());
 		return StrToPyUnicode(items_json.dump(4));
 	}
 	//设置玩家所有物品
-	static PyObject* setAllItem(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(setAllItem) {
 		const char* items_data = "";
 		Py_PARSE("s", &items_data);
 		Py_GET_PLAYER;
-		fifo_json items_json(ToJson(items_data));
+		fifo_json items_json(StrToJson(items_data));
 		if (items_json.contains("Inventory")) {
 			auto& items = p->getInventory();
 			fifo_json& inventory = items_json["Inventory"];
@@ -244,7 +254,7 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//设置玩家手上物品
-	static PyObject* setHand(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(setHand) {
 		const char* item_data = "";
 		Py_PARSE("s", &item_data);
 		Py_GET_PLAYER;
@@ -253,7 +263,7 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//增加玩家背包物品
-	static PyObject* addItem(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(addItem) {
 		const char* item_data = "";
 		Py_PARSE("s", &item_data);
 		Py_GET_PLAYER;
@@ -263,7 +273,7 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//移除玩家背包物品
-	static PyObject* removeItem(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(removeItem) {
 		int slot, num;
 		Py_PARSE("ii", &slot, &num);
 		Py_GET_PLAYER;
@@ -272,7 +282,7 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//传送
-	static PyObject* teleport(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(teleport) {
 		Vec3 pos;
 		int did;
 		Py_PARSE("fffi", &pos.x, &pos.y, &pos.z, &did);
@@ -281,7 +291,7 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//发送数据包
-	static PyObject* sendTextPacket(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(sendTextPacket) {
 		const char* msg = "";
 		int mode = 0;
 		Py_PARSE("s|i", &msg, &mode);
@@ -289,7 +299,7 @@ struct PyEntity {
 		p->sendTextPacket(msg, TextType(mode));
 		Py_RETURN_NONE;
 	}
-	static PyObject* sendCommandPacket(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(sendCommandPacket) {
 		const char* cmd = "";
 		Py_PARSE("s", &cmd);
 		Py_GET_PLAYER;
@@ -297,13 +307,14 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//重新发送所有区块
-	static PyObject* resendAllChunks(PyObject* self, PyObject*) {
+	Py_METHOD_DEFINE(resendAllChunks) {
+		Py_PARSE("");
 		Py_GET_PLAYER;
 		p->resendAllChunks();
 		Py_RETURN_NONE;
 	}
 	//断开连接
-	static PyObject* disconnect(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(disconnect) {
 		const char* msg = "";
 		Py_PARSE("|s", &msg);
 		Py_GET_PLAYER;
@@ -311,14 +322,14 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//获取玩家分数
-	static PyObject* getScore(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(getScore) {
 		const char* objname = "";
 		Py_PARSE("s", &objname);
 		Py_GET_PLAYER;
 		return PyLong_FromLong(p->getScore(objname));
 	}
 	//设置玩家分数
-	static PyObject* setScore(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(setScore) {
 		const char* objname = "";
 		int count;
 		Py_PARSE("si", &objname, &count);
@@ -327,7 +338,7 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//增加玩家分数
-	static PyObject* addScore(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(addScore) {
 		const char* objname = "";
 		int count;
 		Py_PARSE("si", &objname, &count);
@@ -336,7 +347,7 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//减少玩家分数
-	static PyObject* reduceScore(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(reduceScore) {
 		const char* objname = "";
 		int count;
 		Py_PARSE("si", &objname, &count);
@@ -345,7 +356,7 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//增加等级
-	static PyObject* addLevel(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(addLevel) {
 		int level;
 		Py_PARSE("i", &level);
 		Py_GET_PLAYER;
@@ -353,7 +364,7 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//跨服传送
-	static PyObject* transferServer(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(transferServer) {
 		const char* address = "";
 		unsigned short port;
 		Py_PARSE("sH", &address, &port);
@@ -362,7 +373,7 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//发送表单
-	static PyObject* sendCustomForm(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(sendCustomForm) {
 		const char* str = "";
 		PyObject* callback = nullptr;
 		Py_PARSE("sO", &str, &callback);
@@ -372,14 +383,14 @@ struct PyEntity {
 		p->sendCustomFormPacket(str,
 			[p, callback](string arg) {
 				PyGILGuard gil;
-				PyObject* result = PyObject_CallFunction(callback, "Os", ToEntity(p), arg.c_str());
+				PyObject* result = PyObject_CallFunction(callback, "Os", ToPyEntity(p), arg.c_str());
 				PrintPythonError();
 				Py_XDECREF(result);
 			}
 		);
 		Py_RETURN_NONE;
 	}
-	static PyObject* sendSimpleForm(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(sendSimpleForm) {
 		const char* title = "";
 		const char* content = "";
 		PyObject* buttons_list = nullptr;
@@ -396,14 +407,14 @@ struct PyEntity {
 		p->sendSimpleFormPacket(title, content, buttons, images,
 			[p, callback](int arg) {
 				PyGILGuard gil;
-				PyObject* result = PyObject_CallFunction(callback, "Oi", ToEntity(p), arg);
+				PyObject* result = PyObject_CallFunction(callback, "Oi", ToPyEntity(p), arg);
 				PrintPythonError();
 				Py_XDECREF(result);
 		}
 		);
 		Py_RETURN_NONE;
 	}
-	static PyObject* sendModalForm(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(sendModalForm) {
 		const char* title = "";
 		const char* content = "";
 		const char* button1 = "";
@@ -416,7 +427,7 @@ struct PyEntity {
 		p->sendModalFormPacket(title, content, button1, button2,
 			[p, callback](bool arg) {
 				PyGILGuard gil;
-				PyObject* result = PyObject_CallFunction(callback, "OO", ToEntity(p), arg ? Py_True : Py_False);
+				PyObject* result = PyObject_CallFunction(callback, "OO", ToPyEntity(p), arg ? Py_True : Py_False);
 				PrintPythonError();
 				Py_XDECREF(result);
 			}
@@ -424,14 +435,14 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//设置侧边栏
-	static PyObject* setSidebar(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(setSidebar) {
 		const char* title = "";
 		const char* side_data = "";
 		ObjectiveSortOrder order = ObjectiveSortOrder::Ascending;
 		Py_PARSE("ss|i", &title, &side_data, &order);
 		Py_GET_PLAYER;
 		vector<pair<string, int>> data;
-		fifo_json value = ToJson(side_data);
+		fifo_json value = StrToJson(side_data);
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {
 				data.push_back({ key, val });
@@ -439,13 +450,14 @@ struct PyEntity {
 		p->setSidebar(title, data, order);
 		Py_RETURN_NONE;
 	}
-	static PyObject* removeSidebar(PyObject* self, PyObject*) {
+	Py_METHOD_DEFINE(removeSidebar) {
+		Py_PARSE("");
 		Py_GET_PLAYER;
 		p->removeSidebar();
 		Py_RETURN_NONE;
 	}
 	//Boss栏
-	static PyObject* setBossbar(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(setBossbar) {
 		const char* name = "";
 		float per;
 		Py_PARSE("sf", &name, &per);
@@ -453,7 +465,7 @@ struct PyEntity {
 		p->sendBossEventPacket(BossEvent::Show, name, per, BossEventColour::Red); // Todo
 		Py_RETURN_NONE;
 	}
-	static PyObject* removeBossbar(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(removeBossbar) {
 		const char* name = "";
 		Py_PARSE("s:removeBossbar", &name);
 		Py_GET_PLAYER;
@@ -461,21 +473,22 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//标签
-	static PyObject* addTag(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(addTag) {
 		const char* tag = "";
 		Py_PARSE("s", &tag);
 		Py_GET_ACTOR;
 		a->addTag(tag);
 		Py_RETURN_NONE;
 	}
-	static PyObject* removeTag(PyObject* self, PyObject* args) {
+	Py_METHOD_DEFINE(removeTag) {
 		const char* tag = "";
 		Py_PARSE("s", &tag);
 		Py_GET_ACTOR;
 		a->removeTag(tag);
 		Py_RETURN_NONE;
 	}
-	static PyObject* getTags(PyObject* self, PyObject*) {
+	Py_METHOD_DEFINE(getTags) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		auto tags = a->getTags();
 		PyObject* list = PyList_New(0);
@@ -485,41 +498,15 @@ struct PyEntity {
 		return list;
 	}
 	//杀死实体
-	static PyObject* kill(PyObject* self, PyObject*) {
+	Py_METHOD_DEFINE(kill) {
+		Py_PARSE("");
 		Py_GET_ACTOR;
 		a->kill();
 		Py_RETURN_NONE;
 	}
 
-	//获取属性方法
-	inline static PyGetSetDef GetSet[]{
-		{ "name", getName, setName, nullptr },
-		{ "uuid", getUuid, nullptr, nullptr },
-		{ "xuid", getXuid, nullptr, nullptr },
-		{ "pos", getPos, nullptr, nullptr },
-		{ "did", getDimensionId, nullptr, nullptr },
-		{ "is_standing", getIsStand, nullptr, nullptr },
-		/*已弃用*/{ "isstand", getIsStand, nullptr, nullptr },
-		{ "is_sneaking", getIsSneaking, nullptr, nullptr },
-		/*已弃用*/{ "issneak", getIsSneaking, nullptr, nullptr },
-		{ "typeid", getTypeID, nullptr, nullptr },
-		{ "typename", getTypeName, nullptr, nullptr },
-		{ "NBT", getNBTInfo, nullptr, nullptr },
-		/*已弃用*/{ "nbt", getNBTInfo, nullptr, nullptr },
-		{ "health", getHealth, setHealth, nullptr },
-		{ "maxhealth", getMaxHealth, setMaxHealth, nullptr },
-		{ "perm", getPermissions, setPermissions, nullptr },
-		{ "platform_online_id", getPlatformOnlineId, nullptr, nullptr },
-		/*已弃用*/{ "deviceid", getPlatformOnlineId, nullptr, nullptr },
-		{ "platform", getPlatform, nullptr, nullptr },
-		/*已弃用*/{ "deviceos", getPlatform, nullptr, nullptr },
-		{ "IP", getIP, nullptr, nullptr },
-		/*已弃用*/{ "ip", getIP, nullptr, nullptr },
-		{ nullptr }
-	};
-	//Entity方法
 	inline static PyMethodDef Methods[]{
-		//{"getItem", (PyCFunction)GetItem, METH_VARARGS | METH_KEYWORDS, nullptr},
+		Py_METHOD_VARARGS(getName),
 		{ "getAllItem", getAllItem, METH_VARARGS, nullptr },
 		{ "setAllItem", setAllItem, METH_VARARGS, nullptr },
 		{ "setHand", setHand, METH_VARARGS, nullptr },
@@ -581,7 +568,7 @@ PyTypeObject PyEntity_Type{
 	nullptr,				/* tp_iternext */
 	PyEntity::Methods,		/* tp_methods */
 	nullptr,				/* tp_members */
-	PyEntity::GetSet,		/* tp_getset */
+	nullptr,				/* tp_getset */
 	nullptr,				/* tp_base */
 	nullptr,				/* tp_dict */
 	nullptr,				/* tp_descr_get */
@@ -602,7 +589,7 @@ PyTypeObject PyEntity_Type{
 	nullptr,				/* tp_finalize */
 };
 
-PyObject* ToEntity(Actor* ptr) {
+PyObject* ToPyEntity(Actor* ptr) {
 	PyEntity* obj = PyObject_New(PyEntity, &PyEntity_Type);
 	obj->actor = ptr;
 	return reinterpret_cast<PyObject*>(obj);
