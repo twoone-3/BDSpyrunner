@@ -14,7 +14,7 @@
 #define Py_METHOD_VARARGS(name) {#name, reinterpret_cast<PyCFunction>(name), METH_VARARGS, nullptr}
 #define Py_METHOD_NOARGS(name) {#name, reinterpret_cast<PyCFunction>(name), METH_NOARGS, nullptr}
 #define Py_METHOD_KEYWORDS(name) {#name, reinterpret_cast<PyCFunction>(name), METH_VARARGS | METH_KEYWORDS, nullptr}
-
+#define Py_METHOD_END {nullptr, nullptr, 0, nullptr}
 #define Py_METHOD_DEFINE(name) static PyObject* name(PyObject * self, PyObject* args)
 
 //#define Py_BEGIN_CALL\

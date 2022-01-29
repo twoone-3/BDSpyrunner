@@ -268,14 +268,14 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onOpenContainer:
 		EVENT_BEGIN(PlayerOpenContainerEvent);
-		// todo container
+		//TODO: container
 		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onCloseContainer:
 		EVENT_BEGIN(PlayerCloseContainerEvent);
-		//todo
+		//TODO: container
 		EVENT_INSERT(BlockInstance);
 		EVENT_INSERT(Player);
 		EVENT_END;
@@ -377,12 +377,11 @@ void EnableEventListener(EventCode code) {
 		EVENT_INSERT2(ObjectiveName, e.mObjective->getName());
 		EVENT_INSERT(Player);
 		EVENT_INSERT(Score);
-		//todo
+		//TODO: more info about Objective
 		EVENT_END;
 		break;
 	case EventCode::onServerStarted:
 		EVENT_BEGIN(ServerStartedEvent);
-		e;
 		EVENT_END;
 		break;
 	case EventCode::onConsoleCmd:
@@ -410,7 +409,8 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onConsumeTotem:
 		break;
 	case EventCode::onEffectChanged:
-		EVENT_BEGIN(PlayerEffectChangedEvent);//todo
+		EVENT_BEGIN(PlayerEffectChangedEvent);
+		//TODO: more info about Effect
 		EVENT_INSERT2(Effect, e.mEffect->getDisplayName());
 		EVENT_INSERT(Player);
 		EVENT_INSERT2(Type, magic_enum::enum_name(e.mEventType));

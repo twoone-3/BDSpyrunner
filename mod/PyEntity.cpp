@@ -267,13 +267,13 @@ struct PyEntity {
 	//发送数据包
 	Py_METHOD_DEFINE(sendTextPacket) {
 		const char* msg = "";
-		int mode = 0;
+		TextType mode = TextType::RAW;
 		Py_PARSE("s|i", &msg, &mode);
 		Py_GET_PLAYER;
-		p->sendTextPacket(msg, TextType(mode));
+		p->sendTextPacket(msg, mode);
 		Py_RETURN_NONE;
 	}
-	Py_METHOD_DEFINE(sendCommandPacket) {
+	Py_METHOD_DEFINE(runCommandAs) {
 		const char* cmd = "";
 		Py_PARSE("s", &cmd);
 		Py_GET_PLAYER;
@@ -326,6 +326,13 @@ struct PyEntity {
 		Py_PARSE("si", &objname, &count);
 		Py_GET_PLAYER;
 		p->reduceScore(objname, count);
+		Py_RETURN_NONE;
+	}
+	//获取等级
+	Py_METHOD_DEFINE(getLevel) {
+		Py_GET_PLAYER;
+		//p->getex();
+		//TODO: get levels from player
 		Py_RETURN_NONE;
 	}
 	//增加等级
@@ -434,14 +441,14 @@ struct PyEntity {
 		float per;
 		Py_PARSE("sf", &name, &per);
 		Py_GET_PLAYER;
-		p->sendBossEventPacket(BossEvent::Show, name, per, BossEventColour::Red); // Todo
+		p->sendBossEventPacket(BossEvent::Show, name, per, BossEventColour::Red);
 		Py_RETURN_NONE;
 	}
 	Py_METHOD_DEFINE(removeBossbar) {
 		const char* name = "";
 		Py_PARSE("s:removeBossbar", &name);
 		Py_GET_PLAYER;
-		p->sendBossEventPacket(BossEvent::Hide, name, 0, BossEventColour::Red); // Todo
+		p->sendBossEventPacket(BossEvent::Hide, name, 0, BossEventColour::Red);
 		Py_RETURN_NONE;
 	}
 	//标签
@@ -498,31 +505,31 @@ struct PyEntity {
 		Py_METHOD_VARARGS(setAllItem),
 		Py_METHOD_VARARGS(setHand),
 		Py_METHOD_VARARGS(addItem),
-		{ "addItem", addItem, METH_VARARGS, nullptr },
-		{ "removeItem", removeItem, METH_VARARGS, nullptr },
-		{ "teleport", teleport, METH_VARARGS, nullptr },
-		{ "sendTextPacket", sendTextPacket, METH_VARARGS, nullptr },
-		{ "sendCommandPacket", sendCommandPacket, METH_VARARGS, nullptr },
-		{ "resendAllChunks", resendAllChunks, METH_NOARGS, nullptr },
-		{ "disconnect", disconnect, METH_VARARGS, nullptr },
-		{ "getScore", getScore, METH_VARARGS, nullptr },
-		{ "setScore", setScore, METH_VARARGS, nullptr },
-		{ "addScore", addScore, METH_VARARGS, nullptr },
-		{ "reduceScore", reduceScore, METH_VARARGS, nullptr },
-		{ "addLevel", addLevel, METH_VARARGS, nullptr },
-		{ "transferServer", transferServer, METH_VARARGS, nullptr },
-		{ "sendCustomForm", sendCustomForm, METH_VARARGS, nullptr },
-		{ "sendSimpleForm", sendSimpleForm, METH_VARARGS, nullptr },
-		{ "sendModalForm", sendModalForm, METH_VARARGS, nullptr },
-		{ "setSidebar", setSidebar, METH_VARARGS, nullptr },
-		{ "removeSidebar", removeSidebar, METH_NOARGS, nullptr },
-		{ "setBossbar", setBossbar, METH_VARARGS, nullptr },
-		{ "removeBossbar", removeBossbar, METH_NOARGS, nullptr },
-		{ "addTag", addTag, METH_VARARGS, nullptr },
-		{ "removeTag", removeTag, METH_VARARGS, nullptr },
-		{ "getTags", getTags, METH_NOARGS, nullptr },
-		{ "kill", kill, METH_NOARGS, nullptr },
-		{ nullptr }
+		Py_METHOD_VARARGS(removeItem),
+		Py_METHOD_VARARGS(teleport),
+		Py_METHOD_VARARGS(sendTextPacket),
+		Py_METHOD_VARARGS(runCommandAs),
+		Py_METHOD_VARARGS(resendAllChunks),
+		Py_METHOD_VARARGS(disconnect),
+		Py_METHOD_VARARGS(getScore),
+		Py_METHOD_VARARGS(setScore),
+		Py_METHOD_VARARGS(addScore),
+		Py_METHOD_VARARGS(reduceScore),
+		Py_METHOD_VARARGS(getLevel),
+		Py_METHOD_VARARGS(addLevel),
+		Py_METHOD_VARARGS(transferServer),
+		Py_METHOD_VARARGS(sendCustomForm),
+		Py_METHOD_VARARGS(sendSimpleForm),
+		Py_METHOD_VARARGS(sendModalForm),
+		Py_METHOD_VARARGS(setSidebar),
+		Py_METHOD_VARARGS(removeSidebar),
+		Py_METHOD_VARARGS(setBossbar),
+		Py_METHOD_VARARGS(removeBossbar),
+		Py_METHOD_VARARGS(addTag),
+		Py_METHOD_VARARGS(removeTag),
+		Py_METHOD_VARARGS(getTags),
+		Py_METHOD_VARARGS(kill),
+		Py_METHOD_END
 	};
 };
 //Entity类型
