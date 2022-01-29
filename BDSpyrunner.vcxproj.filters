@@ -13,7 +13,7 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Library">
+    <Filter Include="库文件">
       <UniqueIdentifier>{b5a862e5-3add-4a64-bbd2-2343fd629406}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -74,19 +74,19 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\python37.lib">
-      <Filter>Library</Filter>
+      <Filter>库文件</Filter>
     </Library>
     <Library Include="SDK\Lib\LiteLoader.lib">
-      <Filter>Library</Filter>
+      <Filter>库文件</Filter>
     </Library>
     <Library Include="SDK\Lib\SymDBHelper.lib">
-      <Filter>Library</Filter>
+      <Filter>库文件</Filter>
     </Library>
     <Library Include="SDK\Lib\bedrock_server_api.lib">
-      <Filter>Library</Filter>
+      <Filter>库文件</Filter>
     </Library>
     <Library Include="SDK\Lib\bedrock_server_var.lib">
-      <Filter>Library</Filter>
+      <Filter>库文件</Filter>
     </Library>
     <Library Include="SDK\Lib\bedrock_server_var.lib" />
     <Library Include="SDK\Lib\bedrock_server_api.lib" />

@@ -17,7 +17,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 		//Return FALSE to fail DLL load.
 		LL::registerPlugin(
 			"BDSpyrunner", "For .py plugins' loading",
-			LL::Version(1, 9, 1, LL::Version::Beta),
+			LL::Version(1, 9, 2, LL::Version::Beta),
 			{ { "Author", "twoone3" } }
 		);
 		break;
@@ -150,7 +150,7 @@ void PyClassInit() {
 	if (PyType_Ready(&PyEntity_Type) < 0)
 		Py_FatalError("Can't initialize entity type");
 	if (PyType_Ready(&PyItemStack_Type) < 0)
-		Py_FatalError("Can't initialize item type");
+		Py_FatalError("Can't initialize value type");
 }
 //将Python解释器初始化插入bds主函数
 THook(int, "main",

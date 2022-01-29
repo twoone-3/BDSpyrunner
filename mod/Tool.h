@@ -1,9 +1,9 @@
 ﻿#pragma once
 #pragma execution_character_set("utf-8")
-
+/*LL*/
 #include <Global.h>
 #include <LoggerAPI.h>
-
+/*MC*/
 #include <MC/Actor.hpp>
 #include <MC/ActorDamageSource.hpp>
 #include <MC/BinaryStream.hpp>
@@ -19,6 +19,7 @@
 #include <MC/Container.hpp>
 #include <MC/ItemStack.hpp>
 #include <MC/Level.hpp>
+#include <MC/MobEffect.hpp>
 #include <MC/Objective.hpp>
 #include <MC/Player.hpp>
 #include <MC/RakNet.hpp>
@@ -29,7 +30,7 @@
 #include <MC/Spawner.hpp>
 #include <MC/StructureSettings.hpp>
 #include <MC/StructureTemplate.hpp>
-
+/*NBT*/
 #include <MC/Tag.hpp>
 #include <MC/ByteTag.hpp>
 #include <MC/ShortTag.hpp>
@@ -42,13 +43,12 @@
 #include <MC/ListTag.hpp>
 #include <MC/CompoundTag.hpp>
 #include <MC/IntArrayTag.hpp>
-
+/*JSON*/
 #include <third-party/Nlohmann/fifo_json.hpp>
 
-using std::unique_ptr;
 using json_t = nlohmann::detail::value_t;
 
-constexpr const char* PYR_VERSION = "v1.9.1";
+constexpr const char* PYR_VERSION = "v1.9.2";
 
 //字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库
 fifo_json StrToJson(std::string_view str);

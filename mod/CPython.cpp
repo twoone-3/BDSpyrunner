@@ -4,6 +4,7 @@
 std::string PyObjectToStr(PyObject* obj) {
 	return PyUnicode_AsUTF8(PyObject_Repr(obj));
 }
+
 std::string PyUnicodeToStr(PyObject* obj) {
 	return PyUnicode_AsUTF8(obj);
 }
@@ -49,24 +50,29 @@ void PrintPythonError() {
 		PyObject* traceback;
 		PyErr_Fetch(&type, &value, &traceback);
 
-		PyObject* info = reinterpret_cast<PyBaseExceptionObject*>(value)->args;
+		if (PyUnicode_Check(value)) {
+			logger.error("{}", PyUnicodeToStr(value));
+		}
+		else if (PyTuple_Check(value)) {
+			PyObject* info = reinterpret_cast<PyBaseExceptionObject*>(value)->args;
 
-		auto size = PyTuple_Size(info);
-		if (size == 1) {
-			logger.error("{} occurred!", Py_TYPE(value)->tp_name);
-			logger.error("Reason: {}", PyUnicodeToStr(PyTuple_GetItem(info, 0)));
+			auto size = PyTuple_Size(info);
+			if (size == 1) {
+				logger.error("{}: {}", Py_TYPE(value)->tp_name, PyUnicodeToStr(PyTuple_GetItem(info, 0)));
+			}
+			else if (size == 2) {
+				logger.error("{}: {}", Py_TYPE(value)->tp_name, PyUnicodeToStr(PyTuple_GetItem(info, 0)));
+				PyObject* location = PyTuple_GetItem(info, 1);
+				logger.error("File: {} Line: {} Column: {}",
+					PyUnicodeToStr(PyTuple_GetItem(location, 0)),
+					PyObjectToStr(PyTuple_GetItem(location, 1)),
+					PyObjectToStr(PyTuple_GetItem(location, 2))
+				);
+				logger.error("    {}", PyObjectToStr(PyTuple_GetItem(location, 3)));
+			}
 		}
-		else if (size == 2) {
-			logger.error("{} : {}", Py_TYPE(value)->tp_name, PyUnicodeToStr(PyTuple_GetItem(info, 0)));
-			PyObject* location = PyTuple_GetItem(info, 1);
-			logger.error("File {}\tLine {}\tCharacter {}",
-				PyUnicodeToStr(PyTuple_GetItem(location, 0)),
-				PyObjectToStr(PyTuple_GetItem(location, 1)),
-				PyObjectToStr(PyTuple_GetItem(location, 2))
-			);
-			logger.error("\t{}", PyObjectToStr(PyTuple_GetItem(location, 3)));
-		}
-		PyErr_Restore(type, info, traceback);
+
+		PyErr_Restore(type, value, traceback);
 	}
 }
 

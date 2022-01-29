@@ -44,16 +44,17 @@ static PyObject* runCommand(PyObject*, PyObject* args) {
 }
 //设置监听
 static PyObject* setListener(PyObject*, PyObject* args) {
-	const char* key = "";
+	const char* event_name = "";
 	PyObject* func = nullptr;
-	Py_PARSE("sO", &key, &func);
+	Py_PARSE("sO", &event_name, &func);
 	if (!PyFunction_Check(func))
 		Py_RETURN_ERROR("Parameter 2 is not callable");
-	auto code = StringToEventCode(key);
-	if (!code)
-		Py_RETURN_ERROR_FORMAT("Invalid Listener key words %s", key);
-	g_callback_functions[code.value()].push_back(func);
-	EnableEventListener(code.value());
+
+	auto event_code = magic_enum::enum_cast<EventCode>(event_name);
+	if (!event_code.has_value())
+		Py_RETURN_ERROR_FORMAT("Invalid Listener key words %s", event_name);
+	g_callback_functions[event_code.value()].push_back(func);
+	EnableEventListener(event_code.value());
 	Py_RETURN_NONE;
 }
 //设置指令说明

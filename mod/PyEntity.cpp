@@ -10,17 +10,17 @@
 using namespace std;
 struct PyEntity {
 	PyObject_HEAD;
-	Actor* actor;
+	Actor* value;
 
 	static Actor* getActor(PyObject* self) {
-		if (reinterpret_cast<PyEntity*>(self)->actor)
-			return reinterpret_cast<PyEntity*>(self)->actor;
+		if (reinterpret_cast<PyEntity*>(self)->value)
+			return reinterpret_cast<PyEntity*>(self)->value;
 		else
 			Py_RETURN_ERROR("This entity pointer is nullptr");
 	}
 	static Player* getPlayer(PyObject* self) {
-		if (IsPlayer(reinterpret_cast<PyEntity*>(self)->actor))
-			return reinterpret_cast<Player*>(reinterpret_cast<PyEntity*>(self)->actor);
+		if (IsPlayer(reinterpret_cast<PyEntity*>(self)->value))
+			return reinterpret_cast<Player*>(reinterpret_cast<PyEntity*>(self)->value);
 		else
 			Py_RETURN_ERROR("This entity pointer is nullptr or is not player pointer");
 	}
@@ -70,7 +70,6 @@ struct PyEntity {
 
 	//获取名字
 	Py_METHOD_DEFINE(getName) {
-		Py_PARSE("");
 		Py_GET_ACTOR;
 		return StrToPyUnicode(a->getNameTag());
 	}
@@ -82,49 +81,46 @@ struct PyEntity {
 	}
 	//获取UUID
 	Py_METHOD_DEFINE(getUuid) {
-		Py_PARSE("");
 		Py_GET_PLAYER;
 		return StrToPyUnicode(p->getUuid());
 	}
 	//获取XUID
 	Py_METHOD_DEFINE(getXuid) {
-		Py_PARSE("");
 		Py_GET_PLAYER;
 		return StrToPyUnicode(p->getXuid());
 	}
 	//获取坐标
 	Py_METHOD_DEFINE(getPos) {
-		Py_PARSE("");
 		Py_GET_ACTOR;
 		return ToList(a->getPos());
 	}
 	//获取维度ID
 	Py_METHOD_DEFINE(getDimensionId) {
-		Py_PARSE("");
 		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getDimensionId());
 	}
 	//是否着地
-	Py_METHOD_DEFINE(getIsStand) {
-		Py_PARSE("");
+	Py_METHOD_DEFINE(isStanding) {
 		Py_GET_ACTOR;
 		return PyBool_FromLong(a->isStanding());
 	}
 	//是否潜行
-	Py_METHOD_DEFINE(getIsSneaking) {
-		Py_PARSE("");
+	Py_METHOD_DEFINE(isSneaking) {
 		Py_GET_ACTOR;
 		return PyBool_FromLong(a->isSneaking());
 	}
+	//是否坐下
+	Py_METHOD_DEFINE(isSitting) {
+		Py_GET_ACTOR;
+		return PyBool_FromLong(a->isSitting());
+	}
 	//获取类型
 	Py_METHOD_DEFINE(getTypeID) {
-		Py_PARSE("");
 		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getEntityTypeId());
 	}
 	//获取类型字符串
 	Py_METHOD_DEFINE(getTypeName) {
-		Py_PARSE("");
 		Py_GET_ACTOR;
 		//旧办法
 		//string type;
@@ -134,41 +130,23 @@ struct PyEntity {
 	}
 	//获取nbt数据
 	Py_METHOD_DEFINE(getNBT) {
-		Py_PARSE("");
 		Py_GET_ACTOR;
-		unique_ptr<CompoundTag> t = CompoundTag::create();
+		auto t = CompoundTag::create();
 		a->save(*t);
 		return StrToPyUnicode(StrToJson(*t).dump(4));
 	}
 	//获取生命值
 	Py_METHOD_DEFINE(getHealth) {
-		Py_PARSE("");
 		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getHealth());
 	}
-	Py_METHOD_DEFINE(setHealth) {
-		int value;
-		Py_PARSE("i", &value);
-		Py_GET_ACTOR;
-		a->serializationSetHealth(value);
-		Py_RETURN_NONE;
-	}
 	//获取最大生命值
 	Py_METHOD_DEFINE(getMaxHealth) {
-		Py_PARSE("");
 		Py_GET_ACTOR;
 		return PyLong_FromLong(a->getMaxHealth());
 	}
-	Py_METHOD_DEFINE(setMaxHealth) {
-		int value;
-		Py_PARSE("i", &value);
-		Py_GET_PLAYER;
-		logger.error(__FILE__, __LINE__, "此函数目前无法使用");
-		Py_RETURN_NONE;
-	}
 	//获取权限
 	Py_METHOD_DEFINE(getPermissions) {
-		Py_PARSE("");
 		Py_GET_PLAYER;
 		return PyLong_FromLong(static_cast<int>(p->getPlayerPermissionLevel()));
 	}
@@ -181,19 +159,16 @@ struct PyEntity {
 	}
 	//获取设备id
 	Py_METHOD_DEFINE(getPlatformOnlineId) {
-		Py_PARSE("");
 		Py_GET_PLAYER;
 		return StrToPyUnicode(p->getPlatformOnlineId());
 	}
 	//获取设备类型
 	Py_METHOD_DEFINE(getPlatform) {
-		Py_PARSE("");
 		Py_GET_PLAYER;
 		return PyLong_FromLong(p->getPlatform());
 	}
 	//获取IP
 	Py_METHOD_DEFINE(getIP) {
-		Py_PARSE("");
 		Py_GET_PLAYER;
 		auto ni = p->getNetworkIdentifier();
 		return StrToPyUnicode(Global<RakNet::RakPeer>->getAdr(*ni).ToString(false, ':'));
@@ -201,7 +176,6 @@ struct PyEntity {
 
 	//获取玩家所有物品
 	Py_METHOD_DEFINE(getAllItem) {
-		Py_PARSE("");
 		Py_GET_PLAYER;
 		fifo_json items_json = fifo_json::object();
 		fifo_json& inventory = items_json["Inventory"];
@@ -308,7 +282,6 @@ struct PyEntity {
 	}
 	//重新发送所有区块
 	Py_METHOD_DEFINE(resendAllChunks) {
-		Py_PARSE("");
 		Py_GET_PLAYER;
 		p->resendAllChunks();
 		Py_RETURN_NONE;
@@ -451,7 +424,6 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	Py_METHOD_DEFINE(removeSidebar) {
-		Py_PARSE("");
 		Py_GET_PLAYER;
 		p->removeSidebar();
 		Py_RETURN_NONE;
@@ -488,7 +460,6 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	Py_METHOD_DEFINE(getTags) {
-		Py_PARSE("");
 		Py_GET_ACTOR;
 		auto tags = a->getTags();
 		PyObject* list = PyList_New(0);
@@ -499,7 +470,6 @@ struct PyEntity {
 	}
 	//杀死实体
 	Py_METHOD_DEFINE(kill) {
-		Py_PARSE("");
 		Py_GET_ACTOR;
 		a->kill();
 		Py_RETURN_NONE;
@@ -507,9 +477,27 @@ struct PyEntity {
 
 	inline static PyMethodDef Methods[]{
 		Py_METHOD_VARARGS(getName),
-		{ "getAllItem", getAllItem, METH_VARARGS, nullptr },
-		{ "setAllItem", setAllItem, METH_VARARGS, nullptr },
-		{ "setHand", setHand, METH_VARARGS, nullptr },
+		Py_METHOD_VARARGS(setName),
+		Py_METHOD_VARARGS(getUuid),
+		Py_METHOD_VARARGS(getXuid),
+		Py_METHOD_VARARGS(getPos),
+		Py_METHOD_VARARGS(getDimensionId),
+		Py_METHOD_VARARGS(isStanding),
+		Py_METHOD_VARARGS(isSneaking),
+		Py_METHOD_VARARGS(getTypeID),
+		Py_METHOD_VARARGS(getTypeName),
+		Py_METHOD_VARARGS(getNBT),
+		Py_METHOD_VARARGS(getHealth),
+		Py_METHOD_VARARGS(getMaxHealth),
+		Py_METHOD_VARARGS(getPermissions),
+		Py_METHOD_VARARGS(setPermissions),
+		Py_METHOD_VARARGS(getPlatformOnlineId),
+		Py_METHOD_VARARGS(getPlatform),
+		Py_METHOD_VARARGS(getIP),
+		Py_METHOD_VARARGS(getAllItem),
+		Py_METHOD_VARARGS(setAllItem),
+		Py_METHOD_VARARGS(setHand),
+		Py_METHOD_VARARGS(addItem),
 		{ "addItem", addItem, METH_VARARGS, nullptr },
 		{ "removeItem", removeItem, METH_VARARGS, nullptr },
 		{ "teleport", teleport, METH_VARARGS, nullptr },
@@ -591,6 +579,6 @@ PyTypeObject PyEntity_Type{
 
 PyObject* ToPyEntity(Actor* ptr) {
 	PyEntity* obj = PyObject_New(PyEntity, &PyEntity_Type);
-	obj->actor = ptr;
+	obj->value = ptr;
 	return reinterpret_cast<PyObject*>(obj);
 }

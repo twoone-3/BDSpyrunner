@@ -103,7 +103,7 @@ fifo_json StrToJson(const CompoundTag& t) {
 	}
 	return json;
 }
-unique_ptr<ListTag> ToListTag(const fifo_json& value) {
+std::unique_ptr<ListTag> ToListTag(const fifo_json& value) {
 	auto list = ListTag::create();
 	for (auto& x : value) {
 		switch (x) {
@@ -138,8 +138,8 @@ unique_ptr<ListTag> ToListTag(const fifo_json& value) {
 	}
 	return list;
 }
-unique_ptr<CompoundTag> ToCompoundTag(const fifo_json& value) {
-	unique_ptr<CompoundTag> c = CompoundTag::create();
+std::unique_ptr<CompoundTag> ToCompoundTag(const fifo_json& value) {
+	auto c = CompoundTag::create();
 	for (auto& [key, val] : value.items()) {
 		string new_key = key;
 		char& e = new_key.back();

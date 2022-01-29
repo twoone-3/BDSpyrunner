@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <EventAPI.h>
+#include "magic_enum.hpp"
 
 enum class EventCode : int {
 	onPreJoin, onJoin, onLeft, onPlayerCmd, onChat, onPlayerDie,
@@ -13,10 +14,7 @@ enum class EventCode : int {
 	onProjectileHitBlock, onBlockInteracted, onUseRespawnAnchor, onFarmLandDecay, onUseFrameBlock,
 	onPistonPush, onHopperSearchItem, onHopperPushOut, onFireSpread, onBlockChanged, onNpcCmd,
 	onScoreChanged, onServerStarted, onConsoleCmd, onFormSelected, onConsoleOutput, onTick,
-	onMoneyAdd, onMoneyReduce, onMoneyTrans, onMoneySet, onConsumeTotem, onEffectAdded, onEffectUpdated, onEffectRemoved,
-	EVENT_COUNT
+	onMoneyAdd, onMoneyReduce, onMoneyTrans, onMoneySet, onConsumeTotem, onEffectChanged,
 };
-
-std::optional<EventCode> StringToEventCode(const std::string& s);
 
 void EnableEventListener(EventCode e);

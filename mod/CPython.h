@@ -36,6 +36,8 @@ private:
 	PyGILState_STATE gil_;
 };
 
+std::string PyObjectToStr(PyObject* obj);
+std::string PyUnicodeToStr(PyObject* obj);
 //字符串转Unicode
 PyObject* StrToPyUnicode(std::string_view str);
 //list转vector

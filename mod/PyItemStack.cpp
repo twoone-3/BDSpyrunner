@@ -9,13 +9,13 @@ using namespace std;
 
 struct PyItemStack {
 	PyObject_HEAD;
-	ItemStack* item;
+	ItemStack* value;
 
 	static ItemStack* getItemStack(PyObject* self) {
-		if (reinterpret_cast<PyItemStack*>(self)->item)
-			return reinterpret_cast<PyItemStack*>(self)->item;
+		if (reinterpret_cast<PyItemStack*>(self)->value)
+			return reinterpret_cast<PyItemStack*>(self)->value;
 		else
-			Py_RETURN_ERROR("This item pointer is nullptr");
+			Py_RETURN_ERROR("This value pointer is nullptr");
 	}
 	static int print(PyObject* self, FILE* file, int) {
 		Py_GET_ITEMSTACK2(-1);
@@ -125,6 +125,6 @@ PyTypeObject PyItemStack_Type{
 
 PyObject* ToPyItemStack(ItemStack* ptr) {
 	PyItemStack* obj = PyObject_New(PyItemStack, &PyItemStack_Type);
-	obj->item = ptr;
+	obj->value = ptr;
 	return reinterpret_cast<PyObject*>(obj);
 }

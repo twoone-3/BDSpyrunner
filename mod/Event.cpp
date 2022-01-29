@@ -10,7 +10,10 @@ public:
 		type_(t), arg_(nullptr), gil_() {
 	}
 	~Callbacker() {
-		Py_XDECREF(arg_);
+		if (arg_ == nullptr)
+			logger.error("意外的空指针");
+		//logger.info("{}", PyObjectToStr(arg_));
+		//Py_XDECREF(arg_);
 	}
 	//事件回调
 	bool callback() {
@@ -24,6 +27,7 @@ public:
 				intercept = false;
 			Py_XDECREF(result);
 		}
+		//Py_XDECREF(arg_);
 		return intercept;
 	}
 	Callbacker& setArg(PyObject* arg) {
@@ -82,89 +86,7 @@ private:
 	PyGILGuard gil_;
 };
 
-static const std::unordered_map<string, EventCode> g_events{
-	{ "onPreJoin", EventCode::onPreJoin },
-	{ "onJoin", EventCode::onJoin },
-	{ "onLeft", EventCode::onLeft },
-	{ "onPlayerCmd", EventCode::onPlayerCmd },
-	{ "onChat", EventCode::onChat },
-	{ "onPlayerDie", EventCode::onPlayerDie },
-	{ "onRespawn", EventCode::onRespawn },
-	{ "onChangeDim", EventCode::onChangeDim },
-	{ "onJump", EventCode::onJump },
-	{ "onSneak", EventCode::onSneak },
-	{ "onAttack", EventCode::onAttack },
-	{ "onEat", EventCode::onEat },
-	{ "onMove", EventCode::onMove },
-	{ "onChangeSprinting", EventCode::onChangeSprinting },
-	{ "onSpawnProjectile", EventCode::onSpawnProjectile },
-	{ "onFireworkShootWithCrossbow", EventCode::onFireworkShootWithCrossbow },
-	{ "onSetArmor", EventCode::onSetArmor },
-	{ "onRide", EventCode::onRide },
-	{ "onStepOnPressurePlate", EventCode::onStepOnPressurePlate },
-	{ "onMobDie", EventCode::onMobDie },
-	{ "onMobHurt", EventCode::onMobHurt },
-	{ "onUseItem", EventCode::onUseItem },
-	{ "onTakeItem", EventCode::onTakeItem },
-	{ "onDropItem", EventCode::onDropItem },
-	{ "onUseItemOn", EventCode::onUseItemOn },
-	{ "onInventoryChange", EventCode::onInventoryChange },
-	{ "onChangeArmorStand", EventCode::onChangeArmorStand },
-	{ "onStartDestroyBlock", EventCode::onStartDestroyBlock },
-	{ "onDestroyBlock", EventCode::onDestroyBlock },
-	{ "onWitherBossDestroy", EventCode::onWitherBossDestroy },
-	{ "onPlaceBlock", EventCode::onPlaceBlock },
-	{ "onExplode", EventCode::onExplode },
-	{ "onBedExplode", EventCode::onBedExplode },
-	{ "onRespawnAnchorExplode", EventCode::onRespawnAnchorExplode },
-	{ "onBlockExploded", EventCode::onBlockExploded },
-	{ "onEntityExplode", EventCode::onEntityExplode },
-	{ "onBlockExplode", EventCode::onBlockExplode },
-	{ "onLiquidFlow", EventCode::onLiquidFlow },
-	{ "onOpenContainer", EventCode::onOpenContainer },
-	{ "onCloseContainer", EventCode::onCloseContainer },
-	{ "onContainerChangeSlot", EventCode::onContainerChange },
-	{ "onContainerChange", EventCode::onContainerChange },
-	{ "onOpenContainerScreen", EventCode::onOpenContainerScreen },
-	{ "onCmdBlockExecute", EventCode::onCmdBlockExecute },
-	{ "onRedStoneUpdate", EventCode::onRedStoneUpdate },
-	{ "onProjectileHitBlock", EventCode::onProjectileHitBlock },
-	{ "onProjectileHitEntity", EventCode::onProjectileHitEntity },
-	{ "onBlockInteracted", EventCode::onBlockInteracted },
-	{ "onUseRespawnAnchor", EventCode::onUseRespawnAnchor },
-	{ "onFarmLandDecay", EventCode::onFarmLandDecay },
-	{ "onUseFrameBlock", EventCode::onUseFrameBlock },
-	{ "onPistonPush", EventCode::onPistonPush },
-	{ "onHopperSearchItem", EventCode::onHopperSearchItem },
-	{ "onHopperPushOut", EventCode::onHopperPushOut },
-	{ "onFireSpread", EventCode::onFireSpread },
-	{ "onBlockChanged", EventCode::onBlockChanged },
-	{ "onNpcCmd", EventCode::onNpcCmd },
-	{ "onScoreChanged", EventCode::onScoreChanged },
-	{ "onServerStarted", EventCode::onServerStarted },
-	{ "onConsoleCmd", EventCode::onConsoleCmd },
-	{ "onConsoleOutput", EventCode::onConsoleOutput },
-	{ "onTick", EventCode::onTick },
-	{ "onMoneyAdd", EventCode::onMoneyAdd },
-	{ "onMoneyReduce", EventCode::onMoneyReduce },
-	{ "onMoneyTrans", EventCode::onMoneyTrans },
-	{ "onMoneySet", EventCode::onMoneySet },
-	{ "onFormSelected", EventCode::onFormSelected },
-	{ "onConsumeTotem", EventCode::onConsumeTotem },
-	{ "onEffectAdded", EventCode::onEffectAdded },
-	{ "onEffectRemoved", EventCode::onEffectRemoved },
-	{ "onEffectUpdated", EventCode::onEffectUpdated }
-};
-
-std::optional<EventCode> StringToEventCode(const std::string& s) {
-	auto x = g_events.find(s);
-	if (x == g_events.end())
-		return nullopt;
-	else
-		return x->second;
-}
-
-#define EVENT_BEGIN(evt) if(!evt::hasListener())evt::subscribe([code](evt e){Callbacker h(code); h.insert("Event",#evt)
+#define EVENT_BEGIN(evt) if(!evt::hasListener())evt::subscribe([code](evt e){Callbacker h(code); h.insert("Event",magic_enum::enum_name(code))
 #define EVENT_INSERT(key) h.insert(#key, e.m##key)
 #define EVENT_INSERT2(key,value) h.insert(#key, value)
 #define EVENT_END return h.callback();})
@@ -206,7 +128,7 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onPlayerDie:
 		EVENT_BEGIN(PlayerDieEvent);
 		EVENT_INSERT(Player);
-		EVENT_INSERT2(Cause, int(e.mDamageSource->getCause()));
+		EVENT_INSERT2(Cause, magic_enum::enum_name(e.mDamageSource->getCause()));
 		EVENT_INSERT2(Entity, e.mDamageSource->getEntity());
 		EVENT_END;
 		break;
@@ -384,14 +306,14 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onMobDie:
 		EVENT_BEGIN(MobDieEvent);
 		EVENT_INSERT(Mob);
-		EVENT_INSERT2(Cause, int(e.mDamageSource->getCause()));
+		EVENT_INSERT2(Cause, magic_enum::enum_name(e.mDamageSource->getCause()));
 		EVENT_INSERT2(Entity, e.mDamageSource->getEntity());
 		EVENT_END;
 		break;
 	case EventCode::onMobHurt:
 		EVENT_BEGIN(MobDieEvent);
 		EVENT_INSERT(Mob);
-		EVENT_INSERT2(Cause, int(e.mDamageSource->getCause()));
+		EVENT_INSERT2(Cause, magic_enum::enum_name(e.mDamageSource->getCause()));
 		EVENT_INSERT2(Entity, e.mDamageSource->getEntity());
 		EVENT_END;
 		break;
@@ -404,12 +326,21 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onProjectileHitBlock:
 		break;
 	case EventCode::onBlockInteracted:
+		EVENT_BEGIN(BlockInteractedEvent);
+		EVENT_INSERT(BlockInstance);
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onUseRespawnAnchor:
 		break;
 	case EventCode::onFarmLandDecay:
 		break;
 	case EventCode::onUseFrameBlock:
+		EVENT_BEGIN(PlayerUseFrameBlockEvent);
+		EVENT_INSERT(BlockInstance);
+		EVENT_INSERT(Player);
+		EVENT_INSERT2(Type, magic_enum::enum_name(e.mType));
+		EVENT_END;
 		break;
 	case EventCode::onPistonPush:
 		EVENT_BEGIN(PistonPushEvent);
@@ -443,7 +374,9 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onScoreChanged:
 		EVENT_BEGIN(PlayerScoreChangedEvent);
+		EVENT_INSERT2(ObjectiveName, e.mObjective->getName());
 		EVENT_INSERT(Player);
+		EVENT_INSERT(Score);
 		//todo
 		EVENT_END;
 		break;
@@ -476,13 +409,12 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onConsumeTotem:
 		break;
-	case EventCode::onEffectAdded:
-		break;
-	case EventCode::onEffectUpdated:
-		break;
-	case EventCode::onEffectRemoved:
-		break;
-	case EventCode::EVENT_COUNT:
+	case EventCode::onEffectChanged:
+		EVENT_BEGIN(PlayerEffectChangedEvent);//todo
+		EVENT_INSERT2(Effect, e.mEffect->getDisplayName());
+		EVENT_INSERT(Player);
+		EVENT_INSERT2(Type, magic_enum::enum_name(e.mEventType));
+		EVENT_END;
 		break;
 	default:
 		break;
