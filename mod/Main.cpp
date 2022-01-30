@@ -17,7 +17,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 		//Return FALSE to fail DLL load.
 		LL::registerPlugin(
 			"BDSpyrunner", "For .py plugins' loading",
-			LL::Version(1, 9, 2, LL::Version::Beta),
+			LL::Version(1, 9, 3, LL::Version::Release),
 			{ { "Author", "twoone3" } }
 		);
 		break;
@@ -98,7 +98,7 @@ static Json AccessUrlForJson(const wchar_t* url) {
 	} while (size);
 	InternetCloseHandle(handle2);
 	InternetCloseHandle(hSession);
-	return StrToJson(data);
+	return CompoundTagToJson(data);
 }
 //访问url
 static void AccessUrlForFile(const wchar_t* url, string_view filename) {
@@ -155,33 +155,6 @@ void PyClassInit() {
 //将Python解释器初始化插入bds主函数
 THook(int, "main",
 	int argc, char* argv[], char* envp[]) {
-#if 0
-	while (true) {
-		CompoundTag* t = ToCompoundTag(StrToJson(R"(
-	             {
-	                "Block10": {
-	                    "name8": "minecraft:crafting_table",
-	                    "states10": null,
-	                    "version3": 17879555
-	                },
-	                "Count1": 64,
-	                "Damage2": 0,
-	                "Name8": "minecraft:crafting_table",
-	                "WasPickedUp1": 0,
-	                "tag10": {
-	                    "display10": {
-	                        "Lore9": [
-	                            "针不戳",
-	                            "很不错"
-	                        ]
-	                    }
-	                }
-	            }
-	)"));
-		cout << StrToJson(*t).dump(4) << endl;
-		delete t;
-	}
-#endif
 	//如果目录不存在创建目录
 	if (!fs::exists(PLUGIN_PATH))
 		fs::create_directory(PLUGIN_PATH);
@@ -189,7 +162,7 @@ THook(int, "main",
 	wstring plugins_path =
 		PLUGIN_PATH L";"
 		PLUGIN_PATH "Dlls;"
-		PLUGIN_PATH "Lib;"
+		PLUGIN_PATH "Lib"
 		;
 	plugins_path.append(Py_GetPath());
 	Py_SetPath(plugins_path.c_str());
@@ -214,7 +187,7 @@ THook(int, "main",
 	for (auto& info : fs::directory_iterator(PLUGIN_PATH)) {
 		if (info.path().extension() == ".py") {
 			string name(info.path().stem().u8string());
-			//ignore files starting with '_'
+			//忽略以'_'开头的文件
 			if (name.front() == '_') {
 				logger.info("Ignoring {}", name);
 				continue;
@@ -222,7 +195,7 @@ THook(int, "main",
 			else {
 				logger.info("Loading {}", name);
 				PyImport_ImportModule(name.c_str());
-				PrintPythonError();
+				Py_PrintErrors();
 			}
 		}
 	}

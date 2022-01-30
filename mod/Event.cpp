@@ -22,7 +22,7 @@ public:
 		auto& cbs = g_callback_functions[type_];
 		for (auto cb : cbs) {
 			PyObject* result = _PyObject_FastCall(cb, &arg_, 1);
-			PrintPythonError();
+			Py_PrintErrors();
 			if (result == Py_False)
 				intercept = false;
 			Py_XDECREF(result);
@@ -91,7 +91,7 @@ private:
 #define EVENT_INSERT2(key,value) h.insert(#key, value)
 #define EVENT_END return h.callback();})
 
-void EnableEventListener(EventCode code) {
+void EnableEventListener(EventCode code, PyObject* func) {
 	using namespace Event;
 	switch (code) {
 	case EventCode::onPreJoin:
@@ -419,4 +419,5 @@ void EnableEventListener(EventCode code) {
 	default:
 		break;
 	}
+	g_callback_functions[code].push_back(func);
 }

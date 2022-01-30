@@ -61,14 +61,19 @@ struct PyItemStack {
 		Py_RETURN_NOTIMPLEMENTED;
 	}
 
-	static PyObject* getName(PyObject* self, PyObject*) {
+	Py_METHOD_DEFINE(getName) {
 		Py_GET_ITEMSTACK;
 		return StrToPyUnicode(i->getName());
 	}
+	Py_METHOD_DEFINE(getNBT) {
+		Py_GET_ITEMSTACK;
+		return StrToPyUnicode(CompoundTagToJson(*i->getNbt()));
+	}
 
 	inline static PyMethodDef Methods[]{
-		{ "getName", getName, METH_NOARGS, nullptr },
-		{ nullptr }
+		Py_METHOD_NOARGS(getName),
+		Py_METHOD_NOARGS(getNBT),
+		Py_METHOD_END
 	};
 };
 

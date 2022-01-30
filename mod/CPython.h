@@ -47,4 +47,4 @@ PyObject* ToList(const Vec3& vec);
 //方块坐标转list
 PyObject* ToList(BlockPos* bp);
 //打印错误信息
-void PrintPythonError();
+void Py_PrintErrors();

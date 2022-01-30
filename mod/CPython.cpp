@@ -43,36 +43,37 @@ PyObject* ToList(BlockPos* bp) {
 }
 
 //打印错误信息
-void PrintPythonError() {
+void Py_PrintErrors() {
 	if (PyErr_Occurred()) {
-		PyObject* type;
-		PyObject* value;
-		PyObject* traceback;
-		PyErr_Fetch(&type, &value, &traceback);
-
-		if (PyUnicode_Check(value)) {
-			logger.error("{}", PyUnicodeToStr(value));
-		}
-		else if (PyTuple_Check(value)) {
-			PyObject* info = reinterpret_cast<PyBaseExceptionObject*>(value)->args;
-
-			auto size = PyTuple_Size(info);
-			if (size == 1) {
-				logger.error("{}: {}", Py_TYPE(value)->tp_name, PyUnicodeToStr(PyTuple_GetItem(info, 0)));
-			}
-			else if (size == 2) {
-				logger.error("{}: {}", Py_TYPE(value)->tp_name, PyUnicodeToStr(PyTuple_GetItem(info, 0)));
-				PyObject* location = PyTuple_GetItem(info, 1);
-				logger.error("File: {} Line: {} Column: {}",
-					PyUnicodeToStr(PyTuple_GetItem(location, 0)),
-					PyObjectToStr(PyTuple_GetItem(location, 1)),
-					PyObjectToStr(PyTuple_GetItem(location, 2))
-				);
-				logger.error("    {}", PyObjectToStr(PyTuple_GetItem(location, 3)));
-			}
-		}
-
-		PyErr_Restore(type, value, traceback);
+		//PyObject* type;
+		//PyObject* value;
+		//PyObject* traceback;
+		//PyErr_Fetch(&type, &value, &traceback);
+		//if (PyUnicode_Check(value)) {
+		//	logger.error("{}", PyUnicodeToStr(value));
+		//}
+		//else if (PyTuple_Check(value)) {
+		//	PyObject* info = reinterpret_cast<PyBaseExceptionObject*>(value)->args;
+		//	auto size = PyTuple_Size(info);
+		//	if (size == 1) {
+		//		logger.error("{}: {}", Py_TYPE(value)->tp_name, PyUnicodeToStr(PyTuple_GetItem(info, 0)));
+		//	}
+		//	else if (size == 2) {
+		//		logger.error("{}: {}", Py_TYPE(value)->tp_name, PyUnicodeToStr(PyTuple_GetItem(info, 0)));
+		//		PyObject* location = PyTuple_GetItem(info, 1);
+		//		logger.error("File: {} Line: {} Column: {}",
+		//			PyUnicodeToStr(PyTuple_GetItem(location, 0)),
+		//			PyObjectToStr(PyTuple_GetItem(location, 1)),
+		//			PyObjectToStr(PyTuple_GetItem(location, 2))
+		//		);
+		//		logger.error("    {}", PyObjectToStr(PyTuple_GetItem(location, 3)));
+		//	}
+		//}
+		//logger.info("{}", PyObjectToStr(traceback));
+		//PyObject_Print(type, stdout, 0);
+		//PyObject_Print(value, stdout, 0);
+		//PyErr_Restore(type, value, traceback);
+		PyErr_Print();
 	}
 }
 

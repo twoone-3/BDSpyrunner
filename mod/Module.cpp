@@ -49,12 +49,10 @@ static PyObject* setListener(PyObject*, PyObject* args) {
 	Py_PARSE("sO", &event_name, &func);
 	if (!PyFunction_Check(func))
 		Py_RETURN_ERROR("Parameter 2 is not callable");
-
 	auto event_code = magic_enum::enum_cast<EventCode>(event_name);
 	if (!event_code.has_value())
 		Py_RETURN_ERROR_FORMAT("Invalid Listener key words %s", event_name);
-	g_callback_functions[event_code.value()].push_back(func);
-	EnableEventListener(event_code.value());
+	EnableEventListener(event_code.value(), func);
 	Py_RETURN_NONE;
 }
 //设置指令说明
@@ -70,8 +68,7 @@ static PyObject* registerCommand(PyObject*, PyObject* args) {
 static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 	const char* xuid = "";
 	Py_PARSE("s", &xuid);
-	Player* p = nullptr;
-	p = Level::getPlayer(xuid);
+	Player* p = Level::getPlayer(xuid);
 	if (p == nullptr)
 		Py_RETURN_ERROR("Failed to find player");
 	return ToPyEntity(p);
@@ -121,7 +118,7 @@ static PyObject* setBlock(PyObject*, PyObject* args) {
 	Block* b = dAccess<Block*, 0>(SYM((string("?m") + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()));
 	if (b == nullptr)
 		Py_RETURN_ERROR("Unknown Block");
-	bs->setBlock(bp, *b, 0, nullptr);
+	bs->setBlockSimple(bp, *b);
 	Py_RETURN_NONE;
 }
 //从指定地点获取JSON字符串NBT结构数据
@@ -136,7 +133,7 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 		&ignore_entities, &ignore_blocks
 	);
 	auto st = StructureTemplate::fromWorld("name", did, pos1, pos2, ignore_entities, ignore_blocks);
-	return StrToPyUnicode(StrToJson(*st.save()).dump(4));
+	return StrToPyUnicode(CompoundTagToJson(*st.save()).dump(4));
 }
 //从JSON字符串NBT结构数据导出结构到指定地点
 static PyObject* setStructure(PyObject*, PyObject* args) {
@@ -149,7 +146,7 @@ static PyObject* setStructure(PyObject*, PyObject* args) {
 		&data, &pos.x, &pos.y, &pos.z,
 		&did, &mir, &rot
 	);
-	StructureTemplate::fromTag("name", *ToCompoundTag(StrToJson(data)))
+	StructureTemplate::fromTag("name", *ToCompoundTag(CompoundTagToJson(data)))
 		.toWorld(did, pos, mir, rot);
 	/*for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {

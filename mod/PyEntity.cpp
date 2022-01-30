@@ -133,7 +133,7 @@ struct PyEntity {
 		Py_GET_ACTOR;
 		auto t = CompoundTag::create();
 		a->save(*t);
-		return StrToPyUnicode(StrToJson(*t).dump(4));
+		return StrToPyUnicode(CompoundTagToJson(*t).dump(4));
 	}
 	//获取生命值
 	Py_METHOD_DEFINE(getHealth) {
@@ -180,18 +180,18 @@ struct PyEntity {
 		fifo_json items_json = fifo_json::object();
 		fifo_json& inventory = items_json["Inventory"];
 		for (auto& i : p->getInventory().getSlots()) {
-			inventory.push_back(StrToJson(*i->save()));
+			inventory.push_back(CompoundTagToJson(*i->save()));
 		}
 		fifo_json& endchest = items_json["EndChest"];
 		for (auto& i : p->getEnderChestContainer()->getSlots()) {
-			endchest.push_back(StrToJson(*i->save()));
+			endchest.push_back(CompoundTagToJson(*i->save()));
 		}
 		fifo_json& armor = items_json["Armor"];
 		for (auto& i : p->getArmorContainer().getSlots()) {
-			armor.push_back(StrToJson(*i->save()));
+			armor.push_back(CompoundTagToJson(*i->save()));
 		}
-		items_json["OffHand"] = StrToJson(*p->getOffhandSlot().save());
-		items_json["Hand"] = StrToJson(*p->getSelectedItem().save());
+		items_json["OffHand"] = CompoundTagToJson(*p->getOffhandSlot().save());
+		items_json["Hand"] = CompoundTagToJson(*p->getSelectedItem().save());
 		return StrToPyUnicode(items_json.dump(4));
 	}
 	//设置玩家所有物品
@@ -199,7 +199,7 @@ struct PyEntity {
 		const char* items_data = "";
 		Py_PARSE("s", &items_data);
 		Py_GET_PLAYER;
-		fifo_json items_json(StrToJson(items_data));
+		fifo_json items_json(CompoundTagToJson(items_data));
 		if (items_json.contains("Inventory")) {
 			auto& items = p->getInventory();
 			fifo_json& inventory = items_json["Inventory"];
@@ -364,7 +364,7 @@ struct PyEntity {
 			[p, callback](string arg) {
 				PyGILGuard gil;
 				PyObject* result = PyObject_CallFunction(callback, "Os", ToPyEntity(p), arg.c_str());
-				PrintPythonError();
+				Py_PrintErrors();
 				Py_XDECREF(result);
 			}
 		);
@@ -388,7 +388,7 @@ struct PyEntity {
 			[p, callback](int arg) {
 				PyGILGuard gil;
 				PyObject* result = PyObject_CallFunction(callback, "Oi", ToPyEntity(p), arg);
-				PrintPythonError();
+				Py_PrintErrors();
 				Py_XDECREF(result);
 		}
 		);
@@ -408,7 +408,7 @@ struct PyEntity {
 			[p, callback](bool arg) {
 				PyGILGuard gil;
 				PyObject* result = PyObject_CallFunction(callback, "OO", ToPyEntity(p), arg ? Py_True : Py_False);
-				PrintPythonError();
+				Py_PrintErrors();
 				Py_XDECREF(result);
 			}
 		);
@@ -422,7 +422,7 @@ struct PyEntity {
 		Py_PARSE("ss|i", &title, &side_data, &order);
 		Py_GET_PLAYER;
 		vector<pair<string, int>> data;
-		fifo_json value = StrToJson(side_data);
+		fifo_json value = CompoundTagToJson(side_data);
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {
 				data.push_back({ key, val });
@@ -483,25 +483,25 @@ struct PyEntity {
 	}
 
 	inline static PyMethodDef Methods[]{
-		Py_METHOD_VARARGS(getName),
+		Py_METHOD_NOARGS(getName),
 		Py_METHOD_VARARGS(setName),
-		Py_METHOD_VARARGS(getUuid),
-		Py_METHOD_VARARGS(getXuid),
-		Py_METHOD_VARARGS(getPos),
-		Py_METHOD_VARARGS(getDimensionId),
-		Py_METHOD_VARARGS(isStanding),
-		Py_METHOD_VARARGS(isSneaking),
-		Py_METHOD_VARARGS(getTypeID),
-		Py_METHOD_VARARGS(getTypeName),
-		Py_METHOD_VARARGS(getNBT),
-		Py_METHOD_VARARGS(getHealth),
-		Py_METHOD_VARARGS(getMaxHealth),
-		Py_METHOD_VARARGS(getPermissions),
+		Py_METHOD_NOARGS(getUuid),
+		Py_METHOD_NOARGS(getXuid),
+		Py_METHOD_NOARGS(getPos),
+		Py_METHOD_NOARGS(getDimensionId),
+		Py_METHOD_NOARGS(isStanding),
+		Py_METHOD_NOARGS(isSneaking),
+		Py_METHOD_NOARGS(getTypeID),
+		Py_METHOD_NOARGS(getTypeName),
+		Py_METHOD_NOARGS(getNBT),
+		Py_METHOD_NOARGS(getHealth),
+		Py_METHOD_NOARGS(getMaxHealth),
+		Py_METHOD_NOARGS(getPermissions),
 		Py_METHOD_VARARGS(setPermissions),
-		Py_METHOD_VARARGS(getPlatformOnlineId),
-		Py_METHOD_VARARGS(getPlatform),
-		Py_METHOD_VARARGS(getIP),
-		Py_METHOD_VARARGS(getAllItem),
+		Py_METHOD_NOARGS(getPlatformOnlineId),
+		Py_METHOD_NOARGS(getPlatform),
+		Py_METHOD_NOARGS(getIP),
+		Py_METHOD_NOARGS(getAllItem),
 		Py_METHOD_VARARGS(setAllItem),
 		Py_METHOD_VARARGS(setHand),
 		Py_METHOD_VARARGS(addItem),
@@ -509,26 +509,26 @@ struct PyEntity {
 		Py_METHOD_VARARGS(teleport),
 		Py_METHOD_VARARGS(sendTextPacket),
 		Py_METHOD_VARARGS(runCommandAs),
-		Py_METHOD_VARARGS(resendAllChunks),
+		Py_METHOD_NOARGS(resendAllChunks),
 		Py_METHOD_VARARGS(disconnect),
 		Py_METHOD_VARARGS(getScore),
 		Py_METHOD_VARARGS(setScore),
 		Py_METHOD_VARARGS(addScore),
 		Py_METHOD_VARARGS(reduceScore),
-		Py_METHOD_VARARGS(getLevel),
+		Py_METHOD_NOARGS(getLevel),
 		Py_METHOD_VARARGS(addLevel),
 		Py_METHOD_VARARGS(transferServer),
 		Py_METHOD_VARARGS(sendCustomForm),
 		Py_METHOD_VARARGS(sendSimpleForm),
 		Py_METHOD_VARARGS(sendModalForm),
 		Py_METHOD_VARARGS(setSidebar),
-		Py_METHOD_VARARGS(removeSidebar),
+		Py_METHOD_NOARGS(removeSidebar),
 		Py_METHOD_VARARGS(setBossbar),
 		Py_METHOD_VARARGS(removeBossbar),
 		Py_METHOD_VARARGS(addTag),
 		Py_METHOD_VARARGS(removeTag),
-		Py_METHOD_VARARGS(getTags),
-		Py_METHOD_VARARGS(kill),
+		Py_METHOD_NOARGS(getTags),
+		Py_METHOD_NOARGS(kill),
 		Py_METHOD_END
 	};
 };

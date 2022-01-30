@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <EventAPI.h>
+#include "CPython.h"
 #include "magic_enum.hpp"
 
 enum class EventCode : int {
@@ -17,4 +18,4 @@ enum class EventCode : int {
 	onMoneyAdd, onMoneyReduce, onMoneyTrans, onMoneySet, onConsumeTotem, onEffectChanged,
 };
 
-void EnableEventListener(EventCode e);
+void EnableEventListener(EventCode e, PyObject* func);

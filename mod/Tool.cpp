@@ -1,7 +1,7 @@
 ﻿#include "Tool.h"
 
 //字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库
-fifo_json StrToJson(std::string_view str) {
+fifo_json CompoundTagToJson(std::string_view str) {
 	try { return fifo_json::parse(str); }
 	catch (const std::exception& e) {
 		logger.error("Parsing JSON failed! {}", e.what());
