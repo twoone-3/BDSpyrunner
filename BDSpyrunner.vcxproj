@@ -83,6 +83,7 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClInclude Include="mod\CPython.h" />
     <ClInclude Include="mod\PyItemStack.h" />
     <ClInclude Include="mod\PyBlockInstance.h" />
+    <ClInclude Include="mod\Version.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\python37.lib" />

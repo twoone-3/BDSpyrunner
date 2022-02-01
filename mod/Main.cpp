@@ -1,5 +1,6 @@
 ﻿#include "Module.h"
 #include "NBT.h"
+#include "Version.h"
 
 #define PLUGIN_PATH "plugins\\py\\"
 
@@ -17,7 +18,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 		//Return FALSE to fail DLL load.
 		LL::registerPlugin(
 			"BDSpyrunner", "For .py plugins' loading",
-			LL::Version(1, 9, 3, LL::Version::Release),
+			LL::Version(PYR_VERSION_MAJOR, PYR_VERSION_MINOR, PYR_VERSION_MICRO, LL::Version::Release),
 			{ { "Author", "twoone3" } }
 		);
 		break;
