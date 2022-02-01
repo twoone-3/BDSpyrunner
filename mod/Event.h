@@ -13,7 +13,7 @@ enum class EventCode {
 	onMobDie, onMobHurt, onCmdBlockExecute, onRedStoneUpdate, onProjectileHitEntity,
 	onProjectileHitBlock, onBlockInteracted, onUseRespawnAnchor, onFarmLandDecay, onUseFrameBlock,
 	onPistonPush, onHopperSearchItem, onHopperPushOut, onFireSpread, onBlockChanged, onNpcCmd,
-	onScoreChanged, onServerStarted, onConsoleCmd, onFormSelected, onConsoleOutput, onTick,
+	onScoreChanged, onServerStarted, onConsoleCmd, onConsoleOutput, onTick,
 	onMoneyAdd, onMoneyReduce, onMoneyTrans, onMoneySet, onConsumeTotem, onEffectChanged,
 };
 

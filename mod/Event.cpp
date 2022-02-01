@@ -308,7 +308,7 @@ void EnableEventListener(EventCode code) {
 		EVENT_END;
 		break;
 	case EventCode::onMobHurt:
-		EVENT_BEGIN(MobDieEvent);
+		EVENT_BEGIN(MobHurtEvent);
 		EVENT_INSERT(Mob);
 		EVENT_INSERT2(Cause, magic_enum::enum_name(e.mDamageSource->getCause()));
 		EVENT_INSERT2(Entity, e.mDamageSource->getEntity());
@@ -323,10 +323,23 @@ void EnableEventListener(EventCode code) {
 		EVENT_END;
 		break;
 	case EventCode::onRedStoneUpdate:
+		EVENT_BEGIN(RedStoneUpdateEvent);
+		EVENT_INSERT(BlockInstance);
+		EVENT_INSERT(IsActivated);
+		EVENT_INSERT(RedStonePower);
+		EVENT_END;
 		break;
 	case EventCode::onProjectileHitEntity:
+		EVENT_BEGIN(ProjectileHitEntityEvent);
+		EVENT_INSERT(Source);
+		EVENT_INSERT(Target);
+		EVENT_END;
 		break;
 	case EventCode::onProjectileHitBlock:
+		EVENT_BEGIN(ProjectileHitBlockEvent);
+		EVENT_INSERT(BlockInstance);
+		EVENT_INSERT(Source);
+		EVENT_END;
 		break;
 	case EventCode::onBlockInteracted:
 		EVENT_BEGIN(BlockInteractedEvent);
@@ -335,8 +348,16 @@ void EnableEventListener(EventCode code) {
 		EVENT_END;
 		break;
 	case EventCode::onUseRespawnAnchor:
+		EVENT_BEGIN(PlayerUseRespawnAnchorEvent);
+		EVENT_INSERT(BlockInstance);
+		EVENT_INSERT(Player);
+		EVENT_END;
 		break;
 	case EventCode::onFarmLandDecay:
+		EVENT_BEGIN(FarmLandDecayEvent);
+		EVENT_INSERT(Actor);
+		EVENT_INSERT(BlockInstance);
+		EVENT_END;
 		break;
 	case EventCode::onUseFrameBlock:
 		EVENT_BEGIN(PlayerUseFrameBlockEvent);
@@ -365,8 +386,16 @@ void EnableEventListener(EventCode code) {
 		EVENT_END;
 		break;
 	case EventCode::onFireSpread:
+		EVENT_BEGIN(FireSpreadEvent);
+		EVENT_INSERT(DimensionId);
+		EVENT_INSERT(Target);
+		EVENT_END;
 		break;
 	case EventCode::onBlockChanged:
+		EVENT_BEGIN(BlockChangedEvent);
+		EVENT_INSERT(NewBlockInstance);
+		EVENT_INSERT(PreviousBlockInstance);
+		EVENT_END;
 		break;
 	case EventCode::onNpcCmd:
 		EVENT_BEGIN(NpcCmdEvent);
@@ -391,8 +420,6 @@ void EnableEventListener(EventCode code) {
 		EVENT_BEGIN(ConsoleCmdEvent);
 		EVENT_INSERT(Command);
 		EVENT_END;
-		break;
-	case EventCode::onFormSelected:
 		break;
 	case EventCode::onConsoleOutput:
 		EVENT_BEGIN(ConsoleOutputEvent);
