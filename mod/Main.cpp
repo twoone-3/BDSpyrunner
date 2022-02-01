@@ -8,7 +8,75 @@ using namespace std;
 
 namespace fs = filesystem;
 
-#pragma region Function
+//初始化Python类
+void PyClassInit() {
+	if (PyType_Ready(&PyEntity_Type) < 0)
+		Py_FatalError("Can't initialize entity type");
+	if (PyType_Ready(&PyItemStack_Type) < 0)
+		Py_FatalError("Can't initialize value type");
+	if (PyType_Ready(&PyBlockInstance_Type) < 0)
+		Py_FatalError("Can't initialize value type");
+}
+//将Python解释器初始化插入bds主函数
+THook(int, "main", int argc, char* argv[], char* envp[]) {
+	//如果目录不存在创建目录
+	if (!fs::exists(PLUGIN_PATH))
+		fs::create_directory(PLUGIN_PATH);
+	//设置模块搜索路径
+	wstring plugins_path =
+		PLUGIN_PATH L";"
+		PLUGIN_PATH "Dlls;"
+		PLUGIN_PATH "Lib"
+		;
+	plugins_path.append(Py_GetPath());
+	Py_SetPath(plugins_path.c_str());
+#if 0
+	//预初始化3.8+
+	PyPreConfig cfg;
+	PyPreConfig_InitPythonConfig(&cfg);
+	cfg.utf8_mode = 1;
+	cfg.configure_locale = 0;
+	Py_PreInitialize(&cfg);
+#endif
+	//增加一个模块
+	PyImport_AppendInittab("mc", McInit);
+	//初始化解释器
+	Py_Initialize();
+	//输出版本号信息
+	logger.info("{} loaded.", PYR_VERSION);
+	//初始化类型
+	PyClassInit();
+	//启用线程支持
+	PyEval_InitThreads();
+	for (auto& info : fs::directory_iterator(PLUGIN_PATH)) {
+		if (info.path().extension() == ".py") {
+			string name(info.path().stem().u8string());
+			//忽略以'_'开头的文件
+			if (name.front() == '_') {
+				logger.info("Ignoring {}", name);
+				continue;
+			}
+			else {
+				logger.info("Loading {}", name);
+				PyImport_ImportModule(name.c_str());
+				Py_PrintErrors();
+			}
+		}
+	}
+	//启动子线程前执行，释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
+	PyEval_ReleaseThread(PyThreadState_Get());
+	//注册命令监听
+	Event::RegCmdEvent::subscribe(
+		[](Event::RegCmdEvent e) {
+			for (auto& [cmd, des] : g_commands) {
+				e.mCommandRegistry->registerCommand(cmd, des.first.c_str(), CommandPermissionLevel::Any, { CommandFlagValue::None }, { static_cast<CommandFlagValue>(0x80) });
+			}
+			return true;
+		}
+	);
+	return original(argc, argv, envp);
+}
+//Dll主函数
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 	hinstDLL;
 	lpReserved;
@@ -146,70 +214,3 @@ static void CheckPluginVersion() {
 	exit(0);
 }
 #endif 
-#pragma endregion
-void PyClassInit() {
-	if (PyType_Ready(&PyEntity_Type) < 0)
-		Py_FatalError("Can't initialize entity type");
-	if (PyType_Ready(&PyItemStack_Type) < 0)
-		Py_FatalError("Can't initialize value type");
-}
-//将Python解释器初始化插入bds主函数
-THook(int, "main",
-	int argc, char* argv[], char* envp[]) {
-	//如果目录不存在创建目录
-	if (!fs::exists(PLUGIN_PATH))
-		fs::create_directory(PLUGIN_PATH);
-	//设置模块搜索路径
-	wstring plugins_path =
-		PLUGIN_PATH L";"
-		PLUGIN_PATH "Dlls;"
-		PLUGIN_PATH "Lib"
-		;
-	plugins_path.append(Py_GetPath());
-	Py_SetPath(plugins_path.c_str());
-#if 0
-	//预初始化3.8+
-	PyPreConfig cfg;
-	PyPreConfig_InitPythonConfig(&cfg);
-	cfg.utf8_mode = 1;
-	cfg.configure_locale = 0;
-	Py_PreInitialize(&cfg);
-#endif
-	//增加一个模块
-	PyImport_AppendInittab("mc", McInit);
-	//初始化解释器
-	Py_Initialize();
-	//输出版本号信息
-	logger.info("{} loaded.", PYR_VERSION);
-	//初始化类型
-	PyClassInit();
-	//启用线程支持
-	PyEval_InitThreads();
-	for (auto& info : fs::directory_iterator(PLUGIN_PATH)) {
-		if (info.path().extension() == ".py") {
-			string name(info.path().stem().u8string());
-			//忽略以'_'开头的文件
-			if (name.front() == '_') {
-				logger.info("Ignoring {}", name);
-				continue;
-			}
-			else {
-				logger.info("Loading {}", name);
-				PyImport_ImportModule(name.c_str());
-				Py_PrintErrors();
-			}
-		}
-	}
-	//启动子线程前执行，释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
-	PyEval_ReleaseThread(PyThreadState_Get());
-	//注册命令监听
-	Event::RegCmdEvent::subscribe(
-		[](Event::RegCmdEvent e) {
-			for (auto& [cmd, des] : g_commands) {
-				e.mCommandRegistry->registerCommand(cmd, des.first.c_str(), CommandPermissionLevel::Any, { CommandFlagValue::None }, { static_cast<CommandFlagValue>(0x80) });
-			}
-			return true;
-		}
-	);
-	return original(argc, argv, envp);
-}
