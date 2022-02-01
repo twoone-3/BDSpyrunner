@@ -173,7 +173,6 @@ struct PyEntity {
 		auto ni = p->getNetworkIdentifier();
 		return StrToPyUnicode(Global<RakNet::RakPeer>->getAdr(*ni).ToString(false, ':'));
 	}
-
 	//获取玩家所有物品
 	Py_METHOD_DEFINE(getAllItem) {
 		Py_GET_PLAYER;
@@ -265,7 +264,7 @@ struct PyEntity {
 		Py_RETURN_NONE;
 	}
 	//发送数据包
-	Py_METHOD_DEFINE(sendTextPacket) {
+	Py_METHOD_DEFINE(sendText) {
 		const char* msg = "";
 		TextType mode = TextType::RAW;
 		Py_PARSE("s|i", &msg, &mode);
@@ -507,7 +506,7 @@ struct PyEntity {
 		Py_METHOD_VARARGS(addItem),
 		Py_METHOD_VARARGS(removeItem),
 		Py_METHOD_VARARGS(teleport),
-		Py_METHOD_VARARGS(sendTextPacket),
+		Py_METHOD_VARARGS(sendText),
 		Py_METHOD_VARARGS(runCommandAs),
 		Py_METHOD_NOARGS(resendAllChunks),
 		Py_METHOD_VARARGS(disconnect),

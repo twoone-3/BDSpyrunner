@@ -123,7 +123,7 @@ PyTypeObject PyBlockInstance_Type{
 	nullptr,				/* tp_finalize */
 };
 
-PyObject* ToBlockInstance(BlockInstance* ptr) {
+PyObject* ToPyBlockInstance(BlockInstance* ptr) {
 	PyBlockInstance* obj = PyObject_New(PyBlockInstance, &PyBlockInstance_Type);
 	obj->value = ptr;
 	return reinterpret_cast<PyObject*>(obj);

@@ -10,7 +10,8 @@ std::string PyUnicodeToStr(PyObject* obj) {
 }
 
 PyObject* StrToPyUnicode(std::string_view str) {
-	return PyUnicode_InternFromString(str.data());
+	//检测是否有相同字符串 return PyUnicode_InternFromString(str.data());
+	return PyUnicode_FromStringAndSize(str.data(), str.size());
 }
 
 //list转vector
@@ -34,11 +35,11 @@ PyObject* ToList(const Vec3& vec) {
 }
 
 //方块坐标转list
-PyObject* ToList(BlockPos* bp) {
+PyObject* ToList(const BlockPos& bp) {
 	PyObject* list = PyList_New(3);
-	PyList_SetItem(list, 0, PyLong_FromLong(bp->x));
-	PyList_SetItem(list, 1, PyLong_FromLong(bp->y));
-	PyList_SetItem(list, 2, PyLong_FromLong(bp->z));
+	PyList_SetItem(list, 0, PyLong_FromLong(bp.x));
+	PyList_SetItem(list, 1, PyLong_FromLong(bp.y));
+	PyList_SetItem(list, 2, PyLong_FromLong(bp.z));
 	return list;
 }
 

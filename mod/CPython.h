@@ -45,6 +45,6 @@ std::vector<std::string> ToStrArray(PyObject* list);
 //Vec3转list
 PyObject* ToList(const Vec3& vec);
 //方块坐标转list
-PyObject* ToList(BlockPos* bp);
+PyObject* ToList(const BlockPos& bp);
 //打印错误信息
 void Py_PrintErrors();

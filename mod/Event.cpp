@@ -10,8 +10,8 @@ public:
 		type_(t), arg_(nullptr), gil_() {
 	}
 	~Callbacker() {
-		if (arg_ == nullptr)
-			logger.error("意外的空指针");
+		//if (arg_ == nullptr)
+		//	logger.error("意外的空指针");
 		//logger.info("{}", PyObjectToStr(arg_));
 		//Py_XDECREF(arg_);
 	}
@@ -50,14 +50,11 @@ public:
 	Callbacker& insert(string_view key, ItemStack* item) {
 		return insert(key, ToPyItemStack(item));
 	}
-	Callbacker& insert(string_view key, BlockPos* item) {
+	Callbacker& insert(string_view key, const BlockPos& item) {
 		return insert(key, ToList(item));
 	}
-	Callbacker& insert(string_view key, BlockPos& item) {
-		return insert(key, ToList(&item));
-	}
 	Callbacker& insert(string_view key, BlockInstance& item) {
-		return insert(key, ToBlockInstance(&item));
+		return insert(key, ToPyBlockInstance(&item));
 	}
 	Callbacker& insert(string_view key, const Vec3& item) {
 		return insert(key, ToList(item));

@@ -75,7 +75,6 @@ static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 }
 //获取玩家列表
 static PyObject* getPlayerList(PyObject*, PyObject* args) {
-	Py_PARSE("");
 	PyObject* list = PyList_New(0);
 	Level::forEachPlayer(
 		[list](Player& p)->bool {
@@ -96,16 +95,17 @@ static PyObject* setServerMotd(PyObject*, PyObject* args) {
 }
 //根据坐标设置方块
 static PyObject* getBlock(PyObject*, PyObject* args) {
-	BlockPos bp; int did;
+	BlockPos bp;
+	int did;
 	Py_PARSE("iiii", &bp.x, &bp.y, &bp.z, &did);
 	BlockSource* bs = Level::getBlockSource(did);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	auto& bl = bs->getBlock(bp).getLegacyBlock();
-	return Py_BuildValue("{s:s:s:i}",
-		"blockname", bl.getRawNameId().c_str(),
-		"blockid", bl.getBlockItemId()
-	);
+	Block* b = const_cast<Block*>(&bs->getBlock(bp));
+
+	auto bi = BlockInstance::createBlockInstance(b, bp, did);
+	auto ubi = make_unique<BlockInstance>(bi);
+	return ToPyBlockInstance(ubi.get());
 }
 static PyObject* setBlock(PyObject*, PyObject* args) {
 	const char* name = "";
@@ -260,24 +260,24 @@ static PyObject* setSignBlockMessage(PyObject*, PyObject* args) {
 //模块方法列表
 static PyMethodDef Methods[]{
 	Py_METHOD_NOARGS(getBDSVersion),
-	{ "logout", logout, METH_VARARGS, nullptr },
-	{ "runcmd", runCommand, METH_VARARGS, nullptr },
-	{ "setListener", setListener, METH_VARARGS, nullptr },
-	{ "registerCommand", registerCommand, METH_VARARGS, nullptr },
-	{ "getPlayerByXuid", getPlayerByXuid, METH_VARARGS, nullptr },
-	{ "getPlayerList", getPlayerList, METH_NOARGS, nullptr },
-	{ "setServerMotd", setServerMotd, METH_VARARGS, nullptr },
-	{ "getBlock", getBlock, METH_VARARGS, nullptr },
-	{ "setBlock", setBlock, METH_VARARGS, nullptr },
-	{ "getStructure", getStructure, METH_VARARGS, nullptr },
-	{ "setStructure", setStructure, METH_VARARGS, nullptr },
-	{ "getStructureBinary", getStructureBinary, METH_VARARGS, nullptr },
-	{ "setStructureBinary", setStructureBinary, METH_VARARGS, nullptr },
-	{ "explode", explode, METH_VARARGS, nullptr },
-	{ "spawnItem", spawnItem, METH_VARARGS, nullptr },
-	{ "isSlimeChunk", isSlimeChunk, METH_VARARGS, nullptr },
-	{ "setSignBlockMessage", setSignBlockMessage, METH_VARARGS, nullptr },
-	{ nullptr }
+	Py_METHOD_VARARGS(logout),
+	Py_METHOD_VARARGS(runCommand),
+	Py_METHOD_VARARGS(setListener),
+	Py_METHOD_VARARGS(registerCommand),
+	Py_METHOD_VARARGS(getPlayerByXuid),
+	Py_METHOD_NOARGS(getPlayerList),
+	Py_METHOD_VARARGS(setServerMotd),
+	Py_METHOD_VARARGS(getBlock),
+	Py_METHOD_VARARGS(setBlock),
+	Py_METHOD_VARARGS(getStructure),
+	Py_METHOD_VARARGS(setStructure),
+	Py_METHOD_VARARGS(getStructureBinary),
+	Py_METHOD_VARARGS(setStructureBinary),
+	Py_METHOD_VARARGS(explode),
+	Py_METHOD_VARARGS(spawnItem),
+	Py_METHOD_VARARGS(isSlimeChunk),
+	Py_METHOD_VARARGS(setSignBlockMessage),
+	Py_METHOD_END
 };
 //模块定义
 static PyModuleDef Module{
