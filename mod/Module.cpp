@@ -52,7 +52,13 @@ static PyObject* setListener(PyObject*, PyObject* args) {
 	auto event_code = magic_enum::enum_cast<EventCode>(event_name);
 	if (!event_code.has_value())
 		Py_RETURN_ERROR_FORMAT("Invalid Listener key words %s", event_name);
-	EnableEventListener(event_code.value(), func);
+	//在全局回调表中查找code
+	auto funcs = g_callback_functions.find(event_code.value());
+	//如果是第一次设置则订阅监听器
+	if (funcs == g_callback_functions.end())
+		EnableEventListener(event_code.value());
+	//添加回调函数
+	funcs->second.push_back(func);
 	Py_RETURN_NONE;
 }
 //设置指令说明

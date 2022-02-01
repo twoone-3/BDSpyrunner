@@ -1,9 +1,8 @@
 ﻿#pragma once
 #include <EventAPI.h>
-#include "CPython.h"
 #include "magic_enum.hpp"
 
-enum class EventCode : int {
+enum class EventCode {
 	onPreJoin, onJoin, onLeft, onPlayerCmd, onChat, onPlayerDie,
 	onRespawn, onChangeDim, onJump, onSneak, onAttack, onEat, onMove, onChangeSprinting, onSpawnProjectile,
 	onFireworkShootWithCrossbow, onSetArmor, onRide, onStepOnPressurePlate,
@@ -18,4 +17,4 @@ enum class EventCode : int {
 	onMoneyAdd, onMoneyReduce, onMoneyTrans, onMoneySet, onConsumeTotem, onEffectChanged,
 };
 
-void EnableEventListener(EventCode e, PyObject* func);
+void EnableEventListener(EventCode e);

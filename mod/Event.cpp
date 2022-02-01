@@ -83,12 +83,12 @@ private:
 	PyGILGuard gil_;
 };
 
-#define EVENT_BEGIN(evt) if(!evt::hasListener())evt::subscribe([code](evt e){Callbacker h(code); h.insert("Event",magic_enum::enum_name(code))
+#define EVENT_BEGIN(evt) evt::subscribe([code](evt e){Callbacker h(code); h.insert("Event",magic_enum::enum_name(code))
 #define EVENT_INSERT(key) h.insert(#key, e.m##key)
 #define EVENT_INSERT2(key,value) h.insert(#key, value)
 #define EVENT_END return h.callback();})
 
-void EnableEventListener(EventCode code, PyObject* func) {
+void EnableEventListener(EventCode code) {
 	using namespace Event;
 	switch (code) {
 	case EventCode::onPreJoin:
@@ -416,5 +416,4 @@ void EnableEventListener(EventCode code, PyObject* func) {
 	default:
 		break;
 	}
-	g_callback_functions[code].push_back(func);
 }
