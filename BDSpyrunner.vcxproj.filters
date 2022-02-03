@@ -39,39 +39,33 @@
     <ClCompile Include="mod\PyBlockInstance.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mod\Tool.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="mod\CPython.cpp">
+    <ClCompile Include="mod\PyUtils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mod\Tool.h">
+    <ClInclude Include="mod\Main.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\Event.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mod\PyEntity.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="mod\Module.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mod\CPython.h">
+    <ClInclude Include="mod\PyUtils.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\NBT.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mod\PyItemStack.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mod\PyBlockInstance.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="mod\Version.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mod\Common.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mod\magic_enum.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

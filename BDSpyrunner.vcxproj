@@ -71,19 +71,17 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClCompile Include="mod\NBT.cpp" />
     <ClCompile Include="mod\PyItemStack.cpp" />
     <ClCompile Include="mod\PyBlockInstance.cpp" />
-    <ClCompile Include="mod\Tool.cpp" />
-    <ClCompile Include="mod\CPython.cpp" />
+    <ClCompile Include="mod\PyUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="mod\magic_enum.hpp" />
     <ClInclude Include="mod\Module.h" />
     <ClInclude Include="mod\Event.h" />
     <ClInclude Include="mod\NBT.h" />
-    <ClInclude Include="mod\Tool.h" />
-    <ClInclude Include="mod\PyEntity.h" />
-    <ClInclude Include="mod\CPython.h" />
-    <ClInclude Include="mod\PyItemStack.h" />
-    <ClInclude Include="mod\PyBlockInstance.h" />
+    <ClInclude Include="mod\Main.h" />
+    <ClInclude Include="mod\PyUtils.h" />
     <ClInclude Include="mod\Version.h" />
+    <ClInclude Include="mod\Common.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\python37.lib" />

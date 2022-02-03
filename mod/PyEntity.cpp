@@ -1,98 +1,77 @@
-﻿#include "PyEntity.h"
-#include "Tool.h"
+﻿#include "PyUtils.h"
 #include "NBT.h"
 
 #define Py_GET_PLAYER  Py_GET_PLAYER2(nullptr)
-#define Py_GET_PLAYER2(ret) Player* p = getPlayer(self);if (p == nullptr)return ret
+#define Py_GET_PLAYER2(ret) auto p = reinterpret_cast<Player*>(reinterpret_cast<PyEntity*>(self)->value);if (p == nullptr)return ret
 #define Py_GET_ACTOR Py_GET_ACTOR2(nullptr)
-#define Py_GET_ACTOR2(ret) Actor* a = getActor(self);if (a == nullptr)return ret
+#define Py_GET_ACTOR2(ret) auto a = reinterpret_cast<PyEntity*>(self)->value;if (a == nullptr)return ret
 
 using namespace std;
+
 struct PyEntity {
 	PyObject_HEAD;
 	Actor* value;
 
-	static Actor* getActor(PyObject* self) {
-		if (reinterpret_cast<PyEntity*>(self)->value)
-			return reinterpret_cast<PyEntity*>(self)->value;
-		else
-			Py_RETURN_ERROR("This entity pointer is nullptr");
-	}
-	static Player* getPlayer(PyObject* self) {
-		if (IsPlayer(reinterpret_cast<PyEntity*>(self)->value))
-			return reinterpret_cast<Player*>(reinterpret_cast<PyEntity*>(self)->value);
-		else
-			Py_RETURN_ERROR("This entity pointer is nullptr or is not player pointer");
-	}
 	static int print(PyObject* self, FILE* file, int) {
 		Py_GET_ACTOR2(-1);
 		fputs(a->getNameTag().c_str(), file);
 		return 0;
 	}
 	static PyObject* repr(PyObject* self) {
-		Py_GET_ACTOR2(StrToPyUnicode(""));
-		return StrToPyUnicode(a->getNameTag());
+		Py_GET_ACTOR2(ToPyObject(""));
+		return ToPyObject(a->getNameTag());
 	}
 	static Py_hash_t hash(PyObject* self) {
 		return reinterpret_cast<Py_hash_t>(self);
 	}
 	static PyObject* str(PyObject* self) {
-		Py_GET_ACTOR2(StrToPyUnicode(""));
-		return StrToPyUnicode(a->getNameTag());
+		Py_GET_ACTOR2(ToPyObject(""));
+		return ToPyObject(a->getNameTag());
 	}
 	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
 		switch (op) {
-			//<
-		case Py_LT:break;
-			//<=
-		case Py_LE:break;
-			//==
-		case Py_EQ:
-			if (getActor(self) == getActor(other))
-				Py_RETURN_TRUE;
-			else
-				Py_RETURN_FALSE;
+		case Py_LT:// <
 			break;
-			//!=
-		case Py_NE:
-			if (getActor(self) != getActor(other))
-				Py_RETURN_TRUE;
-			else
-				Py_RETURN_FALSE;
+		case Py_LE:// <=
 			break;
-			//>
-		case Py_GT:break;
-			//>=
-		case Py_GE:break;
+		case Py_EQ:// ==
+			return ToPyObject(reinterpret_cast<PyEntity*>(self)->value == reinterpret_cast<PyEntity*>(other)->value);
+		case Py_NE:// !=
+			return ToPyObject(reinterpret_cast<PyEntity*>(self)->value != reinterpret_cast<PyEntity*>(other)->value);
+		case Py_GT:// >
+			break;
+		case Py_GE:// >=
+			break;
 		}
 		Py_RETURN_NOTIMPLEMENTED;
 	}
 
 	//获取名字
 	Py_METHOD_DEFINE(getName) {
-		Py_GET_ACTOR;
-		return StrToPyUnicode(a->getNameTag());
+		Py_GET_ACTOR2(ToPyObject(""));
+		return ToPyObject(a->getNameTag());
 	}
 	Py_METHOD_DEFINE(setName) {
 		const char* name = "";
 		Py_PARSE("s", &name);
 		Py_GET_PLAYER;
 		p->setName(name);
+		Py_RETURN_NONE;
 	}
 	//获取UUID
 	Py_METHOD_DEFINE(getUuid) {
 		Py_GET_PLAYER;
-		return StrToPyUnicode(p->getUuid());
+		return ToPyObject(p->getUuid());
 	}
 	//获取XUID
 	Py_METHOD_DEFINE(getXuid) {
 		Py_GET_PLAYER;
-		return StrToPyUnicode(p->getXuid());
+		return ToPyObject(p->getXuid());
 	}
 	//获取坐标
 	Py_METHOD_DEFINE(getPos) {
 		Py_GET_ACTOR;
-		return ToList(a->getPos());
+		return ToPyObject(a->getPos());
 	}
 	//获取维度ID
 	Py_METHOD_DEFINE(getDimensionId) {
@@ -126,14 +105,14 @@ struct PyEntity {
 		//string type;
 		//SymCall<string&>("?EntityTypeToString@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4ActorType@@W4ActorTypeNamespaceRules@@@Z",
 		//	&type, a->getEntityTypeId());
-		return StrToPyUnicode(a->getTypeName());
+		return ToPyObject(a->getTypeName());
 	}
 	//获取nbt数据
 	Py_METHOD_DEFINE(getNBT) {
 		Py_GET_ACTOR;
 		auto t = CompoundTag::create();
 		a->save(*t);
-		return StrToPyUnicode(CompoundTagToJson(*t).dump(4));
+		return ToPyObject(CompoundTagToJson(*t).dump(4));
 	}
 	//获取生命值
 	Py_METHOD_DEFINE(getHealth) {
@@ -160,7 +139,7 @@ struct PyEntity {
 	//获取设备id
 	Py_METHOD_DEFINE(getPlatformOnlineId) {
 		Py_GET_PLAYER;
-		return StrToPyUnicode(p->getPlatformOnlineId());
+		return ToPyObject(p->getPlatformOnlineId());
 	}
 	//获取设备类型
 	Py_METHOD_DEFINE(getPlatform) {
@@ -171,7 +150,7 @@ struct PyEntity {
 	Py_METHOD_DEFINE(getIP) {
 		Py_GET_PLAYER;
 		auto ni = p->getNetworkIdentifier();
-		return StrToPyUnicode(Global<RakNet::RakPeer>->getAdr(*ni).ToString(false, ':'));
+		return ToPyObject(Global<RakNet::RakPeer>->getAdr(*ni).ToString(false, ':'));
 	}
 	//获取玩家所有物品
 	Py_METHOD_DEFINE(getAllItem) {
@@ -191,14 +170,14 @@ struct PyEntity {
 		}
 		items_json["OffHand"] = CompoundTagToJson(*p->getOffhandSlot().save());
 		items_json["Hand"] = CompoundTagToJson(*p->getSelectedItem().save());
-		return StrToPyUnicode(items_json.dump(4));
+		return ToPyObject(items_json.dump(4));
 	}
 	//设置玩家所有物品
 	Py_METHOD_DEFINE(setAllItem) {
 		const char* items_data = "";
 		Py_PARSE("s", &items_data);
 		Py_GET_PLAYER;
-		fifo_json items_json(CompoundTagToJson(items_data));
+		fifo_json items_json(StrToJson(items_data));
 		if (items_json.contains("Inventory")) {
 			auto& items = p->getInventory();
 			fifo_json& inventory = items_json["Inventory"];
@@ -361,10 +340,8 @@ struct PyEntity {
 			return nullptr;
 		p->sendCustomFormPacket(str,
 			[p, callback](string arg) {
-				PyGILGuard gil;
-				PyObject* result = PyObject_CallFunction(callback, "Os", ToPyEntity(p), arg.c_str());
-				Py_PrintErrors();
-				Py_XDECREF(result);
+				PyCaller pc;
+				pc.call(callback, p, arg);
 			}
 		);
 		Py_RETURN_NONE;
@@ -385,10 +362,8 @@ struct PyEntity {
 			Py_RETURN_ERROR("The number of buttons is not equal to the number of images");
 		p->sendSimpleFormPacket(title, content, buttons, images,
 			[p, callback](int arg) {
-				PyGILGuard gil;
-				PyObject* result = PyObject_CallFunction(callback, "Oi", ToPyEntity(p), arg);
-				Py_PrintErrors();
-				Py_XDECREF(result);
+				PyCaller pc;
+				pc.call(callback, p, arg);
 		}
 		);
 		Py_RETURN_NONE;
@@ -405,10 +380,8 @@ struct PyEntity {
 			return nullptr;
 		p->sendModalFormPacket(title, content, button1, button2,
 			[p, callback](bool arg) {
-				PyGILGuard gil;
-				PyObject* result = PyObject_CallFunction(callback, "OO", ToPyEntity(p), arg ? Py_True : Py_False);
-				Py_PrintErrors();
-				Py_XDECREF(result);
+				PyCaller pc;
+				pc.call(callback, p, arg);
 			}
 		);
 		Py_RETURN_NONE;
@@ -421,7 +394,7 @@ struct PyEntity {
 		Py_PARSE("ss|i", &title, &side_data, &order);
 		Py_GET_PLAYER;
 		vector<pair<string, int>> data;
-		fifo_json value = CompoundTagToJson(side_data);
+		fifo_json value = StrToJson(side_data);
 		if (value.is_object())
 			for (auto& [key, val] : value.items()) {
 				data.push_back({ key, val });
@@ -470,7 +443,7 @@ struct PyEntity {
 		auto tags = a->getTags();
 		PyObject* list = PyList_New(0);
 		for (size_t i = 0; i < tags.size(); i++) {
-			PyList_Append(list, StrToPyUnicode(tags[i]));
+			PyList_Append(list, ToPyObject(tags[i]));
 		}
 		return list;
 	}
@@ -479,6 +452,11 @@ struct PyEntity {
 		Py_GET_ACTOR;
 		a->kill();
 		Py_RETURN_NONE;
+	}
+	//获取游戏模式
+	Py_METHOD_DEFINE(getGameMode) {
+		Py_GET_PLAYER;
+		return PyLong_FromLong(p->getPlayerGameType());
 	}
 
 	inline static PyMethodDef Methods[]{
@@ -528,10 +506,11 @@ struct PyEntity {
 		Py_METHOD_VARARGS(removeTag),
 		Py_METHOD_NOARGS(getTags),
 		Py_METHOD_NOARGS(kill),
+		Py_METHOD_NOARGS(getGameMode),
 		Py_METHOD_END
 	};
 };
-//Entity类型
+
 PyTypeObject PyEntity_Type{
 	PyVarObject_HEAD_INIT(nullptr, 0)
 	"Entity",				/* tp_name */
@@ -583,7 +562,7 @@ PyTypeObject PyEntity_Type{
 	nullptr,				/* tp_finalize */
 };
 
-PyObject* ToPyEntity(Actor* ptr) {
+PyObject* ToPyObject(Actor* ptr) {
 	PyEntity* obj = PyObject_New(PyEntity, &PyEntity_Type);
 	obj->value = ptr;
 	return reinterpret_cast<PyObject*>(obj);

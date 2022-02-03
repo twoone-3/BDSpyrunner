@@ -1,74 +1,70 @@
-﻿#include "PyBlockInstance.h"
-#include "Tool.h"
+﻿#include "PyUtils.h"
 #include "NBT.h"
 
-#define Py_GET_BLOCKINSTANCE Py_GET_BLOCKINSTANCE2(nullptr)
-#define Py_GET_BLOCKINSTANCE2(ret) BlockInstance* bi = getBlock(self);if (bi == nullptr)return ret
+#define Py_GET_BLOCK auto block = reinterpret_cast<PyBlockInstance*>(self)->block
+#define Py_GET_BLOCKPOS auto pos = reinterpret_cast<PyBlockInstance*>(self)->pos
+#define Py_GET_DIMENSIONID auto dim = reinterpret_cast<PyBlockInstance*>(self)->dim
 
 using namespace std;
 
 struct PyBlockInstance {
 	PyObject_HEAD;
-	BlockInstance* value;
+	Block* block;
+	BlockPos pos;
+	int dim;
 
-	static BlockInstance* getBlock(PyObject* self) {
-		if (reinterpret_cast<PyBlockInstance*>(self)->value)
-			return reinterpret_cast<PyBlockInstance*>(self)->value;
-		else
-			Py_RETURN_ERROR("This value pointer is nullptr");
-	}
 	static int print(PyObject* self, FILE* file, int) {
-		Py_GET_BLOCKINSTANCE2(-1);
-		fputs(bi->getBlock()->getName().c_str(), file);
+		Py_GET_BLOCK;
+		fputs(block->getName().c_str(), file);
 		return 0;
 	}
 	static PyObject* repr(PyObject* self) {
-		Py_GET_BLOCKINSTANCE2(StrToPyUnicode(""));
-		return StrToPyUnicode(bi->getBlock()->getName().getString());
+		Py_GET_BLOCK;
+		return ToPyObject(block->getName().getString());
 	}
 	static Py_hash_t hash(PyObject* self) {
 		return reinterpret_cast<Py_hash_t>(self);
 	}
 	static PyObject* str(PyObject* self) {
-		Py_GET_BLOCKINSTANCE2(StrToPyUnicode(""));
-		return StrToPyUnicode(bi->getBlock()->getName().getString());
+		Py_GET_BLOCK;
+		return ToPyObject(block->getName().getString());
 	}
 	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
 		switch (op) {
-			//<
-		case Py_LT:break;
-			//<=
-		case Py_LE:break;
-			//==
-		case Py_EQ:
-			if (getBlock(self) == getBlock(other))
-				Py_RETURN_TRUE;
-			else
-				Py_RETURN_FALSE;
+		case Py_LT:// <
 			break;
-			//!=
-		case Py_NE:
-			if (getBlock(self) != getBlock(other))
-				Py_RETURN_TRUE;
-			else
-				Py_RETURN_FALSE;
+		case Py_LE:// <=
 			break;
-			//>
-		case Py_GT:break;
-			//>=
-		case Py_GE:break;
+		case Py_EQ:// ==
+			break;
+		case Py_NE:// !=
+			break;
+		case Py_GT:// >
+			break;
+		case Py_GE:// >=
+			break;
 		}
 		Py_RETURN_NOTIMPLEMENTED;
 	}
 
-	static PyObject* getName(PyObject* self, PyObject*) {
-		Py_GET_BLOCKINSTANCE;
-		return StrToPyUnicode(bi->getBlock()->getName().getString());
+	Py_METHOD_DEFINE(getName) {
+		Py_GET_BLOCK;
+		return ToPyObject(block->getName().getString());
+	}
+	Py_METHOD_DEFINE(getPos) {
+		Py_GET_BLOCKPOS;
+		return ToPyObject(pos);
+	}
+	Py_METHOD_DEFINE(getDimensionId) {
+		Py_GET_DIMENSIONID;
+		return ToPyObject(dim);
 	}
 
 	inline static PyMethodDef Methods[]{
-		{ "getName", getName, METH_NOARGS, nullptr },
-		{ nullptr }
+		Py_METHOD_NOARGS(getName),
+		Py_METHOD_NOARGS(getPos),
+		Py_METHOD_NOARGS(getDimensionId),
+		Py_METHOD_END
 	};
 };
 
@@ -123,8 +119,18 @@ PyTypeObject PyBlockInstance_Type{
 	nullptr,				/* tp_finalize */
 };
 
-PyObject* ToPyBlockInstance(BlockInstance* ptr) {
+PyObject* ToPyObject(BlockInstance* ptr) {
 	PyBlockInstance* obj = PyObject_New(PyBlockInstance, &PyBlockInstance_Type);
-	obj->value = ptr;
+	obj->block = ptr->getBlock();
+	obj->pos = ptr->getPosition();
+	obj->dim = ptr->getDimensionId();
+	return reinterpret_cast<PyObject*>(obj);
+}
+
+PyObject* ToPyObject(BlockInstance& bi) {
+	PyBlockInstance* obj = PyObject_New(PyBlockInstance, &PyBlockInstance_Type);
+	obj->block = bi.getBlock();
+	obj->pos = bi.getPosition();
+	obj->dim = bi.getDimensionId();
 	return reinterpret_cast<PyObject*>(obj);
 }

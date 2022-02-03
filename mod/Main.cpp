@@ -1,4 +1,6 @@
-﻿#include "Module.h"
+﻿#include "Main.h"
+#include "Common.h"
+#include "Module.h"
 #include "NBT.h"
 #include "Version.h"
 
@@ -7,6 +9,15 @@
 using namespace std;
 
 namespace fs = filesystem;
+
+//字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库
+fifo_json StrToJson(std::string_view str) {
+	try { return fifo_json::parse(str); }
+	catch (const std::exception& e) {
+		logger.error("Parsing JSON failed! {}", e.what());
+		return nullptr;
+	}
+}
 
 //初始化Python类
 void PyClassInit() {
@@ -70,6 +81,23 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 		[](Event::RegCmdEvent e) {
 			for (auto& [cmd, des] : g_commands) {
 				e.mCommandRegistry->registerCommand(cmd, des.first.c_str(), CommandPermissionLevel::Any, { CommandFlagValue::None }, { static_cast<CommandFlagValue>(0x80) });
+			}
+			return true;
+		}
+	);
+	//命令监听
+	Event::PlayerCmdEvent::subscribe(
+		[](Event::PlayerCmdEvent e) {
+			for (auto& [cmd, data] : g_commands) {
+				if (e.mCommand == cmd) {
+					PyGILGuard _gil;
+					PyObject* p = ToPyObject(e.mPlayer);
+					PyObject* result = _PyObject_FastCall(data.second, &p, 1);
+					Py_PrintErrors();
+					Py_DECREF(p);
+					Py_XDECREF(result);
+					return false;
+				}
 			}
 			return true;
 		}
@@ -167,7 +195,7 @@ static Json AccessUrlForJson(const wchar_t* url) {
 	} while (size);
 	InternetCloseHandle(handle2);
 	InternetCloseHandle(hSession);
-	return CompoundTagToJson(data);
+	return StrToJson(data);
 }
 //访问url
 static void AccessUrlForFile(const wchar_t* url, string_view filename) {

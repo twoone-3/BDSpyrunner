@@ -1,81 +1,36 @@
 ﻿#include "Event.h"
-#include "Tool.h"
+#include "Common.h"
 #include "Module.h"
 
 using namespace std;
 //事件回调助手，初始化对象将申请GIL
 class Callbacker {
 public:
-	Callbacker(EventCode t) :
-		type_(t), arg_(nullptr), gil_() {
+	Callbacker(EventCode t) {
+		type_ = t;
+		arg_ = nullptr;
 	}
 	~Callbacker() {
-		//if (arg_ == nullptr)
-		//	logger.error("意外的空指针");
-		//logger.info("{}", PyObjectToStr(arg_));
-		//Py_XDECREF(arg_);
 	}
 	//事件回调
 	bool callback() {
-		bool intercept = true;
+		bool pass = true;
 		//如果没有则跳过
 		auto& cbs = g_callback_functions[type_];
 		for (auto cb : cbs) {
-			PyObject* result = _PyObject_FastCall(cb, &arg_, 1);
-			Py_PrintErrors();
-			if (result == Py_False)
-				intercept = false;
-			Py_XDECREF(result);
+			PyCaller pc;
+			pass = pc.call(cb, arg_) != Py_False;
 		}
-		//Py_XDECREF(arg_);
-		return intercept;
+		return pass;
 	}
-	Callbacker& setArg(PyObject* arg) {
-		arg_ = arg;
-		return *this;
-	}
-	Callbacker& insert(string_view key, PyObject* item) {
+	template<typename Arg>
+	Callbacker& insert(string_view key, Arg item) {
 		if (arg_ == nullptr)
 			arg_ = PyDict_New();
-		PyDict_SetItemString(arg_, key.data(), item);
-		Py_DECREF(item);
+		PyObject* obj = ToPyObject(item);
+		PyDict_SetItemString(arg_, key.data(), obj);
+		Py_DECREF(obj);
 		return *this;
-	}
-	Callbacker& insert(string_view key, string_view item) {
-		return insert(key, StrToPyUnicode(item));
-	}
-	Callbacker& insert(string_view key, Actor* item) {
-		return insert(key, ToPyEntity(item));
-	}
-	Callbacker& insert(string_view key, ItemStack* item) {
-		return insert(key, ToPyItemStack(item));
-	}
-	Callbacker& insert(string_view key, const BlockPos& item) {
-		return insert(key, ToList(item));
-	}
-	Callbacker& insert(string_view key, BlockInstance& item) {
-		return insert(key, ToPyBlockInstance(&item));
-	}
-	Callbacker& insert(string_view key, const Vec3& item) {
-		return insert(key, ToList(item));
-	}
-	Callbacker& insert(string_view key, short item) {
-		return insert(key, PyLong_FromLong(item));
-	}
-	Callbacker& insert(string_view key, int item) {
-		return insert(key, PyLong_FromLong(item));
-	}
-	Callbacker& insert(string_view key, unsigned item) {
-		return insert(key, PyLong_FromUnsignedLong(item));
-	}
-	Callbacker& insert(string_view key, long long item) {
-		return insert(key, PyLong_FromLongLong(item));
-	}
-	Callbacker& insert(string_view key, unsigned long long item) {
-		return insert(key, PyLong_FromUnsignedLongLong(item));
-	}
-	Callbacker& insert(string_view key, float item) {
-		return insert(key, PyLong_FromDouble(item));
 	}
 private:
 	EventCode type_;
@@ -254,6 +209,9 @@ void EnableEventListener(EventCode code) {
 		EVENT_END;
 		break;
 	case EventCode::onWitherBossDestroy:
+		EVENT_BEGIN(WitherBossDestroyEvent);
+		//TODO: AABB and WitherBoss
+		EVENT_END;
 		break;
 	case EventCode::onPlaceBlock:
 		EVENT_BEGIN(PlayerPlaceBlockEvent);
@@ -265,19 +223,28 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onOpenContainer:
 		EVENT_BEGIN(PlayerOpenContainerEvent);
-		//TODO: container
 		EVENT_INSERT(BlockInstance);
+		//TODO: EVENT_INSERT(Container);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onCloseContainer:
 		EVENT_BEGIN(PlayerCloseContainerEvent);
-		//TODO: container
 		EVENT_INSERT(BlockInstance);
+		//TODO: EVENT_INSERT(Container);
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
 	case EventCode::onContainerChange:
+		EVENT_BEGIN(ContainerChangeEvent);
+		EVENT_INSERT(Actor);
+		EVENT_INSERT(BlockInstance);
+		//TODO: EVENT_INSERT(Container);
+		EVENT_INSERT(NewItemStack);
+		EVENT_INSERT(Player);
+		EVENT_INSERT(PreviousItemStack);
+		EVENT_INSERT(Slot);
+		EVENT_END;
 		break;
 	case EventCode::onOpenContainerScreen:
 		break;

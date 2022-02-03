@@ -21,7 +21,7 @@ constexpr int IsSlimeChunk(unsigned x, unsigned z) {
 }
 //获取BDS版本
 static PyObject* getBDSVersion(PyObject*, PyObject*) {
-	return StrToPyUnicode(Common::getGameVersionString());
+	return ToPyObject(Common::getGameVersionString());
 }
 //指令输出
 static PyObject* logout(PyObject*, PyObject* args) {
@@ -75,17 +75,16 @@ static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 	Player* p = Level::getPlayer(xuid);
 	if (p == nullptr)
 		Py_RETURN_ERROR("Failed to find player");
-	return ToPyEntity(p);
+	return ToPyObject(p);
 }
 //获取玩家列表
 static PyObject* getPlayerList(PyObject*, PyObject* args) {
 	PyObject* list = PyList_New(0);
-	Level::forEachPlayer(
-		[list](Player& p)->bool {
-			PyList_Append(list, ToPyEntity(&p));
-			return true;
-		}
-	);
+	for (auto p : Level::getAllPlayers()) {
+		PyObject* player = ToPyObject(p);
+		PyList_Append(list, player);
+		Py_DECREF(player);
+	}
 	return list;
 }
 static PyObject* setServerMotd(PyObject*, PyObject* args) {
@@ -94,7 +93,7 @@ static PyObject* setServerMotd(PyObject*, PyObject* args) {
 	if (Global<ServerNetworkHandler> == nullptr)
 		Py_RETURN_ERROR("Server did not finish loading");
 	SymCall("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
-			uintptr_t, ServerNetworkHandler*, const string&, bool)(Global<ServerNetworkHandler>, name, true);
+		uintptr_t, ServerNetworkHandler*, const string&, bool)(Global<ServerNetworkHandler>, name, true);
 	Py_RETURN_NONE;
 }
 //根据坐标设置方块
@@ -109,7 +108,7 @@ static PyObject* getBlock(PyObject*, PyObject* args) {
 
 	auto bi = BlockInstance::createBlockInstance(b, bp, did);
 	auto ubi = make_unique<BlockInstance>(bi);
-	return ToPyBlockInstance(ubi.get());
+	return ToPyObject(ubi.get());
 }
 static PyObject* setBlock(PyObject*, PyObject* args) {
 	const char* name = "";
@@ -137,7 +136,7 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 		&ignore_entities, &ignore_blocks
 	);
 	auto st = StructureTemplate::fromWorld("name", did, pos1, pos2, ignore_entities, ignore_blocks);
-	return StrToPyUnicode(CompoundTagToJson(*st.save()).dump(4));
+	return ToPyObject(CompoundTagToJson(*st.save()).dump(4));
 }
 //从JSON字符串NBT结构数据导出结构到指定地点
 static PyObject* setStructure(PyObject*, PyObject* args) {
@@ -150,7 +149,7 @@ static PyObject* setStructure(PyObject*, PyObject* args) {
 		&data, &pos.x, &pos.y, &pos.z,
 		&did, &mir, &rot
 	);
-	StructureTemplate::fromTag("name", *ToCompoundTag(CompoundTagToJson(data)))
+	StructureTemplate::fromTag("name", *ToCompoundTag(StrToJson(data)))
 		.toWorld(did, pos, mir, rot);
 	/*for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {
