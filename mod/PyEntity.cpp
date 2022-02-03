@@ -242,15 +242,16 @@ struct PyEntity {
 		p->teleport(pos, did);
 		Py_RETURN_NONE;
 	}
-	//发送数据包
+	//发送文本
 	Py_METHOD_DEFINE(sendText) {
-		const char* msg = "";
-		TextType mode = TextType::RAW;
-		Py_PARSE("s|i", &msg, &mode);
+		const char* text = "";
+		TextType type = TextType::RAW;
+		Py_PARSE("s|i", &text, &type);
 		Py_GET_PLAYER;
-		p->sendTextPacket(msg, mode);
+		p->sendTextPacket(text, type);
 		Py_RETURN_NONE;
 	}
+	//模拟玩家执行命令
 	Py_METHOD_DEFINE(runCommandAs) {
 		const char* cmd = "";
 		Py_PARSE("s", &cmd);
@@ -356,8 +357,8 @@ struct PyEntity {
 		Py_GET_PLAYER;
 		if (!PyFunction_Check(callback))
 			return nullptr;
-		auto buttons = ToStrArray(buttons_list);
-		auto images = ToStrArray(images_list);
+		auto buttons = ListToStrArray(buttons_list);
+		auto images = ListToStrArray(images_list);
 		if (buttons.size() != images.size())
 			Py_RETURN_ERROR("The number of buttons is not equal to the number of images");
 		p->sendSimpleFormPacket(title, content, buttons, images,

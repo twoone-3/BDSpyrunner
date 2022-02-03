@@ -20,38 +20,34 @@ constexpr int IsSlimeChunk(unsigned x, unsigned z) {
 	return !(mt0 % 10);
 }
 //获取BDS版本
-static PyObject* getBDSVersion(PyObject*, PyObject*) {
+Py_METHOD_DEFINE(getBDSVersion) {
 	return ToPyObject(Common::getGameVersionString());
 }
-//指令输出
-static PyObject* logout(PyObject*, PyObject* args) {
-	const char* msg = "";
-	Py_PARSE("s", &msg);
-	SymCall("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
-		ostream&, ostream&, const char*, size_t)(cout, msg, strlen(msg));
-	Py_RETURN_NONE;
-}
 //执行指令
-static PyObject* runCommand(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(runCommand) {
 	const char* cmd = "";
 	Py_PARSE("s", &cmd);
-	Level::runcmd(cmd);
-	//if (global<SPSCQueue> == nullptr)
-	//	Py_RETURN_ERROR("Command queue is not initialized");
-	//SymCall<bool, SPSCQueue*, const string&>("??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@AEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z",
-	//	global<SPSCQueue>, cmd);
-	Py_RETURN_NONE;
+	auto result = Level::runcmd(cmd);
+	return ToPyObject(result);
+}
+//执行指令
+Py_METHOD_DEFINE(runCommandEx) {
+	const char* cmd = "";
+	Py_PARSE("s", &cmd);
+	auto info = Level::runcmdEx(cmd);
+	//TODO: check whether it has memory leak
+	return PyTuple_Pack(2, ToPyObject(info.first), ToPyObject(info.second));
 }
 //设置监听
-static PyObject* setListener(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(setListener) {
 	const char* event_name = "";
 	PyObject* func = nullptr;
 	Py_PARSE("sO", &event_name, &func);
 	if (!PyFunction_Check(func))
 		Py_RETURN_ERROR("Parameter 2 is not callable");
 	auto event_code = magic_enum::enum_cast<EventCode>(event_name);
-	if (!event_code.has_value())
-		Py_RETURN_ERROR_FORMAT("Invalid Listener key words %s", event_name);
+	if (!event_code)
+		Py_RETURN_ERROR_FORMAT("Invalid event name %s", event_name);
 	//如果监听器未启用，则启用
 	if (g_callback_functions.find(event_code.value()) == g_callback_functions.end())
 		EnableEventListener(event_code.value());
@@ -60,7 +56,7 @@ static PyObject* setListener(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //设置指令说明
-static PyObject* registerCommand(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(registerCommand) {
 	const char* cmd = "";
 	PyObject* callback = nullptr;
 	const char* des = "";
@@ -69,7 +65,7 @@ static PyObject* registerCommand(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //获取玩家
-static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(getPlayerByXuid) {
 	const char* xuid = "";
 	Py_PARSE("s", &xuid);
 	Player* p = Level::getPlayer(xuid);
@@ -78,7 +74,7 @@ static PyObject* getPlayerByXuid(PyObject*, PyObject* args) {
 	return ToPyObject(p);
 }
 //获取玩家列表
-static PyObject* getPlayerList(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(getPlayerList) {
 	PyObject* list = PyList_New(0);
 	for (auto p : Level::getAllPlayers()) {
 		PyObject* player = ToPyObject(p);
@@ -87,7 +83,18 @@ static PyObject* getPlayerList(PyObject*, PyObject* args) {
 	}
 	return list;
 }
-static PyObject* setServerMotd(PyObject*, PyObject* args) {
+//获取实体列表
+Py_METHOD_DEFINE(getEntityList) {
+	PyObject* list = PyList_New(0);
+	for (auto a : Level::getAllEntities()) {
+		PyObject* entity = ToPyObject(a);
+		PyList_Append(list, entity);
+		Py_DECREF(entity);
+	}
+	return list;
+}
+//设置服务器motd
+Py_METHOD_DEFINE(setServerMotd) {
 	const char* name = "";
 	Py_PARSE("s", &name);
 	if (Global<ServerNetworkHandler> == nullptr)
@@ -96,8 +103,33 @@ static PyObject* setServerMotd(PyObject*, PyObject* args) {
 		uintptr_t, ServerNetworkHandler*, const string&, bool)(Global<ServerNetworkHandler>, name, true);
 	Py_RETURN_NONE;
 }
+//广播文本
+Py_METHOD_DEFINE(broadcastText) {
+	const char* text = "";
+	const char* type = "RAW";
+	Py_PARSE("s|i", &text, &type);
+	auto t = magic_enum::enum_cast<TextType>(type);
+	if (!t)
+		Py_RETURN_ERROR_FORMAT("Invalid text type %s", type);
+	Level::broadcastText(text, t.value());
+	Py_RETURN_NONE;
+}
+//广播标题
+Py_METHOD_DEFINE(broadcastTitle) {
+	const char* text = "";
+	const char* type = "";
+	int fade_in_duration;
+	int remain_duration;
+	int fade_out_duration;
+	Py_PARSE("ssiii", &text, &type, &fade_in_duration, &remain_duration, &fade_out_duration);
+	auto t = magic_enum::enum_cast<TitleType>(type);
+	if (!t)
+		Py_RETURN_ERROR_FORMAT("Invalid title type %s", type);
+	Level::broadcastTitle(text, t.value(), fade_in_duration, remain_duration, fade_out_duration);
+	Py_RETURN_NONE;
+}
 //根据坐标设置方块
-static PyObject* getBlock(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(getBlock) {
 	BlockPos bp;
 	int did;
 	Py_PARSE("iiii", &bp.x, &bp.y, &bp.z, &did);
@@ -107,10 +139,9 @@ static PyObject* getBlock(PyObject*, PyObject* args) {
 	Block* b = const_cast<Block*>(&bs->getBlock(bp));
 
 	auto bi = BlockInstance::createBlockInstance(b, bp, did);
-	auto ubi = make_unique<BlockInstance>(bi);
-	return ToPyObject(ubi.get());
+	return ToPyObject(bi);
 }
-static PyObject* setBlock(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(setBlock) {
 	const char* name = "";
 	BlockPos bp;
 	int did;
@@ -125,7 +156,7 @@ static PyObject* setBlock(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //从指定地点获取JSON字符串NBT结构数据
-static PyObject* getStructure(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(getStructure) {
 	BlockPos pos1, pos2;
 	int did;
 	bool ignore_entities = true;
@@ -139,7 +170,7 @@ static PyObject* getStructure(PyObject*, PyObject* args) {
 	return ToPyObject(CompoundTagToJson(*st.save()).dump(4));
 }
 //从JSON字符串NBT结构数据导出结构到指定地点
-static PyObject* setStructure(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(setStructure) {
 	const char* data = "";
 	BlockPos pos;
 	int did;
@@ -162,7 +193,7 @@ static PyObject* setStructure(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //从指定地点获取二进制NBT结构数据
-static PyObject* getStructureBinary(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(getStructureBinary) {
 	BlockPos pos1, pos2;
 	int did;
 	bool ignore_entities = true;
@@ -181,7 +212,7 @@ static PyObject* getStructureBinary(PyObject*, PyObject* args) {
 	);
 }
 //从二进制NBT结构数据导出结构到指定地点
-static PyObject* setStructureBinary(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(setStructureBinary) {
 	const char* data = "";
 	Py_ssize_t data_size;
 	BlockPos pos;
@@ -213,7 +244,7 @@ static PyObject* setStructureBinary(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //产生爆炸
-static PyObject* explode(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(explode) {
 	Vec3 pos; int did;
 	float power; bool destroy;
 	float range; bool fire;
@@ -228,7 +259,7 @@ static PyObject* explode(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //生成物品
-static PyObject* spawnItem(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(spawnItem) {
 	const char* item_data = "";
 	Vec3 pos; int did;
 	Py_PARSE("sfffi", &item_data, &pos.x, &pos.y, &pos.z, &did);
@@ -237,7 +268,7 @@ static PyObject* spawnItem(PyObject*, PyObject* args) {
 	Py_RETURN_NONE;
 }
 //是否为史莱姆区块
-static PyObject* isSlimeChunk(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(isSlimeChunk) {
 	unsigned x, z;
 	Py_PARSE("II", &x, &z);
 	if (IsSlimeChunk(x, z))
@@ -246,7 +277,7 @@ static PyObject* isSlimeChunk(PyObject*, PyObject* args) {
 		Py_RETURN_FALSE;
 }
 //设置牌子文字
-static PyObject* setSignBlockMessage(PyObject*, PyObject* args) {
+Py_METHOD_DEFINE(setSignBlockMessage) {
 	const char* name = "";
 	BlockPos bp; int did;
 	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &did);
@@ -263,12 +294,13 @@ static PyObject* setSignBlockMessage(PyObject*, PyObject* args) {
 //模块方法列表
 static PyMethodDef Methods[]{
 	Py_METHOD_NOARGS(getBDSVersion),
-	Py_METHOD_VARARGS(logout),
 	Py_METHOD_VARARGS(runCommand),
+	Py_METHOD_VARARGS(runCommandEx),
 	Py_METHOD_VARARGS(setListener),
 	Py_METHOD_VARARGS(registerCommand),
 	Py_METHOD_VARARGS(getPlayerByXuid),
 	Py_METHOD_NOARGS(getPlayerList),
+	Py_METHOD_NOARGS(getEntityList),
 	Py_METHOD_VARARGS(setServerMotd),
 	Py_METHOD_VARARGS(getBlock),
 	Py_METHOD_VARARGS(setBlock),
@@ -296,7 +328,7 @@ static PyModuleDef Module{
 };
 //模块初始化
 extern "C" PyObject * McInit() {
-	PyObject* module = PyModule_Create(&Module);
-	PyModule_AddObject(module, "Entity", reinterpret_cast<PyObject*>(&PyEntity_Type));
-	return module;
+	PyObject* m = PyModule_Create(&Module);
+	PyModule_AddObject(m, "Entity", reinterpret_cast<PyObject*>(&PyEntity_Type));
+	return m;
 }

@@ -3,7 +3,7 @@
 #include "Module.h"
 
 using namespace std;
-//事件回调助手，初始化对象将申请GIL
+//事件回调，初始化对象将申请GIL
 class Callbacker {
 public:
 	Callbacker(EventCode t) {

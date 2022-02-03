@@ -20,11 +20,11 @@ std::string PyUnicodeToStr(PyObject* obj) {
 }
 
 //list转vector
-std::vector<std::string> ToStrArray(PyObject* list) {
+std::vector<std::string> ListToStrArray(PyObject* list) {
 	std::vector<std::string> arr;
 	if (PyList_Check(list)) {
 		for (Py_ssize_t i = 0; i < PyList_Size(list); i++) {
-			arr.push_back(PyUnicode_AsUTF8(PyList_GetItem(list, i)));
+			arr.push_back(PyUnicodeToStr(PyList_GetItem(list, i)));
 		}
 	}
 	return arr;

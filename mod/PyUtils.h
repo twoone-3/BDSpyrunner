@@ -35,7 +35,7 @@ std::string PyObjectToStr(PyObject* obj);
 //PyObject转string
 std::string PyUnicodeToStr(PyObject* obj);
 //list转vector
-std::vector<std::string> ToStrArray(PyObject* list);
+std::vector<std::string> ListToStrArray(PyObject* list);
 //PyObject转PyObject
 PyObject* ToPyObject(PyObject* obj);
 //string转PyUnicode
