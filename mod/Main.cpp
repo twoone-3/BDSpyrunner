@@ -12,7 +12,9 @@ namespace fs = filesystem;
 
 //字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库
 fifo_json StrToJson(std::string_view str) {
-	try { return fifo_json::parse(str); }
+	try {
+		return fifo_json::parse(str);
+	}
 	catch (const std::exception& e) {
 		logger.error("Parsing JSON failed! {}", e.what());
 		return nullptr;
@@ -22,12 +24,15 @@ fifo_json StrToJson(std::string_view str) {
 //初始化Python类
 void PyClassInit() {
 	if (PyType_Ready(&PyEntity_Type) < 0)
-		Py_FatalError("Can't initialize entity type");
+		Py_FatalError("Can't initialize value type");
 	if (PyType_Ready(&PyItemStack_Type) < 0)
 		Py_FatalError("Can't initialize value type");
 	if (PyType_Ready(&PyBlockInstance_Type) < 0)
 		Py_FatalError("Can't initialize value type");
+	if (PyType_Ready(&PyNBT_Type) < 0)
+		Py_FatalError("Can't initialize value type");
 }
+
 //将Python解释器初始化插入bds主函数
 THook(int, "main", int argc, char* argv[], char* envp[]) {
 	//如果目录不存在创建目录
@@ -66,8 +71,7 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 			if (name.front() == '_') {
 				logger.info("Ignoring {}", name);
 				continue;
-			}
-			else {
+			} else {
 				logger.info("Loading {}", name);
 				PyImport_ImportModule(name.c_str());
 				Py_PrintErrors();
@@ -80,7 +84,9 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	Event::RegCmdEvent::subscribe(
 		[](Event::RegCmdEvent e) {
 			for (auto& [cmd, des] : g_commands) {
-				e.mCommandRegistry->registerCommand(cmd, des.first.c_str(), CommandPermissionLevel::Any, { CommandFlagValue::None }, { static_cast<CommandFlagValue>(0x80) });
+				e.mCommandRegistry->registerCommand(cmd, des.first.c_str(),
+					CommandPermissionLevel::Any, {CommandFlagValue::None},
+					{static_cast<CommandFlagValue>(0x80)});
 			}
 			return true;
 		}
@@ -89,13 +95,9 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	Event::PlayerCmdEvent::subscribe(
 		[](Event::PlayerCmdEvent e) {
 			for (auto& [cmd, data] : g_commands) {
-				if (e.mCommand == cmd) {
-					PyGILGuard _gil;
-					PyObject* p = ToPyObject(e.mPlayer);
-					PyObject* result = _PyObject_FastCall(data.second, &p, 1);
-					Py_PrintErrors();
-					Py_DECREF(p);
-					Py_XDECREF(result);
+				if (e.mCommand._Starts_with(cmd)) {
+					PyCaller pc;
+					pc.call(data.second, e.mPlayer, e.mCommand);
 					return false;
 				}
 			}
@@ -115,7 +117,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 		LL::registerPlugin(
 			"BDSpyrunner", "For .py plugins' loading",
 			LL::Version(PYR_VERSION_MAJOR, PYR_VERSION_MINOR, PYR_VERSION_MICRO, LL::Version::Release),
-			{ { "Author", "twoone3" } }
+			{{"Author", "twoone3"}}
 		);
 		break;
 	case DLL_THREAD_ATTACH:

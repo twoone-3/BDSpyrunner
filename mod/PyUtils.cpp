@@ -20,7 +20,7 @@ std::string PyUnicodeToStr(PyObject* obj) {
 }
 
 //list转vector
-std::vector<std::string> ListToStrArray(PyObject* list) {
+std::vector<std::string> PyListToArray(PyObject* list) {
 	std::vector<std::string> arr;
 	if (PyList_Check(list)) {
 		for (Py_ssize_t i = 0; i < PyList_Size(list); i++) {

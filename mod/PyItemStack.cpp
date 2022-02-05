@@ -1,8 +1,8 @@
 ﻿#include "PyUtils.h"
-#include "NBT.h"
 
-#define Py_GET_ITEMSTACK Py_GET_ITEMSTACK2(nullptr)
-#define Py_GET_ITEMSTACK2(ret) auto i = reinterpret_cast<PyItemStack*>(self)->value;if (i == nullptr)return ret
+#define PyItemStack_Check(self) (Py_TYPE(self) == &PyItemStack_Type)
+#define PyItemStack_RAW(self) (reinterpret_cast<PyItemStack*>(self)->value)
+#define PyItemStack_VALUE auto thiz = PyItemStack_RAW(self); if (thiz == nullptr)return nullptr
 
 using namespace std;
 
@@ -11,20 +11,20 @@ struct PyItemStack {
 	ItemStack* value;
 
 	static int print(PyObject* self, FILE* file, int) {
-		Py_GET_ITEMSTACK2(-1);
-		fputs(i->getName().c_str(), file);
+		PyItemStack_VALUE, -1;
+		fputs(thiz->getName().c_str(), file);
 		return 0;
 	}
 	static PyObject* repr(PyObject* self) {
-		Py_GET_ITEMSTACK2(ToPyObject(""));
-		return ToPyObject(i->getName());
+		PyItemStack_VALUE, ToPyObject("");
+		return ToPyObject(thiz->getName());
 	}
 	static Py_hash_t hash(PyObject* self) {
 		return reinterpret_cast<Py_hash_t>(self);
 	}
 	static PyObject* str(PyObject* self) {
-		Py_GET_ITEMSTACK2(ToPyObject(""));
-		return ToPyObject(i->getName());
+		PyItemStack_VALUE, ToPyObject("");
+		return ToPyObject(thiz->getName());
 	}
 	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
 		switch (op) {
@@ -33,9 +33,9 @@ struct PyItemStack {
 		case Py_LE:// <=
 			break;
 		case Py_EQ:// ==
-			return ToPyObject(reinterpret_cast<PyItemStack*>(self)->value == reinterpret_cast<PyItemStack*>(other)->value);
+			return ToPyObject(PyItemStack_RAW(self) == PyItemStack_RAW(other));
 		case Py_NE:// !=
-			return ToPyObject(reinterpret_cast<PyItemStack*>(self)->value != reinterpret_cast<PyItemStack*>(other)->value);
+			return ToPyObject(PyItemStack_RAW(self) != PyItemStack_RAW(other));
 		case Py_GT:// >
 			break;
 		case Py_GE:// >=
@@ -45,22 +45,22 @@ struct PyItemStack {
 	}
 
 	Py_METHOD_DEFINE(getName) {
-		Py_GET_ITEMSTACK;
-		return ToPyObject(i->getName());
+		PyItemStack_VALUE;
+		return ToPyObject(thiz->getName());
 	}
 	Py_METHOD_DEFINE(getNBT) {
-		Py_GET_ITEMSTACK;
-		return ToPyObject(CompoundTagToJson(*i->getNbt()).dump(4));
+		PyItemStack_VALUE;
+		return ToPyObject(thiz->getNbt());
 	}
 
-	inline static PyMethodDef Methods[]{
+	inline static PyMethodDef methods[] {
 		Py_METHOD_NOARGS(getName),
 		Py_METHOD_NOARGS(getNBT),
 		Py_METHOD_END
 	};
 };
 
-PyTypeObject PyItemStack_Type{
+PyTypeObject PyItemStack_Type {
 	PyVarObject_HEAD_INIT(nullptr, 0)
 	"Item",					/* tp_name */
 	sizeof(PyItemStack),	/* tp_basicsize */
@@ -88,7 +88,7 @@ PyTypeObject PyItemStack_Type{
 	0,						/* tp_weaklistoffset */
 	nullptr,				/* tp_iter */
 	nullptr,				/* tp_iternext */
-	PyItemStack::Methods,	/* tp_methods */
+	PyItemStack::methods,	/* tp_methods */
 	nullptr,				/* tp_members */
 	nullptr,				/* tp_getset */
 	nullptr,				/* tp_base */

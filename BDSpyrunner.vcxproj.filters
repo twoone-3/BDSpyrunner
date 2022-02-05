@@ -30,9 +30,6 @@
     <ClCompile Include="mod\Event.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mod\NBT.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="mod\PyItemStack.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -40,6 +37,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="mod\PyUtils.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mod\PyNBT.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -54,9 +54,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\PyUtils.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mod\NBT.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mod\Version.h">

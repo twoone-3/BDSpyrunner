@@ -1,9 +1,10 @@
 ﻿#include "PyUtils.h"
-#include "NBT.h"
 
-#define Py_GET_BLOCK auto block = reinterpret_cast<PyBlockInstance*>(self)->block
-#define Py_GET_BLOCKPOS auto pos = reinterpret_cast<PyBlockInstance*>(self)->pos
-#define Py_GET_DIMENSIONID auto dim = reinterpret_cast<PyBlockInstance*>(self)->dim
+#define PyBlockInstance_Check(self) (Py_TYPE(self) == &PyBlockInstance_Type)
+#define PyBlockInstance_RAW(self) (reinterpret_cast<PyBlockInstance*>(self))
+#define PyBlockInstance_BLOCK auto block = PyBlockInstance_RAW(self)->block
+#define PyBlockInstance_POS auto pos = PyBlockInstance_RAW(self)->pos
+#define PyBlockInstance_DIM auto dim = PyBlockInstance_RAW(self)->dim
 
 using namespace std;
 
@@ -14,19 +15,19 @@ struct PyBlockInstance {
 	int dim;
 
 	static int print(PyObject* self, FILE* file, int) {
-		Py_GET_BLOCK;
+		PyBlockInstance_BLOCK;
 		fputs(block->getName().c_str(), file);
 		return 0;
 	}
 	static PyObject* repr(PyObject* self) {
-		Py_GET_BLOCK;
+		PyBlockInstance_BLOCK;
 		return ToPyObject(block->getName().getString());
 	}
 	static Py_hash_t hash(PyObject* self) {
 		return reinterpret_cast<Py_hash_t>(self);
 	}
 	static PyObject* str(PyObject* self) {
-		Py_GET_BLOCK;
+		PyBlockInstance_BLOCK;
 		return ToPyObject(block->getName().getString());
 	}
 	static PyObject* rich_compare(PyObject* self, PyObject* other, int op) {
@@ -48,19 +49,23 @@ struct PyBlockInstance {
 	}
 
 	Py_METHOD_DEFINE(getName) {
-		Py_GET_BLOCK;
+		PyBlockInstance_BLOCK;
 		return ToPyObject(block->getName().getString());
 	}
+	Py_METHOD_DEFINE(getNBT) {
+		PyBlockInstance_BLOCK;
+		return ToPyObject(CompoundTag::fromBlock(block));
+	}
 	Py_METHOD_DEFINE(getPos) {
-		Py_GET_BLOCKPOS;
+		PyBlockInstance_POS;
 		return ToPyObject(pos);
 	}
 	Py_METHOD_DEFINE(getDimensionId) {
-		Py_GET_DIMENSIONID;
+		PyBlockInstance_DIM;
 		return ToPyObject(dim);
 	}
 
-	inline static PyMethodDef Methods[]{
+	inline static PyMethodDef methods[] {
 		Py_METHOD_NOARGS(getName),
 		Py_METHOD_NOARGS(getPos),
 		Py_METHOD_NOARGS(getDimensionId),
@@ -68,7 +73,7 @@ struct PyBlockInstance {
 	};
 };
 
-PyTypeObject PyBlockInstance_Type{
+PyTypeObject PyBlockInstance_Type {
 	PyVarObject_HEAD_INIT(nullptr, 0)
 	"BlockInstance",				/* tp_name */
 	sizeof(PyBlockInstance),		/* tp_basicsize */
@@ -96,7 +101,7 @@ PyTypeObject PyBlockInstance_Type{
 	0,						/* tp_weaklistoffset */
 	nullptr,				/* tp_iter */
 	nullptr,				/* tp_iternext */
-	PyBlockInstance::Methods,		/* tp_methods */
+	PyBlockInstance::methods,		/* tp_methods */
 	nullptr,				/* tp_members */
 	nullptr,				/* tp_getset */
 	nullptr,				/* tp_base */

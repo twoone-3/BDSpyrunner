@@ -1,5 +1,6 @@
 ﻿#include "Module.h"
 #include "NBT.h"
+#include "magic_enum.hpp"
 
 using namespace std;
 //是否为史莱姆区块
@@ -44,7 +45,7 @@ Py_METHOD_DEFINE(setListener) {
 	PyObject* func = nullptr;
 	Py_PARSE("sO", &event_name, &func);
 	if (!PyFunction_Check(func))
-		Py_RETURN_ERROR("Parameter 2 is not callable");
+		Py_RETURN_ERROR("a2 is not callable");
 	auto event_code = magic_enum::enum_cast<EventCode>(event_name);
 	if (!event_code)
 		Py_RETURN_ERROR_FORMAT("Invalid event name %s", event_name);
@@ -61,7 +62,7 @@ Py_METHOD_DEFINE(registerCommand) {
 	PyObject* callback = nullptr;
 	const char* des = "";
 	Py_PARSE("sOs", &cmd, &callback, &des);
-	g_commands[cmd] = { des, callback };
+	g_commands[cmd] = {des, callback};
 	Py_RETURN_NONE;
 }
 //获取玩家
@@ -98,9 +99,12 @@ Py_METHOD_DEFINE(setServerMotd) {
 	const char* name = "";
 	Py_PARSE("s", &name);
 	if (Global<ServerNetworkHandler> == nullptr)
-		Py_RETURN_ERROR("Server did not finish loading");
+		Py_RETURN_ERROR("Server dim not finish loading");
 	SymCall("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
-		uintptr_t, ServerNetworkHandler*, const string&, bool)(Global<ServerNetworkHandler>, name, true);
+		uintptr_t,
+		ServerNetworkHandler*,
+		const string&,
+		bool)(Global<ServerNetworkHandler>, name, true);
 	Py_RETURN_NONE;
 }
 //广播文本
@@ -131,62 +135,71 @@ Py_METHOD_DEFINE(broadcastTitle) {
 //根据坐标设置方块
 Py_METHOD_DEFINE(getBlock) {
 	BlockPos bp;
-	int did;
-	Py_PARSE("iiii", &bp.x, &bp.y, &bp.z, &did);
-	BlockSource* bs = Level::getBlockSource(did);
+	int dim;
+	Py_PARSE("iiii", &bp.x, &bp.y, &bp.z, &dim);
+	BlockSource* bs = Level::getBlockSource(dim);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	Block* b = const_cast<Block*>(&bs->getBlock(bp));
-
-	auto bi = BlockInstance::createBlockInstance(b, bp, did);
+	auto bi = Level::getBlockInstance(bp, bs);
 	return ToPyObject(bi);
 }
 Py_METHOD_DEFINE(setBlock) {
+	BlockPos pos;
+	int dim;
 	const char* name = "";
-	BlockPos bp;
-	int did;
-	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &did);
-	BlockSource* bs = Level::getBlockSource(did);
-	if (bs == nullptr)
-		Py_RETURN_ERROR("Unknown dimension ID");
-	Block* b = dAccess<Block*, 0>(SYM((string("?m") + name + "@VanillaBlocks@@3PEBVBlock@@EB").c_str()));
-	if (b == nullptr)
-		Py_RETURN_ERROR("Unknown Block");
-	bs->setBlockSimple(bp, *b);
+	//方块附加值
+	int tile_data;
+	Py_PARSE("iiiisi", &pos.x, &pos.y, &pos.z, &dim, &name, &tile_data);
+	Level::setBlock(pos, dim, name, tile_data);
 	Py_RETURN_NONE;
 }
 //从指定地点获取JSON字符串NBT结构数据
 Py_METHOD_DEFINE(getStructure) {
 	BlockPos pos1, pos2;
-	int did;
+	int dim;
 	bool ignore_entities = true;
 	bool ignore_blocks = false;
 	Py_PARSE("iiiiiii|bb",
-		&pos1.x, &pos1.y, &pos1.z,
-		&pos2.x, &pos2.y, &pos2.z, &did,
-		&ignore_entities, &ignore_blocks
-	);
-	auto st = StructureTemplate::fromWorld("name", did, pos1, pos2, ignore_entities, ignore_blocks);
+		&pos1.x, &pos1.y, &pos1.z, &pos2.x, &pos2.y, &pos2.z,
+		&dim, &ignore_entities, &ignore_blocks);
+	auto st = StructureTemplate::fromWorld("name", dim, pos1, pos2, ignore_entities, ignore_blocks);
 	return ToPyObject(CompoundTagToJson(*st.save()).dump(4));
 }
 //从JSON字符串NBT结构数据导出结构到指定地点
 Py_METHOD_DEFINE(setStructure) {
 	const char* data = "";
 	BlockPos pos;
-	int did;
-	Mirror mir = None_15;
-	Rotation rot = None_14;
-	Py_PARSE("siiii|ii",
-		&data, &pos.x, &pos.y, &pos.z,
-		&did, &mir, &rot
-	);
+	int dim;
+	//enum Mirror : unsigned char {
+	//	None_15 = 0,
+	//	X,
+	//	Z,
+	//	XZ,
+	//};
+	const char* mirror_str = "";
+	//enum Rotation : unsigned char {
+	//	None_14 = 0,
+	//	Rotate90,
+	//	Rotate180,
+	//	Rotate270,
+	//	Total,
+	//};
+	const char* rotation_str = "";
+	Py_PARSE("siiiiss",
+		&data, &pos.x, &pos.y, &pos.z, &dim, &mirror_str, &rotation_str);
+	auto mir = magic_enum::enum_cast<Mirror>(mirror_str);
+	if (!mir)
+		Py_RETURN_ERROR_FORMAT("Invalid mirror type %s", mirror_str);
+	auto rot = magic_enum::enum_cast<Rotation>(rotation_str);
+	if (!rot)
+		Py_RETURN_ERROR_FORMAT("Invalid rotation type %s", rotation_str);
 	StructureTemplate::fromTag("name", *ToCompoundTag(StrToJson(data)))
-		.toWorld(did, pos, mir, rot);
+		.toWorld(dim, pos, mir.value(), rot.value());
 	/*for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {
 			for (int z = 0; z != size.z; ++z) {
-				BlockPos bp{ x, y, z };
-				bs->neighborChanged(bp, bp);
+				BlockPos pos{ x, y, z };
+				bs->neighborChanged(pos, pos);
 			}
 		}
 	}*/
@@ -195,34 +208,50 @@ Py_METHOD_DEFINE(setStructure) {
 //从指定地点获取二进制NBT结构数据
 Py_METHOD_DEFINE(getStructureBinary) {
 	BlockPos pos1, pos2;
-	int did;
+	int dim;
 	bool ignore_entities = true;
 	bool ignore_blocks = false;
 	Py_PARSE("iiiiiii|bb",
-		&pos1.x, &pos1.y, &pos1.z,
-		&pos2.x, &pos2.y, &pos2.z, &did,
-		&ignore_entities, &ignore_blocks
-	);
-	auto st = StructureTemplate::fromWorld("name", did, pos1, pos2, ignore_entities, ignore_blocks);
+		&pos1.x, &pos1.y, &pos1.z, &pos2.x, &pos2.y, &pos2.z,
+		&dim, &ignore_entities, &ignore_blocks);
+	auto st = StructureTemplate::fromWorld("name", dim, pos1, pos2, ignore_entities, ignore_blocks);
 	BinaryStream binary_stream;
 	serialize<CompoundTag>::write(st.save(), &binary_stream);
 	return PyBytes_FromStringAndSize(
 		binary_stream.getAndReleaseData().c_str(),
-		binary_stream.getLength()
-	);
+		binary_stream.getLength());
 }
 //从二进制NBT结构数据导出结构到指定地点
 Py_METHOD_DEFINE(setStructureBinary) {
 	const char* data = "";
 	Py_ssize_t data_size;
 	BlockPos pos;
-	int did;
-	Mirror mir = None_15;
-	Rotation rot = None_14;
-	Py_PARSE("y#iiii|ii",
-		&data, &data_size, &pos.x, &pos.y, &pos.z,
-		&did, &mir, &rot
-	);
+	int dim;
+	//enum Mirror : unsigned char {
+	//	None_15 = 0,
+	//	X,
+	//	Z,
+	//	XZ,
+	//};
+	const char* mirror_str = "";
+	//enum Rotation : unsigned char {
+	//	None_14 = 0,
+	//	Rotate90,
+	//	Rotate180,
+	//	Rotate270,
+	//	Total,
+	//};
+	const char* rotation_str = "";
+	Py_PARSE("y#iiiiss",
+		&data, &data_size,
+		&pos.x, &pos.y, &pos.z,
+		&dim, &mirror_str, &rotation_str);
+	auto mir = magic_enum::enum_cast<Mirror>(mirror_str);
+	if (!mir)
+		Py_RETURN_ERROR_FORMAT("Invalid mirror type %s", mirror_str);
+	auto rot = magic_enum::enum_cast<Rotation>(rotation_str);
+	if (!rot)
+		Py_RETURN_ERROR_FORMAT("Invalid rotation type %s", rotation_str);
 	ReadOnlyBinaryStream binary_stream = string(data, data_size);
 	//printf("bufferlength: %d\n",stream->mBuffer->length());
 	auto tag = serialize<CompoundTag>::read(&binary_stream);
@@ -232,12 +261,12 @@ Py_METHOD_DEFINE(setStructureBinary) {
 	if (tag->contains("size") || (*tag)["size"]->getTagType() != Tag::Type::List)
 		Py_RETURN_ERROR("Invalid Tag");
 	StructureTemplate::fromTag("name", *tag)
-		.toWorld(did, pos, mir, rot);
+		.toWorld(dim, pos, mir.value(), rot.value());
 	/*for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {
 			for (int z = 0; z != size.z; ++z) {
-				BlockPos bp{ x, y, z };
-				bs->neighborChanged(bp, bp); // idk what will happen, origin: neighborChanged(bp)
+				BlockPos pos{ x, y, z };
+				bs->neighborChanged(pos, pos); // idk what will happen, origin: neighborChanged(pos)
 			}
 		}
 	}*/
@@ -245,14 +274,16 @@ Py_METHOD_DEFINE(setStructureBinary) {
 }
 //产生爆炸
 Py_METHOD_DEFINE(explode) {
-	Vec3 pos; int did;
-	float power; bool destroy;
-	float range; bool fire;
+	Vec3 pos;
+	int dim;
+	float power;
+	bool destroy;
+	float range;
+	bool fire;
 	Py_PARSE("fffifbfb",
-		&pos.x, &pos.y, &pos.z, &did,
-		&power, &destroy, &range, &fire
-	);
-	BlockSource* bs = Level::getBlockSource(did);
+		&pos.x, &pos.y, &pos.z,
+		&dim, &power, &destroy, &range, &fire);
+	BlockSource* bs = Level::getBlockSource(dim);
 	if (!bs)
 		Py_RETURN_ERROR("Unknown dimension ID");
 	Global<Level>->explode(*bs, nullptr, pos, power, fire, destroy, range, true);
@@ -261,38 +292,37 @@ Py_METHOD_DEFINE(explode) {
 //生成物品
 Py_METHOD_DEFINE(spawnItem) {
 	const char* item_data = "";
-	Vec3 pos; int did;
-	Py_PARSE("sfffi", &item_data, &pos.x, &pos.y, &pos.z, &did);
+	Vec3 pos;
+	int dim;
+	Py_PARSE("sfffi", &item_data, &pos.x, &pos.y, &pos.z, &dim);
 	ItemStack item = LoadItemFromString(item_data);
-	Global<Level>->getSpawner().spawnItem(pos, did, &item);
+	Global<Level>->getSpawner().spawnItem(pos, dim, &item);
 	Py_RETURN_NONE;
 }
 //是否为史莱姆区块
 Py_METHOD_DEFINE(isSlimeChunk) {
 	unsigned x, z;
 	Py_PARSE("II", &x, &z);
-	if (IsSlimeChunk(x, z))
-		Py_RETURN_TRUE;
-	else
-		Py_RETURN_FALSE;
+	return ToPyObject(IsSlimeChunk(x, z));
 }
 //设置牌子文字
 Py_METHOD_DEFINE(setSignBlockMessage) {
 	const char* name = "";
-	BlockPos bp; int did;
-	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &did);
+	BlockPos bp;
+	int dim;
+	Py_PARSE("siiii", &name, &bp.x, &bp.y, &bp.z, &dim);
 	if (Global<Level> == nullptr)
 		Py_RETURN_ERROR("Level is not set");
-	BlockSource* bs = Level::getBlockSource(did);
+	BlockSource* bs = Level::getBlockSource(dim);
 	if (bs == nullptr)
 		Py_RETURN_ERROR("Unknown dimension ID");
-	SignBlockActor* sign = static_cast<SignBlockActor*>(bs->getBlockEntity(bp));
+	auto sign = static_cast<SignBlockActor*>(Global<Level>->getBlockEntity(bp, dim));
 	sign->setMessage(name, name);
 	sign->setChanged();
 	Py_RETURN_NONE;
 }
 //模块方法列表
-static PyMethodDef Methods[]{
+static PyMethodDef methods[] {
 	Py_METHOD_NOARGS(getBDSVersion),
 	Py_METHOD_VARARGS(runCommand),
 	Py_METHOD_VARARGS(runCommandEx),
@@ -312,23 +342,24 @@ static PyMethodDef Methods[]{
 	Py_METHOD_VARARGS(spawnItem),
 	Py_METHOD_VARARGS(isSlimeChunk),
 	Py_METHOD_VARARGS(setSignBlockMessage),
-	Py_METHOD_END
-};
+	Py_METHOD_END};
 //模块定义
-static PyModuleDef Module{
+static PyModuleDef Module {
 	PyModuleDef_HEAD_INIT,
 	"mc",
 	"API functions",
 	-1,
-	Methods,
+	methods,
 	nullptr,
 	nullptr,
 	nullptr,
-	nullptr
-};
+	nullptr};
 //模块初始化
 extern "C" PyObject * McInit() {
 	PyObject* m = PyModule_Create(&Module);
 	PyModule_AddObject(m, "Entity", reinterpret_cast<PyObject*>(&PyEntity_Type));
+	PyModule_AddObject(m, "BlockInstance", reinterpret_cast<PyObject*>(&PyBlockInstance_Type));
+	PyModule_AddObject(m, "ItemStack", reinterpret_cast<PyObject*>(&PyItemStack_Type));
+	PyModule_AddObject(m, "NBT", reinterpret_cast<PyObject*>(&PyNBT_Type));
 	return m;
 }

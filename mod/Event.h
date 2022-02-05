@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include <EventAPI.h>
-#include "magic_enum.hpp"
 
 enum class EventCode {
 	onPreJoin, onJoin, onLeft, onPlayerCmd, onChat, onPlayerDie,
