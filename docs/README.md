@@ -1,4 +1,4 @@
- # BDSpyrunner Wiki
+# BDSpyrunner Wiki
 ***
 ## 🎉简介
 **BDSpyrunner**（pyr）是一个在Windows上用于Bedrock Dedicated Server(BDS)的插件加载器，具有轻量、高效等特点
@@ -12,7 +12,7 @@
 - 找到Python的安装目录，将Dlls和Lib文件夹复制到`./plugins/py`目录下
 ## 💻构建
 - 在命令行键入以下内容
-  ```
+  ```bash
   git clone https://github.com/twoone-3/BDSpyrunner
   ```
 - 使用VS2022打开BDSpyrunner.sln，即可进行构建
