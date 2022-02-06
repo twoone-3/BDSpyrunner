@@ -108,17 +108,14 @@ struct PyEntity {
 	//获取nbt数据
 	Py_METHOD_DEFINE(getNBT) {
 		PyEntity_VALUE;
-		auto t = CompoundTag::create();
-		thiz->save(*t);
-		return ToPyObject(CompoundTag::from);
+		return ToPyObject(CompoundTag::fromActor(thiz));
 	}
 	//设置nbt数据
 	Py_METHOD_DEFINE(setNBT) {
-		const char* nbt = "";
-		Py_PARSE("s", &nbt);
+		PyObject* nbt = nullptr;
+		Py_PARSE("O", &nbt);
 		PyEntity_VALUE;
-		auto t = CompoundTag::fromSNBT(nbt);
-		return ToPyObject(thiz->setNbt(t.get()));
+		return ToPyObject(thiz->setNbt(static_cast<CompoundTag*>(ToNBT(nbt).get())));
 	}
 	//获取生命值
 	Py_METHOD_DEFINE(getHealth) {
@@ -161,21 +158,21 @@ struct PyEntity {
 	}
 	//设置玩家手上物品
 	Py_METHOD_DEFINE(setHand) {
-		const char* item_data = "";
-		Py_PARSE("s", &item_data);
+		PyObject* item_nbt = nullptr;
+		Py_PARSE("s", &item_nbt);
 		PyEntity_VALUE2;
 		const_cast<ItemStack&>(thiz->getSelectedItem()) =
-			ItemStack::fromTag(*CompoundTag::fromSNBT(item_data));
+			ItemStack::fromTag(*static_cast<CompoundTag*>(ToNBT(item_nbt).get()));
 		thiz->sendInventory(true);
 		Py_RETURN_NONE;
 	}
 	//增加玩家背包物品
 	Py_METHOD_DEFINE(addItem) {
-		const char* item_data = "";
-		Py_PARSE("s", &item_data);
+		PyObject* item_nbt = nullptr;
+		Py_PARSE("s", &item_nbt);
 		PyEntity_VALUE2;
 		auto item =
-			ItemStack::fromTag(*CompoundTag::fromSNBT(item_data));
+			ItemStack::fromTag(*static_cast<CompoundTag*>(ToNBT(item_nbt).get()));
 		thiz->giveItem(&item);
 		thiz->sendInventory(true);
 		Py_RETURN_NONE;

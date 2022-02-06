@@ -19,6 +19,20 @@
 #define Py_METHOD_END {nullptr, nullptr, 0, nullptr}
 #define Py_METHOD_DEFINE(name) static PyObject* name(PyObject * self, PyObject* args, PyObject* kwds)
 
+extern PyTypeObject PyBlockInstance_Type;
+PyObject* ToPyObject(BlockInstance* ptr);
+PyObject* ToPyObject(BlockInstance& bi);
+
+extern PyTypeObject PyEntity_Type;
+PyObject* ToPyObject(Actor* ptr);
+
+extern PyTypeObject PyItemStack_Type;
+PyObject* ToPyObject(ItemStack* ptr);
+
+extern PyTypeObject PyNBT_Type;
+PyObject* ToPyObject(std::unique_ptr<Tag>&& ptr);
+std::unique_ptr<Tag> ToNBT(PyObject* nbt);
+
 //打印错误信息
 void Py_PrintErrors();
 // PyObject转string
@@ -49,19 +63,6 @@ PyObject* ToPyObject(int i);
 PyObject* ToPyObject(long long l);
 // double转PyObject
 PyObject* ToPyObject(double d);
-
-extern PyTypeObject PyBlockInstance_Type;
-PyObject* ToPyObject(BlockInstance* ptr);
-PyObject* ToPyObject(BlockInstance& bi);
-
-extern PyTypeObject PyEntity_Type;
-PyObject* ToPyObject(Actor* ptr);
-
-extern PyTypeObject PyItemStack_Type;
-PyObject* ToPyObject(ItemStack* ptr);
-
-extern PyTypeObject PyNBT_Type;
-PyObject* ToPyObject(std::unique_ptr<Tag>&& ptr);
 
 class PyGILGuard {
 public:

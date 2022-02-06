@@ -101,10 +101,7 @@ Py_METHOD_DEFINE(setServerMotd) {
 	if (Global<ServerNetworkHandler> == nullptr)
 		Py_RETURN_ERROR("Server dim not finish loading");
 	SymCall("?allowIncomingConnections@ServerNetworkHandler@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_N@Z",
-		uintptr_t,
-		ServerNetworkHandler*,
-		const string&,
-		bool)(Global<ServerNetworkHandler>, name, true);
+		uintptr_t, ServerNetworkHandler*, const string&, bool)(Global<ServerNetworkHandler>, name, true);
 	Py_RETURN_NONE;
 }
 //广播文本
@@ -205,73 +202,73 @@ Py_METHOD_DEFINE(setStructure) {
 	}*/
 	Py_RETURN_NONE;
 }
-//从指定地点获取二进制NBT结构数据
-Py_METHOD_DEFINE(getStructureBinary) {
-	BlockPos pos1, pos2;
-	int dim;
-	bool ignore_entities = true;
-	bool ignore_blocks = false;
-	Py_PARSE("iiiiiii|bb",
-		&pos1.x, &pos1.y, &pos1.z, &pos2.x, &pos2.y, &pos2.z,
-		&dim, &ignore_entities, &ignore_blocks);
-	auto st = StructureTemplate::fromWorld("name", dim, pos1, pos2, ignore_entities, ignore_blocks);
-	BinaryStream binary_stream;
-	serialize<CompoundTag>::write(st.save(), &binary_stream);
-	return PyBytes_FromStringAndSize(
-		binary_stream.getAndReleaseData().c_str(),
-		binary_stream.getLength());
-}
-//从二进制NBT结构数据导出结构到指定地点
-Py_METHOD_DEFINE(setStructureBinary) {
-	const char* data = "";
-	Py_ssize_t data_size;
-	BlockPos pos;
-	int dim;
-	//enum Mirror : unsigned char {
-	//	None_15 = 0,
-	//	X,
-	//	Z,
-	//	XZ,
-	//};
-	const char* mirror_str = "";
-	//enum Rotation : unsigned char {
-	//	None_14 = 0,
-	//	Rotate90,
-	//	Rotate180,
-	//	Rotate270,
-	//	Total,
-	//};
-	const char* rotation_str = "";
-	Py_PARSE("y#iiiiss",
-		&data, &data_size,
-		&pos.x, &pos.y, &pos.z,
-		&dim, &mirror_str, &rotation_str);
-	auto mir = magic_enum::enum_cast<Mirror>(mirror_str);
-	if (!mir)
-		Py_RETURN_ERROR_FORMAT("Invalid mirror type %s", mirror_str);
-	auto rot = magic_enum::enum_cast<Rotation>(rotation_str);
-	if (!rot)
-		Py_RETURN_ERROR_FORMAT("Invalid rotation type %s", rotation_str);
-	ReadOnlyBinaryStream binary_stream = string(data, data_size);
-	//printf("bufferlength: %d\n",stream->mBuffer->length());
-	auto tag = serialize<CompoundTag>::read(&binary_stream);
-	//printf("deserialized.\n");
-	if (tag->getTagType() != Tag::Type::Compound)
-		Py_RETURN_ERROR("Invalid Tag");
-	if (tag->contains("size") || (*tag)["size"]->getTagType() != Tag::Type::List)
-		Py_RETURN_ERROR("Invalid Tag");
-	StructureTemplate::fromTag("name", *tag)
-		.toWorld(dim, pos, mir.value(), rot.value());
-	/*for (int x = 0; x != size.x; ++x) {
-		for (int y = 0; y != size.y; ++y) {
-			for (int z = 0; z != size.z; ++z) {
-				BlockPos pos{ x, y, z };
-				bs->neighborChanged(pos, pos); // idk what will happen, origin: neighborChanged(pos)
-			}
-		}
-	}*/
-	Py_RETURN_NONE;
-}
+////从指定地点获取二进制NBT结构数据
+//Py_METHOD_DEFINE(getStructureBinary) {
+//	BlockPos pos1, pos2;
+//	int dim;
+//	bool ignore_entities = true;
+//	bool ignore_blocks = false;
+//	Py_PARSE("iiiiiii|bb",
+//		&pos1.x, &pos1.y, &pos1.z, &pos2.x, &pos2.y, &pos2.z,
+//		&dim, &ignore_entities, &ignore_blocks);
+//	auto st = StructureTemplate::fromWorld("name", dim, pos1, pos2, ignore_entities, ignore_blocks);
+//	BinaryStream binary_stream;
+//	serialize<CompoundTag>::write(st.save(), &binary_stream);
+//	return PyBytes_FromStringAndSize(
+//		binary_stream.getAndReleaseData().c_str(),
+//		binary_stream.getLength());
+//}
+////从二进制NBT结构数据导出结构到指定地点
+//Py_METHOD_DEFINE(setStructureBinary) {
+//	const char* data = "";
+//	Py_ssize_t data_size;
+//	BlockPos pos;
+//	int dim;
+//	//enum Mirror : unsigned char {
+//	//	None_15 = 0,
+//	//	X,
+//	//	Z,
+//	//	XZ,
+//	//};
+//	const char* mirror_str = "";
+//	//enum Rotation : unsigned char {
+//	//	None_14 = 0,
+//	//	Rotate90,
+//	//	Rotate180,
+//	//	Rotate270,
+//	//	Total,
+//	//};
+//	const char* rotation_str = "";
+//	Py_PARSE("y#iiiiss",
+//		&data, &data_size,
+//		&pos.x, &pos.y, &pos.z,
+//		&dim, &mirror_str, &rotation_str);
+//	auto mir = magic_enum::enum_cast<Mirror>(mirror_str);
+//	if (!mir)
+//		Py_RETURN_ERROR_FORMAT("Invalid mirror type %s", mirror_str);
+//	auto rot = magic_enum::enum_cast<Rotation>(rotation_str);
+//	if (!rot)
+//		Py_RETURN_ERROR_FORMAT("Invalid rotation type %s", rotation_str);
+//	ReadOnlyBinaryStream binary_stream = string(data, data_size);
+//	//printf("bufferlength: %d\n",stream->mBuffer->length());
+//	auto tag = serialize<CompoundTag>::read(&binary_stream);
+//	//printf("deserialized.\n");
+//	if (tag->getTagType() != Tag::Type::Compound)
+//		Py_RETURN_ERROR("Invalid Tag");
+//	if (tag->contains("size") || (*tag)["size"]->getTagType() != Tag::Type::List)
+//		Py_RETURN_ERROR("Invalid Tag");
+//	StructureTemplate::fromTag("name", *tag)
+//		.toWorld(dim, pos, mir.value(), rot.value());
+//	/*for (int x = 0; x != size.x; ++x) {
+//		for (int y = 0; y != size.y; ++y) {
+//			for (int z = 0; z != size.z; ++z) {
+//				BlockPos pos{ x, y, z };
+//				bs->neighborChanged(pos, pos); // idk what will happen, origin: neighborChanged(pos)
+//			}
+//		}
+//	}*/
+//	Py_RETURN_NONE;
+//}
 //产生爆炸
 Py_METHOD_DEFINE(explode) {
 	Vec3 pos;

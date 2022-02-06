@@ -265,3 +265,7 @@ PyObject* ToPyObject(unique_ptr<Tag>&& ptr) {
 	new (&obj->value) unique_ptr<Tag>(move(ptr));
 	return reinterpret_cast<PyObject*>(obj);
 }
+
+std::unique_ptr<Tag> ToNBT(PyObject* nbt) {
+	return PyNBT_RAW(nbt)->copy();
+}
