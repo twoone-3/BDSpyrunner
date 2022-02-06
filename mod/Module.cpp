@@ -1,5 +1,4 @@
 ﻿#include "Module.h"
-#include "NBT.h"
 #include "magic_enum.hpp"
 
 using namespace std;
@@ -129,7 +128,7 @@ Py_METHOD_DEFINE(broadcastTitle) {
 	Level::broadcastTitle(text, t.value(), fade_in_duration, remain_duration, fade_out_duration);
 	Py_RETURN_NONE;
 }
-//根据坐标设置方块
+//获取方块
 Py_METHOD_DEFINE(getBlock) {
 	BlockPos bp;
 	int dim;
@@ -140,6 +139,7 @@ Py_METHOD_DEFINE(getBlock) {
 	auto bi = Level::getBlockInstance(bp, bs);
 	return ToPyObject(bi);
 }
+//设置方块
 Py_METHOD_DEFINE(setBlock) {
 	BlockPos pos;
 	int dim;
@@ -150,7 +150,7 @@ Py_METHOD_DEFINE(setBlock) {
 	Level::setBlock(pos, dim, name, tile_data);
 	Py_RETURN_NONE;
 }
-//从指定地点获取JSON字符串NBT结构数据
+//从指定地点获取NBT结构数据
 Py_METHOD_DEFINE(getStructure) {
 	BlockPos pos1, pos2;
 	int dim;
@@ -160,11 +160,11 @@ Py_METHOD_DEFINE(getStructure) {
 		&pos1.x, &pos1.y, &pos1.z, &pos2.x, &pos2.y, &pos2.z,
 		&dim, &ignore_entities, &ignore_blocks);
 	auto st = StructureTemplate::fromWorld("name", dim, pos1, pos2, ignore_entities, ignore_blocks);
-	return ToPyObject(CompoundTagToJson(*st.save()).dump(4));
+	return ToPyObject(st.save());
 }
-//从JSON字符串NBT结构数据导出结构到指定地点
+//从NBT结构数据导出结构到指定地点
 Py_METHOD_DEFINE(setStructure) {
-	const char* data = "";
+	PyObject* nbt = nullptr;
 	BlockPos pos;
 	int dim;
 	//enum Mirror : unsigned char {
@@ -182,15 +182,15 @@ Py_METHOD_DEFINE(setStructure) {
 	//	Total,
 	//};
 	const char* rotation_str = "";
-	Py_PARSE("siiiiss",
-		&data, &pos.x, &pos.y, &pos.z, &dim, &mirror_str, &rotation_str);
+	Py_PARSE("Oiiiiss",
+		&nbt, &pos.x, &pos.y, &pos.z, &dim, &mirror_str, &rotation_str);
 	auto mir = magic_enum::enum_cast<Mirror>(mirror_str);
 	if (!mir)
 		Py_RETURN_ERROR_FORMAT("Invalid mirror type %s", mirror_str);
 	auto rot = magic_enum::enum_cast<Rotation>(rotation_str);
 	if (!rot)
 		Py_RETURN_ERROR_FORMAT("Invalid rotation type %s", rotation_str);
-	StructureTemplate::fromTag("name", *ToCompoundTag(StrToJson(data)))
+	StructureTemplate::fromTag("name", *PyNBT_TO_COMPOUNDTAG(nbt))
 		.toWorld(dim, pos, mir.value(), rot.value());
 	/*for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {
@@ -202,73 +202,6 @@ Py_METHOD_DEFINE(setStructure) {
 	}*/
 	Py_RETURN_NONE;
 }
-////从指定地点获取二进制NBT结构数据
-//Py_METHOD_DEFINE(getStructureBinary) {
-//	BlockPos pos1, pos2;
-//	int dim;
-//	bool ignore_entities = true;
-//	bool ignore_blocks = false;
-//	Py_PARSE("iiiiiii|bb",
-//		&pos1.x, &pos1.y, &pos1.z, &pos2.x, &pos2.y, &pos2.z,
-//		&dim, &ignore_entities, &ignore_blocks);
-//	auto st = StructureTemplate::fromWorld("name", dim, pos1, pos2, ignore_entities, ignore_blocks);
-//	BinaryStream binary_stream;
-//	serialize<CompoundTag>::write(st.save(), &binary_stream);
-//	return PyBytes_FromStringAndSize(
-//		binary_stream.getAndReleaseData().c_str(),
-//		binary_stream.getLength());
-//}
-////从二进制NBT结构数据导出结构到指定地点
-//Py_METHOD_DEFINE(setStructureBinary) {
-//	const char* data = "";
-//	Py_ssize_t data_size;
-//	BlockPos pos;
-//	int dim;
-//	//enum Mirror : unsigned char {
-//	//	None_15 = 0,
-//	//	X,
-//	//	Z,
-//	//	XZ,
-//	//};
-//	const char* mirror_str = "";
-//	//enum Rotation : unsigned char {
-//	//	None_14 = 0,
-//	//	Rotate90,
-//	//	Rotate180,
-//	//	Rotate270,
-//	//	Total,
-//	//};
-//	const char* rotation_str = "";
-//	Py_PARSE("y#iiiiss",
-//		&data, &data_size,
-//		&pos.x, &pos.y, &pos.z,
-//		&dim, &mirror_str, &rotation_str);
-//	auto mir = magic_enum::enum_cast<Mirror>(mirror_str);
-//	if (!mir)
-//		Py_RETURN_ERROR_FORMAT("Invalid mirror type %s", mirror_str);
-//	auto rot = magic_enum::enum_cast<Rotation>(rotation_str);
-//	if (!rot)
-//		Py_RETURN_ERROR_FORMAT("Invalid rotation type %s", rotation_str);
-//	ReadOnlyBinaryStream binary_stream = string(data, data_size);
-//	//printf("bufferlength: %d\n",stream->mBuffer->length());
-//	auto tag = serialize<CompoundTag>::read(&binary_stream);
-//	//printf("deserialized.\n");
-//	if (tag->getTagType() != Tag::Type::Compound)
-//		Py_RETURN_ERROR("Invalid Tag");
-//	if (tag->contains("size") || (*tag)["size"]->getTagType() != Tag::Type::List)
-//		Py_RETURN_ERROR("Invalid Tag");
-//	StructureTemplate::fromTag("name", *tag)
-//		.toWorld(dim, pos, mir.value(), rot.value());
-//	/*for (int x = 0; x != size.x; ++x) {
-//		for (int y = 0; y != size.y; ++y) {
-//			for (int z = 0; z != size.z; ++z) {
-//				BlockPos pos{ x, y, z };
-//				bs->neighborChanged(pos, pos); // idk what will happen, origin: neighborChanged(pos)
-//			}
-//		}
-//	}*/
-//	Py_RETURN_NONE;
-//}
 //产生爆炸
 Py_METHOD_DEFINE(explode) {
 	Vec3 pos;
@@ -288,11 +221,11 @@ Py_METHOD_DEFINE(explode) {
 }
 //生成物品
 Py_METHOD_DEFINE(spawnItem) {
-	const char* item_data = "";
+	PyObject* item_nbt = nullptr;
 	Vec3 pos;
 	int dim;
-	Py_PARSE("sfffi", &item_data, &pos.x, &pos.y, &pos.z, &dim);
-	ItemStack item = LoadItemFromString(item_data);
+	Py_PARSE("Offfi", &item_nbt, &pos.x, &pos.y, &pos.z, &dim);
+	ItemStack item = ItemStack::fromTag(*PyNBT_TO_COMPOUNDTAG(item_nbt));
 	Global<Level>->getSpawner().spawnItem(pos, dim, &item);
 	Py_RETURN_NONE;
 }
@@ -333,8 +266,6 @@ static PyMethodDef methods[] {
 	Py_METHOD_VARARGS(setBlock),
 	Py_METHOD_VARARGS(getStructure),
 	Py_METHOD_VARARGS(setStructure),
-	Py_METHOD_VARARGS(getStructureBinary),
-	Py_METHOD_VARARGS(setStructureBinary),
 	Py_METHOD_VARARGS(explode),
 	Py_METHOD_VARARGS(spawnItem),
 	Py_METHOD_VARARGS(isSlimeChunk),

@@ -26,15 +26,15 @@
 获取指定位置方块信息
 ## setBlock(x:int, y:int, z:int, did:int, name:str, tile_data:int) -> none
 设置指定位置的方块，tile_data为特殊值
-## getStructure(x1:int,y1:int,z1:int,x2:int,y2:int,z2:int,did:int) -> str
+## getStructure(x1:int, y1:int, z1:int, x2:int, y2:int, z2:int, did:int) -> mc.NBT
 获取两个坐标之间的结构nbt数据
-## setStructure(data:str,x:int,y:int,z:int,did:int) -> None
-在(x,y,z)处设放置一个结构，data为结构JSON字符串
-## explode(x:float,y:float,z:float,did:int,power:float,destroy:bool,range:float,fire:bool) -> None
+## setStructure(nbt:mc.NBT, x:int, y:int, z:int, did:int) -> None
+在(x,y,z)处设放置一个结构
+## explode(x:float, y:float, z:float, did:int, power:float, destroy:bool, range:float, fire:bool) -> None
 产生爆炸
-## spawnItem(data:str,x:int,y:int,z:int,did:int) -> None
-生成一个掉落物，data为物品JSON字符串
-## isSlimeChunk(x:int,y:int) -> Boolean
+## spawnItem(nbt:mc.NBT, x:int, y:int, z:int, did:int) -> None
+生成一个掉落物
+## isSlimeChunk(x:int, y:int) -> Boolean
 检查是否为史莱姆区块
-## setSignBlockMessage(msg:str,x:int,y:int,z:int,did:int) -> None
+## setSignBlockMessage(msg:str, x:int, y:int, z:int, did:int) -> None
 设置牌子文字

@@ -188,8 +188,6 @@ struct PyNBT {
 		if (!PyNBT_Check(value))
 			Py_RETURN_ERROR("a1 must be PyNBT");
 		//TODO: find out why it don't work
-		puts("sss");
-		thiz->asListTag()->addString("sss");
 		thiz->asListTag()->add(PyNBT_RAW(value)->copy());
 		Py_RETURN_NONE;
 	}
@@ -260,12 +258,12 @@ PyTypeObject PyNBT_Type {
 	nullptr,				/* tp_finalize */
 };
 
-PyObject* ToPyObject(unique_ptr<Tag>&& ptr) {
+PyObject* ToPyObject(std::unique_ptr<Tag>&& ptr) {
 	PyNBT* obj = PyObject_New(PyNBT, &PyNBT_Type);
 	new (&obj->value) unique_ptr<Tag>(move(ptr));
 	return reinterpret_cast<PyObject*>(obj);
 }
 
-std::unique_ptr<Tag> ToNBT(PyObject* nbt) {
+std::unique_ptr<Tag> ToTag(PyObject* nbt) {
 	return PyNBT_RAW(nbt)->copy();
 }

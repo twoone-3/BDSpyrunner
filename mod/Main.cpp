@@ -1,7 +1,6 @@
 ﻿#include "Main.h"
 #include "Common.h"
 #include "Module.h"
-#include "NBT.h"
 #include "Version.h"
 
 #define PLUGIN_PATH "plugins\\py\\"
@@ -42,8 +41,7 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	wstring plugins_path =
 		PLUGIN_PATH L";"
 		PLUGIN_PATH "Dlls;"
-		PLUGIN_PATH "Lib"
-		;
+		PLUGIN_PATH "Lib";
 	plugins_path.append(Py_GetPath());
 	Py_SetPath(plugins_path.c_str());
 #if 0
@@ -71,7 +69,8 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 			if (name.front() == '_') {
 				logger.info("Ignoring {}", name);
 				continue;
-			} else {
+			}
+			else {
 				logger.info("Loading {}", name);
 				PyImport_ImportModule(name.c_str());
 				Py_PrintErrors();
@@ -82,7 +81,7 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	PyEval_ReleaseThread(PyThreadState_Get());
 	//注册命令监听
 	Event::RegCmdEvent::subscribe(
-		[](Event::RegCmdEvent e) {
+		[] (Event::RegCmdEvent e) {
 			for (auto& [cmd, des] : g_commands) {
 				e.mCommandRegistry->registerCommand(cmd, des.first.c_str(),
 					CommandPermissionLevel::Any, {CommandFlagValue::None},
@@ -93,7 +92,7 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	);
 	//命令监听
 	Event::PlayerCmdEvent::subscribe(
-		[](Event::PlayerCmdEvent e) {
+		[] (Event::PlayerCmdEvent e) {
 			for (auto& [cmd, data] : g_commands) {
 				if (e.mCommand._Starts_with(cmd)) {
 					PyCaller pc;
@@ -194,7 +193,8 @@ static Json AccessUrlForJson(const wchar_t* url) {
 	do {
 		InternetReadFile(handle2, buffer, BLOCK_SIZE, &size);
 		data.append(buffer, size);
-	} while (size);
+	}
+	while (size);
 	InternetCloseHandle(handle2);
 	InternetCloseHandle(hSession);
 	return StrToJson(data);
@@ -218,7 +218,8 @@ static void AccessUrlForFile(const wchar_t* url, string_view filename) {
 		cout << "Downloading " << filename << "... " << total << "bytes\r";
 		InternetReadFile(handle2, buffer, BLOCK_SIZE, &size);
 		file.write(buffer, size);
-	} while (size);
+	}
+	while (size);
 	InternetCloseHandle(handle2);
 	InternetCloseHandle(hSession);
 }

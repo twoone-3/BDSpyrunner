@@ -31,7 +31,8 @@ PyObject* ToPyObject(ItemStack* ptr);
 
 extern PyTypeObject PyNBT_Type;
 PyObject* ToPyObject(std::unique_ptr<Tag>&& ptr);
-std::unique_ptr<Tag> ToNBT(PyObject* nbt);
+std::unique_ptr<Tag> ToTag(PyObject* nbt);
+#define PyNBT_TO_COMPOUNDTAG(nbt) (static_cast<CompoundTag*>(ToTag(nbt).get()))
 
 //打印错误信息
 void Py_PrintErrors();
