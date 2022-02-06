@@ -44,12 +44,34 @@ struct PyNBT {
 		}
 		Py_RETURN_NOTIMPLEMENTED;
 	}
+	//有三种模式
+	// 1. a1数据类型 a2数据
+	//    NBT('Int',3) NBT('Compound')
+	// 2. SNBT模式 a2填SNBT字符串
+	//    NBT('SNBT', snbt)
+	// 3. 二进制模式 a2填bytes
+	//    NBT('Binary', bytes)
 	static int init(PyObject* self, PyObject* args, PyObject* kwds) {
 		const char* type_str = "";
 		PyObject* value = nullptr;
 		Py_KEYWORDS_LIST("type", "value");
-		//此处可能晦涩难懂 return nullptr,-1;
 		Py_PARSE_WITH_KEYWORDS("s|O", &type_str, &value), -1;
+		if (type_str == "SNBT"sv) {
+			try {
+				PyNBT_RAW(self) = CompoundTag::fromSNBT(PyUnicodeToStr(value));
+			}
+			catch (const std::exception& e) {
+				Py_RETURN_ERROR(e.what()), -1;
+			}
+			return 0;
+		}
+		else if (type_str == "Binary"sv) {
+			Py_ssize_t len;
+			char* buffer;
+			PyBytes_AsStringAndSize(value, &buffer, &len);
+			PyNBT_RAW(self) = CompoundTag::fromBinaryNBT(buffer, len);
+			return 0;
+		}
 		auto type = magic_enum::enum_cast<Tag::Type>(type_str);
 		if (!type)
 			Py_RETURN_ERROR_FORMAT("Invalied NBT type %s", type_str), -1;
@@ -83,7 +105,7 @@ struct PyNBT {
 			break;
 		case Tag::ByteArray:
 			PyNBT_RAW(self) = ByteArrayTag::create();
-			//PyNBT_RAW(self)->asByteArrayTag()->value() = PyLong_AsLong(value);
+			//TODO: enable to construct ByteArray
 			break;
 		case Tag::String:
 			PyNBT_RAW(self) = StringTag::create();
@@ -105,9 +127,7 @@ struct PyNBT {
 		return subtype->tp_alloc(&PyNBT_Type, 0);
 	}
 	static void dealloc(PyObject* self) {
-
-		PyNBT_RAW(self)
-			.~unique_ptr();
+		PyNBT_RAW(self).~unique_ptr();
 		Py_TYPE(self)->tp_free(self);
 	}
 	static Py_ssize_t length(PyObject* self) {
@@ -164,10 +184,9 @@ struct PyNBT {
 		return ToPyObject(magic_enum::enum_name(thiz->getTagType()));
 	}
 	Py_METHOD_DEFINE(toBinary) {
-		bool is_little_endian = true;
-		Py_PARSE("|b", &is_little_endian);
 		PyNBT_VALUE;
-		return ToPyObject(thiz->asCompoundTag()->toBinaryNBT(is_little_endian));
+		auto data = thiz->asCompoundTag()->toBinaryNBT();
+		return PyBytes_FromStringAndSize(data.c_str(), data.length());
 	}
 	Py_METHOD_DEFINE(toJson) {
 		int indentatiton = 4;
@@ -194,7 +213,7 @@ struct PyNBT {
 
 	inline static PyMethodDef methods[] {
 		Py_METHOD_NOARGS(getType),
-		Py_METHOD_VARARGS(toBinary),
+		Py_METHOD_NOARGS(toBinary),
 		Py_METHOD_VARARGS(toJson),
 		Py_METHOD_NOARGS(toSNBT),
 		Py_METHOD_VARARGS(append),
