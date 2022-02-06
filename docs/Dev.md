@@ -38,9 +38,8 @@ mc.setListener('onUseItem',onUseItem)
 将文件保存为`UTF-8`格式以支持中文  
 启动BDS，进入游戏测试，你将在控制台看到输出  
 ## 扩展
-除了上面的例子外，我们还提供了丰富的其他接口：
-* [API](https://github.com/twoone-3/BDSpyrunner/wiki/API)
-* [Listener](https://github.com/twoone-3/BDSpyrunner/wiki/Listener)
+第三方相关库
+* [DevHelper](https://github.com/lgc2333/BDSPyRunnerDevModule)
 ## 结束
 好了现在你已经完全掌握了插件开发的基础内容  
 去尽情发挥创造力吧！
