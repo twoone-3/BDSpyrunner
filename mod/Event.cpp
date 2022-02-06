@@ -395,16 +395,6 @@ void EnableEventListener(EventCode code) {
 		EVENT_INSERT(Output);
 		EVENT_END;
 		break;
-	case EventCode::onTick:
-		break;
-	case EventCode::onMoneyAdd:
-		break;
-	case EventCode::onMoneyReduce:
-		break;
-	case EventCode::onMoneyTrans:
-		break;
-	case EventCode::onMoneySet:
-		break;
 	case EventCode::onConsumeTotem:
 		break;
 	case EventCode::onEffectChanged:

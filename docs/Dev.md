@@ -32,7 +32,7 @@ def onUseItem(e):
     p = e['Player']
     pos = p.getPos()
     print(p.getName() + '在' + str(pos) + '使用了物品)
-    p.sendTextPacket(p.getName() + '在' + str(pos) + '使用了物品')
+    p.sendText(p.getName() + '在' + str(pos) + '使用了物品')
 mc.setListener('onUseItem',onUseItem)
 ```
 将文件保存为`UTF-8`格式以支持中文  
