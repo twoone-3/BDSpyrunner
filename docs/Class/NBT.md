@@ -2,7 +2,7 @@
 
 # NBT
 Named Binary Tag
-## init(type, value)
+## __init__(type, value)
   1. type: 数据类型  
      value: 数据  
      例: NBT('Int',3) NBT('Compound')
@@ -12,7 +12,8 @@ Named Binary Tag
   3. type: Binary  
      value: bytes  
      例: NBT('Binary', bytes)
-
+## __getitem__(key)
+## __setitem__(key, value)
 ## getType() -> str
 ## toBinary() -> bytes
 ## toJson(indentation:int = 4) -> bytes
