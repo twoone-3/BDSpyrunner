@@ -38,10 +38,7 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	if (!fs::exists(PLUGIN_PATH))
 		fs::create_directory(PLUGIN_PATH);
 	//设置模块搜索路径
-	wstring plugins_path =
-		PLUGIN_PATH L";"
-		PLUGIN_PATH "Dlls;"
-		PLUGIN_PATH "Lib";
+	wstring plugins_path = PLUGIN_PATH L";";
 	plugins_path.append(Py_GetPath());
 	Py_SetPath(plugins_path.c_str());
 #if 0
@@ -72,8 +69,10 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 			}
 			else {
 				logger.info("Loading {}", name);
-				PyImport_ImportModule(name.c_str());
-				Py_PrintErrors();
+				auto m = PyImport_ImportModule(name.c_str());
+				if (m == nullptr)
+					Py_PrintErrors();
+				Py_XDECREF(m);
 			}
 		}
 	}

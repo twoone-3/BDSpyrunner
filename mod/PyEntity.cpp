@@ -455,7 +455,8 @@ struct PyEntity {
 		Py_METHOD_NOARGS(getTags),
 		Py_METHOD_NOARGS(kill),
 		Py_METHOD_NOARGS(getGameMode),
-		Py_METHOD_END};
+		Py_METHOD_END
+	};
 };
 
 PyTypeObject PyEntity_Type {

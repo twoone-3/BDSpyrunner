@@ -262,6 +262,8 @@ static PyMethodDef methods[] {
 	Py_METHOD_NOARGS(getPlayerList),
 	Py_METHOD_NOARGS(getEntityList),
 	Py_METHOD_VARARGS(setServerMotd),
+	Py_METHOD_VARARGS(broadcastText),
+	Py_METHOD_VARARGS(broadcastTitle),
 	Py_METHOD_VARARGS(getBlock),
 	Py_METHOD_VARARGS(setBlock),
 	Py_METHOD_VARARGS(getStructure),

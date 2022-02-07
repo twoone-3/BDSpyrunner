@@ -88,3 +88,16 @@ PyObject* ToPyObject(double d) {
 	return PyFloat_FromDouble(d);
 }
 
+#include <pybind11/embed.h>
+struct pytest {
+	int a;
+};
+int test(int a) {
+	return a;
+}
+using namespace pybind11;
+PYBIND11_EMBEDDED_MODULE(mc, m) {
+	class_<pytest>(m, "pytest")
+		.def(init<int>());
+	logger.info("{}", std::string(repr(cast(new pytest))));
+}

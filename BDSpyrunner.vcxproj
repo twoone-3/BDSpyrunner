@@ -34,7 +34,7 @@
     <LinkIncremental>false</LinkIncremental>
     <PublicIncludeDirectories>
     </PublicIncludeDirectories>
-    <IncludePath>SDK\Header;$(IncludePath)</IncludePath>
+    <IncludePath>include;SDK\Header;$(IncludePath)</IncludePath>
     <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <EnableClangTidyCodeAnalysis>false</EnableClangTidyCodeAnalysis>
@@ -75,6 +75,7 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClCompile Include="mod\PyBlockInstance.cpp" />
     <ClCompile Include="mod\PyUtils.cpp" />
     <ClCompile Include="mod\PyNBT.cpp" />
+    <ClCompile Include="mod\PyContainer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mod\magic_enum.hpp" />

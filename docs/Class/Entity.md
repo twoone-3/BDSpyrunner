@@ -22,9 +22,9 @@
 ## getPlatformOnlineId() -> str
 ## getPlatform() -> int
 ## getIP() -> str
-## setHand(nbt:mcNBT) -> None
+## setHand(nbt:mc.NBT) -> None
 设置玩家手中物品
-## addItem(nbt:mcNBT) -> None
+## addItem(nbt:mc.NBT) -> None
 为玩家新添物品
 ## removeItem(slot:int, count:int) -> None
 移除玩家背包slot格子的count个物品
@@ -65,12 +65,21 @@
 例:`player.setSidebar('自定义侧边栏', '{"第一行":0, "第二行":2, "我在哪行?":3}')`
 ## removeSidebar() -> None
 移除玩家计分板侧边栏
-## sendCustomForm(nbt:mcNBT, callback:function) -> None
-向指定的玩家发送一个自定义表单，回调函数原型为callback(Entity:player,selected_nbt:mcNBT) -> None<br>
-例:player.sendCustomForm('{"content":[{"type":"label","text":"这是一个文本标签"},{"placeholder":"水印文本","default":"","type":"input","text":""},{"default":true,"type":"toggle","text":"开关~或许是吧"},{"min":0.0,"max":10.0,"step":2.0,"default":3.0,"type":"slider","text":"游标滑块！？"},{"default":1,"steps":["Step1","Step2","Step 3"],"type":"step_slider","text":"矩阵滑块？!"},{"default":1,"options":["Option 1","Option2","Option3"],"type":"dropdown","text":"如你所见 下拉框"}], "type":"custom_form","title":"这是一个自定义窗体"}'，cb)
+## sendCustomForm(data:str, callback:function) -> None
+向指定的玩家发送一个自定义表单，回调函数原型为callback(Entity:player,selected_data:str) -> None<br>
+例:
+```py
+player.sendCustomForm('{"content":[{"type":"label","text":"这是一个文本标签"},{"placeholder":"水印文本","default":"","type":"input","text":""},{"default":true,"type":"toggle","text":"开关~或许是吧"},{"min":0.0,"max":10.0,"step":2.0,"default":3.0,"type":"slider","text":"游标滑块！？"},{"default":1,"steps":["Step1","Step2","Step 3"],"type":"step_slider","text":"矩阵滑块？!"},{"default":1,"options":["Option 1","Option2","Option3"],"type":"dropdown","text":"如你所见 下拉框"}], "type":"custom_form","title":"这是一个自定义窗体"}'，cb)
+```
 ## sendSimpleForm(title:str, content:str, buttons:list, images:list, callback:function) -> None
 向指定的玩家发送一个简单表单，回调函数原型为callback(Entity:player,selected_item:int) -> None<br>
-例:player.sendSimpleForm('标题', '内容', ["生存","死亡","求助"], ['','',''], cb)
+例:
+```py
+player.sendSimpleForm('标题', '内容', ["生存","死亡","求助"], ['','',''], cb)
+```
 ## sendModalForm(title:str, content:str, button1:str, button2:str, callback:function) -> None
 向指定的玩家发送一个模式对话框，回调函数原型为callback(Entity:player,selected_item:bool) -> None<br>
-例:player.sendModalForm('标题', '内容', '按钮1', '按钮2', cb)
+例:
+```py
+player.sendModalForm('标题', '内容', '按钮1', '按钮2', cb)
+```
