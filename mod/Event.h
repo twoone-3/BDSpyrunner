@@ -4,6 +4,7 @@
 
 enum class EventCode {
 	None,
+	onTest,
 	onConsoleInput,
 	onConsoleOutput,
 	onSelectForm,
@@ -49,6 +50,7 @@ enum class EventCode {
 };
 
 inline const std::unordered_map<std::string, EventCode> events{
+	{ "onTest", EventCode::onTest },
 	{ "onConsoleInput", EventCode::onConsoleInput },
 	{ "onConsoleOutput", EventCode::onConsoleOutput },
 	{ "onSelectForm", EventCode::onSelectForm },

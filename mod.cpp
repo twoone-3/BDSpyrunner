@@ -357,7 +357,7 @@ THOOK(Player_construct, Player*, "??0Player@@QEAA@AEAVLevel@@AEAVPacketSender@@W
 	return ret;
 }
 // Player析构函数
-THOOK(Player_destruct, Player*, "??1Player@@UEAA@XZ", Player* _this) {
+/*THOOK(Player_destruct, Player*, "??1Player@@UEAA@XZ", Player* _this) {
 	for (std::vector<Player*>::iterator iter = global<std::vector<Player*>>->begin();
 		iter != global<std::vector<Player*>>->end(); iter++) {
 		if (*iter == _this) {
@@ -366,7 +366,7 @@ THOOK(Player_destruct, Player*, "??1Player@@UEAA@XZ", Player* _this) {
 		}
 	}
 	return original(_this);
-}
+}*/
 //改变设置命令的建立，用于注册命令
 THOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
 	uintptr_t _this) {
@@ -538,6 +538,7 @@ THOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEAAXH@Z",
 	uintptr_t _this, unsigned slot) {
 	EventCallBackHelper h(EventCode::onContainerChange);
+	//EventCallBackHelper h(EventCode::onTest);
 	Player* p = Dereference<Player*>(_this, 208);//IDA LevelContainerModel::_getContainer line 15 25 v3
 	BlockSource* bs = p->getRegion();
 	BlockPos* bp = reinterpret_cast<BlockPos*>(_this + 216);
@@ -545,6 +546,7 @@ THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UE
 	short bid = bl->getBlockItemID();
 	if (bid == 54 || bid == 130 || bid == 146 || bid == -203 || bid == 205 || bid == 218) {	//非箱子、桶、潜影盒的情况不作处理
 		uintptr_t v5 = (*reinterpret_cast<uintptr_t(**)(uintptr_t)>(Dereference<uintptr_t>(_this) + 160))(_this);
+		//cout << v5 << endl;
 		if (v5) {
 			ItemStack* item = (*reinterpret_cast<ItemStack * (**)(uintptr_t, uintptr_t)>(Dereference<uintptr_t>(v5) + 40))(v5, slot);
 			h
@@ -557,6 +559,7 @@ THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UE
 				.insert("blockid", bid)
 				.insert("position", bp)
 				.insert("slot", slot);
+				//cout << "slot:" << slot << endl;
 		}
 	}
 	original(_this, slot);
@@ -565,7 +568,7 @@ THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UE
 THOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
 	Player* p, Actor* a, struct ActorDamageCause* c) {
 	EventCallBackHelper h(EventCode::onPlayerAttack);
-	h
+	h	
 		.insert("player", p)
 		.insert("actor", a);
 	if (h.call())
@@ -751,7 +754,7 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 	return false;
 }
 //玩家移动
-THOOK(onMove, void*, "??0MovePlayerPacket@@QEAA@AEAVPlayer@@W4PositionMode@1@HH@Z",
+THOOK(onMove, void*, "??0MovePlayerPacket@@QEAA@AEBVPlayer@@W4PositionMode@1@HH@Z",
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
 	EventCallBackHelper h(EventCode::onMove);
 	h.setArg(ToEntity(p)).call();
@@ -775,6 +778,8 @@ THOOK(onSetArmor, void, "?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z",
 //计分板改变监听
 THOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboardId@@AEBVObjective@@@Z",
 	Scoreboard* _this, ScoreboardId* a1, Objective* a2) {
+	//cout << "ok" << endl;
+	// output ok but py plugin no output
 	//创建计分板时：/scoreboard objectives <add|remove> <objectivename> dummy <objectivedisplayname>
 	//修改计分板时（此函数hook此处)：/scoreboard players <add|remove|set> <playersname> <objectivename> <playersnum>
 	EventCallBackHelper h(EventCode::onScoreChanged);

@@ -49,7 +49,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='WillowSauceR-local|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>E:\DEV\1.18.2.03-Win-bdxc\bdxcore_mod\</OutDir>
+    <OutDir>..\1.18.11.01-ida\bdxcore_mod</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
