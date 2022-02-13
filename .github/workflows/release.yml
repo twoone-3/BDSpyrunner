@@ -1,12 +1,8 @@
-name: build
+name: Build and Release
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
   workflow_dispatch:
+    tags: v*
 
 jobs:
   build:
@@ -24,14 +20,9 @@ jobs:
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: msbuild /m /p:Configuration=Release ./
 
-      - name: Organize dll and pdb files
-        run: |
-          mkdir ./x64/dllpdb
-          cp ./x64/Release/BDSpyrunner.dll ./x64/dllpdb
-          cp ./x64/Release/BDSpyrunner.pdb ./x64/dllpdb
-
-      - name: Upload build files
-        uses: actions/upload-artifact@v2
+      - name: GH Release
+        uses: softprops/action-gh-release@v0.1.14
         with:
-          name: build
-          path: ./x64/dllpdb
+          files: |
+            ./x64/Release/BDSpyrunner.dll
+            ./x64/Release/BDSpyrunner.pdb

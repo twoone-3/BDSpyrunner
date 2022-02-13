@@ -348,7 +348,7 @@ THOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VComma
 	return global<Scoreboard> = original(_this, a1, a2);
 }
 // Player构造函数
-THOOK(Player_construct, Player*, "??0Player@@QEAA@AEAVLevel@@AEAVPacketSender@@W4GameType@@AEBVNetworkIdentifier@@EVUUID@mce@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$unique_ptr@VCertificate@@U?$default_delete@VCertificate@@@std@@@8@AEBV?$OwnerPtrT@UEntityRefTraits@@@@55@Z", void* _this, void* arg1, void* arg2, void* arg3, void* arg4, void* arg5, void* arg6, void* arg7, void* arg8, void* arg9, void* arg10, void* arg11) {
+THOOK(Player_construct, Player*, "??0Player@@QEAA@AEAVLevel@@AEAVPacketSender@@W4GameType@@AEBVNetworkIdentifier@@EVUUID@mce@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$unique_ptr@VCertificate@@U?$default_delete@VCertificate@@@std@@@8@AEAVEntityContext@@55@Z", void* _this, void* arg1, void* arg2, void* arg3, void* arg4, void* arg5, void* arg6, void* arg7, void* arg8, void* arg9, void* arg10, void* arg11) {
 	//会构造两次，取第一次值
 	if (global<std::vector<Player*>> == nullptr)
 		global<std::vector<Player*>> = new std::vector<Player*>;
@@ -357,7 +357,7 @@ THOOK(Player_construct, Player*, "??0Player@@QEAA@AEAVLevel@@AEAVPacketSender@@W
 	return ret;
 }
 // Player析构函数
-/*THOOK(Player_destruct, Player*, "??1Player@@UEAA@XZ", Player* _this) {
+THOOK(Player_destruct, Player*, "??1Player@@UEAA@XZ", Player* _this) {
 	for (std::vector<Player*>::iterator iter = global<std::vector<Player*>>->begin();
 		iter != global<std::vector<Player*>>->end(); iter++) {
 		if (*iter == _this) {
@@ -366,7 +366,7 @@ THOOK(Player_construct, Player*, "??0Player@@QEAA@AEAVLevel@@AEAVPacketSender@@W
 		}
 	}
 	return original(_this);
-}*/
+}
 //改变设置命令的建立，用于注册命令
 THOOK(ChangeSettingCommand_setup, void, "?setup@ChangeSettingCommand@@SAXAEAVCommandRegistry@@@Z",
 	uintptr_t _this) {
