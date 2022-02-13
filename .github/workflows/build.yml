@@ -1,0 +1,37 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+        with:
+          msbuild-architecture: x64
+
+      - name: Build Project
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: msbuild /m /p:Configuration=Release ./
+
+      - name: Organize dll and pdb files
+        run: |
+          mkdir ./x64/dllpdb
+          cp ./x64/Release/BDSpyrunner.dll ./x64/dllpdb
+          cp ./x64/Release/BDSpyrunner.pdb ./x64/dllpdb
+
+      - name: Upload build files
+        uses: actions/upload-artifact@v2
+        with:
+          name: build
+          path: ./x64/dllpdb
