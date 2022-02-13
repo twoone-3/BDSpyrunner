@@ -1,7 +1,7 @@
 name: Build and Release
 
 on:
-  workflow_dispatch:
+  push:
     tags: v*
 
 jobs:
@@ -26,3 +26,4 @@ jobs:
           files: |
             ./x64/Release/BDSpyrunner.dll
             ./x64/Release/BDSpyrunner.pdb
+            ./mc.py
