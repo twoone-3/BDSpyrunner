@@ -560,6 +560,7 @@ THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UE
 				.insert("position", bp)
 				.insert("slot", slot);
 				//cout << "slot:" << slot << endl;
+			h.call();
 		}
 	}
 	original(_this, slot);
