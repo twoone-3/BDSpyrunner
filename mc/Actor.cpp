@@ -254,7 +254,7 @@ Container* Player::getArmorContainer() {
 
 Container* Player::getEnderChestContainer() {
 	//IDA Player::addAdditionalSaveData EnderChestInventory
-	return Dereference<Container*>(this, 4200);
+	return Dereference<Container*>(this, 4184);
 }
 
 //设置一个装备
