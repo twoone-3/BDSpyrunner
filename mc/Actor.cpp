@@ -160,13 +160,16 @@ void Actor::setSize(float f1, float f2) {
 auto Actor::getAllEffects() {
 	//return SymCall<vector<MobEffectInstance>*>("?getAllEffects@Actor@@QEBAAEBV?$vector@VMobEffectInstance@@V?$allocator@VMobEffectInstance@@@std@@@std@@XZ", this);
 }
-
+class TeleportRotationData {
+public:
+	char filler[32];
+};
 //传送
-
 void Actor::teleport(Vec3* target, int did) {
 	char mem[128];
-	SymCall("?computeTarget@TeleportCommand@@SA?AVTeleportTarget@@AEAVActor@@VVec3@@PEAV4@V?$AutomaticID@VDimension@@H@@VRelativeFloat@@4H@Z",
-		&mem, this, target, 0, did, 0, 0, 15);
+	TeleportRotationData data;
+	SymCall("?computeTarget@TeleportCommand@@SA?AVTeleportTarget@@AEAVActor@@VVec3@@PEAV4@V?$AutomaticID@VDimension@@H@@AEBV?$optional@VTeleportRotationData@@@std@@H@Z",
+		&mem, this, target, 0, did, &data, 15);
 	SymCall("?applyTarget@TeleportCommand@@SAXAEAVActor@@VTeleportTarget@@@Z",
 		this, &mem);
 }
