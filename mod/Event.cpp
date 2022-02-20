@@ -1,48 +1,45 @@
-﻿#include "Event.h"
-#include "Common.h"
+﻿#include "Common.h"
+#include "Event.h"
 #include "Module.h"
-#include "magic_enum.hpp"
 
 using namespace std;
 //事件回调，初始化对象将申请GIL
 class Callbacker {
 public:
-	Callbacker(EventCode t) {
-		type_ = t;
-		arg_ = nullptr;
-	}
+	Callbacker(EventCode t) :type_(t), arg_() {}
 	~Callbacker() {
+		logger.debug("{}", arg_.ref_count());
 	}
 	//事件回调
 	bool callback() {
 		bool pass = true;
 		//如果没有则跳过
-		auto& cbs = g_callback_functions[type_];
-		for (auto cb : cbs) {
-			PyCaller pc;
-			pass = pc.call(cb, arg_) != Py_False;
+		for (auto cb : g_cb_functions[type_]) {
+			try {
+				pass = cb(arg_.inc_ref()) != py::bool_(false);
+			}
+			catch (const std::exception& e) {
+				logger.error(e.what());
+			}
 		}
 		return pass;
 	}
-	template<typename Arg>
-	Callbacker& insert(string_view key, Arg item) {
-		if (arg_ == nullptr)
-			arg_ = PyDict_New();
-		PyObject* obj = ToPyObject(item);
-		PyDict_SetItemString(arg_, key.data(), obj);
-		Py_DECREF(obj);
+
+	Callbacker& insert(const char* key, const py::object& item) {
+		arg_[key] = item;
 		return *this;
 	}
 
 private:
-	EventCode  type_;
-	PyObject* arg_;
-	PyGILGuard gil_;
+	EventCode type_;
+	py::dict arg_;
+	py::gil_scoped_acquire gil_;
+	//PyGILGuard gil_;
 };
 
-#define EVENT_BEGIN(evt) evt::subscribe([code](evt e){Callbacker h(code); h.insert("Event",magic_enum::enum_name(code))
-#define EVENT_INSERT(key) h.insert(#key, e.m##key)
-#define EVENT_INSERT2(key, value) h.insert(#key, value)
+#define EVENT_BEGIN(evt) evt::subscribe([code](evt e){Callbacker h(code); h.insert("Event", py::cast(magic_enum::enum_name(code)))
+#define EVENT_INSERT(key) h.insert(#key, py::cast(e.m##key))
+#define EVENT_INSERT2(key, value) h.insert(#key, py::cast(value))
 #define EVENT_END return h.callback();})
 
 void EnableEventListener(EventCode code) {
@@ -163,8 +160,8 @@ void EnableEventListener(EventCode code) {
 		EVENT_INSERT(Player);
 		EVENT_END;
 		break;
-	case EventCode::onTakeItem:
-		EVENT_BEGIN(PlayerTakeItemEvent);
+	case EventCode::onPickupItem:
+		EVENT_BEGIN(PlayerPickupItemEvent);
 		EVENT_INSERT(ItemEntity);
 		EVENT_INSERT(ItemStack);
 		EVENT_INSERT(Player);

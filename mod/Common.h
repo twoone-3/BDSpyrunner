@@ -3,13 +3,13 @@
 /*LL*/
 #include <Global.h>
 #include <LoggerAPI.h>
+#include <third-party/magic_enum/magic_enum.hpp>
+#include <third-party/Nlohmann/fifo_json.hpp>
 /*MC*/
 #include <MC/Actor.hpp>
 #include <MC/ActorDamageSource.hpp>
-#include <MC/BinaryStream.hpp>
 #include <MC/Block.hpp>
 #include <MC/BlockActor.hpp>
-#include <MC/BlockInstance.hpp>
 #include <MC/BlockLegacy.hpp>
 #include <MC/BlockPalette.hpp>
 #include <MC/BlockSource.hpp>
@@ -17,6 +17,7 @@
 #include <MC/CommandRegistry.hpp>
 #include <MC/Common.hpp>
 #include <MC/Container.hpp>
+#include <MC/ItemInstance.hpp>
 #include <MC/ItemStack.hpp>
 #include <MC/Level.hpp>
 #include <MC/MobEffect.hpp>
@@ -45,6 +46,11 @@
 #include <MC/StringTag.hpp>
 #include <MC/Tag.hpp>
 
+constexpr unsigned PYR_VERSION_MAJOR = 1;
+constexpr unsigned PYR_VERSION_MINOR = 9;
+constexpr unsigned PYR_VERSION_MICRO = 9;
+constexpr const char* PYR_VERSION = "v1.9.9";
+
 inline bool IsPlayer(Actor* ptr) {
 	if (ptr == nullptr)
 		return false;
@@ -54,3 +60,7 @@ inline bool IsPlayer(Actor* ptr) {
 }
 
 inline Logger logger("BDSpyrunner");
+
+using json_t = nlohmann::detail::value_t;
+
+fifo_json StrToJson(std::string_view str);

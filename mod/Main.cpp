@@ -1,7 +1,5 @@
-﻿#include "Main.h"
-#include "Common.h"
+﻿#include "Common.h"
 #include "Module.h"
-#include "Version.h"
 
 #define PLUGIN_PATH "plugins\\py\\"
 
@@ -18,18 +16,6 @@ fifo_json StrToJson(std::string_view str) {
 		logger.error("Parsing JSON failed! {}", e.what());
 		return nullptr;
 	}
-}
-
-//初始化Python类
-void PyClassInit() {
-	if (PyType_Ready(&PyEntity_Type) < 0)
-		Py_FatalError("Can't initialize value type");
-	if (PyType_Ready(&PyItemStack_Type) < 0)
-		Py_FatalError("Can't initialize value type");
-	if (PyType_Ready(&PyBlockInstance_Type) < 0)
-		Py_FatalError("Can't initialize value type");
-	if (PyType_Ready(&PyNBT_Type) < 0)
-		Py_FatalError("Can't initialize value type");
 }
 
 //将Python解释器初始化插入bds主函数
@@ -50,31 +36,33 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	Py_PreInitialize(&cfg);
 #endif
 	//增加一个模块
-	PyImport_AppendInittab("mc", McInit);
+	//PyImport_AppendInittab("mc", McInit);
 	//初始化解释器
-	Py_Initialize();
+	py::initialize_interpreter();
 	//输出版本号信息
 	logger.info("{} loaded.", PYR_VERSION);
 	//初始化类型
-	PyClassInit();
+	//PyClassInit();
 	//启用线程支持
 	PyEval_InitThreads();
-	for (auto& info : fs::directory_iterator(PLUGIN_PATH)) {
-		if (info.path().extension() == ".py") {
-			string name(info.path().stem().u8string());
-			//忽略以'_'开头的文件
-			if (name.front() == '_') {
-				logger.info("Ignoring {}", name);
-				continue;
-			}
-			else {
-				logger.info("Loading {}", name);
-				auto m = PyImport_ImportModule(name.c_str());
-				if (m == nullptr)
-					Py_PrintErrors();
-				Py_XDECREF(m);
+	try {
+		for (auto& info : fs::directory_iterator(PLUGIN_PATH)) {
+			if (info.path().extension() == ".py") {
+				string name(info.path().stem().u8string());
+				//忽略以'_'开头的文件
+				if (name.front() == '_') {
+					logger.info("Ignoring {}", name);
+					continue;
+				}
+				else {
+					logger.info("Loading {}", name);
+					auto m = py::module_::import(name.c_str());
+				}
 			}
 		}
+	}
+	catch (const std::exception& e) {
+		logger.error(e.what());
 	}
 	//启动子线程前执行，释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
 	PyEval_ReleaseThread(PyThreadState_Get());
@@ -94,8 +82,7 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 		[] (Event::PlayerCmdEvent e) {
 			for (auto& [cmd, data] : g_commands) {
 				if (e.mCommand._Starts_with(cmd)) {
-					PyCaller pc;
-					pc.call(data.second, e.mPlayer, e.mCommand);
+					data.second(e.mPlayer, e.mCommand);
 					return false;
 				}
 			}

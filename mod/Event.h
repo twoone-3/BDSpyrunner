@@ -22,7 +22,7 @@ enum class EventCode {
 	onRide,
 	onStepOnPressurePlate,
 	onUseItem,
-	onTakeItem,
+	onPickupItem,
 	onDropItem,
 	onUseItemOn,
 	onInventoryChange,

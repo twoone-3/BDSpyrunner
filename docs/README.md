@@ -14,7 +14,6 @@
 - 下载 [BDSpyrunner](https://github.com/twoone-3/BDSpyrunner/releases/latest)
 - 下载 [Python 3.7.9](https://www.python.org/ftp/python/3.7.9/python-3.7.9-amd64.exe) ，安装时勾选**Add Python to Path**
 - 将 **BDSpyrunner.dll** 放入 **plugins** 文件夹
-- 找到Python的安装目录，将Dlls和Lib文件夹复制到 **plugins/py** 文件夹
 
 ## 💻构建
 - 在命令行键入以下内容

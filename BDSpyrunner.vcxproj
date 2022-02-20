@@ -51,6 +51,8 @@
       <DisableSpecificWarnings>4996;4471;4499;4244</DisableSpecificWarnings>
       <UseFullPaths>false</UseFullPaths>
       <ErrorReporting>Send</ErrorReporting>
+      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeaderFile>Common.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -68,22 +70,13 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="mod\Main.cpp" />
-    <ClCompile Include="mod\Module.cpp" />
-    <ClCompile Include="mod\PyEntity.cpp" />
     <ClCompile Include="mod\Event.cpp" />
-    <ClCompile Include="mod\PyItemStack.cpp" />
-    <ClCompile Include="mod\PyBlockInstance.cpp" />
     <ClCompile Include="mod\PyUtils.cpp" />
-    <ClCompile Include="mod\PyNBT.cpp" />
-    <ClCompile Include="mod\PyContainer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mod\magic_enum.hpp" />
     <ClInclude Include="mod\Module.h" />
     <ClInclude Include="mod\Event.h" />
-    <ClInclude Include="mod\Main.h" />
     <ClInclude Include="mod\PyUtils.h" />
-    <ClInclude Include="mod\Version.h" />
     <ClInclude Include="mod\Common.h" />
   </ItemGroup>
   <ItemGroup>
