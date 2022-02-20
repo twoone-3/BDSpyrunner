@@ -1,5 +1,4 @@
 ﻿#include "Common.h"
-#include "Module.h"
 
 #define PLUGIN_PATH "plugins\\py\\"
 
@@ -7,6 +6,13 @@ using namespace std;
 
 namespace fs = filesystem;
 
+bool IsPlayer(Actor* ptr) {
+	if (ptr == nullptr)
+		return false;
+	if (ptr->getEntityTypeId() != 319)
+		return false;
+	return true;
+}
 //字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库
 fifo_json StrToJson(std::string_view str) {
 	try {
@@ -17,7 +23,6 @@ fifo_json StrToJson(std::string_view str) {
 		return nullptr;
 	}
 }
-
 //将Python解释器初始化插入bds主函数
 THook(int, "main", int argc, char* argv[], char* envp[]) {
 	//如果目录不存在创建目录
@@ -69,25 +74,25 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	//注册命令监听
 	Event::RegCmdEvent::subscribe(
 		[] (Event::RegCmdEvent e) {
-			for (auto& [cmd, des] : g_commands) {
-				e.mCommandRegistry->registerCommand(cmd, des.first.c_str(),
-					CommandPermissionLevel::Any, {CommandFlagValue::None},
-					{static_cast<CommandFlagValue>(0x80)});
-			}
-			return true;
+		for (auto& [cmd, des] : g_commands) {
+			e.mCommandRegistry->registerCommand(cmd, des.first.c_str(),
+				CommandPermissionLevel::Any, {CommandFlagValue::None},
+				{static_cast<CommandFlagValue>(0x80)});
 		}
+		return true;
+	}
 	);
 	//命令监听
 	Event::PlayerCmdEvent::subscribe(
 		[] (Event::PlayerCmdEvent e) {
-			for (auto& [cmd, data] : g_commands) {
-				if (e.mCommand._Starts_with(cmd)) {
-					data.second(e.mPlayer, e.mCommand);
-					return false;
-				}
+		for (auto& [cmd, data] : g_commands) {
+			if (e.mCommand._Starts_with(cmd)) {
+				data.second(e.mPlayer, e.mCommand);
+				return false;
 			}
-			return true;
 		}
+		return true;
+	}
 	);
 	return original(argc, argv, envp);
 }
@@ -117,6 +122,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
 	}
 	return TRUE;//Successful DLL_PROCESS_ATTACH.
 }
+
 #if 0
 //GBK转UTF8
 static string GbkToUtf8(const char* src_str) {
@@ -231,3 +237,13 @@ static void CheckPluginVersion() {
 	exit(0);
 }
 #endif 
+#if 0
+class PyGILGuard {
+public:
+	PyGILGuard() { gil_ = PyGILState_Ensure(); }
+	~PyGILGuard() { PyGILState_Release(gil_); }
+
+private:
+	PyGILState_STATE gil_;
+};
+#endif

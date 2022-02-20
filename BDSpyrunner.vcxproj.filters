@@ -24,20 +24,11 @@
     <ClCompile Include="mod\Event.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mod\PyUtils.cpp">
+    <ClCompile Include="mod\PyAPI.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mod\Event.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mod\Module.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mod\PyUtils.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="mod\Common.h">
       <Filter>头文件</Filter>
     </ClInclude>

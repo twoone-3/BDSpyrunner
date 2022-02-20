@@ -1,6 +1,4 @@
-﻿#include "PyUtils.h"
-#include "Common.h"
-#include "Module.h"
+﻿#include "Common.h"
 
 using namespace std;
 #pragma region Mess
@@ -10,36 +8,20 @@ Player* P(Actor* a) {
 		throw std::runtime_error("The ptr is not Player*");
 	return static_cast<Player*>(a);
 }
-//Vec3转list
-py::list ToList(const Vec3& pos) {
-	py::list l;
-	l.append(pos.x);
-	l.append(pos.y);
-	l.append(pos.z);
-	return l;
-}
-//方块坐标转list
-py::list ToList(const BlockPos& pos) {
-	py::list l;
-	l.append(pos.x);
-	l.append(pos.y);
-	l.append(pos.z);
-	return l;
-}
+//struct PyNBT;
+//struct PyContainer;
+//struct PyItem;
+//struct PyEntity;
+//struct PyBlock;
+//struct PyLogger;
 #pragma endregion
 #pragma region NBT
 struct PyNBT {
 	unique_ptr<Tag> thiz;
 
-	PyNBT(unique_ptr<CompoundTag>&& other) {
-		thiz = move(other);
-	}
-	PyNBT(unique_ptr<Tag>&& other) {
-		thiz = move(other);
-	}
-	PyNBT(PyNBT&& other) {
-		thiz = move(other.thiz);
-	}
+	PyNBT(unique_ptr<CompoundTag>&& other) { thiz = move(other); }
+	PyNBT(unique_ptr<Tag>&& other) { thiz = move(other); }
+	PyNBT(PyNBT&& other) { thiz = move(other.thiz); }
 	//有三种模式
 	// 1. a1数据类型 a2数据
 	//    NBT('Int',3) NBT('Compound')
@@ -107,30 +89,19 @@ struct PyNBT {
 		}
 	}
 
-	PyNBT __getitem__(const string& key) {
-		return thiz->asCompoundTag()->operator[](key)->copy();
-	}
-	void __setitem__(const string& key, const PyNBT& val) {
-		thiz->asCompoundTag()->put(key, val.thiz->copy());
-	}
+	PyNBT __getitem__(int key) { return thiz->asListTag()->operator[](key)->copy(); }
+	PyNBT __getitem__(const string& key) { return thiz->asCompoundTag()->operator[](key)->copy(); }
+	void __setitem__(const string& key, const PyNBT& val) { thiz->asCompoundTag()->put(key, val.thiz->copy()); }
 	auto asByte() { return thiz->asByteTag()->value(); }
 	auto asShort() { return thiz->asShortTag()->value(); }
 	auto asInt() { return thiz->asIntTag()->value(); }
 	auto asInt64() { return thiz->asInt64Tag()->value(); }
 	auto asFloat() { return thiz->asFloatTag()->value(); }
 	auto asDouble() { return thiz->asDoubleTag()->value(); }
-	string_view getType() {
-		return magic_enum::enum_name(thiz->getTagType());
-	}
-	py::bytes toBinary() {
-		return thiz->asCompoundTag()->toBinaryNBT();
-	}
-	string toJson(int indentatiton = 4) {
-		return thiz->toJson(indentatiton);
-	}
-	string toSNBT() {
-		return thiz->asCompoundTag()->toSNBT();
-	}
+	string_view getType() { return magic_enum::enum_name(thiz->getTagType()); }
+	py::bytes toBinary() { return thiz->asCompoundTag()->toBinaryNBT(); }
+	string toJson(int indentatiton = 4) { return thiz->toJson(indentatiton); }
+	string toSNBT() { return thiz->asCompoundTag()->toSNBT(); }
 	void append(const PyNBT& value) {
 		if (thiz->getTagType() != Tag::List)
 			throw py::type_error("Type of tag must be list");
@@ -143,9 +114,27 @@ struct PyNBT {
 struct PyItem {
 	ItemStack thiz;
 
+	PyItem(const ItemStack& other) :thiz(other) {}
 	PyItem(const PyNBT& nbt) :thiz(ItemStack::fromTag(*nbt.thiz->asCompoundTag())) {}
 	string getName() { return thiz.getName(); }
 	PyNBT getNBT() { return PyNBT(thiz.getNbt()); }
+};
+#pragma endregion
+#pragma region Container
+struct PyContainer {
+	Container* thiz;
+
+	PyContainer(const string& type_str, const py::object& value) {}
+
+	PyItem __getitem__(int slot) { return *thiz->getSlot(slot); }
+	void __setitem__(int slot, const PyItem& val) { *thiz->getSlot(slot) = val.thiz; }
+	vector<PyItem> getAllSlots() {
+		vector<PyItem> slots;
+		for (auto& i : thiz->getAllSlots()) {
+			slots.push_back(*i);
+		}
+		return slots;
+	}
 };
 #pragma endregion
 #pragma region Entity
@@ -164,7 +153,7 @@ struct PyEntity {
 	//获取XUID
 	string getXuid() { return P(thiz)->getXuid(); }
 	//获取坐标
-	py::list getPos() { return ToList(thiz->getPos()); }
+	BlockPos getPos() { return thiz->getPos(); }
 	//获取维度ID
 	int getDimensionId() { return thiz->getDimensionId(); }
 	//是否着地
@@ -178,13 +167,15 @@ struct PyEntity {
 	//获取类型字符串
 	string getTypeName() { return thiz->getTypeName(); }
 	//获取nbt数据
-	PyNBT getNBT() { return PyNBT(CompoundTag::fromActor(thiz)); }
+	PyNBT getNBT() { return CompoundTag::fromActor(thiz); }
 	//设置nbt数据
 	bool setNBT(PyNBT& nbt) { return thiz->setNbt(nbt.thiz->asCompoundTag()); }
 	//获取生命值
 	int getHealth() { return thiz->getHealth(); }
 	//获取最大生命值
 	int getMaxHealth() { return thiz->getMaxHealth(); }
+	//获取游戏模式
+	int getGameMode() { return P(thiz)->getPlayerGameType(); }
 	//获取权限
 	int getPermissions() { return static_cast<int>(P(thiz)->getPlayerPermissionLevel()); }
 	//设置权限
@@ -195,6 +186,8 @@ struct PyEntity {
 	int getPlatform() { return P(thiz)->getPlatform(); }
 	//获取IP
 	string getIP() { return Global<RakNet::RakPeer>->getAdr(*P(thiz)->getNetworkIdentifier()).ToString(false, ':'); }
+	//获取背包
+	PyContainer getInventory() { P(thiz)->getInventory(); }
 	//设置玩家手上物品
 	void setHand(const PyItem& item) {
 		const_cast<ItemStack&>(P(thiz)->getSelectedItem()) = item.thiz;
@@ -299,8 +292,6 @@ struct PyEntity {
 	}
 	//杀死实体
 	void kill() { thiz->kill(); }
-	//获取游戏模式
-	int getGameMode() { return P(thiz)->getPlayerGameType(); }
 };
 #pragma endregion
 #pragma region Block
@@ -308,18 +299,11 @@ struct PyBlock {
 	BlockInstance thiz;
 
 	PyBlock(const BlockInstance& bi) :thiz(bi) {}
-	string getName() {
-		return thiz.getBlock()->getName().getString();
-	}
-	PyNBT getNBT() {
-		return PyNBT(CompoundTag::fromBlock(thiz.getBlock()));
-	}
-	py::list getPos() {
-		return ToList(thiz.getPosition());
-	}
-	int getDimensionId() {
-		return thiz.getDimensionId();
-	}
+	PyBlock(const BlockPos& pos, int dim) :thiz(Level::getBlockInstance(pos, dim)) {}
+	string getName() { return thiz.getBlock()->getName().getString(); }
+	PyNBT getNBT() { return CompoundTag::fromBlock(thiz.getBlock()); }
+	BlockPos getPos() { return thiz.getPosition(); }
+	int getDimensionId() { return thiz.getDimensionId(); }
 };
 #pragma endregion
 #pragma region Logger
@@ -333,24 +317,7 @@ struct PyLogger {
 	void error(const string& msg) { thiz.error(msg); }
 };
 #pragma endregion
-#pragma region functions
-//是否为史莱姆区块
-constexpr int IsSlimeChunk(unsigned x, unsigned z) {
-	unsigned mt0 = (x * 0x1F1F1F1F) ^ z;
-	unsigned mt1 = (1812433253u * (mt0 ^ (mt0 >> 30u)) + 1);
-	unsigned mt2 = mt1;
-	for (unsigned i = 2; i < 398; ++i)
-		mt2 = (1812433253u * (mt2 ^ (mt2 >> 30u)) + i);
-	unsigned k = (mt0 & 0x80000000u) + (mt1 & 0x7FFFFFFFU);
-	mt0 = mt2 ^ (k >> 1u);
-	if (k & 1)
-		mt0 ^= 2567483615u;
-	mt0 ^= (mt0 >> 11u);
-	mt0 ^= (mt0 << 7u) & 0x9D2C5680u;
-	mt0 ^= (mt0 << 15u) & 0xEFC60000u;
-	mt0 ^= (mt0 >> 18u);
-	return !(mt0 % 10);
-}
+#pragma region Functions
 //设置监听
 void setListener(const string& event_name, const py::function& cb) {
 	auto event_code = magic_enum::enum_cast<EventCode>(event_name);
@@ -485,14 +452,31 @@ void setSignBlockMessage(const string& name, BlockPos bp, int dim) {
 	sign->setMessage(name, name);
 	sign->setChanged();
 }
-
+//是否为史莱姆区块
+constexpr int IsSlimeChunk(unsigned x, unsigned z) {
+	unsigned mt0 = (x * 0x1F1F1F1F) ^ z;
+	unsigned mt1 = (1812433253u * (mt0 ^ (mt0 >> 30u)) + 1);
+	unsigned mt2 = mt1;
+	for (unsigned i = 2; i < 398; ++i)
+		mt2 = (1812433253u * (mt2 ^ (mt2 >> 30u)) + i);
+	unsigned k = (mt0 & 0x80000000u) + (mt1 & 0x7FFFFFFFU);
+	mt0 = mt2 ^ (k >> 1u);
+	if (k & 1)
+		mt0 ^= 2567483615u;
+	mt0 ^= (mt0 >> 11u);
+	mt0 ^= (mt0 << 7u) & 0x9D2C5680u;
+	mt0 ^= (mt0 << 15u) & 0xEFC60000u;
+	mt0 ^= (mt0 >> 18u);
+	return !(mt0 % 10);
+}
 #pragma endregion
-
 PYBIND11_EMBEDDED_MODULE(mc, m) {
 	using py::literals::operator""_a;
+#pragma region NBT
 	py::class_<PyNBT>(m, "NBT")
 		.def(py::init<string, py::object>(), "type"_a, "value"_a = nullptr)
-		.def("__getitem__", &PyNBT::__getitem__)
+		.def("__getitem__", py::overload_cast<int>(&PyNBT::__getitem__))
+		.def("__getitem__", py::overload_cast<const string&>(&PyNBT::__getitem__))
 		.def("__setitem__", &PyNBT::__setitem__)
 		.def("asByte", &PyNBT::asByte)
 		.def("asShort", &PyNBT::asShort)
@@ -506,6 +490,22 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("toSNBT", &PyNBT::toSNBT)
 		.def("append", &PyNBT::append)
 		;
+#pragma endregion
+#pragma region Item
+	py::class_<PyItem>(m, "Item")
+		.def(py::init<PyNBT>(), "nbt"_a)
+		.def("getName", &PyItem::getName)
+		.def("getNBT", &PyItem::getNBT)
+		;
+#pragma endregion
+#pragma region Container
+	py::class_<PyContainer>(m, "Container")
+		.def("__getitem__", &PyContainer::__getitem__)
+		.def("__setitem__", &PyContainer::__setitem__)
+		.def("getAllSlots", &PyContainer::getAllSlots)
+		;
+#pragma endregion
+#pragma region Entity
 	py::class_<PyEntity>(m, "Entity")
 		.def("getName", &PyEntity::getName)
 		.def("setName", &PyEntity::setName)
@@ -522,6 +522,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("setNBT", &PyEntity::setNBT)
 		.def("getHealth", &PyEntity::getHealth)
 		.def("getMaxHealth", &PyEntity::getMaxHealth)
+		.def("getGameMode", &PyEntity::getGameMode)
 		.def("getPermissions", &PyEntity::getPermissions)
 		.def("setPermissions", &PyEntity::setPermissions)
 		.def("getPlatformOnlineId", &PyEntity::getPlatformOnlineId)
@@ -552,8 +553,18 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("removeTag", &PyEntity::removeTag)
 		.def("getTags", &PyEntity::getTags)
 		.def("kill", &PyEntity::kill)
-		.def("getGameMode", &PyEntity::getGameMode)
 		;
+#pragma endregion
+#pragma region Block
+	py::class_<PyBlock>(m, "Block")
+		.def(py::init<BlockPos, int>())
+		.def("getName", &PyBlock::getName)
+		.def("getDimensionId", &PyBlock::getDimensionId)
+		.def("getNBT", &PyBlock::getNBT)
+		.def("getPos", &PyBlock::getPos)
+		;
+#pragma endregion
+#pragma region Logger
 	py::class_<PyLogger>(m, "Logger")
 		.def(py::init<string>())
 		.def("info", &PyLogger::info)
@@ -561,18 +572,8 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("fatal", &PyLogger::fatal)
 		.def("error", &PyLogger::error)
 		;
-	py::class_<Vec3>(m, "Vec3")
-		.def(py::init<float, float, float>())
-		.def_property("x", [] (const Vec3& pos) {return pos.x; }, [] (Vec3& pos, float val) {pos.x = val; })
-		.def_property("y", [] (const Vec3& pos) {return pos.y; }, [] (Vec3& pos, float val) {pos.y = val; })
-		.def_property("z", [] (const Vec3& pos) {return pos.z; }, [] (Vec3& pos, float val) {pos.z = val; })
-		;
-	py::class_<BlockPos>(m, "BlockPos")
-		.def(py::init<int, int, int>())
-		.def_property("x", [] (const BlockPos& pos) {return pos.x; }, [] (BlockPos& pos, int val) {pos.x = val; })
-		.def_property("y", [] (const BlockPos& pos) {return pos.y; }, [] (BlockPos& pos, int val) {pos.y = val; })
-		.def_property("z", [] (const BlockPos& pos) {return pos.z; }, [] (BlockPos& pos, int val) {pos.z = val; })
-		;
+#pragma endregion
+#pragma region Functions
 	m
 		.def("getBDSVersion", &Common::getServerVersionString)
 		.def("runCommand", &Level::runcmd)
@@ -592,7 +593,26 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("setStructure", &setStructure)
 		.def("explode", &explode)
 		.def("spawnItem", &spawnItem)
-		.def("isSlimeChunk", &IsSlimeChunk)
 		.def("setSignBlockMessage", &setSignBlockMessage)
+		.def("isSlimeChunk", &IsSlimeChunk)
 		;
+#pragma endregion
+#pragma region Vec3
+	py::class_<Vec3>(m, "Vec3")
+		.def(py::init<float, float, float>())
+		.def_property("x", [] (const Vec3& pos) {return pos.x; }, [] (Vec3& pos, float val) {pos.x = val; })
+		.def_property("y", [] (const Vec3& pos) {return pos.y; }, [] (Vec3& pos, float val) {pos.y = val; })
+		.def_property("z", [] (const Vec3& pos) {return pos.z; }, [] (Vec3& pos, float val) {pos.z = val; })
+		.def("toString", &Vec3::toString)
+		;
+#pragma endregion
+#pragma region BockPos
+	py::class_<BlockPos>(m, "BlockPos")
+		.def(py::init<int, int, int>())
+		.def_property("x", [] (const BlockPos& pos) {return pos.x; }, [] (BlockPos& pos, int val) {pos.x = val; })
+		.def_property("y", [] (const BlockPos& pos) {return pos.y; }, [] (BlockPos& pos, int val) {pos.y = val; })
+		.def_property("z", [] (const BlockPos& pos) {return pos.z; }, [] (BlockPos& pos, int val) {pos.z = val; })
+		.def("toString", &BlockPos::toString)
+		;
+#pragma endregion
 }

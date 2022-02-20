@@ -1,11 +1,15 @@
 ﻿#pragma once
 #pragma execution_character_set("utf-8")
-/*LL*/
+#pragma region LL
 #include <Global.h>
 #include <LoggerAPI.h>
+#include <EventAPI.h>
+#pragma endregion
+#pragma region third-party
 #include <third-party/magic_enum/magic_enum.hpp>
 #include <third-party/Nlohmann/fifo_json.hpp>
-/*MC*/
+#pragma endregion
+#pragma region MC
 #include <MC/Actor.hpp>
 #include <MC/ActorDamageSource.hpp>
 #include <MC/Block.hpp>
@@ -31,7 +35,8 @@
 #include <MC/Spawner.hpp>
 #include <MC/StructureSettings.hpp>
 #include <MC/StructureTemplate.hpp>
-/*NBT*/
+#pragma endregion
+#pragma region NBT
 #include <MC/ByteArrayTag.hpp>
 #include <MC/ByteTag.hpp>
 #include <MC/CompoundTag.hpp>
@@ -45,22 +50,94 @@
 #include <MC/ShortTag.hpp>
 #include <MC/StringTag.hpp>
 #include <MC/Tag.hpp>
+#pragma endregion
+#pragma region Python
+#include <pybind11/embed.h>
+#pragma endregion
 
-constexpr unsigned PYR_VERSION_MAJOR = 1;
-constexpr unsigned PYR_VERSION_MINOR = 9;
-constexpr unsigned PYR_VERSION_MICRO = 9;
-constexpr const char* PYR_VERSION = "v1.9.9";
-
-inline bool IsPlayer(Actor* ptr) {
-	if (ptr == nullptr)
-		return false;
-	if (ptr->getEntityTypeId() != 319)
-		return false;
-	return true;
-}
-
-inline Logger logger("BDSpyrunner");
-
+namespace py = pybind11;
 using json_t = nlohmann::detail::value_t;
 
+#pragma region Version
+constexpr unsigned PYR_VERSION_MAJOR = 1;
+constexpr unsigned PYR_VERSION_MINOR = 9;
+constexpr unsigned PYR_VERSION_MICRO = 10;
+constexpr const char* PYR_VERSION = "v1.9.10";
+#pragma endregion
+//全局Logger
+inline Logger logger("BDSpyrunner");
+//判断指针是否为player
+bool IsPlayer(Actor* ptr);
+//字符串转JSON
 fifo_json StrToJson(std::string_view str);
+//事件代码
+enum class EventCode {
+	onPreJoin,
+	onJoin,
+	onLeft,
+	onPlayerCmd,
+	onChat,
+	onPlayerDie,
+	onRespawn,
+	onChangeDim,
+	onJump,
+	onSneak,
+	onAttack,
+	onEat,
+	onMove,
+	onChangeSprinting,
+	onSpawnProjectile,
+	onFireworkShootWithCrossbow,
+	onSetArmor,
+	onRide,
+	onStepOnPressurePlate,
+	onUseItem,
+	onPickupItem,
+	onDropItem,
+	onUseItemOn,
+	onInventoryChange,
+	onChangeArmorStand,
+	onStartDestroyBlock,
+	onDestroyBlock,
+	onWitherBossDestroy,
+	onPlaceBlock,
+	onLiquidFlow,
+	onOpenContainer,
+	onCloseContainer,
+	onContainerChange,
+	onOpenContainerScreen,
+	onExplode,
+	onBlockExploded,
+	onBedExplode,
+	onRespawnAnchorExplode,
+	onEntityExplode,
+	onBlockExplode,
+	onMobDie,
+	onMobHurt,
+	onCmdBlockExecute,
+	onRedStoneUpdate,
+	onProjectileHitEntity,
+	onProjectileHitBlock,
+	onBlockInteracted,
+	onUseRespawnAnchor,
+	onFarmLandDecay,
+	onUseFrameBlock,
+	onPistonPush,
+	onHopperSearchItem,
+	onHopperPushOut,
+	onFireSpread,
+	onBlockChanged,
+	onNpcCmd,
+	onScoreChanged,
+	onServerStarted,
+	onConsoleCmd,
+	onConsoleOutput,
+	onConsumeTotem,
+	onEffectChanged,
+};
+//启用监听器
+void EnableEventListener(EventCode e);
+//Py函数表
+inline std::unordered_map<EventCode, std::vector<py::function>> g_cb_functions;
+//注册命令
+inline std::unordered_map<std::string, std::pair<std::string, py::function>> g_commands;

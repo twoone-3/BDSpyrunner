@@ -1,6 +1,4 @@
 ﻿#include "Common.h"
-#include "Event.h"
-#include "Module.h"
 
 using namespace std;
 //事件回调，初始化对象将申请GIL
@@ -13,10 +11,10 @@ public:
 	//事件回调
 	bool callback() {
 		bool pass = true;
-		//如果没有则跳过
+		arg_.inc_ref();//TODO: 为什么加1
 		for (auto cb : g_cb_functions[type_]) {
 			try {
-				pass = cb(arg_.inc_ref()) != py::bool_(false);
+				pass = cb(arg_) != py::bool_(false);
 			}
 			catch (const std::exception& e) {
 				logger.error(e.what());

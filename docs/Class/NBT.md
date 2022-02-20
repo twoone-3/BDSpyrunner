@@ -2,7 +2,7 @@
 
 # NBT
 Named Binary Tag
-## __init__(type, value)
+## \_\_init\_\_(type, value)
   1. type: 数据类型  
      value: 数据  
      例: NBT('Int',3) NBT('Compound')
