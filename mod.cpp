@@ -757,8 +757,13 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 //玩家移动
 THOOK(onMove, void*, "??0MovePlayerPacket@@QEAA@AEBVPlayer@@W4PositionMode@1@HH@Z",
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
-	EventCallBackHelper h(EventCode::onMove);
-	h.setArg(ToEntity(p)).call();
+	Vec3* lastPos = p->getPosOld();
+	Vec3* pos = p->getPos();
+	if (lastPos->x != pos->x || lastPos->y != pos->y || lastPos->z != pos->z) {
+		EventCallBackHelper h(EventCode::onMove);
+		h.setArg(ToEntity(p)).call();
+		return original(_this, p, a3, a4, a5);
+	}
 	return original(_this, p, a3, a4, a5);
 }
 //玩家穿戴
