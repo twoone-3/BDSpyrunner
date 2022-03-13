@@ -1,12 +1,5 @@
 ﻿- [🔎简介](README)
-- ⚙️模块
-  - [mc](Module/mc)
-- 🗄️类
-  - [Entity](Class/Entity)
-  - [BlockInstance](Class/BlockInstance)
-  - [ItemStack](Class/ItemStack)
-  - [Container](Class/Container)
-  - [NBT](Class/NBT)
+- [⚙API](API)
 - [📦事件](Event)
 - [💻插件开发](Dev)
 - [📝FAQ](FAQ)

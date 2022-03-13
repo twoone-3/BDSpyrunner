@@ -2,10 +2,12 @@
 #pragma execution_character_set("utf-8")
 #pragma region LL
 #include <Global.h>
+#include <FormUI.h>
 #include <LoggerAPI.h>
 #include <EventAPI.h>
+#include <ServerAPI.h>
 #pragma endregion
-#pragma region third-party
+#pragma region third_party
 #include <third-party/magic_enum/magic_enum.hpp>
 #include <third-party/Nlohmann/fifo_json.hpp>
 #pragma endregion
@@ -53,7 +55,12 @@
 #pragma endregion
 #pragma region Python
 #include <pybind11/embed.h>
+#include <pybind11/stl.h>
 #pragma endregion
+
+#define PY_TRY try {
+#define PY_CATCH } catch (const std::exception& e) {PrintError(e);}
+#define PLUGIN_PATH "plugins\\py\\"
 
 namespace py = pybind11;
 using json_t = nlohmann::detail::value_t;
@@ -66,6 +73,8 @@ constexpr const char* PYR_VERSION = "v1.9.10";
 #pragma endregion
 //全局Logger
 inline Logger logger("BDSpyrunner");
+//输出错误信息
+void PrintError(const std::exception&);
 //判断指针是否为player
 bool IsPlayer(Actor* ptr);
 //字符串转JSON

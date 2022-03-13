@@ -69,8 +69,6 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="mod\Main.cpp" />
-    <ClCompile Include="mod\Event.cpp" />
     <ClCompile Include="mod\PyAPI.cpp" />
   </ItemGroup>
   <ItemGroup>
