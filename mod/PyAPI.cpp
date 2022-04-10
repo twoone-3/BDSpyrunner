@@ -119,7 +119,7 @@ struct PyItem {
 	//PyItem(const ItemStack& other) :thiz(new ItemStack(other)) {}
 	PyItem(const PyNBT& nbt) :thiz(new ItemStack(ItemStack::fromTag(*nbt.thiz->asCompoundTag()))) {}
 	string getName() { return thiz->getName(); }
-	PyNBT getNBT() { return PyNBT(thiz->getNbt()); }
+	PyNBT* getNBT() { return new PyNBT(thiz->getNbt()); }
 };
 #pragma endregion
 #pragma region Container
@@ -190,6 +190,10 @@ struct PyEntity {
 	string getIP() { return Global<RakNet::RakPeer>->getAdr(*P(thiz)->getNetworkIdentifier()).ToString(false, ':'); }
 	//获取背包
 	PyContainer getInventory() { P(thiz)->getInventory(); }
+	//获取玩家手上物品
+	PyItem getHand() {
+		return P(thiz)->getHandSlot();
+	}
 	//设置玩家手上物品
 	void setHand(const PyItem& item) {
 		const_cast<ItemStack&>(P(thiz)->getSelectedItem()) = *item.thiz;
@@ -238,21 +242,38 @@ struct PyEntity {
 		P(thiz)->sendTransferPacket(address, port);
 	}
 	//发送表单
-	void sendCustomForm(const string& str, const py::function& cb) {
-		P(thiz)->sendCustomFormPacket(str,
-			[this, cb] (string arg) {cb(new PyEntity(thiz), arg); });
+	bool sendCustomForm(const string& str, const py::function& cb) {
+		return P(thiz)->sendCustomFormPacket(str,
+			[this, cb] (string arg) {
+			PY_TRY;
+			py::gil_scoped_acquire _gil;
+			cb(new PyEntity(thiz), py::eval(arg));
+			PY_CATCH;
+		});
 	}
-	void sendSimpleForm(const string& title, const string& content,
+	bool sendSimpleForm(const string& title, const string& content,
 		const vector<string>& buttons, const vector<string>& images, const py::function& cb) {
+		if (buttons.empty() || images.empty())
+			throw py::value_error("buttons and images shuold not be empty");
 		if (buttons.size() != images.size())
 			throw py::value_error("The number of buttons is not equal to the number of images");
-		P(thiz)->sendSimpleFormPacket(title, content, buttons, images,
-			[this, cb] (int arg) {cb(new PyEntity(thiz), arg); });
+		return P(thiz)->sendSimpleFormPacket(title, content, buttons, images,
+			[this, cb] (int arg) {
+			PY_TRY;
+			py::gil_scoped_acquire _gil;
+			cb(new PyEntity(thiz), arg);
+			PY_CATCH;
+		});
 	}
-	void sendModalForm(const string& title, const string& content,
+	bool sendModalForm(const string& title, const string& content,
 		const string& button1, const string& button2, const py::function& cb) {
-		P(thiz)->sendModalFormPacket(title, content, button1, button2,
-			[this, cb] (bool arg) {cb(new PyEntity(thiz), arg);	});
+		return P(thiz)->sendModalFormPacket(title, content, button1, button2,
+			[this, cb] (bool arg) {
+			PY_TRY;
+			py::gil_scoped_acquire _gil;
+			cb(new PyEntity(thiz), arg);
+			PY_CATCH;
+		});
 	}
 	//设置侧边栏
 	void setSidebar(const string& title, const string& side_data, const string& order_str) {
@@ -325,8 +346,8 @@ void setListener(const string& event_name, const py::function& cb) {
 //注册命令
 void registerCommand(const string& cmd, const py::function& cb, const string& des) {
 	g_commands[cmd] = make_pair(des, py::function(cb));
-	py::print(cb);
-	py::print(g_commands[cmd].second);
+	//py::print(cb);
+	//py::print(g_commands[cmd].second);
 }
 //获取玩家
 PyEntity getPlayer(const string& name) {
@@ -489,6 +510,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 #pragma region Item
 	py::class_<PyItem>(m, "Item")
 		.def(py::init<PyNBT>(), "nbt"_a)
+		.def("__repr__", &PyItem::getName)
 		.def("getName", &PyItem::getName)
 		.def("getNBT", &PyItem::getNBT)
 		;
@@ -502,6 +524,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 #pragma endregion
 #pragma region Entity
 	py::class_<PyEntity>(m, "Entity")
+		.def("__repr__", &PyEntity::getName)
 		.def("getName", &PyEntity::getName)
 		.def("setName", &PyEntity::setName)
 		.def("getUuid", &PyEntity::getUuid)
@@ -523,11 +546,12 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getPlatformOnlineId", &PyEntity::getPlatformOnlineId)
 		.def("getPlatform", &PyEntity::getPlatform)
 		.def("getIP", &PyEntity::getIP)
+		.def("getHand", &PyEntity::getHand)
 		.def("setHand", &PyEntity::setHand)
 		.def("addItem", &PyEntity::addItem)
 		.def("removeItem", &PyEntity::removeItem)
 		.def("teleport", &PyEntity::teleport)
-		.def("sendText", &PyEntity::sendText)
+		.def("sendText", &PyEntity::sendText, "text"_a, "type"_a = "RAW")
 		.def("runCommand", &PyEntity::runCommand)
 		.def("resendAllChunks", &PyEntity::resendAllChunks)
 		.def("disconnect", &PyEntity::disconnect)
@@ -553,6 +577,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 #pragma region Block
 	py::class_<PyBlock>(m, "Block")
 		.def(py::init<BlockPos, int>())
+		.def("__repr__", &PyBlock::getName)
 		.def("getName", &PyBlock::getName)
 		.def("getDimensionId", &PyBlock::getDimensionId)
 		.def("getNBT", &PyBlock::getNBT)
@@ -598,7 +623,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def_property("x", [] (const Vec3& pos) {return pos.x; }, [] (Vec3& pos, float val) {pos.x = val; })
 		.def_property("y", [] (const Vec3& pos) {return pos.y; }, [] (Vec3& pos, float val) {pos.y = val; })
 		.def_property("z", [] (const Vec3& pos) {return pos.z; }, [] (Vec3& pos, float val) {pos.z = val; })
-		.def("toString", &Vec3::toString)
+		.def("__repr__", &Vec3::toString)
 		;
 #pragma endregion
 #pragma region BockPos
@@ -607,16 +632,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def_property("x", [] (const BlockPos& pos) {return pos.x; }, [] (BlockPos& pos, int val) {pos.x = val; })
 		.def_property("y", [] (const BlockPos& pos) {return pos.y; }, [] (BlockPos& pos, int val) {pos.y = val; })
 		.def_property("z", [] (const BlockPos& pos) {return pos.z; }, [] (BlockPos& pos, int val) {pos.z = val; })
-		.def("toString", &BlockPos::toString)
-		;
-#pragma endregion
-#pragma region SimpleForm
-	py::class_<Form::SimpleForm>(m, "SimpleForm")
-		.def(py::init<string, string>())
-		.def_property("x", [] (const BlockPos& pos) {return pos.x; }, [] (BlockPos& pos, int val) {pos.x = val; })
-		.def_property("y", [] (const BlockPos& pos) {return pos.y; }, [] (BlockPos& pos, int val) {pos.y = val; })
-		.def_property("z", [] (const BlockPos& pos) {return pos.z; }, [] (BlockPos& pos, int val) {pos.z = val; })
-		.def("sendTo", &Form::SimpleForm::sendTo)
+		.def("__repr__", &BlockPos::toString)
 		;
 #pragma endregion
 }
@@ -625,7 +641,7 @@ class Callbacker {
 public:
 	Callbacker(EventCode t) :type_(t), arg_() {}
 	~Callbacker() {
-		logger.debug("{}", arg_.ref_count());
+		//logger.debug("{}", arg_.ref_count());
 	}
 	//事件回调
 	bool callback() {
@@ -660,92 +676,92 @@ void EnableEventListener(EventCode code) {
 	case EventCode::onPreJoin:
 		EVENT_BEGIN(PlayerPreJoinEvent);
 		EVENT_INSERT(IP);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT(XUID);
 		EVENT_END;
 		break;
 	case EventCode::onJoin:
 		EVENT_BEGIN(PlayerJoinEvent);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onLeft:
 		EVENT_BEGIN(PlayerLeftEvent);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT(XUID);
 		EVENT_END;
 		break;
 	case EventCode::onPlayerCmd:
 		EVENT_BEGIN(PlayerCmdEvent);
 		EVENT_INSERT(Command);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT_EX(isSuccess, e.mResult->isSuccess());
 		EVENT_END;
 		break;
 	case EventCode::onChat:
 		EVENT_BEGIN(PlayerChatEvent);
 		EVENT_INSERT(Message);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onPlayerDie:
 		EVENT_BEGIN(PlayerDieEvent);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT_EX(Cause, magic_enum::enum_name(e.mDamageSource->getCause()));
-		EVENT_INSERT_EX(Entity, e.mDamageSource->getEntity());
+		EVENT_INSERT_EX(Entity, new PyEntity(e.mDamageSource->getEntity()));
 		EVENT_END;
 		break;
 	case EventCode::onRespawn:
 		EVENT_BEGIN(PlayerRespawnEvent);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onChangeDim:
 		EVENT_BEGIN(PlayerChangeDimEvent);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT(ToDimensionId);
 		EVENT_END;
 		break;
 	case EventCode::onJump:
 		EVENT_BEGIN(PlayerJumpEvent);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onSneak:
 		EVENT_BEGIN(PlayerSneakEvent);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT(IsSneaking);
 		EVENT_END;
 		break;
 	case EventCode::onAttack:
 		EVENT_BEGIN(PlayerAttackEvent);
 		EVENT_INSERT(AttackDamage);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
-		EVENT_INSERT_EX(Target, PyEntity(e.mTarget));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Target, new PyEntity(e.mTarget));
 		EVENT_END;
 		break;
 	case EventCode::onEat:
 		EVENT_BEGIN(PlayerEatEvent);
-		EVENT_INSERT_EX(FoodItem, PyItem(e.mFoodItem));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(FoodItem, new PyItem(e.mFoodItem));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onMove:
 		EVENT_BEGIN(PlayerMoveEvent);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT(Pos);
 		EVENT_END;
 		break;
 	case EventCode::onChangeSprinting:
 		EVENT_BEGIN(PlayerSprintEvent);
 		EVENT_INSERT(IsSprinting);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onSpawnProjectile:
 		EVENT_BEGIN(ProjectileSpawnEvent);
 		//EVENT_INSERT(Identifier);
-		EVENT_INSERT_EX(Shooter, PyEntity(e.mShooter));
+		EVENT_INSERT_EX(Shooter, new PyEntity(e.mShooter));
 		EVENT_INSERT(Type);
 		EVENT_END;
 		break;
@@ -753,70 +769,70 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onSetArmor:
 		EVENT_BEGIN(PlayerSetArmorEvent);
-		EVENT_INSERT_EX(ArmorItem, PyItem(e.mArmorItem));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(ArmorItem, new PyItem(e.mArmorItem));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT(Slot);
 		EVENT_END;
 		break;
 	case EventCode::onRide:
 		EVENT_BEGIN(EntityRideEvent);
-		EVENT_INSERT_EX(Rider, PyEntity(e.mRider));
-		EVENT_INSERT_EX(Vehicle, PyEntity(e.mVehicle));
+		EVENT_INSERT_EX(Rider, new PyEntity(e.mRider));
+		EVENT_INSERT_EX(Vehicle, new PyEntity(e.mVehicle));
 		EVENT_END;
 		break;
 	case EventCode::onStepOnPressurePlate:
 		break;
 	case EventCode::onUseItem:
 		EVENT_BEGIN(PlayerUseItemEvent);
-		EVENT_INSERT_EX(ItemStack, PyItem(e.mItemStack));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(ItemStack, new PyItem(e.mItemStack));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onPickupItem:
 		EVENT_BEGIN(PlayerPickupItemEvent);
-		EVENT_INSERT_EX(ItemEntity, PyEntity(e.mItemEntity));
-		EVENT_INSERT_EX(ItemStack, PyItem(e.mItemStack));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(ItemEntity, new PyEntity(e.mItemEntity));
+		EVENT_INSERT_EX(ItemStack, new PyItem(e.mItemStack));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onDropItem:
 		EVENT_BEGIN(PlayerDropItemEvent);
-		EVENT_INSERT_EX(ItemStack, PyItem(e.mItemStack));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(ItemStack, new PyItem(e.mItemStack));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onUseItemOn:
 		EVENT_BEGIN(PlayerUseItemOnEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(ItemStack, PyItem(e.mItemStack));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(ItemStack, new PyItem(e.mItemStack));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onInventoryChange:
 		EVENT_BEGIN(PlayerInventoryChangeEvent);
-		EVENT_INSERT(NewItemStack);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
-		EVENT_INSERT(PreviousItemStack);
+		EVENT_INSERT_EX(NewItemStack, new PyItem(e.mNewItemStack));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(PreviousItemStack, new PyItem(e.mPreviousItemStack));
 		EVENT_INSERT(Slot);
 		EVENT_END;
 		break;
 	case EventCode::onChangeArmorStand:
 		EVENT_BEGIN(ArmorStandChangeEvent);
 		//EVENT_INSERT(ArmorStand); todo
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT(Slot);
 		EVENT_END;
 		break;
 	case EventCode::onStartDestroyBlock:
 		EVENT_BEGIN(PlayerStartDestroyBlockEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onDestroyBlock:
 		EVENT_BEGIN(PlayerDestroyBlockEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onWitherBossDestroy:
@@ -826,33 +842,33 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onPlaceBlock:
 		EVENT_BEGIN(PlayerPlaceBlockEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onLiquidFlow:
 		break;
 	case EventCode::onOpenContainer:
 		EVENT_BEGIN(PlayerOpenContainerEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
 		//TODO: EVENT_INSERT(Container);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onCloseContainer:
 		EVENT_BEGIN(PlayerCloseContainerEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
 		//TODO: EVENT_INSERT(Container);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onContainerChange:
 		EVENT_BEGIN(ContainerChangeEvent);
 		EVENT_INSERT(Actor);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
 		//TODO: EVENT_INSERT(Container);
 		EVENT_INSERT(NewItemStack);
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT(PreviousItemStack);
 		EVENT_INSERT(Slot);
 		EVENT_END;
@@ -871,7 +887,7 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onBlockExplode:
 		EVENT_BEGIN(BlockExplodeEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
 		EVENT_INSERT(Breaking);
 		EVENT_INSERT(Fire);
 		EVENT_INSERT(MaxResistance);
@@ -894,7 +910,7 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onCmdBlockExecute:
 		EVENT_BEGIN(CmdBlockExecuteEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
 		EVENT_INSERT(Command);
 		EVENT_INSERT(IsMinecart);
 		EVENT_INSERT(Minecart);
@@ -902,7 +918,7 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onRedStoneUpdate:
 		EVENT_BEGIN(RedStoneUpdateEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
 		EVENT_INSERT(IsActivated);
 		EVENT_INSERT(RedStonePower);
 		EVENT_END;
@@ -915,32 +931,32 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onProjectileHitBlock:
 		EVENT_BEGIN(ProjectileHitBlockEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
 		EVENT_INSERT(Source);
 		EVENT_END;
 		break;
 	case EventCode::onBlockInteracted:
 		EVENT_BEGIN(BlockInteractedEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onUseRespawnAnchor:
 		EVENT_BEGIN(PlayerUseRespawnAnchorEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onFarmLandDecay:
 		EVENT_BEGIN(FarmLandDecayEvent);
 		EVENT_INSERT(Actor);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
 		EVENT_END;
 		break;
 	case EventCode::onUseFrameBlock:
 		EVENT_BEGIN(PlayerUseFrameBlockEvent);
-		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT_EX(Type, magic_enum::enum_name(e.mType));
 		EVENT_END;
 		break;
@@ -971,21 +987,21 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onBlockChanged:
 		EVENT_BEGIN(BlockChangedEvent);
-		EVENT_INSERT_EX(NewBlockInstance, PyBlock(e.mNewBlockInstance));
-		EVENT_INSERT_EX(PreviousBlockInstance, PyBlock(e.mPreviousBlockInstance));
+		EVENT_INSERT_EX(NewBlockInstance, new PyBlock(e.mNewBlockInstance));
+		EVENT_INSERT_EX(PreviousBlockInstance, new PyBlock(e.mPreviousBlockInstance));
 		EVENT_END;
 		break;
 	case EventCode::onNpcCmd:
 		EVENT_BEGIN(NpcCmdEvent);
 		EVENT_INSERT(Command);
-		EVENT_INSERT_EX(Npc, PyEntity(e.mNpc));
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Npc, new PyEntity(e.mNpc));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onScoreChanged:
 		EVENT_BEGIN(PlayerScoreChangedEvent);
 		EVENT_INSERT_EX(ObjectiveName, e.mObjective->getName());
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT(Score);
 		//TODO: more info about Objective
 		EVENT_END;
@@ -1010,16 +1026,13 @@ void EnableEventListener(EventCode code) {
 		EVENT_BEGIN(PlayerEffectChangedEvent);
 		//TODO: more info about Effect
 		EVENT_INSERT_EX(Effect, e.mEffect->getDisplayName());
-		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
 		EVENT_INSERT_EX(Type, magic_enum::enum_name(e.mEventType));
 		EVENT_END;
 		break;
 	default:
 		break;
 	}
-}
-void PrintError(const std::exception& e) {
-	logger.error("\n{}", e.what());
 }
 
 bool IsPlayer(Actor* ptr) {
@@ -1092,7 +1105,7 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 		for (auto& [cmd, data] : g_commands) {
 			if (e.mCommand._Starts_with(cmd)) {
 				//TODO: 为什么崩溃
-				data.second(PyEntity(e.mPlayer), e.mCommand);
+				data.second(new PyEntity(e.mPlayer), e.mCommand);
 				return false;
 			}
 		}
@@ -1242,14 +1255,4 @@ static void CheckPluginVersion() {
 	system("start /min " BAT_PATH);
 	exit(0);
 }
-#endif 
-#if 0
-class PyGILGuard {
-public:
-	PyGILGuard() { gil_ = PyGILState_Ensure(); }
-	~PyGILGuard() { PyGILState_Release(gil_); }
-
-private:
-	PyGILState_STATE gil_;
-};
 #endif

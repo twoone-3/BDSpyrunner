@@ -1,7 +1,7 @@
 ﻿#pragma once
 #pragma execution_character_set("utf-8")
 #pragma region LL
-#include <Global.h>
+#include <DynamicCommandAPI.h>
 #include <FormUI.h>
 #include <LoggerAPI.h>
 #include <EventAPI.h>
@@ -19,8 +19,6 @@
 #include <MC/BlockLegacy.hpp>
 #include <MC/BlockPalette.hpp>
 #include <MC/BlockSource.hpp>
-#include <MC/CommandParameterData.hpp>
-#include <MC/CommandRegistry.hpp>
 #include <MC/Common.hpp>
 #include <MC/Container.hpp>
 #include <MC/ItemInstance.hpp>
@@ -59,7 +57,7 @@
 #pragma endregion
 
 #define PY_TRY try {
-#define PY_CATCH } catch (const std::exception& e) {PrintError(e);}
+#define PY_CATCH } catch (const std::exception& e) {logger.error("\n{}", e.what());}
 #define PLUGIN_PATH "plugins\\py\\"
 
 namespace py = pybind11;
@@ -150,3 +148,11 @@ void EnableEventListener(EventCode e);
 inline std::unordered_map<EventCode, std::vector<py::function>> g_cb_functions;
 //注册命令
 inline std::unordered_map<std::string, std::pair<std::string, py::function>> g_commands;
+//class PyGILGuard {
+//public:
+//	PyGILGuard() { gil_ = PyGILState_Ensure(); }
+//	~PyGILGuard() { PyGILState_Release(gil_); }
+//
+//private:
+//	PyGILState_STATE gil_;
+//};

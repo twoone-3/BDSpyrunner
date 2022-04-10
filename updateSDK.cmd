@@ -1,6 +1,6 @@
-﻿@echo off
-git submodule deinit SDK
+﻿
+git submodule deinit --all -f
 git rm --cached SDK
 rmdir /S /Q SDK
-git submodule add https://github.com/LiteLDev/LiteLoaderSDK SDK
+git submodule add -f https://github.com/LiteLDev/LiteLoaderSDK SDK
 pause
