@@ -1,7 +1,7 @@
 #pragma once
 #pragma execution_character_set("utf-8")
 #pragma warning(disable:4996)
-#pragma comment(lib,"lib/chakra.lib")
+#pragma comment(lib,"lib/WINHTTP.lib")
 #include <iostream>
 #include "Level.h"
 #include "NetWork.h"
