@@ -39,13 +39,13 @@ int Actor::getDimensionId() {
 
 //获取生物当前所在坐标
 Vec3* Actor::getPos() {
-	return SymCall<Vec3*>("?getPos@Actor@@UEBAAEBVVec3@@XZ", this);
+	return SymCall<Vec3*>("?getPosition@Actor@@UEBAAEBVVec3@@XZ", this);
 }
 
 //获取生物之前所在坐标
 
-Vec3* Actor::getPosOld() {
-	return SymCall<Vec3*>("?getPosOld@Actor@@UEBAAEBVVec3@@XZ", this);
+Vec3* Actor::getPosPrev() {
+	return SymCall<Vec3*>("?getPosPrev@Actor@@UEBAAEBVVec3@@XZ", this);
 }
 
 //是否悬空

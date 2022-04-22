@@ -43,7 +43,7 @@ struct Actor {
 	//获取生物当前所在坐标
 	Vec3* getPos();
 	//获取生物之前所在坐标
-	Vec3* getPosOld();
+	Vec3* getPosPrev();
 	//是否悬空
 	bool isStanding();
 	//是否潜行
