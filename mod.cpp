@@ -826,7 +826,7 @@ THOOK(onPistonPush, bool, "?_attachedBlockWalker@PistonBlockActor@@AEAA_NAEAVBlo
 	BlockLegacy* blg = bs->getBlock(bp)->getBlockLegacy();
 	string bn = blg->getBlockName();
 	short bid = blg->getBlockItemID();
-	BlockPos* bp2 = _this->getPosition();
+	//BlockPos* bp2 = _this->getPosition();//will cause a crash
 	h.insert("blockname", bn)
 		.insert("blockid", bid)
 		.insert("blockpos", bp)
