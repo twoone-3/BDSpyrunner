@@ -54,10 +54,13 @@ inline ReturnType SymCall(const char* sym, Args... args) {
 // replace the function
 struct HookRegister {
 	HookRegister(void* func, void* org, void* hook) {
-		HookFunction(func, org, hook);
+		auto ret = HookFunction(func, org, hook);
+		if (ret != 0) {
+			std::cerr << "FailedToHook: " << func << std::endl;
+		}
 	}
 };
-//全局变量
+//脠芦戮脰卤盲脕驴
 template <typename T>
 inline T* global = nullptr;
 
