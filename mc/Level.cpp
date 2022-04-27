@@ -5,11 +5,11 @@ using namespace std;
 //获取方块源 没这个维度返回空指针
 
 BlockSource* Level::getBlockSource(int did) {
-	uintptr_t d = SymCall<uintptr_t>("?getDimension@Level@@UEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
+	void* d = SymCall<void*>("?getDimension@Level@@UEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
 		this, did);
 	if (!d)
 		return nullptr;
-	return Dereference<BlockSource*>( d , 96);//IDA Level::tickEntities 120
+	return SymCall<BlockSource*>("?getBlockSourceFromMainChunkSource@Dimension@@QEBAAEAVBlockSource@@XZ", d);
 }
 
 void Level::forEachPlayer(const std::function<bool(Player*)>& fn) {
