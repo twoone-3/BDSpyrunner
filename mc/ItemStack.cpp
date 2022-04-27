@@ -78,7 +78,7 @@ ItemStack* ItemStack::fromTag(Tag* t) {
 
 //bool ItemStack::getFromId(short id, short aux, char count) {
 //	memcpy(this, SYM("?EMPTY_ITEM@ItemStack@@2V1@B"), sizeof(ItemStack));
-//	bool ret = SymCall<bool>("?_setItem@ItemStackBase@@IEAA_NH@Z", this, id);
+//	bool ret = SymCall<bool>("?_setItem@ItemStackBase@@IEAA_NH_N@Z", this, id);
 //	mCount = count;
 //	mAuxValue = aux;
 //	mValid = true;

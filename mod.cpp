@@ -601,7 +601,7 @@ THOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 		original(_this, dmsg);
 }
 //生物受伤
-THOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
+THOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@M_N1@Z",
 	Mob* _this, uintptr_t dmsg, int a3, bool a4, bool a5) {
 	EventCallBackHelper h(EventCode::onMobHurt);
 	g_damage = a3;//将生物受伤的值设置为可调整

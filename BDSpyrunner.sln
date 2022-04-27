@@ -8,11 +8,14 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		LemeAlone-local|x64 = LemeAlone-local|x64
 		Release|x64 = Release|x64
 		WillowSauceR-local|x64 = WillowSauceR-local|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C78E00DA-F99B-4629-87A2-428314CEF72A}.Debug|x64.ActiveCfg = Release|x64
+		{C78E00DA-F99B-4629-87A2-428314CEF72A}.LemeAlone-local|x64.ActiveCfg = LemeAlone-local|x64
+		{C78E00DA-F99B-4629-87A2-428314CEF72A}.LemeAlone-local|x64.Build.0 = LemeAlone-local|x64
 		{C78E00DA-F99B-4629-87A2-428314CEF72A}.Release|x64.ActiveCfg = Release|x64
 		{C78E00DA-F99B-4629-87A2-428314CEF72A}.Release|x64.Build.0 = Release|x64
 		{C78E00DA-F99B-4629-87A2-428314CEF72A}.WillowSauceR-local|x64.ActiveCfg = WillowSauceR-local|x64
