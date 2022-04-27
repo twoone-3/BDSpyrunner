@@ -30,7 +30,7 @@ struct name {							\
 	static func _hook;					\
 	inline static func* original;		\
 	inline static HookRegister _reg =	\
-		{ SYM(sym),&original,&_hook };	\
+		{ sym,&original,&_hook };	\
 };										\
 ret name::_hook(__VA_ARGS__)
 
@@ -57,10 +57,16 @@ inline ReturnType SymCall(const char* sym, Args... args) {
 }
 // replace the function
 struct HookRegister {
-	HookRegister(void* func, void* org, void* hook) {
+	HookRegister(const char* sym, void* org, void* hook) {
+		void* func = SYM(sym);
+		if (func == nullptr) {
+			std::cerr << "FailedToHook: " << sym << std::endl;
+			return;
+		}
 		auto ret = HookFunction(func, org, hook);
 		if (ret != 0) {
 			std::cerr << "FailedToHook: " << func << std::endl;
+			return;
 		}
 	}
 };
