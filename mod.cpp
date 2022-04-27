@@ -601,12 +601,13 @@ THOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 		original(_this, dmsg);
 }
 //生物受伤
-THOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@H_N1@Z",
-	Mob* _this, uintptr_t dmsg, int a3, bool a4, bool a5) {
+THOOK(onMobHurt, bool, "?_hurt@Mob@@MEAA_NAEBVActorDamageSource@@M_N1@Z",
+	Mob* _this, uintptr_t dmsg, float a3, bool a4, bool a5) {
 	EventCallBackHelper h(EventCode::onMobHurt);
 	g_damage = a3;//将生物受伤的值设置为可调整
 	char v72;
-	Actor* sa = _this->getLevel()->fetchEntity(*(uintptr_t*)((*(uintptr_t(__fastcall**)(uintptr_t, char*))(*(uintptr_t*)dmsg + 64))(dmsg, &v72)));
+	// getSourceUniqueId
+	Actor* sa = _this->getLevel()->fetchEntity(*(uintptr_t*)((*(uintptr_t(__fastcall**)(uintptr_t, char*))(*(uintptr_t*)dmsg + 88))(dmsg, &v72)));
 	h
 		.insert("actor1", _this)
 		.insert("actor2", sa)
