@@ -74,15 +74,15 @@ def setStructure(data:str, x:int, y:int, z:int, did:int) -> None:
     return mco.setStructure(data, x, y, z, did)
 
 def explode(x:float, y:float, z:float, did:int, power:float, destroy:bool, range:float, fire:bool) -> None:
-    return explode(x, y, z, did, power, destroy, range, fire)
+    return mco.explode(x, y, z, did, power, destroy, range, fire)
 
 def spawnItem(data:str, x:int, y:int, z:int, did:int) -> None:
-    return spawnItem(data, x, y, z, did)
+    return mco.spawnItem(data, x, y, z, did)
 
 def isSlimeChunk(x:int, y:int) -> bool:
-    return isSlimeChunk(x, y)
+    return mco.isSlimeChunk(x, y)
 
 def setSignBlockMessage(msg:str, x:int, y:int, z:int, did:int) -> None:
-    return setSignBlockMessage(msg, x, y, z, did)
+    return mco.setSignBlockMessage(msg, x, y, z, did)
 
 api.init()
