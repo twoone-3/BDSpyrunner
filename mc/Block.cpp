@@ -44,9 +44,9 @@ BlockActor* BlockSource::getBlockEntity(const BlockPos* bp) {
 
 void BlockSource::setBlock(const BlockPos* bp, Block* b) {
 	SymCall<uintptr_t>("?setBlock@BlockSource@@QEAA_NHHHAEBVBlock@@HPEAVActor@@@Z",
-		this, bp->x, bp->y, bp->z, b, 3, nullptr);
-	//SymCall<bool>("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HV?$shared_ptr@VBlockActor@@@std@@PEBUActorBlockSyncMessage@@PEAVActor@@@Z",
-	//this, bp, b, 3, nullptr, nullptr, nullptr);
+		this, bp->x, bp->y, bp->z, b, 0, NULL);
+	//return SymCall<bool>("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z",
+	//	this, bp, b, 3, nullptr);
 }
 
 void BlockSource::neighborChanged(const BlockPos* pos) {
