@@ -49,7 +49,11 @@ inline ReturnType VirtualCall(uintptr_t off, void* _this, Args... args) {
 // call a function by symbol string
 template<typename ReturnType = void, typename... Args>
 inline ReturnType SymCall(const char* sym, Args... args) {
-	return reinterpret_cast<ReturnType(*)(Args...)>(SYM(sym))(std::forward<Args>(args)...);
+	static auto func = SYM(sym);
+	if (func == nullptr) {
+		std::cerr << "SymbolNotFound: " << sym << std::endl;
+	}
+	return reinterpret_cast<ReturnType(*)(Args...)>(func)(std::forward<Args>(args)...);
 }
 // replace the function
 struct HookRegister {
