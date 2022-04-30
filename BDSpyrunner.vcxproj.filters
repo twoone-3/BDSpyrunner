@@ -18,12 +18,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mod\PyAPI.cpp">
+    <ClCompile Include="mod\pyr.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mod\Common.h">
+    <ClInclude Include="mod\garbage.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

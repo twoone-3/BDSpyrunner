@@ -1,7 +1,192 @@
-﻿#include "Common.h"
+﻿#pragma execution_character_set("utf-8")
+#pragma region LL
+#include <DynamicCommandAPI.h>
+#include <FormUI.h>
+#include <LoggerAPI.h>
+#include <EventAPI.h>
+#include <ServerAPI.h>
+#pragma endregion
+#pragma region third_party
+#include <third-party/magic_enum/magic_enum.hpp>
+#include <third-party/Nlohmann/fifo_json.hpp>
+#pragma endregion
+#pragma region MC
+#include <MC/Actor.hpp>
+#include <MC/ActorDamageSource.hpp>
+#include <MC/Block.hpp>
+#include <MC/BlockActor.hpp>
+#include <MC/BlockLegacy.hpp>
+#include <MC/BlockPalette.hpp>
+#include <MC/BlockSource.hpp>
+#include <MC/Common.hpp>
+#include <MC/Container.hpp>
+#include <MC/ItemInstance.hpp>
+#include <MC/ItemStack.hpp>
+#include <MC/Level.hpp>
+#include <MC/MobEffect.hpp>
+#include <MC/Objective.hpp>
+#include <MC/Player.hpp>
+#include <MC/RakNet.hpp>
+#include <MC/Scoreboard.hpp>
+#include <MC/ServerNetworkHandler.hpp>
+#include <MC/SignBlockActor.hpp>
+#include <MC/SimpleContainer.hpp>
+#include <MC/Spawner.hpp>
+#include <MC/StructureSettings.hpp>
+#include <MC/StructureTemplate.hpp>
+#pragma endregion
+#pragma region NBT
+#include <MC/ByteArrayTag.hpp>
+#include <MC/ByteTag.hpp>
+#include <MC/CompoundTag.hpp>
+#include <MC/DoubleTag.hpp>
+#include <MC/EndTag.hpp>
+#include <MC/FloatTag.hpp>
+#include <MC/Int64Tag.hpp>
+#include <MC/IntArrayTag.hpp>
+#include <MC/IntTag.hpp>
+#include <MC/ListTag.hpp>
+#include <MC/ShortTag.hpp>
+#include <MC/StringTag.hpp>
+#include <MC/Tag.hpp>
+#pragma endregion
+#pragma region Python
+#include <pybind11/embed.h>
+#include <pybind11/stl.h>
+#pragma endregion
 
+#define PY_TRY try {
+#define PY_CATCH } catch (const std::exception& e) {logger.error("\n{}", e.what());}
+#define PLUGIN_PATH "plugins\\py\\"
+
+#define EVENT_BEGIN(evt) evt::subscribe([code](evt e){Callbacker h(code); PY_TRY; h.insert("Event", py::cast(magic_enum::enum_name(code)))
+#define EVENT_INSERT(key) h.insert(#key, e.m##key)
+#define EVENT_INSERT_EX(key, value) h.insert(#key, (value))
+#define EVENT_END PY_CATCH return h.callback();})
+
+namespace py = pybind11;
+using json_t = nlohmann::detail::value_t;
 using namespace std;
+
+#pragma region Version
+constexpr unsigned PYR_VERSION_MAJOR = 1;
+constexpr unsigned PYR_VERSION_MINOR = 9;
+constexpr unsigned PYR_VERSION_MICRO = 10;
+constexpr const char* PYR_VERSION = "v1.9.10";
+#pragma endregion
 #pragma region Mess
+//全局Logger
+static Logger logger("BDSpyrunner");
+//输出错误信息
+void PrintError(const std::exception&);
+//判断指针是否为player
+bool IsPlayer(Actor* ptr);
+//字符串转JSON
+fifo_json StrToJson(std::string_view str);
+//事件代码
+enum class EventCode {
+	onPreJoin,
+	onJoin,
+	onLeft,
+	onPlayerCmd,
+	onChat,
+	onPlayerDie,
+	onRespawn,
+	onChangeDim,
+	onJump,
+	onSneak,
+	onAttack,
+	onEat,
+	onMove,
+	onChangeSprinting,
+	onSpawnProjectile,
+	onFireworkShootWithCrossbow,
+	onSetArmor,
+	onRide,
+	onStepOnPressurePlate,
+	onUseItem,
+	onPickupItem,
+	onDropItem,
+	onUseItemOn,
+	onInventoryChange,
+	onChangeArmorStand,
+	onStartDestroyBlock,
+	onDestroyBlock,
+	onWitherBossDestroy,
+	onPlaceBlock,
+	onLiquidFlow,
+	onOpenContainer,
+	onCloseContainer,
+	onContainerChange,
+	onOpenContainerScreen,
+	onExplode,
+	onBlockExploded,
+	onBedExplode,
+	onRespawnAnchorExplode,
+	onEntityExplode,
+	onBlockExplode,
+	onMobDie,
+	onMobHurt,
+	onCmdBlockExecute,
+	onRedStoneUpdate,
+	onProjectileHitEntity,
+	onProjectileHitBlock,
+	onBlockInteracted,
+	onUseRespawnAnchor,
+	onFarmLandDecay,
+	onUseFrameBlock,
+	onPistonPush,
+	onHopperSearchItem,
+	onHopperPushOut,
+	onFireSpread,
+	onBlockChanged,
+	onNpcCmd,
+	onScoreChanged,
+	onServerStarted,
+	onConsoleCmd,
+	onConsoleOutput,
+	onConsumeTotem,
+	onEffectChanged,
+};
+//启用监听器
+void EnableEventListener(EventCode e);
+//安全地调用py
+template <typename... Args>
+py::object call(const py::object& obj, Args&&... args) {
+	PY_TRY;
+	py::gil_scoped_acquire gil_;
+	return obj(std::forward<Args>(args)...);
+	PY_CATCH;
+	return {};
+}
+//判断指针是否为玩家
+bool IsPlayer(Actor* ptr) {
+	if (ptr == nullptr)
+		return false;
+	return ptr->isPlayer();
+}
+//字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库
+fifo_json StrToJson(std::string_view str) {
+	try {
+		return fifo_json::parse(str);
+	}
+	catch (const std::exception& e) {
+		logger.error("\nParsing JSON failed! {}", e.what());
+		return nullptr;
+	}
+}
+//Py函数表
+static std::unordered_map<EventCode, std::vector<py::function>> g_cb_functions;
+//注册命令
+static std::unordered_map<std::string, std::pair<std::string, py::function>> g_commands;
+//class PyGILGuard {
+//public:
+//	PyGILGuard() { gil_ = PyGILState_Ensure(); }
+//	~PyGILGuard() { PyGILState_Release(gil_); }
+//
+//private:
+//	PyGILState_STATE gil_;
+//};
 //转Player
 Player* P(Actor* a) {
 	if (!IsPlayer(a))
@@ -116,17 +301,16 @@ struct PyItem {
 	ItemStack* thiz;
 
 	PyItem(ItemStack* other) :thiz(other) {}
-	//PyItem(const ItemStack& other) :thiz(new ItemStack(other)) {}
 	PyItem(const PyNBT& nbt) :thiz(new ItemStack(ItemStack::fromTag(*nbt.thiz->asCompoundTag()))) {}
 	string getName() { return thiz->getName(); }
-	PyNBT* getNBT() { return new PyNBT(thiz->getNbt()); }
+	PyNBT getNBT() { return thiz->getNbt(); }
 };
 #pragma endregion
 #pragma region Container
 struct PyContainer {
 	Container* thiz;
 
-	PyContainer(const string& type_str, const py::object& value) {}
+	PyContainer(Container* value) :thiz(value) {}
 
 	PyItem __getitem__(int slot) { return thiz->getSlot(slot); }
 	void __setitem__(int slot, const PyItem& val) { *thiz->getSlot(slot) = *val.thiz; }
@@ -244,12 +428,7 @@ struct PyEntity {
 	//发送表单
 	bool sendCustomForm(const string& str, const py::function& cb) {
 		return P(thiz)->sendCustomFormPacket(str,
-			[this, cb] (string arg) {
-			PY_TRY;
-			py::gil_scoped_acquire _gil;
-			cb(new PyEntity(thiz), py::eval(arg));
-			PY_CATCH;
-		});
+			[this, cb] (string arg) {call(cb, PyEntity(thiz), py::eval(arg)); });
 	}
 	bool sendSimpleForm(const string& title, const string& content,
 		const vector<string>& buttons, const vector<string>& images, const py::function& cb) {
@@ -258,22 +437,12 @@ struct PyEntity {
 		if (buttons.size() != images.size())
 			throw py::value_error("The number of buttons is not equal to the number of images");
 		return P(thiz)->sendSimpleFormPacket(title, content, buttons, images,
-			[this, cb] (int arg) {
-			PY_TRY;
-			py::gil_scoped_acquire _gil;
-			cb(new PyEntity(thiz), arg);
-			PY_CATCH;
-		});
+			[this, cb] (int arg) {call(cb, PyEntity(thiz), arg); });
 	}
 	bool sendModalForm(const string& title, const string& content,
 		const string& button1, const string& button2, const py::function& cb) {
 		return P(thiz)->sendModalFormPacket(title, content, button1, button2,
-			[this, cb] (bool arg) {
-			PY_TRY;
-			py::gil_scoped_acquire _gil;
-			cb(new PyEntity(thiz), arg);
-			PY_CATCH;
-		});
+			[this, cb] (bool arg) {call(cb, PyEntity(thiz), arg); });
 	}
 	//设置侧边栏
 	void setSidebar(const string& title, const string& side_data, const string& order_str) {
@@ -360,7 +529,7 @@ PyEntity getPlayer(const string& name) {
 py::list getPlayerList() {
 	py::list l;
 	for (auto p : Level::getAllPlayers()) {
-		l.append(new PyEntity(p));
+		l.append(PyEntity(p));
 	}
 	return l;
 }
@@ -368,7 +537,7 @@ py::list getPlayerList() {
 py::list getEntityList() {
 	py::list l;
 	for (auto p : Level::getAllEntities()) {
-		l.append(new PyEntity(p));
+		l.append(PyEntity(p));
 	}
 	return l;
 }
@@ -554,7 +723,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("sendText", &PyEntity::sendText, "text"_a, "type"_a = "RAW")
 		.def("runCommand", &PyEntity::runCommand)
 		.def("resendAllChunks", &PyEntity::resendAllChunks)
-		.def("disconnect", &PyEntity::disconnect)
+		.def("disconnect", &PyEntity::disconnect, "msg"_a = "")
 		.def("getScore", &PyEntity::getScore)
 		.def("setScore", &PyEntity::setScore)
 		.def("addScore", &PyEntity::addScore)
@@ -636,6 +805,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		;
 #pragma endregion
 }
+#pragma region Events
 //事件回调，初始化对象将申请GIL
 class Callbacker {
 public:
@@ -649,7 +819,7 @@ public:
 		arg_.inc_ref();
 		for (auto cb : g_cb_functions[type_]) {
 			//TODO: 为什么需要增加引用计数？
-			pass = cb(arg_) != py::bool_(false);
+			pass = call(cb, arg_) != py::bool_(false);
 		}
 		return pass;
 	}
@@ -662,106 +832,100 @@ public:
 private:
 	EventCode type_;
 	py::dict arg_;
-	py::gil_scoped_acquire gil_;
 };
-
-#define EVENT_BEGIN(evt) evt::subscribe([code](evt e){Callbacker h(code); h.insert("Event", py::cast(magic_enum::enum_name(code))); PY_TRY
-#define EVENT_INSERT(key) h.insert(#key, e.m##key)
-#define EVENT_INSERT_EX(key, value) h.insert(#key, (value))
-#define EVENT_END PY_CATCH return h.callback();})
-
+//启动事件监听
 void EnableEventListener(EventCode code) {
 	using namespace Event;
 	switch (code) {
 	case EventCode::onPreJoin:
 		EVENT_BEGIN(PlayerPreJoinEvent);
 		EVENT_INSERT(IP);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT(XUID);
 		EVENT_END;
 		break;
 	case EventCode::onJoin:
 		EVENT_BEGIN(PlayerJoinEvent);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onLeft:
 		EVENT_BEGIN(PlayerLeftEvent);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT(XUID);
 		EVENT_END;
 		break;
 	case EventCode::onPlayerCmd:
 		EVENT_BEGIN(PlayerCmdEvent);
 		EVENT_INSERT(Command);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT_EX(isSuccess, e.mResult->isSuccess());
 		EVENT_END;
 		break;
 	case EventCode::onChat:
 		EVENT_BEGIN(PlayerChatEvent);
 		EVENT_INSERT(Message);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onPlayerDie:
 		EVENT_BEGIN(PlayerDieEvent);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT_EX(Cause, magic_enum::enum_name(e.mDamageSource->getCause()));
-		EVENT_INSERT_EX(Entity, new PyEntity(e.mDamageSource->getEntity()));
+		EVENT_INSERT_EX(Entity, PyEntity(e.mDamageSource->getEntity()));
 		EVENT_END;
 		break;
 	case EventCode::onRespawn:
 		EVENT_BEGIN(PlayerRespawnEvent);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onChangeDim:
 		EVENT_BEGIN(PlayerChangeDimEvent);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT(ToDimensionId);
 		EVENT_END;
 		break;
 	case EventCode::onJump:
 		EVENT_BEGIN(PlayerJumpEvent);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onSneak:
 		EVENT_BEGIN(PlayerSneakEvent);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT(IsSneaking);
 		EVENT_END;
 		break;
 	case EventCode::onAttack:
 		EVENT_BEGIN(PlayerAttackEvent);
 		EVENT_INSERT(AttackDamage);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
-		EVENT_INSERT_EX(Target, new PyEntity(e.mTarget));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Target, PyEntity(e.mTarget));
 		EVENT_END;
 		break;
 	case EventCode::onEat:
 		EVENT_BEGIN(PlayerEatEvent);
-		EVENT_INSERT_EX(FoodItem, new PyItem(e.mFoodItem));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(FoodItem, PyItem(e.mFoodItem));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onMove:
 		EVENT_BEGIN(PlayerMoveEvent);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT(Pos);
 		EVENT_END;
 		break;
 	case EventCode::onChangeSprinting:
 		EVENT_BEGIN(PlayerSprintEvent);
 		EVENT_INSERT(IsSprinting);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onSpawnProjectile:
 		EVENT_BEGIN(ProjectileSpawnEvent);
 		//EVENT_INSERT(Identifier);
-		EVENT_INSERT_EX(Shooter, new PyEntity(e.mShooter));
+		EVENT_INSERT_EX(Shooter, PyEntity(e.mShooter));
 		EVENT_INSERT(Type);
 		EVENT_END;
 		break;
@@ -769,70 +933,70 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onSetArmor:
 		EVENT_BEGIN(PlayerSetArmorEvent);
-		EVENT_INSERT_EX(ArmorItem, new PyItem(e.mArmorItem));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(ArmorItem, PyItem(e.mArmorItem));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT(Slot);
 		EVENT_END;
 		break;
 	case EventCode::onRide:
 		EVENT_BEGIN(EntityRideEvent);
-		EVENT_INSERT_EX(Rider, new PyEntity(e.mRider));
-		EVENT_INSERT_EX(Vehicle, new PyEntity(e.mVehicle));
+		EVENT_INSERT_EX(Rider, PyEntity(e.mRider));
+		EVENT_INSERT_EX(Vehicle, PyEntity(e.mVehicle));
 		EVENT_END;
 		break;
 	case EventCode::onStepOnPressurePlate:
 		break;
 	case EventCode::onUseItem:
 		EVENT_BEGIN(PlayerUseItemEvent);
-		EVENT_INSERT_EX(ItemStack, new PyItem(e.mItemStack));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(ItemStack, PyItem(e.mItemStack));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onPickupItem:
 		EVENT_BEGIN(PlayerPickupItemEvent);
-		EVENT_INSERT_EX(ItemEntity, new PyEntity(e.mItemEntity));
-		EVENT_INSERT_EX(ItemStack, new PyItem(e.mItemStack));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(ItemEntity, PyEntity(e.mItemEntity));
+		EVENT_INSERT_EX(ItemStack, PyItem(e.mItemStack));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onDropItem:
 		EVENT_BEGIN(PlayerDropItemEvent);
-		EVENT_INSERT_EX(ItemStack, new PyItem(e.mItemStack));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(ItemStack, PyItem(e.mItemStack));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onUseItemOn:
 		EVENT_BEGIN(PlayerUseItemOnEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(ItemStack, new PyItem(e.mItemStack));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(ItemStack, PyItem(e.mItemStack));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onInventoryChange:
 		EVENT_BEGIN(PlayerInventoryChangeEvent);
-		EVENT_INSERT_EX(NewItemStack, new PyItem(e.mNewItemStack));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
-		EVENT_INSERT_EX(PreviousItemStack, new PyItem(e.mPreviousItemStack));
+		EVENT_INSERT_EX(NewItemStack, PyItem(e.mNewItemStack));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(PreviousItemStack, PyItem(e.mPreviousItemStack));
 		EVENT_INSERT(Slot);
 		EVENT_END;
 		break;
 	case EventCode::onChangeArmorStand:
 		EVENT_BEGIN(ArmorStandChangeEvent);
-		//EVENT_INSERT(ArmorStand); todo
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		//EVENT_INSERT(ArmorStand);
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT(Slot);
 		EVENT_END;
 		break;
 	case EventCode::onStartDestroyBlock:
 		EVENT_BEGIN(PlayerStartDestroyBlockEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onDestroyBlock:
 		EVENT_BEGIN(PlayerDestroyBlockEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onWitherBossDestroy:
@@ -842,34 +1006,34 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onPlaceBlock:
 		EVENT_BEGIN(PlayerPlaceBlockEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onLiquidFlow:
 		break;
 	case EventCode::onOpenContainer:
 		EVENT_BEGIN(PlayerOpenContainerEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
-		//TODO: EVENT_INSERT(Container);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Container, PyContainer(e.mContainer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onCloseContainer:
 		EVENT_BEGIN(PlayerCloseContainerEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
-		//TODO: EVENT_INSERT(Container);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Container, PyContainer(e.mContainer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onContainerChange:
 		EVENT_BEGIN(ContainerChangeEvent);
 		EVENT_INSERT(Actor);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
-		//TODO: EVENT_INSERT(Container);
-		EVENT_INSERT(NewItemStack);
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
-		EVENT_INSERT(PreviousItemStack);
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Container, PyContainer(e.mContainer));
+		EVENT_INSERT_EX(NewItemStack, PyItem(e.mNewItemStack));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(PreviousItemStack, PyItem(e.mPreviousItemStack));
 		EVENT_INSERT(Slot);
 		EVENT_END;
 		break;
@@ -887,7 +1051,7 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onBlockExplode:
 		EVENT_BEGIN(BlockExplodeEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
 		EVENT_INSERT(Breaking);
 		EVENT_INSERT(Fire);
 		EVENT_INSERT(MaxResistance);
@@ -896,80 +1060,80 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onMobDie:
 		EVENT_BEGIN(MobDieEvent);
-		EVENT_INSERT(Mob);
+		EVENT_INSERT_EX(Mob, PyEntity(e.mMob));
 		EVENT_INSERT_EX(Cause, magic_enum::enum_name(e.mDamageSource->getCause()));
 		EVENT_INSERT_EX(Entity, e.mDamageSource->getEntity());
 		EVENT_END;
 		break;
 	case EventCode::onMobHurt:
 		EVENT_BEGIN(MobHurtEvent);
-		EVENT_INSERT(Mob);
+		EVENT_INSERT_EX(Mob, PyEntity(e.mMob));
 		EVENT_INSERT_EX(Cause, magic_enum::enum_name(e.mDamageSource->getCause()));
 		EVENT_INSERT_EX(Entity, e.mDamageSource->getEntity());
 		EVENT_END;
 		break;
 	case EventCode::onCmdBlockExecute:
 		EVENT_BEGIN(CmdBlockExecuteEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
 		EVENT_INSERT(Command);
 		EVENT_INSERT(IsMinecart);
-		EVENT_INSERT(Minecart);
+		EVENT_INSERT_EX(Minecart, PyEntity(e.mMinecart));
 		EVENT_END;
 		break;
 	case EventCode::onRedStoneUpdate:
 		EVENT_BEGIN(RedStoneUpdateEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
 		EVENT_INSERT(IsActivated);
 		EVENT_INSERT(RedStonePower);
 		EVENT_END;
 		break;
 	case EventCode::onProjectileHitEntity:
 		EVENT_BEGIN(ProjectileHitEntityEvent);
-		EVENT_INSERT(Source);
-		EVENT_INSERT(Target);
+		EVENT_INSERT_EX(Source, PyEntity(e.mSource));
+		EVENT_INSERT_EX(Target, PyEntity(e.mTarget));
 		EVENT_END;
 		break;
 	case EventCode::onProjectileHitBlock:
 		EVENT_BEGIN(ProjectileHitBlockEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
-		EVENT_INSERT(Source);
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Source, PyEntity(e.mSource));
 		EVENT_END;
 		break;
 	case EventCode::onBlockInteracted:
 		EVENT_BEGIN(BlockInteractedEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onUseRespawnAnchor:
 		EVENT_BEGIN(PlayerUseRespawnAnchorEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onFarmLandDecay:
 		EVENT_BEGIN(FarmLandDecayEvent);
-		EVENT_INSERT(Actor);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Actor, PyEntity(e.mActor));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
 		EVENT_END;
 		break;
 	case EventCode::onUseFrameBlock:
 		EVENT_BEGIN(PlayerUseFrameBlockEvent);
-		EVENT_INSERT_EX(BlockInstance, new PyBlock(e.mBlockInstance));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(BlockInstance, PyBlock(e.mBlockInstance));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT_EX(Type, magic_enum::enum_name(e.mType));
 		EVENT_END;
 		break;
 	case EventCode::onPistonPush:
 		EVENT_BEGIN(PistonPushEvent);
-		EVENT_INSERT(PistonBlockInstance);
-		EVENT_INSERT(TargetBlockInstance);
+		EVENT_INSERT_EX(PistonBlockInstance, PyBlock(e.mPistonBlockInstance));
+		EVENT_INSERT_EX(TargetBlockInstance, PyBlock(e.mTargetBlockInstance));
 		EVENT_END;
 		break;
 	case EventCode::onHopperSearchItem:
 		EVENT_BEGIN(HopperSearchItemEvent);
 		EVENT_INSERT(DimensionId);
-		EVENT_INSERT(HopperBlock);
+		EVENT_INSERT_EX(HppperBlock, PyBlock(e.mHopperBlock));
 		EVENT_INSERT(MinecartPos);
 		EVENT_END;
 		break;
@@ -987,21 +1151,21 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onBlockChanged:
 		EVENT_BEGIN(BlockChangedEvent);
-		EVENT_INSERT_EX(NewBlockInstance, new PyBlock(e.mNewBlockInstance));
-		EVENT_INSERT_EX(PreviousBlockInstance, new PyBlock(e.mPreviousBlockInstance));
+		EVENT_INSERT_EX(NewBlockInstance, PyBlock(e.mNewBlockInstance));
+		EVENT_INSERT_EX(PreviousBlockInstance, PyBlock(e.mPreviousBlockInstance));
 		EVENT_END;
 		break;
 	case EventCode::onNpcCmd:
 		EVENT_BEGIN(NpcCmdEvent);
 		EVENT_INSERT(Command);
-		EVENT_INSERT_EX(Npc, new PyEntity(e.mNpc));
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Npc, PyEntity(e.mNpc));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_END;
 		break;
 	case EventCode::onScoreChanged:
 		EVENT_BEGIN(PlayerScoreChangedEvent);
 		EVENT_INSERT_EX(ObjectiveName, e.mObjective->getName());
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT(Score);
 		//TODO: more info about Objective
 		EVENT_END;
@@ -1026,7 +1190,7 @@ void EnableEventListener(EventCode code) {
 		EVENT_BEGIN(PlayerEffectChangedEvent);
 		//TODO: more info about Effect
 		EVENT_INSERT_EX(Effect, e.mEffect->getDisplayName());
-		EVENT_INSERT_EX(Player, new PyEntity(e.mPlayer));
+		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT_EX(Type, magic_enum::enum_name(e.mEventType));
 		EVENT_END;
 		break;
@@ -1034,24 +1198,7 @@ void EnableEventListener(EventCode code) {
 		break;
 	}
 }
-
-bool IsPlayer(Actor* ptr) {
-	if (ptr == nullptr)
-		return false;
-	if (ptr->getEntityTypeId() != 319)
-		return false;
-	return true;
-}
-//字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库
-fifo_json StrToJson(std::string_view str) {
-	try {
-		return fifo_json::parse(str);
-	}
-	catch (const std::exception& e) {
-		logger.error("\nParsing JSON failed! {}", e.what());
-		return nullptr;
-	}
-}
+#pragma endregion
 //将Python解释器初始化插入bds主函数
 THook(int, "main", int argc, char* argv[], char* envp[]) {
 	namespace fs = filesystem;
@@ -1068,24 +1215,55 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	logger.info("{} loaded.", PYR_VERSION);
 	//启用线程支持
 	PyEval_InitThreads();
-	PY_TRY;
 	for (auto& info : fs::directory_iterator(PLUGIN_PATH)) {
 		if (info.path().extension() == ".py") {
 			string name(info.path().stem().u8string());
 			//忽略以'_'开头的文件
 			if (name.front() == '_') {
-				logger.info("Ignoring {}", name);
+				logger.debug("Ignoring {}", name);
 				continue;
 			}
 			else {
 				logger.info("Loading {}", name);
+				PY_TRY;
 				auto m = py::module_::import(name.c_str());
+				PY_CATCH;
 			}
 		}
 	}
-	PY_CATCH;
 	//启动子线程前执行，释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
 	PyEval_ReleaseThread(PyThreadState_Get());
+	return original(argc, argv, envp);
+}
+////Dll主函数
+//BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
+//	hinstDLL;
+//	lpReserved;
+//	switch (fdwReason) {
+//	case DLL_PROCESS_ATTACH:
+//		//Initialize once for each new process.
+//		//Return FALSE to fail DLL load.
+//		break;
+//	case DLL_THREAD_ATTACH:
+//		//Do thread-specific initialization.
+//		break;
+//	case DLL_THREAD_DETACH:
+//		//Do thread-specific cleanup.
+//		break;
+//	case DLL_PROCESS_DETACH:
+//		//Perform any necessary cleanup.
+//		break;
+//	}
+//	return TRUE;//Successful DLL_PROCESS_ATTACH.
+//}
+
+extern "C" _declspec(dllexport) void onPostInit() {
+	std::ios::sync_with_stdio(false);
+	LL::registerPlugin(
+		"BDSpyrunner", "For .py plugins' loading",
+		LL::Version(PYR_VERSION_MAJOR, PYR_VERSION_MINOR, PYR_VERSION_MICRO, LL::Version::Release),
+		{{"Author", "twoone3"}}
+	);
 	//注册命令监听
 	Event::RegCmdEvent::subscribe(
 		[] (Event::RegCmdEvent e) {
@@ -1100,159 +1278,13 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	//命令监听
 	Event::PlayerCmdEvent::subscribe(
 		[] (Event::PlayerCmdEvent e) {
-		PY_TRY;
-		py::gil_scoped_acquire _gil;
 		for (auto& [cmd, data] : g_commands) {
 			if (e.mCommand._Starts_with(cmd)) {
-				//TODO: 为什么崩溃
-				data.second(new PyEntity(e.mPlayer), e.mCommand);
+				call(data.second, PyEntity(e.mPlayer), e.mCommand);
 				return false;
 			}
 		}
-		PY_CATCH;
 		return true;
 	}
 	);
-	return original(argc, argv, envp);
 }
-//Dll主函数
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
-	hinstDLL;
-	lpReserved;
-	switch (fdwReason) {
-	case DLL_PROCESS_ATTACH:
-		//Initialize once for each new process.
-		//Return FALSE to fail DLL load.
-		LL::registerPlugin(
-			"BDSpyrunner", "For .py plugins' loading",
-			LL::Version(PYR_VERSION_MAJOR, PYR_VERSION_MINOR, PYR_VERSION_MICRO, LL::Version::Release),
-			{{"Author", "twoone3"}}
-		);
-		break;
-	case DLL_THREAD_ATTACH:
-		//Do thread-specific initialization.
-		break;
-	case DLL_THREAD_DETACH:
-		//Do thread-specific cleanup.
-		break;
-	case DLL_PROCESS_DETACH:
-		//Perform any necessary cleanup.
-		break;
-	}
-	return TRUE;//Successful DLL_PROCESS_ATTACH.
-}
-
-#if 0
-//GBK转UTF8
-static string GbkToUtf8(const char* src_str) {
-	int len = MultiByteToWideChar(CP_ACP, 0, src_str, -1, NULL, 0);
-	wchar_t* wstr = new wchar_t[len + 1];
-	memset(wstr, 0, len + 1);
-	MultiByteToWideChar(CP_ACP, 0, src_str, -1, wstr, len);
-	len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
-	char* str = new char[len + 1];
-	memset(str, 0, len + 1);
-	WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, NULL);
-	string strTemp = str;
-	if (wstr) delete[] wstr;
-	if (str) delete[] str;
-	return strTemp;
-}
-//UTF8转GBK
-static string Utf8ToGbk(const char* src_str) {
-	int len = MultiByteToWideChar(CP_UTF8, 0, src_str, -1, NULL, 0);
-	wchar_t* wszGBK = new wchar_t[len + 1];
-	memset(wszGBK, 0, len * 2 + 2);
-	MultiByteToWideChar(CP_UTF8, 0, src_str, -1, wszGBK, len);
-	len = WideCharToMultiByte(CP_ACP, 0, wszGBK, -1, NULL, 0, NULL, NULL);
-	char* szGBK = new char[len + 1];
-	memset(szGBK, 0, len + 1);
-	WideCharToMultiByte(CP_ACP, 0, wszGBK, -1, szGBK, len, NULL, NULL);
-	string strTemp(szGBK);
-	if (wszGBK) delete[] wszGBK;
-	if (szGBK) delete[] szGBK;
-	return strTemp;
-}
-//转宽字符
-static wstring ToWstring(string_view s) {
-	string curlLocale = setlocale(LC_ALL, NULL);
-	setlocale(LC_ALL, "chs");
-	const char* _Source = s.data();
-	size_t _Dsize = s.size() + 1;
-
-	wchar_t* _Dest = new wchar_t[_Dsize];
-	size_t i;
-	mbstowcs_s(&i, _Dest, _Dsize, _Source, s.size());
-	wstring result = _Dest;
-	delete[] _Dest;
-	setlocale(LC_ALL, curlLocale.c_str());
-	return result;
-}
-//访问url
-static Json AccessUrlForJson(const wchar_t* url) {
-	string data;
-	//非空终止
-	char buffer[BLOCK_SIZE];
-
-	HINTERNET hSession = InternetOpen(USER_AGENT, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
-	if (!hSession)
-		return nullptr;
-	HINTERNET handle2 = InternetOpenUrl(hSession, url, NULL, 0, INTERNET_FLAG_DONT_CACHE, 0);
-	if (!handle2)
-		return nullptr;
-	DWORD size = 0;
-	do {
-		InternetReadFile(handle2, buffer, BLOCK_SIZE, &size);
-		data.append(buffer, size);
-	}
-	while (size);
-	InternetCloseHandle(handle2);
-	InternetCloseHandle(hSession);
-	return StrToJson(data);
-}
-//访问url
-static void AccessUrlForFile(const wchar_t* url, string_view filename) {
-	//非空终止
-	char buffer[BLOCK_SIZE];
-
-	HINTERNET hSession = InternetOpen(USER_AGENT, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
-	if (!hSession)
-		return;
-	HINTERNET handle2 = InternetOpenUrl(hSession, url, NULL, 0, INTERNET_FLAG_DONT_CACHE, 0);
-	if (!handle2)
-		return;
-	DWORD total = 0;
-	DWORD size = 0;
-	ofstream file(filename.data(), ios::out | ios::binary);
-	do {
-		total += size;
-		cout << "Downloading " << filename << "... " << total << "bytes\r";
-		InternetReadFile(handle2, buffer, BLOCK_SIZE, &size);
-		file.write(buffer, size);
-	}
-	while (size);
-	InternetCloseHandle(handle2);
-	InternetCloseHandle(hSession);
-}
-//检查版本
-static void CheckPluginVersion() {
-	if (!fs::exists(BAT_PATH))
-		return;
-	cout << "[BDSpyrunner] Checking plugin version..." << endl;
-	Json info = AccessUrlForJson(L"https://api.github.com/repos/twoone-3/BDSpyrunner/releases/latest");
-	if (info["tag_name"] == PYR_VERSION) {
-		cout << "[BDSpyrunner] Your plugin version is latest." << endl;
-		return;
-	}
-	cout << "[BDSpyrunner] Your plugin version isn't latest, auto downloading..." << endl;
-	for (auto& asset : info["assets"]) {
-		string download_url = asset["browser_download_url"];
-		download_url.replace(8, 10, "hub.fastgit.org");
-		AccessUrlForFile(ToWstring(download_url).c_str(), CACHE_PATH + string(asset["name"]));
-		cout << asset["name"] << " was downloaded successfully, size: " << asset["size"] << endl;
-	}
-	cout << "[BDSpyrunner] The new version has been downloaded to plugins/download, please restart the server to replace it" << endl;
-	system("start /min " BAT_PATH);
-	exit(0);
-}
-#endif

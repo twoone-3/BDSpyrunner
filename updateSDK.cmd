@@ -1,4 +1,3 @@
-﻿
 git submodule deinit --all -f
 git rm --cached SDK
 rmdir /S /Q SDK

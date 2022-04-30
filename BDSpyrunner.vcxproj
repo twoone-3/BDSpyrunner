@@ -51,8 +51,9 @@
       <DisableSpecificWarnings>4996;4471;4499;4244</DisableSpecificWarnings>
       <UseFullPaths>false</UseFullPaths>
       <ErrorReporting>Send</ErrorReporting>
-      <PrecompiledHeader>Create</PrecompiledHeader>
-      <PrecompiledHeaderFile>Common.h</PrecompiledHeaderFile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -69,10 +70,10 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="mod\PyAPI.cpp" />
+    <ClCompile Include="mod\pyr.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mod\Common.h" />
+    <ClInclude Include="mod\garbage.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\python37.lib" />
