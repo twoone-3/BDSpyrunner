@@ -15,7 +15,6 @@
 #include <MC/ActorDamageSource.hpp>
 #include <MC/Block.hpp>
 #include <MC/BlockActor.hpp>
-#include <MC/BlockLegacy.hpp>
 #include <MC/BlockPalette.hpp>
 #include <MC/BlockSource.hpp>
 #include <MC/Common.hpp>
