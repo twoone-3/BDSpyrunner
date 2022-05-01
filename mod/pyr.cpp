@@ -19,7 +19,7 @@
 #include <MC/BlockSource.hpp>
 #include <MC/Common.hpp>
 #include <MC/Container.hpp>
-#include <MC/ItemInstance.hpp>
+//#include <MC/ItemInstance.hpp>
 #include <MC/ItemStack.hpp>
 #include <MC/Level.hpp>
 #include <MC/MobEffect.hpp>
@@ -29,7 +29,7 @@
 #include <MC/Scoreboard.hpp>
 #include <MC/ServerNetworkHandler.hpp>
 #include <MC/SignBlockActor.hpp>
-#include <MC/SimpleContainer.hpp>
+//#include <MC/SimpleContainer.hpp>
 #include <MC/Spawner.hpp>
 #include <MC/StructureSettings.hpp>
 #include <MC/StructureTemplate.hpp>
@@ -62,6 +62,8 @@
 #define EVENT_INSERT(key) h.insert(#key, e.m##key)
 #define EVENT_INSERT_EX(key, value) h.insert(#key, (value))
 #define EVENT_END PY_CATCH return h.callback();})
+
+#define ADD_ENUM(type) 	{auto entries = magic_enum::enum_entries<type>(); auto e = py::enum_<type>(m, #type); for (auto& [val, name] : entries) {e.value(name.data(), val); }}
 
 namespace py = pybind11;
 using json_t = nlohmann::detail::value_t;
@@ -192,6 +194,7 @@ Player* P(Actor* a) {
 		throw std::runtime_error("The ptr is not Player*");
 	return static_cast<Player*>(a);
 }
+
 //struct PyNBT;
 //struct PyContainer;
 //struct PyItem;
@@ -398,11 +401,8 @@ struct PyEntity {
 		thiz->teleport(pos, dim);
 	}
 	//发送文本
-	void sendText(const string& text, const string& type = "RAW") {
-		auto t = magic_enum::enum_cast<TextType>(type);
-		if (!t)
-			throw py::value_error("Invalid text type " + type);
-		P(thiz)->sendTextPacket(text, t.value());
+	void sendText(const string& text, TextType type = TextType::RAW) {
+		P(thiz)->sendTextPacket(text, type);
 	}
 	//模拟玩家执行命令
 	void runCommand(const string& cmd) { P(thiz)->sendCommandRequestPacket(cmd); }
@@ -421,13 +421,13 @@ struct PyEntity {
 	//增加等级
 	void addLevel(int level) { P(thiz)->addLevels(level); }
 	//跨服传送
-	void transferServer(const string& address, unsigned short port) {
+	void transferServer(const string& address, unsigned short port = 19132) {
 		P(thiz)->sendTransferPacket(address, port);
 	}
 	//发送表单
 	bool sendCustomForm(const string& str, const py::function& cb) {
 		return P(thiz)->sendCustomFormPacket(str,
-			[this, cb] (string arg) {call(cb, PyEntity(thiz), py::eval(arg)); });
+			[this, cb] (const string& arg) {call(cb, PyEntity(thiz), py::eval(arg)); });
 	}
 	bool sendSimpleForm(const string& title, const string& content,
 		const vector<string>& buttons, const vector<string>& images, const py::function& cb) {
@@ -444,18 +444,13 @@ struct PyEntity {
 			[this, cb] (bool arg) {call(cb, PyEntity(thiz), arg); });
 	}
 	//设置侧边栏
-	void setSidebar(const string& title, const string& side_data, const string& order_str) {
-		auto order = magic_enum::enum_cast<ObjectiveSortOrder>(order_str);
-		if (!order)
-			throw py::value_error("Invalid order " + order_str);
-		ObjectiveSortOrder::Ascending;
-		ObjectiveSortOrder::Descending;
+	void setSidebar(const string& title, const string& side_data, ObjectiveSortOrder order) {
 		vector<pair<string, int>> data;
 		fifo_json value = StrToJson(side_data);
 		for (auto& [key, val] : value.items()) {
 			data.push_back({key, val});
 		}
-		P(thiz)->setSidebar(title, data, order.value());
+		P(thiz)->setSidebar(title, data, order);
 	}
 	void removeSidebar() { P(thiz)->removeSidebar(); }
 	//Boss栏
@@ -514,8 +509,6 @@ void setListener(const string& event_name, const py::function& cb) {
 //注册命令
 void registerCommand(const string& cmd, const py::function& cb, const string& des) {
 	g_commands[cmd] = make_pair(des, py::function(cb));
-	//py::print(cb);
-	//py::print(g_commands[cmd].second);
 }
 //获取玩家
 PyEntity getPlayer(const string& name) {
@@ -540,33 +533,9 @@ py::list getEntityList() {
 	}
 	return l;
 }
-//设置服务器motd
-void setServerMotd(const string& motd) {
-	if (Global<ServerNetworkHandler> == nullptr)
-		throw runtime_error("Server dim not finish loading");
-	LL::setServerMotd(motd);
-}
-//广播文本
-void broadcastText(const string& text, const string& type = "RAW") {
-	auto t = magic_enum::enum_cast<TextType>(type);
-	if (!t)
-		throw py::value_error("Invalid text type " + type);
-	Level::broadcastText(text, t.value());
-}
-//广播标题
-void broadcastTitle(const string& text, const string& type,
-	int fade_in_duration, int remain_duration, int fade_out_duration) {
-	auto t = magic_enum::enum_cast<TitleType>(type);
-	if (!t)
-		throw py::value_error("Invalid title type " + type);
-	Level::broadcastTitle(text, t.value(), fade_in_duration, remain_duration, fade_out_duration);
-}
 //获取方块
 PyBlock getBlock(const BlockPos& pos, int dim) {
-	BlockSource* bs = Level::getBlockSource(dim);
-	if (bs == nullptr)
-		throw py::value_error("Unknown dimension ID");
-	return Level::getBlockInstance(pos, bs);
+	return BlockInstance::createBlockInstance(Level::getBlock(pos, dim), pos, dim);
 }
 //设置方块
 void setBlock(const BlockPos& pos, int dim, const string& name, int tile_data) {
@@ -584,28 +553,9 @@ PyNBT getStructure(const BlockPos& pos1, const BlockPos& pos2, int dim,
 }
 //从NBT结构数据导出结构到指定地点
 void setStructure(const PyNBT& nbt, const BlockPos& pos, int dim,
-	const string& mirror_str, const string& rotation_str) {
-	//enum Mirror : unsigned char {
-	//	None_15 = 0,
-	//	X,
-	//	Z,
-	//	XZ,
-	//};
-	//enum Rotation : unsigned char {
-	//	None_14 = 0,
-	//	Rotate90,
-	//	Rotate180,
-	//	Rotate270,
-	//	Total,
-	//};
-	auto mir = magic_enum::enum_cast<Mirror>(mirror_str);
-	if (!mir)
-		throw py::value_error("Invalid mirror type " + mirror_str);
-	auto rot = magic_enum::enum_cast<Rotation>(rotation_str);
-	if (!rot)
-		throw py::value_error("Invalid rotation type " + rotation_str);
+	Mirror mir, Rotation rot) {
 	StructureTemplate::fromTag("name", *nbt.thiz->asCompoundTag())
-		.toWorld(dim, pos, mir.value(), rot.value());
+		.toWorld(dim, pos, mir, rot);
 	/*for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {
 			for (int z = 0; z != size.z; ++z) {
@@ -719,7 +669,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("addItem", &PyEntity::addItem)
 		.def("removeItem", &PyEntity::removeItem)
 		.def("teleport", &PyEntity::teleport)
-		.def("sendText", &PyEntity::sendText, "text"_a, "type"_a = "RAW")
+		.def("sendText", &PyEntity::sendText, "text"_a, "type"_a = TextType::RAW)
 		.def("runCommand", &PyEntity::runCommand)
 		.def("resendAllChunks", &PyEntity::resendAllChunks)
 		.def("disconnect", &PyEntity::disconnect, "msg"_a = "")
@@ -771,9 +721,9 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getPlayer", &getPlayer)
 		.def("getPlayerList", &getPlayerList)
 		.def("getEntityList", &getEntityList)
-		.def("setServerMotd", &setServerMotd)
-		.def("broadcastText", &broadcastText)
-		.def("broadcastTitle", &broadcastTitle)
+		.def("setServerMotd", &LL::setServerMotd)
+		.def("broadcastText", &Level::broadcastText, "text"_a, "type"_a = TextType::RAW)
+		.def("broadcastTitle", &Level::broadcastTitle, "text"_a, "type"_a = TitleType::SetTitle, "fade_in_duration"_a, "remain_duration"_a, "fade_out_duration"_a)
 		.def("getBlock", &getBlock)
 		.def("setBlock", py::overload_cast<const BlockPos&, int, const string&, int>(&setBlock))
 		.def("setBlock", py::overload_cast<const BlockPos&, int, PyBlock&>(&setBlock))
@@ -802,6 +752,12 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def_property("z", [] (const BlockPos& pos) {return pos.z; }, [] (BlockPos& pos, int val) {pos.z = val; })
 		.def("__repr__", &BlockPos::toString)
 		;
+#pragma endregion
+#pragma region Enum
+	ADD_ENUM(TitleType);
+	ADD_ENUM(TextType);
+	ADD_ENUM(Mirror);
+	ADD_ENUM(Rotation);
 #pragma endregion
 }
 #pragma region Events
@@ -1234,27 +1190,6 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	PyEval_ReleaseThread(PyThreadState_Get());
 	return original(argc, argv, envp);
 }
-////Dll主函数
-//BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
-//	hinstDLL;
-//	lpReserved;
-//	switch (fdwReason) {
-//	case DLL_PROCESS_ATTACH:
-//		//Initialize once for each new process.
-//		//Return FALSE to fail DLL load.
-//		break;
-//	case DLL_THREAD_ATTACH:
-//		//Do thread-specific initialization.
-//		break;
-//	case DLL_THREAD_DETACH:
-//		//Do thread-specific cleanup.
-//		break;
-//	case DLL_PROCESS_DETACH:
-//		//Perform any necessary cleanup.
-//		break;
-//	}
-//	return TRUE;//Successful DLL_PROCESS_ATTACH.
-//}
 
 extern "C" _declspec(dllexport) void onPostInit() {
 	std::ios::sync_with_stdio(false);
