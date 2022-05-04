@@ -37,6 +37,15 @@ perm:int - 玩家权限值                        # passing
 platform_online_id:str - 玩家设备ID          # empty string
 platform:int - 玩家设备操作系统               # passing
 IP:str - 玩家IP                              # passing
+
+Unresponsive listeners:
+onCloseContainer
+onScoreChanged
+onFireSpread
+onUseSignBlock
+
+Problematic but available listeners:
+onPistonPush
 '''
 
 
