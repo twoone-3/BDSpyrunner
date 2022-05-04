@@ -33,7 +33,7 @@ is_standing:bool - 实体是否站立在方块上       # passing
 is_sneaking:bool - 实体是否潜行              # passing
 health:int - 实体当前生命                    # output unknown
 maxhealth:int - 实体最大生命                 # passing
-perm:int - 玩家权限值                        # testing
+perm:int - 玩家权限值                        # passing
 platform_online_id:str - 玩家设备ID          # empty string
 platform:int - 玩家设备操作系统               # passing
 IP:str - 玩家IP                              # passing
