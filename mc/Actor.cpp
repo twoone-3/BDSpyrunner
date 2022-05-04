@@ -75,8 +75,8 @@ ItemStack* Actor::getArmor(int slot) {
 //获取实体类型
 
 unsigned Actor::getEntityTypeId() {
-	return VirtualCall<unsigned>(0x550, this);
-	//return SymCall<unsigned>("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ", this);
+	//return VirtualCall<unsigned>(0x550, this);
+	return SymCall<unsigned>("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ", this);
 }
 
 //获取查询用ID
@@ -428,7 +428,7 @@ void Player::sendSetScorePacket(char type, const vector<ScorePacketInfo>& slot) 
 bool IsPlayer(Actor* ptr) {
 	if (ptr == nullptr)
 		return false;
-	if (ptr->getEntityTypeId() != 319)
+	if (ptr->getEntityTypeId() != 1)
 		return false;
 	return true;
 }
