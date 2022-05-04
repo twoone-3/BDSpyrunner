@@ -591,7 +591,8 @@ THOOK(onMobDie, void, "?die@Mob@@UEAAXAEBVActorDamageSource@@@Z",
 	Mob* _this, uintptr_t dmsg) {
 	EventCallBackHelper h(EventCode::onMobDie);
 	char v72;
-	Actor* sa = _this->getLevel()->fetchEntity(*(uintptr_t*)((*(uintptr_t(__fastcall**)(uintptr_t, char*))(*(uintptr_t*)dmsg + 64))(dmsg, &v72)));
+	//IDA Mob::die Line163  v16 = (_QWORD *)(*(__int64 (__fastcall **)(const struct ActorDamageSource *, char *))(*(_QWORD *)v2 + 88i64))(v2, & v91);
+	Actor* sa = _this->getLevel()->fetchEntity(*(uintptr_t*)((*(uintptr_t(__fastcall**)(uintptr_t, char*))(*(uintptr_t*)dmsg + 88))(dmsg, &v72)));
 	h
 		.insert("actor1", _this)
 		.insert("actor2", sa)
