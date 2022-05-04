@@ -48,6 +48,14 @@ Vec3* Actor::getPosPrev() {
 	return SymCall<Vec3*>("?getPosPrev@Actor@@UEBAAEBVVec3@@XZ", this);
 }
 
+//获取生物坐标的变化量
+//取消注释后 Actor::getPos() 获取的值也变成 Actor::getPosDelta() 获取的值，待修复
+/*
+Vec3* Actor::getPosDelta() {
+	return SymCall<Vec3*>("?getPosDelta@Actor@@QEBAAEBVVec3@@XZ", this);
+}
+*/
+
 //是否悬空
 
 bool Actor::isStanding() {//IDA MovePlayerPacket::MovePlayerPacket

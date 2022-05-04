@@ -759,13 +759,28 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 //玩家移动
 THOOK(onMove, void*, "??0MovePlayerPacket@@QEAA@AEBVPlayer@@W4PositionMode@1@HH@Z",
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
-	Vec3* lastPos = p->getPosPrev();
-	Vec3* pos = p->getPos();
-	if (lastPos->x != pos->x || lastPos->y != pos->y || lastPos->z != pos->z) {
+	/*
+	Vec3* deltaPos = p->getPosDelta();
+	//Vec3* prevPos = p->getPosPrev();
+	//Vec3* pos = p->getPos();
+	//cout << "lastPos: " << deltaPos->x << ", " << deltaPos->y << ", " << deltaPos->z << endl;
+	//cout << "prevPos: " << prevPos->x << ", " << prevPos->y << ", " << prevPos->z << endl;
+	//cout << "CurrPos: " << pos->x << ", " << pos->y << ", " << pos->z << endl;
+	if (p->isStanding()) {
+		if (deltaPos->x < 0.01 && float(deltaPos->y) == float(-0.0784) && deltaPos->z < 0.01)
+			if(deltaPos->x > -0.01 && deltaPos->z > -0.01)
+				return original(_this, p, a3, a4, a5);
+	}else {
+		if (deltaPos->x < 0.01 && deltaPos->y < 0.01 && deltaPos->z < 0.01)
+			if (deltaPos->x > -0.01 && deltaPos->y > -0.01 && deltaPos->z > -0.01)
+				return original(_this, p, a3, a4, a5);
+	}
+	*/
+	//if (lastPos->x != pos->x || lastPos->y != pos->y || lastPos->z != pos->z) { //最开始的过滤代码，因为getPos()和getPosPrev()获取到的值一样而无效
 		EventCallBackHelper h(EventCode::onMove);
 		h.setArg(ToEntity(p)).call();
 		return original(_this, p, a3, a4, a5);
-	}
+	//}
 	return original(_this, p, a3, a4, a5);
 }
 //玩家穿戴
