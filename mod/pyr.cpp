@@ -1,83 +1,19 @@
-﻿#pragma execution_character_set("utf-8")
-#pragma region LL
-#include <DynamicCommandAPI.h>
-#include <FormUI.h>
-#include <LoggerAPI.h>
-#include <EventAPI.h>
-#include <ServerAPI.h>
-#pragma endregion
-#pragma region third_party
-#include <third-party/magic_enum/magic_enum.hpp>
-#include <third-party/Nlohmann/fifo_json.hpp>
-#pragma endregion
-#pragma region MC
-#include <MC/Actor.hpp>
-#include <MC/ActorDamageSource.hpp>
-#include <MC/Block.hpp>
-#include <MC/BlockActor.hpp>
-#include <MC/BlockPalette.hpp>
-#include <MC/BlockSource.hpp>
-#include <MC/Common.hpp>
-#include <MC/Container.hpp>
-//#include <MC/ItemInstance.hpp>
-#include <MC/ItemStack.hpp>
-#include <MC/Level.hpp>
-#include <MC/MobEffect.hpp>
-#include <MC/Objective.hpp>
-#include <MC/Player.hpp>
-#include <MC/RakNet.hpp>
-#include <MC/Scoreboard.hpp>
-#include <MC/ServerNetworkHandler.hpp>
-#include <MC/SignBlockActor.hpp>
-//#include <MC/SimpleContainer.hpp>
-#include <MC/Spawner.hpp>
-#include <MC/StructureSettings.hpp>
-#include <MC/StructureTemplate.hpp>
-#pragma endregion
-#pragma region NBT
-#include <MC/ByteArrayTag.hpp>
-#include <MC/ByteTag.hpp>
-#include <MC/CompoundTag.hpp>
-#include <MC/DoubleTag.hpp>
-#include <MC/EndTag.hpp>
-#include <MC/FloatTag.hpp>
-#include <MC/Int64Tag.hpp>
-#include <MC/IntArrayTag.hpp>
-#include <MC/IntTag.hpp>
-#include <MC/ListTag.hpp>
-#include <MC/ShortTag.hpp>
-#include <MC/StringTag.hpp>
-#include <MC/Tag.hpp>
-#pragma endregion
-#pragma region Python
-#include <pybind11/embed.h>
-#include <pybind11/stl.h>
-#pragma endregion
-
-#define PY_TRY try {
-#define PY_CATCH } catch (const std::exception& e) {logger.error("\n{}", e.what());}
-#define PLUGIN_PATH "plugins\\py\\"
-
-#define EVENT_BEGIN(evt) evt::subscribe([code](evt e){Callbacker h(code); PY_TRY; h.insert("Event", py::cast(magic_enum::enum_name(code)))
-#define EVENT_INSERT(key) h.insert(#key, e.m##key)
-#define EVENT_INSERT_EX(key, value) h.insert(#key, (value))
-#define EVENT_END PY_CATCH return h.callback();})
-
-#define ADD_ENUM(type) 	{auto entries = magic_enum::enum_entries<type>(); auto e = py::enum_<type>(m, #type); for (auto& [val, name] : entries) {e.value(name.data(), val); }}
-
-namespace py = pybind11;
-using json_t = nlohmann::detail::value_t;
+﻿#include "pch.h"
 using namespace std;
 
 #pragma region Version
 constexpr unsigned PYR_VERSION_MAJOR = 1;
-constexpr unsigned PYR_VERSION_MINOR = 9;
-constexpr unsigned PYR_VERSION_MICRO = 10;
-constexpr const char* PYR_VERSION = "v1.9.10";
+constexpr unsigned PYR_VERSION_MINOR = 10;
+constexpr unsigned PYR_VERSION_MICRO = 0;
+constexpr const char* PYR_VERSION = "v1.10.0";
 #pragma endregion
 #pragma region Mess
 //全局Logger
 static Logger logger("BDSpyrunner");
+// Py函数表
+static std::unordered_map<enum class EventCode, std::vector<py::function>> g_cb_functions;
+//注册命令
+// static std::unordered_map<std::string, std::pair<std::string, py::function>> g_commands;
 //输出错误信息
 void PrintError(const std::exception&);
 //判断指针是否为player
@@ -158,7 +94,7 @@ py::object call(const py::object& obj, Args&&... args) {
 	py::gil_scoped_acquire gil_;
 	return obj(std::forward<Args>(args)...);
 	PY_CATCH;
-	return {};
+	return py::none();
 }
 //判断指针是否为玩家
 bool IsPlayer(Actor* ptr) {
@@ -176,18 +112,14 @@ fifo_json StrToJson(std::string_view str) {
 		return nullptr;
 	}
 }
-//Py函数表
-static std::unordered_map<EventCode, std::vector<py::function>> g_cb_functions;
-//注册命令
-static std::unordered_map<std::string, std::pair<std::string, py::function>> g_commands;
-//class PyGILGuard {
-//public:
+// class PyGILGuard {
+// public:
 //	PyGILGuard() { gil_ = PyGILState_Ensure(); }
 //	~PyGILGuard() { PyGILState_Release(gil_); }
 //
-//private:
+// private:
 //	PyGILState_STATE gil_;
-//};
+// };
 //转Player
 Player* P(Actor* a) {
 	if (!IsPlayer(a))
@@ -195,12 +127,25 @@ Player* P(Actor* a) {
 	return static_cast<Player*>(a);
 }
 
-//struct PyNBT;
-//struct PyContainer;
-//struct PyItem;
-//struct PyEntity;
-//struct PyBlock;
-//struct PyLogger;
+// struct PyNBT;
+// struct PyContainer;
+// struct PyItem;
+// struct PyEntity;
+// struct PyBlock;
+// struct PyLogger;
+#pragma endregion
+#pragma region Command
+struct PyCommand {
+	unique_ptr<DynamicCommandInstance> thiz;
+
+	PyCommand(const string& name, const string& desc, CommandPermissionLevel perm) : thiz(DynamicCommand::createCommand(name, desc, perm)) {}
+	void setCallback(py::function cb) {
+		thiz->setCallback([cb](DynamicCommand const& command, CommandOrigin const& origin,
+							  CommandOutput& output, std::unordered_map<std::string, DynamicCommand::Result>& results) {
+			call(cb, results);
+		});
+	}
+};
 #pragma endregion
 #pragma region NBT
 struct PyNBT {
@@ -259,7 +204,7 @@ struct PyNBT {
 			break;
 		case Tag::ByteArray:
 			thiz = ByteArrayTag::create();
-			//TODO: enable to construct ByteArray
+			// TODO: enable to construct ByteArray
 			break;
 		case Tag::String:
 			thiz = StringTag::create();
@@ -289,11 +234,12 @@ struct PyNBT {
 	string_view getType() { return magic_enum::enum_name(thiz->getTagType()); }
 	py::bytes toBinary() { return thiz->asCompoundTag()->toBinaryNBT(); }
 	string toJson(int indentatiton = 4) { return thiz->toJson(indentatiton); }
+	py::object toObject() { return py::eval(thiz->toJson(0)); }
 	string toSNBT() { return thiz->asCompoundTag()->toSNBT(); }
 	void append(const PyNBT& value) {
 		if (thiz->getTagType() != Tag::List)
 			throw py::type_error("Type of tag must be list");
-		//TODO: find out why it don't work
+		// TODO: find out why it don't work
 		thiz->asListTag()->add(value.thiz->copy());
 	}
 };
@@ -302,8 +248,8 @@ struct PyNBT {
 struct PyItem {
 	ItemStack* thiz;
 
-	PyItem(ItemStack* other) :thiz(other) {}
-	PyItem(const PyNBT& nbt) :thiz(new ItemStack(ItemStack::fromTag(*nbt.thiz->asCompoundTag()))) {}
+	PyItem(ItemStack* other) : thiz(other) {}
+	PyItem(const PyNBT& nbt) : thiz(new ItemStack(ItemStack::fromTag(*nbt.thiz->asCompoundTag()))) {}
 	string getName() { return thiz->getName(); }
 	PyNBT getNBT() { return thiz->getNbt(); }
 };
@@ -312,7 +258,7 @@ struct PyItem {
 struct PyContainer {
 	Container* thiz;
 
-	PyContainer(Container* value) :thiz(value) {}
+	PyContainer(Container* value) : thiz(value) {}
 
 	PyItem __getitem__(int slot) { return thiz->getSlot(slot); }
 	void __setitem__(int slot, const PyItem& val) { *thiz->getSlot(slot) = *val.thiz; }
@@ -329,7 +275,7 @@ struct PyContainer {
 struct PyEntity {
 	Actor* thiz;
 
-	PyEntity(Actor* a) :thiz(a) {}
+	PyEntity(Actor* a) : thiz(a) {}
 	//获取名字
 	string getName() { return thiz->getNameTag(); }
 	//设置名字
@@ -427,7 +373,7 @@ struct PyEntity {
 	//发送表单
 	bool sendCustomForm(const string& str, const py::function& cb) {
 		return P(thiz)->sendCustomFormPacket(str,
-			[this, cb] (const string& arg) {call(cb, PyEntity(thiz), py::eval(arg)); });
+			[this, cb](const string& arg) { call(cb, PyEntity(thiz), py::eval(arg)); });
 	}
 	bool sendSimpleForm(const string& title, const string& content,
 		const vector<string>& buttons, const vector<string>& images, const py::function& cb) {
@@ -436,12 +382,12 @@ struct PyEntity {
 		if (buttons.size() != images.size())
 			throw py::value_error("The number of buttons is not equal to the number of images");
 		return P(thiz)->sendSimpleFormPacket(title, content, buttons, images,
-			[this, cb] (int arg) {call(cb, PyEntity(thiz), arg); });
+			[this, cb](int arg) { call(cb, PyEntity(thiz), arg); });
 	}
 	bool sendModalForm(const string& title, const string& content,
 		const string& button1, const string& button2, const py::function& cb) {
 		return P(thiz)->sendModalFormPacket(title, content, button1, button2,
-			[this, cb] (bool arg) {call(cb, PyEntity(thiz), arg); });
+			[this, cb](bool arg) { call(cb, PyEntity(thiz), arg); });
 	}
 	//设置侧边栏
 	void setSidebar(const string& title, const string& side_data, ObjectiveSortOrder order) {
@@ -453,7 +399,7 @@ struct PyEntity {
 		P(thiz)->setSidebar(title, data, order);
 	}
 	void removeSidebar() { P(thiz)->removeSidebar(); }
-	//Boss栏
+	// Boss栏
 	void setBossbar(const string& name, float per) { P(thiz)->sendBossEventPacket(BossEvent::Show, name, per, BossEventColour::Red); }
 	void removeBossbar(const string& name) { P(thiz)->sendBossEventPacket(BossEvent::Hide, name, 0, BossEventColour::Red); }
 	//标签
@@ -475,8 +421,8 @@ struct PyEntity {
 struct PyBlock {
 	BlockInstance thiz;
 
-	PyBlock(const BlockInstance& bi) :thiz(bi) {}
-	PyBlock(const BlockPos& pos, int dim) :thiz(Level::getBlockInstance(pos, dim)) {}
+	PyBlock(const BlockInstance& bi) : thiz(bi) {}
+	PyBlock(const BlockPos& pos, int dim) : thiz(Level::getBlockInstance(pos, dim)) {}
 	string getName() { return thiz.getBlock()->getName().getString(); }
 	PyNBT getNBT() { return CompoundTag::fromBlock(thiz.getBlock()); }
 	BlockPos getPos() { return thiz.getPosition(); }
@@ -487,7 +433,7 @@ struct PyBlock {
 struct PyLogger {
 	Logger thiz;
 
-	PyLogger(const string& title) :thiz(title) {}
+	PyLogger(const string& title) : thiz(title) {}
 	void info(const string& msg) { thiz.info(msg); }
 	void debug(const string& msg) { thiz.debug(msg); }
 	void fatal(const string& msg) { thiz.fatal(msg); }
@@ -506,10 +452,43 @@ void setListener(const string& event_name, const py::function& cb) {
 	//添加回调函数
 	g_cb_functions[event_code.value()].push_back(cb);
 }
-//注册命令
-void registerCommand(const string& cmd, const py::function& cb, const string& des) {
-	g_commands[cmd] = make_pair(des, py::function(cb));
-}
+////注册命令
+// void registerCommand(const string& name, const string& description, const string& des) {
+//	// Direct setup of dynamic command with necessary information
+//	using ParamType = DynamicCommand::ParameterType;
+//	// create a dynamic command
+//	auto command = DynamicCommand::createCommand("testcmd", "dynamic command", CommandPermissionLevel::GameMasters);
+//
+//	auto& optionsAdd = command->setEnum("TestOperation1", {"add", "remove"});
+//	auto& optionsList = command->setEnum("TestOperation2", {"list"});
+//
+//	command->mandatory("testEnum", ParamType::Enum, optionsAdd, CommandParameterOption::EnumAutocompleteExpansion);
+//	command->mandatory("testEnum", ParamType::Enum, optionsList, CommandParameterOption::EnumAutocompleteExpansion);
+//	command->mandatory("testString", ParamType::String);
+//
+//	command->addOverload({optionsAdd, "testString"}); // dyncmd <add|remove> <testString:string>
+//	command->addOverload({"TestOperation2"});		  // dyncmd <list>
+//
+//	command->setCallback([](DynamicCommand const& command, CommandOrigin const& origin,
+//							 CommandOutput& output, std::unordered_map<std::string, DynamicCommand::Result>& results) {
+//		switch (do_hash(results["testEnum"].getRaw<std::string>().c_str())) {
+//		case do_hash("add"):
+//			output.success(fmt::format("Add - {}", results["testString"].getRaw<std::string>()));
+//			break;
+//		case do_hash("remove"):
+//			output.success(fmt::format("Remove - {}", results["testString"].getRaw<std::string>()));
+//			break;
+//		case do_hash("list"):
+//			output.success("List");
+//			break;
+//		default:
+//			break;
+//		}
+//	});
+//	// do not forget to setup the command instance
+//	DynamicCommand::setup(std::move(command));
+//	//g_commands[cmd] = make_pair(des, py::function(cb));
+// }
 //获取玩家
 PyEntity getPlayer(const string& name) {
 	Player* p = Level::getPlayer(name);
@@ -604,8 +583,47 @@ constexpr int IsSlimeChunk(unsigned x, unsigned z) {
 	return !(mt0 % 10);
 }
 #pragma endregion
+
 PYBIND11_EMBEDDED_MODULE(mc, m) {
 	using py::literals::operator""_a;
+	PY_TRY;
+#pragma region Vec3
+	py::class_<Vec3>(m, "Vec3")
+		.def(py::init<float, float, float>())
+		.def_property(
+			"x", [](const Vec3& pos) { return pos.x; }, [](Vec3& pos, float val) { pos.x = val; })
+		.def_property(
+			"y", [](const Vec3& pos) { return pos.y; }, [](Vec3& pos, float val) { pos.y = val; })
+		.def_property(
+			"z", [](const Vec3& pos) { return pos.z; }, [](Vec3& pos, float val) { pos.z = val; })
+		.def("__repr__", &Vec3::toString);
+#pragma endregion
+#pragma region BockPos
+	py::class_<BlockPos>(m, "BlockPos")
+		.def(py::init<int, int, int>())
+		.def_property(
+			"x", [](const BlockPos& pos) { return pos.x; }, [](BlockPos& pos, int val) { pos.x = val; })
+		.def_property(
+			"y", [](const BlockPos& pos) { return pos.y; }, [](BlockPos& pos, int val) { pos.y = val; })
+		.def_property(
+			"z", [](const BlockPos& pos) { return pos.z; }, [](BlockPos& pos, int val) { pos.z = val; })
+		.def("__repr__", &BlockPos::toString);
+#pragma endregion
+#pragma region Enum
+	ADD_ENUM(TitleType);
+	ADD_ENUM(TextType);
+	ADD_ENUM(Mirror);
+	ADD_ENUM(Rotation);
+	ADD_ENUM(CommandPermissionLevel);
+	ADD_ENUM(DynamicCommand::ParameterType);
+#pragma endregion
+#pragma region Command
+	py::class_<PyCommand>(m, "Command")
+		.def(py::init<string, string, CommandPermissionLevel>(),
+			"name"_a, "desc"_a = "", "perm"_a = GameMasters)
+		.def("setCallback", &PyCommand::setCallback);
+	py::class_<DynamicCommand::Result>(m, "CommandResult");
+#pragma endregion
 #pragma region NBT
 	py::class_<PyNBT>(m, "NBT")
 		.def(py::init<string, py::object>(), "type"_a, "value"_a = nullptr)
@@ -621,24 +639,22 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getType", &PyNBT::getType)
 		.def("toBinary", &PyNBT::toBinary)
 		.def("toJson", &PyNBT::toJson)
+		//.def("toObject", &PyNBT::toObject)
 		.def("toSNBT", &PyNBT::toSNBT)
-		.def("append", &PyNBT::append)
-		;
+		.def("append", &PyNBT::append);
 #pragma endregion
 #pragma region Item
 	py::class_<PyItem>(m, "Item")
 		.def(py::init<PyNBT>(), "nbt"_a)
 		.def("__repr__", &PyItem::getName)
 		.def("getName", &PyItem::getName)
-		.def("getNBT", &PyItem::getNBT)
-		;
+		.def("getNBT", &PyItem::getNBT);
 #pragma endregion
 #pragma region Container
 	py::class_<PyContainer>(m, "Container")
 		.def("__getitem__", &PyContainer::__getitem__)
 		.def("__setitem__", &PyContainer::__setitem__)
-		.def("getAllSlots", &PyContainer::getAllSlots)
-		;
+		.def("getAllSlots", &PyContainer::getAllSlots);
 #pragma endregion
 #pragma region Entity
 	py::class_<PyEntity>(m, "Entity")
@@ -689,8 +705,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("addTag", &PyEntity::addTag)
 		.def("removeTag", &PyEntity::removeTag)
 		.def("getTags", &PyEntity::getTags)
-		.def("kill", &PyEntity::kill)
-		;
+		.def("kill", &PyEntity::kill);
 #pragma endregion
 #pragma region Block
 	py::class_<PyBlock>(m, "Block")
@@ -699,8 +714,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getName", &PyBlock::getName)
 		.def("getDimensionId", &PyBlock::getDimensionId)
 		.def("getNBT", &PyBlock::getNBT)
-		.def("getPos", &PyBlock::getPos)
-		;
+		.def("getPos", &PyBlock::getPos);
 #pragma endregion
 #pragma region Logger
 	py::class_<PyLogger>(m, "Logger")
@@ -708,8 +722,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("info", &PyLogger::info)
 		.def("debug", &PyLogger::debug)
 		.def("fatal", &PyLogger::fatal)
-		.def("error", &PyLogger::error)
-		;
+		.def("error", &PyLogger::error);
 #pragma endregion
 #pragma region Functions
 	m
@@ -717,7 +730,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("runCommand", &Level::runcmd)
 		.def("runCommandEx", &Level::runcmdEx)
 		.def("setListener", &setListener)
-		.def("registerCommand", &registerCommand)
+		//.def("registerCommand", &registerCommand)
 		.def("getPlayer", &getPlayer)
 		.def("getPlayerList", &getPlayerList)
 		.def("getEntityList", &getEntityList)
@@ -732,48 +745,24 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("explode", &explode)
 		.def("spawnItem", &spawnItem)
 		.def("setSignBlockMessage", &setSignBlockMessage)
-		.def("isSlimeChunk", &IsSlimeChunk)
-		;
+		.def("isSlimeChunk", &IsSlimeChunk);
 #pragma endregion
-#pragma region Vec3
-	py::class_<Vec3>(m, "Vec3")
-		.def(py::init<float, float, float>())
-		.def_property("x", [] (const Vec3& pos) {return pos.x; }, [] (Vec3& pos, float val) {pos.x = val; })
-		.def_property("y", [] (const Vec3& pos) {return pos.y; }, [] (Vec3& pos, float val) {pos.y = val; })
-		.def_property("z", [] (const Vec3& pos) {return pos.z; }, [] (Vec3& pos, float val) {pos.z = val; })
-		.def("__repr__", &Vec3::toString)
-		;
-#pragma endregion
-#pragma region BockPos
-	py::class_<BlockPos>(m, "BlockPos")
-		.def(py::init<int, int, int>())
-		.def_property("x", [] (const BlockPos& pos) {return pos.x; }, [] (BlockPos& pos, int val) {pos.x = val; })
-		.def_property("y", [] (const BlockPos& pos) {return pos.y; }, [] (BlockPos& pos, int val) {pos.y = val; })
-		.def_property("z", [] (const BlockPos& pos) {return pos.z; }, [] (BlockPos& pos, int val) {pos.z = val; })
-		.def("__repr__", &BlockPos::toString)
-		;
-#pragma endregion
-#pragma region Enum
-	ADD_ENUM(TitleType);
-	ADD_ENUM(TextType);
-	ADD_ENUM(Mirror);
-	ADD_ENUM(Rotation);
-#pragma endregion
+	PY_CATCH;
 }
 #pragma region Events
 //事件回调，初始化对象将申请GIL
 class Callbacker {
 public:
-	Callbacker(EventCode t) :type_(t), arg_() {}
+	Callbacker(EventCode t) : type_(t), arg_() {}
 	~Callbacker() {
-		//logger.debug("{}", arg_.ref_count());
+		// logger.debug("{}", arg_.ref_count());
 	}
 	//事件回调
 	bool callback() {
 		bool pass = true;
 		arg_.inc_ref();
 		for (auto cb : g_cb_functions[type_]) {
-			//TODO: 为什么需要增加引用计数？
+			// TODO: 为什么需要增加引用计数？
 			pass = call(cb, arg_) != py::bool_(false);
 		}
 		return pass;
@@ -879,7 +868,7 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onSpawnProjectile:
 		EVENT_BEGIN(ProjectileSpawnEvent);
-		//EVENT_INSERT(Identifier);
+		// EVENT_INSERT(Identifier);
 		EVENT_INSERT_EX(Shooter, PyEntity(e.mShooter));
 		EVENT_INSERT(Type);
 		EVENT_END;
@@ -937,7 +926,7 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onChangeArmorStand:
 		EVENT_BEGIN(ArmorStandChangeEvent);
-		//EVENT_INSERT(ArmorStand);
+		// EVENT_INSERT(ArmorStand);
 		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT(Slot);
 		EVENT_END;
@@ -956,7 +945,7 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onWitherBossDestroy:
 		EVENT_BEGIN(WitherBossDestroyEvent);
-		//TODO: AABB and WitherBoss
+		// TODO: AABB and WitherBoss
 		EVENT_END;
 		break;
 	case EventCode::onPlaceBlock:
@@ -1122,7 +1111,7 @@ void EnableEventListener(EventCode code) {
 		EVENT_INSERT_EX(ObjectiveName, e.mObjective->getName());
 		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT(Score);
-		//TODO: more info about Objective
+		// TODO: more info about Objective
 		EVENT_END;
 		break;
 	case EventCode::onServerStarted:
@@ -1143,7 +1132,7 @@ void EnableEventListener(EventCode code) {
 		break;
 	case EventCode::onEffectChanged:
 		EVENT_BEGIN(PlayerEffectChangedEvent);
-		//TODO: more info about Effect
+		// TODO: more info about Effect
 		EVENT_INSERT_EX(Effect, e.mEffect->getDisplayName());
 		EVENT_INSERT_EX(Player, PyEntity(e.mPlayer));
 		EVENT_INSERT_EX(Type, magic_enum::enum_name(e.mEventType));
@@ -1156,6 +1145,7 @@ void EnableEventListener(EventCode code) {
 #pragma endregion
 //将Python解释器初始化插入bds主函数
 THook(int, "main", int argc, char* argv[], char* envp[]) {
+	PY_TRY;
 	namespace fs = filesystem;
 	//如果目录不存在创建目录
 	if (!fs::exists(PLUGIN_PATH))
@@ -1180,45 +1170,44 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 			}
 			else {
 				logger.info("Loading {}", name);
-				PY_TRY;
-				auto m = py::module_::import(name.c_str());
-				PY_CATCH;
+				py::module_::import(name.c_str());
 			}
 		}
 	}
 	//启动子线程前执行，释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
 	PyEval_ReleaseThread(PyThreadState_Get());
+	PY_CATCH;
 	return original(argc, argv, envp);
 }
 
-extern "C" _declspec(dllexport) void onPostInit() {
-	std::ios::sync_with_stdio(false);
-	LL::registerPlugin(
-		"BDSpyrunner", "For .py plugins' loading",
-		LL::Version(PYR_VERSION_MAJOR, PYR_VERSION_MINOR, PYR_VERSION_MICRO, LL::Version::Release),
-		{{"Author", "twoone3"}}
-	);
-	//注册命令监听
-	Event::RegCmdEvent::subscribe(
-		[] (Event::RegCmdEvent e) {
-		for (auto& [cmd, des] : g_commands) {
-			e.mCommandRegistry->registerCommand(cmd, des.first.c_str(),
-				CommandPermissionLevel::Any, {CommandFlagValue::None},
-				{static_cast<CommandFlagValue>(0x80)});
-		}
-		return true;
-	}
-	);
-	//命令监听
-	Event::PlayerCmdEvent::subscribe(
-		[] (Event::PlayerCmdEvent e) {
-		for (auto& [cmd, data] : g_commands) {
-			if (e.mCommand._Starts_with(cmd)) {
-				call(data.second, PyEntity(e.mPlayer), e.mCommand);
-				return false;
-			}
-		}
-		return true;
-	}
-	);
-}
+// extern "C" _declspec(dllexport) void onPostInit() {
+//	std::ios::sync_with_stdio(false);
+//	LL::registerPlugin(
+//		"BDSpyrunner", "For .py plugins' loading",
+//		LL::Version(PYR_VERSION_MAJOR, PYR_VERSION_MINOR, PYR_VERSION_MICRO, LL::Version::Release),
+//		{{"Author", "twoone3"}}
+//	);
+//	//注册命令监听
+//	Event::RegCmdEvent::subscribe(
+//		[] (Event::RegCmdEvent e) {
+//		for (auto& [cmd, des] : g_commands) {
+//			e.mCommandRegistry->registerCommand(cmd, des.first.c_str(),
+//				CommandPermissionLevel::Any, {CommandFlagValue::None},
+//				{static_cast<CommandFlagValue>(0x80)});
+//		}
+//		return true;
+//	}
+//	);
+//	//命令监听
+//	Event::PlayerCmdEvent::subscribe(
+//		[] (Event::PlayerCmdEvent e) {
+//		for (auto& [cmd, data] : g_commands) {
+//			if (e.mCommand._Starts_with(cmd)) {
+//				call(data.second, PyEntity(e.mPlayer), e.mCommand);
+//				return false;
+//			}
+//		}
+//		return true;
+//	}
+//	);
+// }

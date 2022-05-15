@@ -51,9 +51,8 @@
       <DisableSpecificWarnings>4996;4471;4499;4244</DisableSpecificWarnings>
       <UseFullPaths>false</UseFullPaths>
       <ErrorReporting>Send</ErrorReporting>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>
-      </PrecompiledHeaderFile>
+      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -74,6 +73,7 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mod\garbage.h" />
+    <ClInclude Include="mod\pch.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\python37.lib" />
@@ -81,6 +81,9 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <Library Include="SDK\Lib\bedrock_server_var.lib" />
     <Library Include="SDK\Lib\LiteLoader.lib" />
     <Library Include="SDK\Lib\SymDBHelper.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".clang-format" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

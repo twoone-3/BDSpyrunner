@@ -26,6 +26,9 @@
     <ClInclude Include="mod\garbage.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="mod\pch.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\python37.lib">
@@ -45,5 +48,8 @@
     </Library>
     <Library Include="SDK\Lib\bedrock_server_var.lib" />
     <Library Include="SDK\Lib\bedrock_server_api.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".clang-format" />
   </ItemGroup>
 </Project>
