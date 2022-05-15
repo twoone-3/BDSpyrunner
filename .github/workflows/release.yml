@@ -19,10 +19,29 @@ jobs:
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: msbuild /m /p:Configuration=Release ./
 
+      - name: Organize dll and pdb files
+        run: |
+          mkdir ./release/zip
+          cp ./x64/Release/BDSpyrunner.dll ./release/
+          cp ./x64/Release/BDSpyrunner.pdb ./release/
+          cp ./pyTools/mc.py ./release/
+          cp ./pyTools/test.py ./release/
+          cp ./pyTools/symbolChecker.py ./release/
+
+      - name: Zip Release
+        uses: TheDoctor0/zip-release@0.6.2
+        with:
+          filename: all.zip
+          path: ./release/
+          directory: ./release/
+          
       - name: GH Release
         uses: softprops/action-gh-release@v0.1.14
         with:
           files: |
-            ./x64/Release/BDSpyrunner.dll
-            ./x64/Release/BDSpyrunner.pdb
-            ./mc.py
+            ./release/BDSpyrunner.dll
+            ./release/BDSpyrunner.pdb
+            ./release/mc.py
+            ./release/test.py
+            ./release/symbolChecker.py
+            ./release/all.zip
