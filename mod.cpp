@@ -522,6 +522,7 @@ THOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	h
 		.insert("player", p)
 		.insert("position", bp);
+	h.call();
 	original(_this, p);
 }
 //关桶
@@ -532,6 +533,7 @@ THOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	h
 		.insert("player", p)
 		.insert("position", bp);
+	h.call();
 	original(_this, p);
 }
 //放入取出物品，实际上是容器改变
