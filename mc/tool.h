@@ -1,7 +1,7 @@
 #pragma once
 #pragma execution_character_set("utf-8")
 #pragma warning(disable:4996)
-#pragma comment(lib,"lib/WINHTTP.lib")
+#pragma comment(lib,"lib/LiteLoader.lib")
 #include <iostream>
 #include "Level.h"
 #include "NetWork.h"
@@ -23,7 +23,7 @@ template <typename T>
 inline T& Dereference(uintptr_t ptr) {
 	return *reinterpret_cast<T*>(ptr);
 }
-#define SYM GetServerSymbol
+#define SYM dlsym_real
 #define THOOK(name, ret, sym, ...)		\
 struct name {							\
 	using func = ret(__VA_ARGS__);		\
@@ -38,7 +38,7 @@ extern "C" {
 	// provide Detours API
 	_declspec(dllimport) int HookFunction(void* orifunc, void* orifuncptr, void* newfunc);
 	// get address from symbol string
-	_declspec(dllimport) void* GetServerSymbol(const char* symbol);
+	_declspec(dllimport) void* dlsym_real(const char* symbol);
 }
 // call a virtual function
 // _this: this ptr, off: offsetof function
