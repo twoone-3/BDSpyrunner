@@ -812,6 +812,7 @@ THOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboa
 		.insert("playersnum", a2->getPlayerScore(a1)->getCount())
 		.insert("objectivename", a2->getScoreName())
 		.insert("objectivedisname", a2->getScoreDisplayName());
+	h.call();
 	original(_this, a1, a2);
 }
 //耕地破坏
