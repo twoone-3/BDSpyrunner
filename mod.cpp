@@ -348,11 +348,11 @@ THOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VComma
 	return global<Scoreboard> = original(_this, a1, a2);
 }
 // Player构造函数
-THOOK(Player_construct, Player*, "??0Player@@QEAA@AEAVLevel@@AEAVPacketSender@@W4GameType@@AEBVNetworkIdentifier@@EVUUID@mce@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$unique_ptr@VCertificate@@U?$default_delete@VCertificate@@@std@@@8@AEAVEntityContext@@55@Z", void* _this, void* arg1, void* arg2, void* arg3, void* arg4, void* arg5, void* arg6, void* arg7, void* arg8, void* arg9, void* arg10, void* arg11) {
+THOOK(Player_construct, Player*, "??0Player@@QEAA@AEAVLevel@@AEAVPacketSender@@W4GameType@@AEBVNetworkIdentifier@@EVUUID@mce@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@5V?$unique_ptr@VCertificate@@U?$default_delete@VCertificate@@@std@@@8@AEAVEntityContext@@55@Z", void* _this, void* arg1, void* arg2, void* arg3, void* arg4, void* arg5, void* arg6, void* arg7, void* arg8, void* arg9, void* arg10, void* arg11, void* arg12) {
 	//会构造两次，取第一次值
 	if (global<std::vector<Player*>> == nullptr)
 		global<std::vector<Player*>> = new std::vector<Player*>;
-	auto ret = original(_this, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+	auto ret = original(_this, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
 	global<std::vector<Player*>>->push_back(ret);
 	return ret;
 }
@@ -517,13 +517,14 @@ THOOK(onOpenBarrel, bool, "?use@BarrelBlock@@UEBA_NAEAVPlayer@@AEBVBlockPos@@E@Z
 //关箱
 THOOK(onCloseChest, void, "?stopOpen@ChestBlockActor@@UEAAXAEAVPlayer@@@Z",
 	uintptr_t _this, Player* p) {
+	//p->setPermissions(static_cast<PlayerPermissionLevel>(0));
 	EventCallBackHelper h(EventCode::onCloseChest);
 	auto bp = (BlockPos*)(_this - 196);
 	h
 		.insert("player", p)
 		.insert("position", bp);
-	h.call();
-	original(_this, p);
+	if(h.call())
+		original(_this, p);
 }
 //关桶
 THOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
@@ -533,8 +534,8 @@ THOOK(onCloseBarrel, void, "?stopOpen@BarrelBlockActor@@UEAAXAEAVPlayer@@@Z",
 	h
 		.insert("player", p)
 		.insert("position", bp);
-	h.call();
-	original(_this, p);
+	if (h.call())
+		original(_this, p);
 }
 //放入取出物品，实际上是容器改变
 THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UEAAXH@Z",
@@ -548,7 +549,6 @@ THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UE
 	short bid = bl->getBlockItemID();
 	if (bid == 54 || bid == 130 || bid == 146 || bid == -203 || bid == 205 || bid == 218) {	//非箱子、桶、潜影盒的情况不作处理
 		uintptr_t v5 = (*reinterpret_cast<uintptr_t(**)(uintptr_t)>(Dereference<uintptr_t>(_this) + 160))(_this);
-		//cout << v5 << endl;
 		if (v5) {
 			ItemStack* item = (*reinterpret_cast<ItemStack * (**)(uintptr_t, uintptr_t)>(Dereference<uintptr_t>(v5) + 40))(v5, slot);
 			h
@@ -561,7 +561,6 @@ THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UE
 				.insert("blockid", bid)
 				.insert("position", bp)
 				.insert("slot", slot);
-				//cout << "slot:" << slot << endl;
 			h.call();
 		}
 	}
@@ -570,6 +569,7 @@ THOOK(onContainerChange, void, "?containerContentChanged@LevelContainerModel@@UE
 //玩家攻击
 THOOK(onAttack, bool, "?attack@Player@@UEAA_NAEAVActor@@AEBW4ActorDamageCause@@@Z",
 	Player* p, Actor* a, struct ActorDamageCause* c) {
+	//p->setPermissions(static_cast<PlayerPermissionLevel>(2));
 	EventCallBackHelper h(EventCode::onPlayerAttack);
 	h	
 		.insert("player", p)
@@ -812,7 +812,6 @@ THOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboa
 		.insert("playersnum", a2->getPlayerScore(a1)->getCount())
 		.insert("objectivename", a2->getScoreName())
 		.insert("objectivedisname", a2->getScoreDisplayName());
-	h.call();
 	original(_this, a1, a2);
 }
 //耕地破坏

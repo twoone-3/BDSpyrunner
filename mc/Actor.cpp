@@ -325,8 +325,20 @@ PlayerPermissionLevel Player::getPlayerPermissionLevel() {
 //设置游戏时命令权限
 
 void Player::setPermissions(PlayerPermissionLevel m) {
-	SymCall("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z",
+	//SymCall("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z",
+	///*
+	_Big_uint128 v11[5];
+	//*/
+	SymCall("?setPermissions@Player@@QEAAXW4CommandPermissionLevel@@@Z",
 		this, m);
+	///*
+	memset(v11, 0, sizeof(v11));
+	auto v2 = *(uintptr_t*)(this + 32);
+	Level* level = this->getLevel();
+	auto v4 = (*(uintptr_t(__fastcall**)(Level*))(*(uintptr_t*)level + 2576))(level);
+	SymCall<uintptr_t>("??0AdventureSettingsPacket@@QEAA@AEBUAdventureSettings@@AEBVAbilities@@UActorUniqueID@@_N@Z",
+		v11, v4, this + 2512, v2, 0);
+		//*/
 }
 
 //获取设备id

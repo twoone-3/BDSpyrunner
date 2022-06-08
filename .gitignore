@@ -1,3 +1,5 @@
 .vs/
 x64/
 *.user
+/pyTools/cvdump.exe
+/pyTools/pdbInfo.txt
