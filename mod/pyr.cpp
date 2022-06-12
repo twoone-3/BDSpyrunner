@@ -491,7 +491,7 @@ void setListener(const string& event_name, const py::function& cb) {
 // }
 //获取玩家
 PyEntity getPlayer(const string& name) {
-	Player* p = Level::getPlayer(name);
+	Player* p = Global<Level>->getPlayer(name);
 	if (p == nullptr)
 		throw runtime_error("Failed to find player");
 	return p;
