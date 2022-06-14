@@ -20,8 +20,10 @@
 #include <MC/BlockSource.hpp>
 #include <MC/Common.hpp>
 #include <MC/Container.hpp>
-//#include <MC/ItemInstance.hpp>
+#include <MC/Dimension.hpp>
+#include <MC/ItemInstance.hpp>
 #include <MC/ItemStack.hpp>
+#include <MC/JsonHelpers.hpp>
 #include <MC/Level.hpp>
 #include <MC/MobEffect.hpp>
 #include <MC/Objective.hpp>
@@ -30,7 +32,6 @@
 #include <MC/Scoreboard.hpp>
 #include <MC/ServerNetworkHandler.hpp>
 #include <MC/SignBlockActor.hpp>
-//#include <MC/SimpleContainer.hpp>
 #include <MC/Spawner.hpp>
 #include <MC/StructureSettings.hpp>
 #include <MC/StructureTemplate.hpp>
@@ -64,7 +65,8 @@
 #define EVENT_INSERT_EX(key, value) h.insert(#key, (value))
 #define EVENT_END PY_CATCH return h.callback();})
 
-#define ADD_ENUM(type) 	{auto entries = magic_enum::enum_entries<type>(); auto e = py::enum_<type>(m, #type); for (auto& [val, name] : entries) {e.value(name.data(), val); }}
+#define DEF_ENUM(name, type) {auto entries = magic_enum::enum_entries<type>(); auto e = py::enum_<type>(m, name); for (auto& [val, n] : entries) {e.value(n.data(), val); }}
+#define DEF_ENUM_SIMPLE(type) DEF_ENUM(#type, type)
 
 namespace py = pybind11;
 using json_t = nlohmann::detail::value_t;

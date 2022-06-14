@@ -12,12 +12,8 @@ constexpr const char* PYR_VERSION = "v1.10.0";
 static Logger logger("BDSpyrunner");
 // Py函数表
 static std::unordered_map<enum class EventCode, std::vector<py::function>> g_cb_functions;
-//注册命令
-// static std::unordered_map<std::string, std::pair<std::string, py::function>> g_commands;
 //输出错误信息
 void PrintError(const std::exception&);
-//判断指针是否为player
-bool IsPlayer(Actor* ptr);
 //字符串转JSON
 fifo_json StrToJson(std::string_view str);
 //事件代码
@@ -96,12 +92,6 @@ py::object call(const py::object& obj, Args&&... args) {
 	PY_CATCH;
 	return py::none();
 }
-//判断指针是否为玩家
-bool IsPlayer(Actor* ptr) {
-	if (ptr == nullptr)
-		return false;
-	return ptr->isPlayer();
-}
 //字符串转JSON，本插件采用 https://json.nlohmann.me 的JSON库
 fifo_json StrToJson(std::string_view str) {
 	try {
@@ -120,10 +110,11 @@ fifo_json StrToJson(std::string_view str) {
 // private:
 //	PyGILState_STATE gil_;
 // };
+
 //转Player
 Player* P(Actor* a) {
-	if (!IsPlayer(a))
-		throw std::runtime_error("The ptr is not Player*");
+	if (!a->isPlayer())
+		throw std::runtime_error("The ptr is not 'Player*'");
 	return static_cast<Player*>(a);
 }
 
@@ -134,19 +125,6 @@ Player* P(Actor* a) {
 // struct PyBlock;
 // struct PyLogger;
 #pragma endregion
-#pragma region Command
-struct PyCommand {
-	unique_ptr<DynamicCommandInstance> thiz;
-
-	PyCommand(const string& name, const string& desc, CommandPermissionLevel perm) : thiz(DynamicCommand::createCommand(name, desc, perm)) {}
-	void setCallback(py::function cb) {
-		thiz->setCallback([cb](DynamicCommand const& command, CommandOrigin const& origin,
-							  CommandOutput& output, std::unordered_map<std::string, DynamicCommand::Result>& results) {
-			call(cb, results);
-		});
-	}
-};
-#pragma endregion
 #pragma region NBT
 struct PyNBT {
 	unique_ptr<Tag> thiz;
@@ -154,7 +132,7 @@ struct PyNBT {
 	PyNBT(unique_ptr<CompoundTag>&& other) { thiz = move(other); }
 	PyNBT(unique_ptr<Tag>&& other) { thiz = move(other); }
 	PyNBT(const PyNBT& other) { thiz = other.thiz->copy(); }
-	PyNBT(PyNBT&& other) { thiz = move(other.thiz); }
+	PyNBT(PyNBT&& other) noexcept { thiz = move(other.thiz); }
 	//有三种模式
 	// 1. a1数据类型 a2数据
 	//    NBT('Int',3) NBT('Compound')
@@ -275,7 +253,7 @@ struct PyContainer {
 struct PyEntity {
 	Actor* thiz;
 
-	PyEntity(Actor* a) : thiz(a) {}
+	PyEntity(Actor* a) : thiz(a) { logger.debug("{}", uint64_t(a)); }
 	//获取名字
 	string getName() { return thiz->getNameTag(); }
 	//设置名字
@@ -377,8 +355,8 @@ struct PyEntity {
 	}
 	bool sendSimpleForm(const string& title, const string& content,
 		const vector<string>& buttons, const vector<string>& images, const py::function& cb) {
-		if (buttons.empty() || images.empty())
-			throw py::value_error("buttons and images shuold not be empty");
+		// if (buttons.empty() || images.empty())
+		//	throw py::value_error("buttons and images shuold not be empty");
 		if (buttons.size() != images.size())
 			throw py::value_error("The number of buttons is not equal to the number of images");
 		return P(thiz)->sendSimpleFormPacket(title, content, buttons, images,
@@ -417,6 +395,32 @@ struct PyEntity {
 	void kill() { thiz->kill(); }
 };
 #pragma endregion
+#pragma region Command
+struct PyCommand {
+	unique_ptr<DynamicCommandInstance> thiz;
+
+	PyCommand(const string& name, const string& desc, CommandPermissionLevel perm) : thiz(DynamicCommand::createCommand(name, desc, perm)) {}
+	void setCallback(py::function cb) {
+		thiz->setCallback([cb](DynamicCommand const& command, CommandOrigin const& origin,
+							  CommandOutput& output, std::unordered_map<std::string, DynamicCommand::Result>& results) {
+			call(cb, PyEntity((Player*)origin.getPlayer()), results);
+		});
+	}
+	string setEnum(const string& desc, const vector<string>& values) {
+		return thiz->setEnum(desc, values);
+	}
+	void mandatory(const string& name, DynamicCommand::ParameterType type, CommandParameterOption option) {
+		thiz->mandatory(name, type, option);
+	}
+	bool addOverload(const vector<string>& values) {
+		return thiz->addOverload(vector<string>(values));
+	}
+	bool addOverload() {
+		return thiz->addOverload();
+	}
+	void setup() { DynamicCommand::setup(move(thiz)); }
+};
+#pragma endregion
 #pragma region Block
 struct PyBlock {
 	BlockInstance thiz;
@@ -452,43 +456,17 @@ void setListener(const string& event_name, const py::function& cb) {
 	//添加回调函数
 	g_cb_functions[event_code.value()].push_back(cb);
 }
-////注册命令
-// void registerCommand(const string& name, const string& description, const string& des) {
-//	// Direct setup of dynamic command with necessary information
-//	using ParamType = DynamicCommand::ParameterType;
-//	// create a dynamic command
-//	auto command = DynamicCommand::createCommand("testcmd", "dynamic command", CommandPermissionLevel::GameMasters);
-//
-//	auto& optionsAdd = command->setEnum("TestOperation1", {"add", "remove"});
-//	auto& optionsList = command->setEnum("TestOperation2", {"list"});
-//
-//	command->mandatory("testEnum", ParamType::Enum, optionsAdd, CommandParameterOption::EnumAutocompleteExpansion);
-//	command->mandatory("testEnum", ParamType::Enum, optionsList, CommandParameterOption::EnumAutocompleteExpansion);
-//	command->mandatory("testString", ParamType::String);
-//
-//	command->addOverload({optionsAdd, "testString"}); // dyncmd <add|remove> <testString:string>
-//	command->addOverload({"TestOperation2"});		  // dyncmd <list>
-//
-//	command->setCallback([](DynamicCommand const& command, CommandOrigin const& origin,
-//							 CommandOutput& output, std::unordered_map<std::string, DynamicCommand::Result>& results) {
-//		switch (do_hash(results["testEnum"].getRaw<std::string>().c_str())) {
-//		case do_hash("add"):
-//			output.success(fmt::format("Add - {}", results["testString"].getRaw<std::string>()));
-//			break;
-//		case do_hash("remove"):
-//			output.success(fmt::format("Remove - {}", results["testString"].getRaw<std::string>()));
-//			break;
-//		case do_hash("list"):
-//			output.success("List");
-//			break;
-//		default:
-//			break;
-//		}
-//	});
-//	// do not forget to setup the command instance
-//	DynamicCommand::setup(std::move(command));
-//	//g_commands[cmd] = make_pair(des, py::function(cb));
-// }
+//注册命令
+void registerCommand(const string& name, const string& desc, const py::function& cb, CommandPermissionLevel perm = GameMasters) {
+	using ParamType = DynamicCommand::ParameterType;
+	auto command = DynamicCommand::createCommand(name, desc, perm);
+	command->addOverload();
+	command->setCallback([cb](DynamicCommand const& command, CommandOrigin const& origin,
+							 CommandOutput& output, std::unordered_map<std::string, DynamicCommand::Result>& results) {
+		call(cb, PyEntity((Player*)origin.getPlayer()), results);
+	});
+	DynamicCommand::setup(std::move(command));
+}
 //获取玩家
 PyEntity getPlayer(const string& name) {
 	Player* p = Global<Level>->getPlayer(name);
@@ -583,6 +561,72 @@ constexpr int IsSlimeChunk(unsigned x, unsigned z) {
 	return !(mt0 % 10);
 }
 #pragma endregion
+py::object convertResult(const DynamicCommand::Result& result) {
+	if (!result.isSet)
+		return py::object(); // null
+	switch (result.type) {
+	case DynamicCommand::ParameterType::Bool:
+		return py::bool_(result.getRaw<bool>());
+	case DynamicCommand::ParameterType::Int:
+		return py::int_(result.getRaw<int>());
+	case DynamicCommand::ParameterType::Float:
+		return py::float_(result.getRaw<float>());
+	case DynamicCommand::ParameterType::String:
+		return py::str(result.getRaw<std::string>());
+	case DynamicCommand::ParameterType::Actor: {
+		py::list arr;
+		for (auto i : result.get<std::vector<Actor*>>()) {
+			arr.append(PyEntity(i));
+		}
+		return arr;
+	}
+	case DynamicCommand::ParameterType::Player: {
+		py::list arr;
+		for (auto i : result.get<std::vector<Player*>>()) {
+			arr.append(PyEntity(i));
+		}
+		return arr;
+	}
+	case DynamicCommand::ParameterType::BlockPos: {
+		py::list arr;
+		arr.append(result.get<BlockPos>());
+		auto dim = result.origin->getDimension();
+		arr.append(dim ? int(dim->getDimensionId()) : -1);
+		return arr;
+	}
+	case DynamicCommand::ParameterType::Vec3: {
+		py::list arr;
+		arr.append(result.get<Vec3>());
+		auto dim = result.origin->getDimension();
+		arr.append(dim ? int(dim->getDimensionId()) : -1);
+		return arr;
+	}
+	case DynamicCommand::ParameterType::Message:
+		return py::str(result.getRaw<CommandMessage>().getMessage(*result.origin));
+	case DynamicCommand::ParameterType::RawText:
+		return py::str(result.getRaw<std::string>());
+	case DynamicCommand::ParameterType::JsonValue:
+		return py::str(JsonHelpers::serialize(result.getRaw<Json::Value>()));
+	case DynamicCommand::ParameterType::Item:
+		return py::cast(PyItem(new ItemStack(result.getRaw<CommandItem>().createInstance(1, 1, nullptr, true).value_or(ItemInstance::EMPTY_ITEM))));
+	case DynamicCommand::ParameterType::Block:
+		return py::cast(PyBlock(BlockInstance::createBlockInstance(
+			const_cast<Block*>(result.getRaw<Block const*>()), BlockPos::MIN, -1)));
+	case DynamicCommand::ParameterType::Effect:
+		return py::str(result.getRaw<MobEffect const*>()->getResourceName());
+	case DynamicCommand::ParameterType::Enum:
+		return py::str(result.getRaw<std::string>());
+	case DynamicCommand::ParameterType::SoftEnum:
+		return py::str(result.getRaw<std::string>());
+	case DynamicCommand::ParameterType::Command:
+		return py::str(result.getRaw<std::unique_ptr<Command>>()->getCommandName());
+	case DynamicCommand::ParameterType::ActorType:
+		return py::str(result.getRaw<ActorDefinitionIdentifier const*>()->getCanonicalName());
+	default:
+		return py::object(); // null
+		break;
+	}
+}
 
 PYBIND11_EMBEDDED_MODULE(mc, m) {
 	using py::literals::operator""_a;
@@ -610,19 +654,27 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("__repr__", &BlockPos::toString);
 #pragma endregion
 #pragma region Enum
-	ADD_ENUM(TitleType);
-	ADD_ENUM(TextType);
-	ADD_ENUM(Mirror);
-	ADD_ENUM(Rotation);
-	ADD_ENUM(CommandPermissionLevel);
-	ADD_ENUM(DynamicCommand::ParameterType);
+	DEF_ENUM_SIMPLE(TitleType);
+	DEF_ENUM_SIMPLE(TextType);
+	DEF_ENUM_SIMPLE(Mirror);
+	DEF_ENUM_SIMPLE(Rotation);
+	DEF_ENUM_SIMPLE(CommandPermissionLevel);
+	DEF_ENUM("ParameterType", DynamicCommand::ParameterType);
+	DEF_ENUM_SIMPLE(CommandParameterOption);
 #pragma endregion
 #pragma region Command
 	py::class_<PyCommand>(m, "Command")
 		.def(py::init<string, string, CommandPermissionLevel>(),
 			"name"_a, "desc"_a = "", "perm"_a = GameMasters)
-		.def("setCallback", &PyCommand::setCallback);
-	py::class_<DynamicCommand::Result>(m, "CommandResult");
+		.def("setCallback", &PyCommand::setCallback)
+		.def("setEnum", &PyCommand::setEnum)
+		.def("mandatory", &PyCommand::mandatory, "name"_a, "type"_a, "option"_a = None)
+		.def("addOverload", py::overload_cast<>(&PyCommand::addOverload))
+		.def("addOverload", py::overload_cast<const vector<string>&>(&PyCommand::addOverload))
+		.def("setup", &PyCommand::setup);
+	py::class_<DynamicCommand::Result>(m, "CommandResult")
+		.def("__repr__", [](const DynamicCommand::Result& thiz) { return py::str(convertResult(thiz)); })
+		.def("toObject", [](const DynamicCommand::Result& thiz) { return convertResult(thiz); });
 #pragma endregion
 #pragma region NBT
 	py::class_<PyNBT>(m, "NBT")
@@ -730,7 +782,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("runCommand", &Level::runcmd)
 		.def("runCommandEx", &Level::runcmdEx)
 		.def("setListener", &setListener)
-		//.def("registerCommand", &registerCommand)
+		.def("registerCommand", &registerCommand, "name"_a, "desc"_a, "callback"_a, "perm"_a = GameMasters)
 		.def("getPlayer", &getPlayer)
 		.def("getPlayerList", &getPlayerList)
 		.def("getEntityList", &getEntityList)
@@ -761,7 +813,7 @@ public:
 	bool callback() {
 		bool pass = true;
 		arg_.inc_ref();
-		for (auto cb : g_cb_functions[type_]) {
+		for (auto& cb : g_cb_functions[type_]) {
 			// TODO: 为什么需要增加引用计数？
 			pass = call(cb, arg_) != py::bool_(false);
 		}
@@ -1180,34 +1232,10 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 	return original(argc, argv, envp);
 }
 
-// extern "C" _declspec(dllexport) void onPostInit() {
-//	std::ios::sync_with_stdio(false);
-//	LL::registerPlugin(
-//		"BDSpyrunner", "For .py plugins' loading",
-//		LL::Version(PYR_VERSION_MAJOR, PYR_VERSION_MINOR, PYR_VERSION_MICRO, LL::Version::Release),
-//		{{"Author", "twoone3"}}
-//	);
-//	//注册命令监听
-//	Event::RegCmdEvent::subscribe(
-//		[] (Event::RegCmdEvent e) {
-//		for (auto& [cmd, des] : g_commands) {
-//			e.mCommandRegistry->registerCommand(cmd, des.first.c_str(),
-//				CommandPermissionLevel::Any, {CommandFlagValue::None},
-//				{static_cast<CommandFlagValue>(0x80)});
-//		}
-//		return true;
-//	}
-//	);
-//	//命令监听
-//	Event::PlayerCmdEvent::subscribe(
-//		[] (Event::PlayerCmdEvent e) {
-//		for (auto& [cmd, data] : g_commands) {
-//			if (e.mCommand._Starts_with(cmd)) {
-//				call(data.second, PyEntity(e.mPlayer), e.mCommand);
-//				return false;
-//			}
-//		}
-//		return true;
-//	}
-//	);
-// }
+extern "C" _declspec(dllexport) void onPostInit() {
+	std::ios::sync_with_stdio(false);
+	LL::registerPlugin(
+		"BDSpyrunner", "For .py plugins' loading",
+		LL::Version(PYR_VERSION_MAJOR, PYR_VERSION_MINOR, PYR_VERSION_MICRO, LL::Version::Release),
+		{{"Author", "twoone3"}});
+}
