@@ -34,7 +34,7 @@
     <LinkIncremental>false</LinkIncremental>
     <PublicIncludeDirectories>
     </PublicIncludeDirectories>
-    <IncludePath>include;SDK\Header;$(IncludePath)</IncludePath>
+    <IncludePath>.;include;SDK\Header;$(IncludePath)</IncludePath>
     <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <EnableClangTidyCodeAnalysis>false</EnableClangTidyCodeAnalysis>
@@ -48,10 +48,10 @@
       <PreprocessorDefinitions>_AMD64_;NDEBUG;_CONSOLE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <DisableSpecificWarnings>4996;4471;4499;4244</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4819;4996;4471;4499;4244</DisableSpecificWarnings>
       <UseFullPaths>false</UseFullPaths>
       <ErrorReporting>Send</ErrorReporting>
-      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
@@ -69,14 +69,47 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="mod\pyr.cpp" />
+    <ClCompile Include="API\BlockAPI.cpp" />
+    <ClCompile Include="API\BlockEntityAPI.cpp" />
+    <ClCompile Include="API\CommandAPI.cpp" />
+    <ClCompile Include="API\CommandOriginAPI.cpp" />
+    <ClCompile Include="API\CommandOutputAPI.cpp" />
+    <ClCompile Include="API\ContainerAPI.cpp" />
+    <ClCompile Include="API\EntityAPI.cpp" />
+    <ClCompile Include="API\EventAPI.cpp" />
+    <ClCompile Include="API\GuiAPI.cpp" />
+    <ClCompile Include="API\ItemAPI.cpp" />
+    <ClCompile Include="API\LoggerAPI.cpp" />
+    <ClCompile Include="API\McAPI.cpp" />
+    <ClCompile Include="API\NbtAPI.cpp" />
+    <ClCompile Include="API\PlayerAPI.cpp" />
+    <ClCompile Include="API\ScoreboardAPI.cpp" />
+    <ClCompile Include="ModuleDef.cpp" />
+    <ClCompile Include="API\MoneyAPI.cpp" />
+    <ClCompile Include="Global.cpp" />
+    <ClCompile Include="Init.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mod\garbage.h" />
-    <ClInclude Include="mod\pch.h" />
+    <ClInclude Include="API\BlockAPI.h" />
+    <ClInclude Include="API\BlockEntityAPI.h" />
+    <ClInclude Include="API\CommandAPI.h" />
+    <ClInclude Include="API\CommandOriginAPI.h" />
+    <ClInclude Include="API\CommandOutputAPI.h" />
+    <ClInclude Include="API\ContainerAPI.h" />
+    <ClInclude Include="API\EntityAPI.h" />
+    <ClInclude Include="API\EventAPI.h" />
+    <ClInclude Include="API\GuiAPI.h" />
+    <ClInclude Include="API\ItemAPI.h" />
+    <ClInclude Include="API\LoggerAPI.h" />
+    <ClInclude Include="API\McAPI.h" />
+    <ClInclude Include="API\NbtAPI.h" />
+    <ClInclude Include="API\PlayerAPI.h" />
+    <ClInclude Include="API\ScoreboardAPI.h" />
+    <ClInclude Include="API\MoneyAPI.h" />
+    <ClInclude Include="Global.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="lib\python37.lib" />
+    <Library Include="Lib\python37.lib" />
     <Library Include="SDK\Lib\bedrock_server_api.lib" />
     <Library Include="SDK\Lib\bedrock_server_var.lib" />
     <Library Include="SDK\Lib\LiteLoader.lib" />

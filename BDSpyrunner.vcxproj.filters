@@ -18,20 +18,119 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mod\pyr.cpp">
+    <ClCompile Include="API\BlockAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\BlockEntityAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\CommandAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\CommandOriginAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\CommandOutputAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ContainerAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\EntityAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\EventAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\GuiAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ItemAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\LoggerAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\McAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\NbtAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\PlayerAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ScoreboardAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Global.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Init.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="API\MoneyAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ModuleDef.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mod\garbage.h">
+    <ClInclude Include="API\BlockAPI.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mod\pch.h">
+    <ClInclude Include="API\BlockEntityAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\CommandAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\CommandOriginAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\CommandOutputAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ContainerAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\EntityAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\EventAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\GuiAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ItemAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LoggerAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\McAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\NbtAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\PlayerAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ScoreboardAPI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Global.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="API\MoneyAPI.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="lib\python37.lib">
+    <Library Include="Lib\python37.lib">
       <Filter>库文件</Filter>
     </Library>
     <Library Include="SDK\Lib\LiteLoader.lib">
