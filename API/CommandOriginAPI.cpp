@@ -1,7 +1,6 @@
 #include "CommandOriginAPI.h"
 #include "NbtAPI.h"
 #include "EntityAPI.h"
-#include <Global.hpp>
 #include "BlockAPI.h"
 #include "EntityAPI.h"
 #include "ItemAPI.h"
@@ -9,14 +8,6 @@
 #include "McAPI.h"
 #include "ContainerAPI.h"
 #include "NbtAPI.h"
-#include <MC/Actor.hpp>
-#include <MC/Level.hpp>
-#include <MC/ItemActor.hpp>
-#include <MC/SimpleContainer.hpp>
-#include <MC/CompoundTag.hpp>
-#include <MC/Mob.hpp>
-#include <MC/Dimension.hpp>
-#include <MC/Command.hpp>
 
 CommandOriginClass::CommandOriginClass(CommandOrigin* p) : thiz(p) {}
 

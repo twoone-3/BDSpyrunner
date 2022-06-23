@@ -1,10 +1,10 @@
 #pragma once
 #include <Global.hpp>
-#include <MC/CommandOrigin.hpp>
 
 struct EntityClass;
 struct PlayerClass;
 struct NbtClass;
+class CommandOrigin;
 struct CommandOriginClass {
 	CommandOrigin* thiz;
 

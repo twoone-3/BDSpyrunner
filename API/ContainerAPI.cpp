@@ -1,22 +1,24 @@
 #include "ContainerAPI.h"
-#include <Global.hpp>
 #include "ItemAPI.h"
-#include <MC/ItemStack.hpp>
-#include <MC/Container.hpp>
-using namespace std;
 
 ContainerClass::ContainerClass(Container* p) : thiz(p) {}
 
 //成员函数
 int ContainerClass::getSize() {
+	if (thiz == nullptr)
+		return 0;
 	return thiz->getSize();
 }
 
 string ContainerClass::getType() {
+	if (thiz == nullptr)
+		return "";
 	return thiz->getTypeName();
 }
 
 bool ContainerClass::addItem(const ItemClass& i) {
+	if (thiz == nullptr)
+		return false;
 	ItemStack* item = i.thiz;
 	if (!item)
 		throw std::invalid_argument("invalid item");
@@ -24,6 +26,8 @@ bool ContainerClass::addItem(const ItemClass& i) {
 }
 
 bool ContainerClass::addItemToFirstEmptySlot(const ItemClass& i) {
+	if (thiz == nullptr)
+		return false;
 	ItemStack* item = i.thiz;
 	if (!item)
 		throw std::invalid_argument("invalid item");
@@ -31,6 +35,8 @@ bool ContainerClass::addItemToFirstEmptySlot(const ItemClass& i) {
 }
 
 bool ContainerClass::hasRoomFor(const ItemClass& i) {
+	if (thiz == nullptr)
+		return false;
 	ItemStack* item = i.thiz;
 	if (!item)
 		throw std::invalid_argument("invalid item");
@@ -38,10 +44,14 @@ bool ContainerClass::hasRoomFor(const ItemClass& i) {
 }
 
 bool ContainerClass::removeItem(int slot, int number) {
+	if (thiz == nullptr)
+		return false;
 	return thiz->removeItem_s(slot, number);
 }
 
 ItemClass ContainerClass::getItem(int slot) {
+	if (thiz == nullptr)
+		return nullptr;
 	ItemStack* item = (ItemStack*)&thiz->getItem(slot);
 	if (!item)
 		throw std::domain_error("Fail to get slot from container!");
@@ -49,6 +59,8 @@ ItemClass ContainerClass::getItem(int slot) {
 }
 
 bool ContainerClass::setItem(int slot, const ItemClass& i) {
+	if (thiz == nullptr)
+		return false;
 	ItemStack* item = i.thiz;
 	if (!item)
 		throw std::invalid_argument("invalid item");
@@ -59,14 +71,20 @@ bool ContainerClass::setItem(int slot, const ItemClass& i) {
 }
 
 vector<const ItemStack*> ContainerClass::getAllItems() {
+	if (thiz == nullptr)
+		return vector<const ItemStack*>();
 	return thiz->getAllSlots();
 }
 
 bool ContainerClass::removeAllItems() {
+	if (thiz == nullptr)
+		return false;
 	thiz->removeAllItems();
 	return true;
 }
 
 bool ContainerClass::isEmpty() {
+	if (thiz == nullptr)
+		return true;
 	return thiz->isEmpty();
 }

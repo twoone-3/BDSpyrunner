@@ -25,6 +25,17 @@ void entry() {
 	logger.info("{} loaded.", PYR_VERSION);
 	//启用线程支持
 	PyEval_InitThreads();
+#if 0
+	auto a = CompoundTag::fromSNBT(R"({
+    "a24z": {
+        "a4z": {},
+        "az": [1f, 1f, 1f],
+        "az3": "az2"
+    },
+    "列表": []
+})");
+	logger.warn("{}", a->get("列表")->toJson(4));
+#endif
 	for (auto& info : fs::directory_iterator(PLUGIN_PATH)) {
 		if (info.path().extension() == ".py") {
 			string name(info.path().stem().u8string());
@@ -55,7 +66,7 @@ extern "C" _declspec(dllexport) void onPostInit() {
 	std::ios::sync_with_stdio(false);
 	LL::registerPlugin(
 		"BDSpyrunner",
-		"For .py plugins' loading",
+		"Loading python in BDS",
 		LL::Version(PYR_VERSION_MAJOR,
 			PYR_VERSION_MINOR,
 			PYR_VERSION_MICRO,

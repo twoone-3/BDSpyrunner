@@ -1,7 +1,6 @@
 #pragma once
 #include <Global.hpp>
 
-//////////////////// Classes ////////////////////
 class BlockActor;
 struct BlockClass;
 struct NbtClass;

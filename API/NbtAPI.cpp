@@ -13,85 +13,79 @@
 #include <MC/StringTag.hpp>
 #include <MC/ListTag.hpp>
 #include <MC/CompoundTag.hpp>
+#include <MC/IntArrayTag.hpp>
 
-using namespace std;
+NbtClass::NbtClass() : thiz(nullptr), is_reference(false) {}
 
-NbtClass::NbtClass() {}
+NbtClass::NbtClass(Tag* other) : thiz(other), is_reference(true) {}
 
-NbtClass::NbtClass(unique_ptr<CompoundTag>&& other) { thiz = move(other); }
+NbtClass::NbtClass(const NbtClass& other) : thiz(other.thiz->copy()), is_reference(false) {}
 
-NbtClass::NbtClass(unique_ptr<Tag>&& other) { thiz = move(other); }
+NbtClass::NbtClass(NbtClass&& other) noexcept
+	: thiz(move(other.thiz)), is_reference(other.is_reference) {}
 
-NbtClass::NbtClass(const NbtClass& other) { thiz = other.thiz->copy(); }
+NbtClass::~NbtClass() {
+	//logger.warn("析构：{}", (void*)thiz.get());
+	if (is_reference)
+		thiz.release();
+}
 
-NbtClass::NbtClass(NbtClass&& other) noexcept { thiz = move(other.thiz); }
+NbtClass NbtClass::newEnd() {
+	return EndTag::create();
+}
 
-//有三种模式
-// 1. a1数据类型 a2数据
-//    NBT('Int',3) NBT('Compound')
-// 2. SNBT模式 a2填SNBT字符串
-//    NBT('SNBT', snbt)
-// 3. 二进制模式 a2填bytes
-//    NBT('Binary', bytes)
+NbtClass NbtClass::newByte(unsigned char value) {
+	return ByteTag::create(value);
+}
 
-NbtClass::NbtClass(const string& type_str, const py::object& value) {
-	if (type_str == "SNBT"sv) {
-		thiz = CompoundTag::fromSNBT(py::str(value));
-		return;
-	}
-	else if (type_str == "Binary"sv) {
-		thiz = CompoundTag::fromBinaryNBT(py::bytes(value));
-		return;
-	}
-	auto type = magic_enum::enum_cast<Tag::Type>(type_str);
-	if (!type)
-		throw py::type_error("Invalied NBT type " + type_str);
-	switch (type.value()) {
-	case Tag::End:
-		thiz = EndTag::create();
-		break;
-	case Tag::Byte:
-		thiz = ByteTag::create();
-		thiz->asByteTag()->value() = py::int_(value);
-		break;
-	case Tag::Short:
-		thiz = ShortTag::create();
-		thiz->asShortTag()->value() = py::int_(value);
-		break;
-	case Tag::Int:
-		thiz = IntTag::create();
-		thiz->asIntTag()->value() = py::int_(value);
-		break;
-	case Tag::Int64:
-		thiz = Int64Tag::create();
-		thiz->asInt64Tag()->value() = py::int_(value);
-		break;
-	case Tag::Float:
-		thiz = FloatTag::create();
-		thiz->asFloatTag()->value() = py::float_(value);
-		break;
-	case Tag::Double:
-		thiz = DoubleTag::create();
-		thiz->asDoubleTag()->value() = py::float_(value);
-		break;
-	case Tag::ByteArray:
-		thiz = ByteArrayTag::create();
-		// TODO: enable to construct ByteArray
-		break;
-	case Tag::String:
-		thiz = StringTag::create();
-		thiz->asStringTag()->value() = py::str(value);
-		break;
-	case Tag::List:
-		thiz = ListTag::create();
-		break;
-	case Tag::Compound:
-		thiz = CompoundTag::create();
-		break;
-	case Tag::IntArray:
-		thiz = IntArrayTag::create();
-		break;
-	}
+NbtClass NbtClass::newShort(short value) {
+	return ShortTag::create(value);
+}
+
+NbtClass NbtClass::newInt(int value) {
+	return IntTag::create(value);
+}
+
+NbtClass NbtClass::newInt64(int64_t value) {
+	return Int64Tag::create(value);
+}
+
+NbtClass NbtClass::newFloat(float value) {
+	return FloatTag::create(value);
+}
+
+NbtClass NbtClass::newDouble(double value) {
+	return DoubleTag::create(value);
+}
+
+NbtClass NbtClass::newString(const string& value) {
+	return StringTag::create(value);
+}
+
+NbtClass NbtClass::newByteArray(const py::bytearray& value) {
+	string str(value);
+	return ByteArrayTag::create(str.data(), str.size());
+}
+
+NbtClass NbtClass::newList() {
+	return ListTag::create();
+}
+
+NbtClass NbtClass::newCompound() {
+	auto a = CompoundTag::create();
+	return a;
+}
+
+NbtClass NbtClass::newIntArray() {
+	return IntArrayTag::create();
+}
+
+NbtClass NbtClass::fromSNBT(const string& snbt) {
+	return CompoundTag::fromSNBT(snbt);
+}
+
+NbtClass NbtClass::fromBinary(const py::bytes& bytes) {
+	return CompoundTag::fromBinaryNBT(bytes);
 }
 
 NbtClass NbtClass::__getitem__(int key) {
@@ -99,19 +93,26 @@ NbtClass NbtClass::__getitem__(int key) {
 		throw py::type_error("NbtClass is empty");
 	if (thiz->getTagType() != Tag::List)
 		throw py::type_error("NBT is not a list");
-	return thiz->asListTag()->operator[](key)->copy();
+	return thiz->asListTag()->get(key);
 }
 
 NbtClass NbtClass::__getitem__(const string& key) {
+	//logger.warn("key:{}", key);
+	//logger.warn("val:{}", (void*)thiz->asCompoundTag()->get(key));
+	//logger.warn(thiz->asCompoundTag()->toSNBT(4));
 	if (!thiz)
 		throw py::type_error("NbtClass is empty");
 	if (thiz->getTagType() != Tag::Compound)
 		throw py::type_error("NBT is not a compound");
-	return thiz->asCompoundTag()->operator[](key)->copy();
+	return thiz->asCompoundTag()->operator[](key);
 }
 
 void NbtClass::__setitem__(const string& key, const NbtClass& val) {
 	if (!thiz)
+		throw py::type_error("NbtClass is empty");
+	if (thiz->getTagType() != Tag::Compound)
+		throw py::type_error("NBT is not a compound");
+	if (!val.thiz)
 		throw py::type_error("NbtClass is empty");
 	thiz->asCompoundTag()->put(key, val.thiz->copy());
 }
@@ -176,10 +177,10 @@ py::object NbtClass::toObject() {
 	return py::eval(thiz->toJson(0));
 }
 
-string NbtClass::toSNBT() {
+string NbtClass::toSNBT(int indent, SnbtFormat snbtFormat) {
 	if (!thiz)
 		throw py::type_error("NbtClass is empty");
-	return thiz->asCompoundTag()->toSNBT();
+	return thiz->asCompoundTag()->toSNBT(indent, snbtFormat);
 }
 
 void NbtClass::append(const NbtClass& value) {

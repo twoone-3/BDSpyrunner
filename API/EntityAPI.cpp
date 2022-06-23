@@ -1,4 +1,3 @@
-#include <Global.hpp>
 #include "BlockAPI.h"
 #include "EntityAPI.h"
 #include "PlayerAPI.h"
@@ -7,143 +6,139 @@
 #include "McAPI.h"
 #include "ContainerAPI.h"
 #include "NbtAPI.h"
-#include <MC/ServerPlayer.hpp>
-#include <MC/Level.hpp>
 #include <MC/ItemActor.hpp>
 #include <MC/SimpleContainer.hpp>
-#include <MC/CompoundTag.hpp>
-#include <MC/Mob.hpp>
 #include <MC/CommandUtils.hpp>
 
 EntityClass::EntityClass(Actor* a) : thiz(a) {}
 
 string EntityClass::getName() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return "";
 	return CommandUtils::getActorName(*thiz);
 }
 
 string EntityClass::getType() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return "";
 	return thiz->getTypeName();
 }
 
 int EntityClass::getId() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return -1;
 	return (int)thiz->getEntityTypeId();
 }
 
 Vec3 EntityClass::getPos() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return Vec3();
 	return thiz->getPosition();
 }
 
 BlockPos EntityClass::getBlockPos() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return BlockPos();
 	return thiz->getBlockPos();
 }
 
 int EntityClass::getDim() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return -1;
 	return thiz->getDimensionId();
 }
 
 int EntityClass::getMaxHealth() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return -1;
 	return thiz->getMaxHealth();
 }
 
 int EntityClass::getHealth() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return -1;
 	return thiz->getHealth();
 }
 
 bool EntityClass::getInAir() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return !thiz->isOnGround() && !thiz->isInWater();
 }
 
 bool EntityClass::getInWater() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->isInWater();
 }
 
 float EntityClass::getSpeed() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return 0.0f;
 	return thiz->getSpeedInMetersPerSecond();
 }
 
 Vec2 EntityClass::getDirection() {
-	if (!thiz)
-		return {0, 0};
+	if (thiz == nullptr)
+		return Vec2(0.f,0.f);
 	return *thiz->getDirection();
 }
 
 string EntityClass::getUniqueID() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return "";
 	return std::to_string(thiz->getUniqueID().id);
 }
 
 bool EntityClass::teleport(const Vec3& pos, int dim) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->teleport(pos, dim);
 }
 
 bool EntityClass::kill() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	thiz->kill();
 	return true;
 }
 
 bool EntityClass::hurt(float damage) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->hurtEntity(damage);
 }
 
 bool EntityClass::setOnFire(int time) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->setOnFire(time, true);
 }
 
 bool EntityClass::isPlayer() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->isPlayer();
 }
 
 PlayerClass EntityClass::toPlayer() {
-	if (!thiz || !thiz->isPlayer())
+	if (thiz == nullptr)
 		return nullptr;
-	auto pl = (Player*)thiz;
-	if (!pl)
+	if (!thiz->isPlayer())
 		return nullptr;
-	else
-		return pl;
+	return (Player*)thiz;
 }
 
 bool EntityClass::isItemEntity() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->isItemActor();
 }
 
 EntityClass EntityClass::toItem() {
-	if (!thiz || !thiz->isItemActor())
+	if (thiz == nullptr)
+		return nullptr;
+	if (!thiz->isItemActor())
 		return nullptr;
 	auto it = (ItemActor*)thiz;
 	if (!it)
@@ -152,84 +147,81 @@ EntityClass EntityClass::toItem() {
 }
 
 BlockClass EntityClass::getBlockStandingOn() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return BlockInstance::Null;
 	return Level::getBlockInstance(thiz->getBlockPosCurrentlyStandingOn(nullptr), getDim());
 }
 
 ContainerClass EntityClass::getArmor() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return nullptr;
 	return &thiz->getArmorContainer();
 }
 
 bool EntityClass::hasContainer() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return Level::hasContainer(thiz->getPosition(), thiz->getDimensionId());
 }
 
 ContainerClass EntityClass::getContainer() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return nullptr;
 	return Level::getContainer(thiz->getPosition(), thiz->getDimensionId());
 }
 
 bool EntityClass::refreshItems() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return reinterpret_cast<Mob*>(thiz)->refreshInventory();
 }
 
 NbtClass EntityClass::getNbt() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return nullptr;
 	return thiz->getNbt();
 }
 
 bool EntityClass::setNbt(const NbtClass& nbt) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	if (!nbt.thiz)
-		return {};
+		return false;
 	return thiz->setNbt(nbt.thiz->asCompoundTag());
 }
 
 bool EntityClass::addTag(const string& tag) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->addTag(tag);
 }
 
 bool EntityClass::removeTag(const string& tag) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->removeTag(tag);
 }
 
 bool EntityClass::hasTag(const string& tag) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->hasTag(tag);
 }
 
 vector<string> EntityClass::getAllTags() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return vector<string>();
 	return thiz->getAllTags();
 }
 
 EntityClass EntityClass::getEntityFromViewVector(float maxDistance) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return nullptr;
-	auto a = thiz->getActorFromViewVector(maxDistance);
-	if (a)
-		return a;
-	return nullptr;
+	return thiz->getActorFromViewVector(maxDistance);
 }
 
-BlockClass EntityClass::getBlockFromViewVector(bool includeLiquid, bool solidOnly, float maxDistance, bool ignoreBorderBlocks, bool fullOnly) {
-	if (!thiz)
+BlockClass EntityClass::getBlockFromViewVector(bool includeLiquid, bool solidOnly, float maxDistance, bool ignoreBorderBlocks, bool fullOnly) {	
+	if (thiz == nullptr)
 		return BlockInstance::Null;
 	return thiz->getBlockFromViewVector(includeLiquid, solidOnly, maxDistance, ignoreBorderBlocks, fullOnly);
 }

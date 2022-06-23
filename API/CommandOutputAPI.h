@@ -1,7 +1,7 @@
 #pragma once
 #include <Global.hpp>
-#include <MC/CommandOutput.hpp>
 
+class CommandOutput;
 struct CommandOutputClass {
 	CommandOutput* thiz;
 
@@ -12,9 +12,6 @@ struct CommandOutputClass {
 
 	// MCAPI int getSuccessCount() const;
 	int getSuccessCount();
-
-	// MCAPI enum CommandOutputType getType() const;
-	// auto getType();
 
 	// MCAPI void success(std::string const&, std::vector<class CommandOutputParameter> const&);
 	// MCAPI void success();

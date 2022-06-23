@@ -34,6 +34,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 	DEF_ENUM("EffectChangedType", Event::PlayerEffectChangedEvent::EventType);
 	DEF_ENUM_SIMPLE(CommandParameterOption);
 	DEF_ENUM_SIMPLE(GameType);
+	DEF_ENUM_SIMPLE(SnbtFormat);
 #pragma endregion
 #pragma region Classes
 	py::class_<Vec2>(m, "Vec2")
@@ -111,8 +112,8 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getNbt", &ItemClass::getNbt);
 
 	py::class_<CommandClass>(m, "Command")
+		.def(py::init<string, string, CommandPermissionLevel>())
 		.def_property("name", &CommandClass::getName, nullptr)
-		//.def_property("registered", &CommandClass::isRegistered,nullptr)
 
 		.def("setEnum", &CommandClass::setEnum)
 		.def("setAlias", &CommandClass::setAlias)
@@ -141,6 +142,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def_property("name", &CommandOriginClass::getOriginName, nullptr)
 		.def_property("pos", &CommandOriginClass::getPosition, nullptr)
 		.def_property("blockPos", &CommandOriginClass::getBlockPosition, nullptr)
+		.def_property("dim", &CommandOriginClass::getDim, nullptr)
 		.def_property("entity", &CommandOriginClass::getEntity, nullptr)
 		.def_property("player", &CommandOriginClass::getPlayer, nullptr)
 
@@ -149,7 +151,6 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 
 	py::class_<CommandOutputClass>(m, "CommandOutput")
 		.def_property("empty", &CommandOutputClass::empty, nullptr)
-		//.def_property("type", &CommandOutputClass::getType)
 		.def_property("successCount", &CommandOutputClass::getSuccessCount, nullptr)
 
 		.def("success", py::overload_cast<>(&CommandOutputClass::success))
@@ -163,7 +164,21 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("toObject", [](const DynamicCommand::Result& thiz) { return convertResult(thiz); });
 
 	py::class_<NbtClass>(m, "NBT")
-		.def(py::init<string, py::object>(), "type"_a, "value"_a = nullptr)
+		.def_property("type", &NbtClass::getType, nullptr)
+		.def_static("newByte", &NbtClass::newByte)
+		.def_static("newShort", &NbtClass::newShort)
+		.def_static("newInt", &NbtClass::newInt)
+		.def_static("newLong", &NbtClass::newInt64)
+		.def_static("newFloat", &NbtClass::newFloat)
+		.def_static("newDouble", &NbtClass::newDouble)
+		.def_static("newByteArray", &NbtClass::newByteArray)
+		.def_static("newString", &NbtClass::newString)
+		.def_static("newIntArray", &NbtClass::newIntArray)
+		.def_static("newList", &NbtClass::newList)
+		.def_static("newCompound", &NbtClass::newCompound)
+		.def_static("fromSNBT", &NbtClass::fromSNBT)
+		.def_static("fromBinary", &NbtClass::fromBinary)	
+
 		.def("__getitem__", py::overload_cast<int>(&NbtClass::__getitem__))
 		.def("__getitem__", py::overload_cast<const string&>(&NbtClass::__getitem__))
 		.def("__setitem__", &NbtClass::__setitem__)
@@ -173,10 +188,9 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("asInt64", &NbtClass::asInt64)
 		.def("asFloat", &NbtClass::asFloat)
 		.def("asDouble", &NbtClass::asDouble)
-		.def("getType", &NbtClass::getType)
 		.def("toBinary", &NbtClass::toBinary)
-		.def("toJson", &NbtClass::toJson, "indentation"_a = 4)
-		.def("toSNBT", &NbtClass::toSNBT)
+		.def("toJson", &NbtClass::toJson, "indent"_a = 4)
+		.def("toSNBT", &NbtClass::toSNBT, "indent"_a = 4, "format"_a = SnbtFormat::PartialNewLine)
 		.def("append", &NbtClass::append);
 
 	py::class_<LoggerClass>(m, "Logger")
@@ -325,6 +339,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def_property("id", &EntityClass::getId, nullptr)
 		.def_property("pos", &EntityClass::getPos, nullptr)
 		.def_property("blockPos", &EntityClass::getBlockPos, nullptr)
+		.def_property("dim", &EntityClass::getDim, nullptr)
 		.def_property("maxHealth", &EntityClass::getMaxHealth, nullptr)
 		.def_property("health", &EntityClass::getHealth, nullptr)
 		.def_property("inAir", &EntityClass::getInAir, nullptr)

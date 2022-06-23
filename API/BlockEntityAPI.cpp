@@ -1,12 +1,6 @@
-#include <Global.hpp>
 #include "BlockAPI.h"
 #include "BlockEntityAPI.h"
 #include "NbtAPI.h"
-
-#include <MC/BlockActor.hpp>
-#include <MC/CompoundTag.hpp>
-
-//////////////////// Classes ////////////////////
 
 BlockEntityClass::BlockEntityClass(BlockActor* be, int dim) : thiz(be), dim(dim) {}
 

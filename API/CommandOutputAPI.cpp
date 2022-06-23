@@ -1,24 +1,21 @@
 #include "CommandOutputAPI.h"
+#include <MC/CommandOutput.hpp>
 
-//////////////////// APIs ////////////////////
 
 CommandOutputClass::CommandOutputClass(CommandOutput* p) : thiz(p) {}
 
 // MCAPI bool empty() const;
-
 bool CommandOutputClass::empty() {
 	return thiz->empty();
 }
 
 // MCAPI int getSuccessCount() const;
-
 int CommandOutputClass::getSuccessCount() {
 	return thiz->getSuccessCount();
 }
 
 // MCAPI void success(std::string const&, std::vector<class CommandOutputParameter> const&);
 // MCAPI void success();
-
 bool CommandOutputClass::success() {
 	thiz->success();
 	return true;
@@ -35,7 +32,6 @@ bool CommandOutputClass::addMessage(const string& msg) {
 }
 
 // MCAPI void error(std::string const&, std::vector<class CommandOutputParameter> const&);
-
 bool CommandOutputClass::error(const string& msg) {
 	thiz->error(msg);
 	return true;
@@ -44,14 +40,3 @@ bool CommandOutputClass::error(const string& msg) {
 const char* CommandOutputClass::toString() {
 	return "<CommandOutput>";
 }
-
-
-// MCAPI enum CommandOutputType getType() const;
-// auto CommandOutputClass::getType()
-//{
-//     try
-//     {
-//         return magic_enum::enum_name(get()->getType());
-//     }
-//     CATCH("Fail in getType!");
-// };

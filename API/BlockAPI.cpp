@@ -4,13 +4,6 @@
 #include "EntityAPI.h"
 #include "BlockEntityAPI.h"
 #include "NbtAPI.h"
-#include <MC/Level.hpp>
-#include <MC/Block.hpp>
-#include <MC/CompoundTag.hpp>
-#include <MC/BlockSource.hpp>
-#include <MC/BlockInstance.hpp>
-#include <MC/BlockActor.hpp>
-#include <exception>
 
 BlockClass::BlockClass(const BlockInstance& bi) : thiz(bi) {}
 

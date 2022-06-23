@@ -1,34 +1,36 @@
 ﻿#pragma once
 #include <Global.hpp>
-#include <MC/Tag.hpp>
-#include <MC/ByteTag.hpp>
-#include <MC/EndTag.hpp>
-#include <MC/ShortTag.hpp>
-#include <MC/IntTag.hpp>
-#include <MC/Int64Tag.hpp>
-#include <MC/FloatTag.hpp>
-#include <MC/DoubleTag.hpp>
-#include <MC/StringTag.hpp>
-#include <MC/ByteArrayTag.hpp>
-#include <MC/ListTag.hpp>
-#include <MC/CompoundTag.hpp>
 
+class Tag;
 struct NbtClass {
 	unique_ptr<Tag> thiz;
+	bool is_reference;
 
 	NbtClass();
-	NbtClass(unique_ptr<CompoundTag>&& other);
-	NbtClass(unique_ptr<Tag>&& other);
+	NbtClass(Tag* other);
+	template<typename T>
+	NbtClass(unique_ptr<T>&& other) {
+		thiz = std::move(other);
+		is_reference = false;
+	}
 	NbtClass(const NbtClass& other);
 	NbtClass(NbtClass&& other) noexcept;
-	//有三种模式
-	// 1. a1数据类型 a2数据
-	//    NBT('Int',3) NBT('Compound')
-	// 2. SNBT模式 a2填SNBT字符串
-	//    NBT('SNBT', snbt)
-	// 3. 二进制模式 a2填bytes
-	//    NBT('Binary', bytes)
-	NbtClass(const string& type_str, const py::object& value);
+	~NbtClass();
+	
+	static NbtClass newEnd();
+	static NbtClass newByte(unsigned char value);
+	static NbtClass newShort(short value);
+	static NbtClass newInt(int value);
+	static NbtClass newInt64(int64_t value);
+	static NbtClass newFloat(float value);
+	static NbtClass newDouble(double value);
+	static NbtClass newString(const string& value);
+	static NbtClass newByteArray(const py::bytearray& value);
+	static NbtClass newList();
+	static NbtClass newCompound();
+	static NbtClass newIntArray();
+	static NbtClass fromSNBT(const string& snbt);
+	static NbtClass fromBinary(const py::bytes& bytes);
 
 	NbtClass __getitem__(int key);
 	NbtClass __getitem__(const string& key);
@@ -43,6 +45,6 @@ struct NbtClass {
 	py::bytes toBinary();
 	string toJson(int indentatiton = 4);
 	py::object toObject();
-	string toSNBT();
+	string toSNBT(int indent, SnbtFormat snbtFormat = SnbtFormat::PartialNewLine);
 	void append(const NbtClass& value);
 };

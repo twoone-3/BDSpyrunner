@@ -19,7 +19,6 @@
 #include <MC/Common.hpp>
 #include <MC/Container.hpp>
 #include <MC/Dimension.hpp>
-//#include <MC/GameTypeConv.hpp>
 #include <MC/ItemInstance.hpp>
 #include <MC/ItemStack.hpp>
 #include <MC/JsonHelpers.hpp>
@@ -34,20 +33,6 @@
 #include <MC/Spawner.hpp>
 #include <MC/StructureSettings.hpp>
 #include <MC/StructureTemplate.hpp>
-
-#include <MC/ByteArrayTag.hpp>
-#include <MC/ByteTag.hpp>
-#include <MC/CompoundTag.hpp>
-#include <MC/DoubleTag.hpp>
-#include <MC/EndTag.hpp>
-#include <MC/FloatTag.hpp>
-#include <MC/Int64Tag.hpp>
-#include <MC/IntArrayTag.hpp>
-#include <MC/IntTag.hpp>
-#include <MC/ListTag.hpp>
-#include <MC/ShortTag.hpp>
-#include <MC/StringTag.hpp>
-#include <MC/Tag.hpp>
 
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>

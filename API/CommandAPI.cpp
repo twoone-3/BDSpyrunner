@@ -1,6 +1,4 @@
-#include "DynamicCommandAPI.h"
 #include "CommandAPI.h"
-#include <Global.hpp>
 #include "McAPI.h"
 #include "ItemAPI.h"
 #include "EntityAPI.h"
@@ -8,15 +6,7 @@
 #include "BlockAPI.h"
 #include "CommandOriginAPI.h"
 #include "CommandOutputAPI.h"
-#include <Utils/STLHelper.h>
 #include <RegCommandAPI.h>
-
-#include <filesystem>
-#include <MC/ItemInstance.hpp>
-#include <MC/ItemStack.hpp>
-#include <MC/Dimension.hpp>
-#include <MC/JsonHelpers.hpp>
-
 
 py::object convertResult(const DynamicCommand::Result& result) {
 	if (!result.isSet)
