@@ -1,8 +1,6 @@
 #include <Global.hpp>
 #include "EventAPI.h"
 #include "McAPI.h"
-//#include <sstream>
-//#include <cstdarg>
 
 #include "BlockAPI.h"
 #include "GuiAPI.h"
@@ -46,13 +44,32 @@ public:
 		arg_[key] = item;
 		return *this;
 	}
+	Callbacker& insert(const char* key, const BlockInstance& item) {
+		arg_[key] = BlockClass(item);
+		return *this;
+	}
+	Callbacker& insert(const char* key, ItemStack* item) {
+		arg_[key] = ItemClass(item);
+		return *this;
+	}
+	Callbacker& insert(const char* key, Player* item) {
+		arg_[key] = PlayerClass(item);
+		return *this;
+	}
+	Callbacker& insert(const char* key, Actor* item) {
+		arg_[key] = EntityClass(item);
+		return *this;
+	}
+	Callbacker& insert(const char* key, Container* item) {
+		arg_[key] = ContainerClass(item);
+		return *this;
+	}
 
 private:
 	py::gil_scoped_acquire gil_;
 	EventCode type_;
 	py::dict arg_;
 };
-
 
 void EnableEventListener(EventCode event_code) {
 	using namespace Event;
@@ -61,7 +78,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onJoin:
 		Event::PlayerJoinEvent::subscribe([](const PlayerJoinEvent& ev) {
 			EVENT_BEGIN(EventCode::onJoin);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_END;
 		});
 		break;
@@ -70,7 +87,7 @@ void EnableEventListener(EventCode event_code) {
 		Event::PlayerPreJoinEvent::subscribe([](const PlayerPreJoinEvent& ev) {
 			EVENT_BEGIN(EventCode::onPreJoin);
 			EVENT_INSERT(IP);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(XUID);
 			EVENT_END;
 		});
@@ -79,7 +96,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onLeft:
 		Event::PlayerLeftEvent::subscribe([](const PlayerLeftEvent& ev) {
 			EVENT_BEGIN(EventCode::onLeft);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_END;
 		});
 		break;
@@ -87,7 +104,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onChat:
 		Event::PlayerChatEvent::subscribe([](const PlayerChatEvent& ev) {
 			EVENT_BEGIN(EventCode::onChat);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(Message);
 			EVENT_END;
 		});
@@ -96,7 +113,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onChangeDim:
 		Event::PlayerChangeDimEvent::subscribe([](const PlayerChangeDimEvent& ev) {
 			EVENT_BEGIN(EventCode::onChangeDim);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(ToDimensionId);
 			EVENT_END;
 		});
@@ -105,8 +122,8 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onAttackEntity:
 		Event::PlayerAttackEvent::subscribe([](const PlayerAttackEvent& ev) {
 			EVENT_BEGIN(EventCode::onAttackEntity);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
-			EVENT_INSERT_EX(Entity, EntityClass(ev.mTarget));
+			EVENT_INSERT(Player);
+			EVENT_INSERT(Target);
 			EVENT_END;
 		});
 		break;
@@ -116,7 +133,7 @@ void EnableEventListener(EventCode event_code) {
 			EVENT_BEGIN(EventCode::onAttackBlock);
 			EVENT_INSERT(BlockInstance);
 			EVENT_INSERT(ItemStack);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_END;
 		});
 		break;
@@ -126,7 +143,7 @@ void EnableEventListener(EventCode event_code) {
 			EVENT_BEGIN(EventCode::onPlayerDie);
 			EVENT_INSERT_EX(Cause, magic_enum::enum_name(ev.mDamageSource->getCause()));
 			EVENT_INSERT_EX(Entity, EntityClass(ev.mDamageSource->getEntity()));
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_END;
 		});
 		break;
@@ -134,7 +151,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onRespawn:
 		Event::PlayerRespawnEvent::subscribe([](const PlayerRespawnEvent& ev) {
 			EVENT_BEGIN(EventCode::onRespawn);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_END;
 		});
 		break;
@@ -142,7 +159,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onStartDestroyBlock:
 		Event::PlayerStartDestroyBlockEvent::subscribe([](const PlayerStartDestroyBlockEvent& ev) {
 			EVENT_BEGIN(EventCode::onStartDestroyBlock);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(BlockInstance);
 			EVENT_END;
 		});
@@ -151,7 +168,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onDestroyBlock:
 		Event::PlayerDestroyBlockEvent::subscribe([](const PlayerDestroyBlockEvent& ev) {
 			EVENT_BEGIN(EventCode::onDestroyBlock);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(BlockInstance);
 			EVENT_END;
 		});
@@ -160,7 +177,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onPlaceBlock:
 		Event::PlayerPlaceBlockEvent::subscribe([](const PlayerPlaceBlockEvent& ev) {
 			EVENT_BEGIN(EventCode::onPlaceBlock);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(BlockInstance);
 			EVENT_END;
 		});
@@ -169,7 +186,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onMove:
 		Event::PlayerMoveEvent::subscribe([](const PlayerMoveEvent& ev) {
 			EVENT_BEGIN(EventCode::onMove);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(Pos);
 			EVENT_END;
 		});
@@ -178,7 +195,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onJump:
 		Event::PlayerJumpEvent::subscribe([](const PlayerJumpEvent& ev) {
 			EVENT_BEGIN(EventCode::onJump);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_END;
 		});
 		break;
@@ -186,7 +203,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onDropItem:
 		Event::PlayerDropItemEvent::subscribe([](const PlayerDropItemEvent& ev) {
 			EVENT_BEGIN(EventCode::onDropItem);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(ItemStack);
 			EVENT_END;
 		});
@@ -195,8 +212,8 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onTakeItem:
 		Event::PlayerPickupItemEvent::subscribe([](const PlayerPickupItemEvent& ev) {
 			EVENT_BEGIN(EventCode::onTakeItem);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
-			EVENT_INSERT_EX(ItemEntity, EntityClass(ev.mItemEntity));
+			EVENT_INSERT(Player);
+			EVENT_INSERT(ItemEntity);
 			EVENT_INSERT(ItemStack);
 			EVENT_END;
 		});
@@ -206,8 +223,8 @@ void EnableEventListener(EventCode event_code) {
 		Event::PlayerOpenContainerEvent::subscribe([](const PlayerOpenContainerEvent& ev) {
 			EVENT_BEGIN(EventCode::onOpenContainer);
 			EVENT_INSERT(BlockInstance);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
-			EVENT_INSERT_EX(Container, ContainerClass(ev.mContainer));
+			EVENT_INSERT(Player);
+			EVENT_INSERT(Container);
 			EVENT_END;
 		});
 		break;
@@ -216,8 +233,8 @@ void EnableEventListener(EventCode event_code) {
 		Event::PlayerCloseContainerEvent::subscribe([](const PlayerCloseContainerEvent& ev) {
 			EVENT_BEGIN(EventCode::onCloseContainer);
 			EVENT_INSERT(BlockInstance);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
-			EVENT_INSERT_EX(Container, ContainerClass(ev.mContainer));
+			EVENT_INSERT(Player);
+			EVENT_INSERT(Container);
 			EVENT_END;
 		});
 		break;
@@ -225,9 +242,9 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onInventoryChange:
 		Event::PlayerInventoryChangeEvent::subscribe([](const PlayerInventoryChangeEvent& ev) {
 			EVENT_BEGIN(EventCode::onInventoryChange);
-			EVENT_INSERT_EX(NewItemStack, ItemClass(ev.mNewItemStack));
-			EVENT_INSERT_EX(Player, EntityClass(ev.mPlayer));
-			EVENT_INSERT_EX(PreviousItemStack, ItemClass(ev.mPreviousItemStack));
+			EVENT_INSERT(NewItemStack);
+			EVENT_INSERT(Player);
+			EVENT_INSERT(PreviousItemStack);
 			EVENT_INSERT(Slot);
 			EVENT_END;
 		});
@@ -236,7 +253,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onUseItem:
 		Event::PlayerUseItemEvent::subscribe([](const PlayerUseItemEvent& ev) {
 			EVENT_BEGIN(EventCode::onUseItem);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(ItemStack);
 			EVENT_END;
 		});
@@ -245,7 +262,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onUseItemOn:
 		Event::PlayerUseItemOnEvent::subscribe([](const PlayerUseItemOnEvent& ev) {
 			EVENT_BEGIN(EventCode::onUseItemOn);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(ItemStack);
 			EVENT_INSERT(BlockInstance);
 			EVENT_INSERT(Face);
@@ -256,12 +273,12 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onContainerChange:
 		Event::ContainerChangeEvent::subscribe([](const ContainerChangeEvent& ev) {
 			EVENT_BEGIN(EventCode::onContainerChange);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
-			EVENT_INSERT_EX(Actor, EntityClass(ev.mActor));
-			EVENT_INSERT_EX(Container, ContainerClass(ev.mContainer));
+			EVENT_INSERT(Player);
+			EVENT_INSERT(Actor);
+			EVENT_INSERT(Container);
 			EVENT_INSERT(Slot);
-			EVENT_INSERT_EX(NewItemStack, ItemClass(ev.mNewItemStack));
-			EVENT_INSERT_EX(PreviousItemStack, ItemClass(ev.mPreviousItemStack));
+			EVENT_INSERT(NewItemStack);
+			EVENT_INSERT(PreviousItemStack);
 			EVENT_END;
 		});
 		break;
@@ -269,7 +286,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onChangeArmorStand:
 		Event::ArmorStandChangeEvent::subscribe([](const ArmorStandChangeEvent& ev) {
 			EVENT_BEGIN(EventCode::onChangeArmorStand);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT_EX(ArmorStand, EntityClass((Actor*)ev.mArmorStand));
 			EVENT_INSERT(Slot);
 			EVENT_END;
@@ -279,7 +296,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onChangeSprinting:
 		Event::PlayerSprintEvent::subscribe([](const PlayerSprintEvent& ev) {
 			EVENT_BEGIN(EventCode::onChangeSprinting);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(IsSprinting);
 			EVENT_END;
 		});
@@ -288,7 +305,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onSneak:
 		Event::PlayerSneakEvent::subscribe([](const PlayerSneakEvent& ev) {
 			EVENT_BEGIN(EventCode::onSneak);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(IsSneaking);
 			EVENT_END;
 		});
@@ -297,7 +314,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onOpenContainerScreen:
 		Event::PlayerOpenContainerScreenEvent::subscribe([](const PlayerOpenContainerScreenEvent& ev) {
 			EVENT_BEGIN(EventCode::onOpenContainerScreen);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_END;
 		});
 		break;
@@ -305,9 +322,9 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onSetArmor:
 		Event::PlayerSetArmorEvent::subscribe([](const PlayerSetArmorEvent& ev) {
 			EVENT_BEGIN(EventCode::onSetArmor);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(Slot);
-			EVENT_INSERT_EX(ArmorItem, ItemClass(ev.mArmorItem));
+			EVENT_INSERT(ArmorItem);
 			EVENT_END;
 		});
 		break;
@@ -315,8 +332,8 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onEat:
 		Event::PlayerEatEvent::subscribe([](const PlayerEatEvent& ev) {
 			EVENT_BEGIN(EventCode::onEat);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
-			EVENT_INSERT_EX(FoodItem, ItemClass(ev.mFoodItem));
+			EVENT_INSERT(Player);
+			EVENT_INSERT(FoodItem);
 			EVENT_END;
 		});
 		break;
@@ -324,7 +341,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onConsumeTotem:
 		Event::PlayerConsumeTotemEvent::subscribe([](const PlayerConsumeTotemEvent& ev) {
 			EVENT_BEGIN(EventCode::onConsumeTotem);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_END;
 		});
 		break;
@@ -332,7 +349,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onEffectChanged:
 		Event::PlayerEffectChangedEvent::subscribe([](const PlayerEffectChangedEvent& ev) {
 			EVENT_BEGIN(EventCode::onEffectChanged);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(Effect);
 			EVENT_INSERT(EventType);
 			EVENT_END;
@@ -342,7 +359,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onUseRespawnAnchor:
 		Event::PlayerUseRespawnAnchorEvent::subscribe([](const PlayerUseRespawnAnchorEvent& ev) {
 			EVENT_BEGIN(EventCode::onUseRespawnAnchor);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(BlockInstance);
 			EVENT_END;
 		});
@@ -351,8 +368,8 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onRide:
 		Event::EntityRideEvent::subscribe([](const EntityRideEvent& ev) {
 			EVENT_BEGIN(EventCode::onRide);
-			EVENT_INSERT_EX(Rider, EntityClass(ev.mRider));
-			EVENT_INSERT_EX(Vehicle, EntityClass(ev.mVehicle));
+			EVENT_INSERT(Rider);
+			EVENT_INSERT(Vehicle);
 			EVENT_END;
 		});
 		break;
@@ -360,7 +377,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onEntityExplode:
 		Event::EntityExplodeEvent::subscribe([](const EntityExplodeEvent& ev) {
 			EVENT_BEGIN(EventCode::onEntityExplode);
-			EVENT_INSERT_EX(Actor, EntityClass(ev.mActor));
+			EVENT_INSERT(Actor);
 			EVENT_INSERT(Pos);
 			EVENT_INSERT_EX(Dim, ev.mDimension->getDimensionId());
 			EVENT_INSERT(Radius);
@@ -387,7 +404,7 @@ void EnableEventListener(EventCode event_code) {
 		Event::BlockExplodedEvent::subscribe([](const BlockExplodedEvent& ev) {
 			EVENT_BEGIN(EventCode::onBlockExploded);
 			EVENT_INSERT(BlockInstance);
-			EVENT_INSERT_EX(ExplodSource, EntityClass(ev.mExplodeSource));
+			EVENT_INSERT(ExplodeSource);
 			EVENT_END;
 		});
 		break;
@@ -398,7 +415,7 @@ void EnableEventListener(EventCode event_code) {
 			EVENT_INSERT(BlockInstance);
 			EVENT_INSERT(Command);
 			EVENT_INSERT(IsMinecart);
-			EVENT_INSERT_EX(Minecart, EntityClass(ev.mMinecart));
+			EVENT_INSERT(Minecart);
 			EVENT_END;
 		});
 		break;
@@ -437,7 +454,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onStepOnPressurePlate:
 		Event::EntityStepOnPressurePlateEvent::subscribe([](const EntityStepOnPressurePlateEvent& ev) {
 			EVENT_BEGIN(EventCode::onStepOnPressurePlate);
-			EVENT_INSERT_EX(Actor, EntityClass(ev.mActor));
+			EVENT_INSERT(Actor);
 			EVENT_INSERT(BlockInstance);
 			EVENT_END;
 		});
@@ -456,8 +473,8 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onNpcCmd:
 		Event::NpcCmdEvent::subscribe([](const NpcCmdEvent& ev) {
 			EVENT_BEGIN(EventCode::onNpcCmd);
-			EVENT_INSERT_EX(Npc, EntityClass(ev.mNpc));
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Npc);
+			EVENT_INSERT(Player);
 			EVENT_INSERT(Command);
 			EVENT_END;
 		});
@@ -466,7 +483,7 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onSpawnProjectile:
 		Event::ProjectileSpawnEvent::subscribe([](const ProjectileSpawnEvent& ev) {
 			EVENT_BEGIN(EventCode::onSpawnProjectile);
-			EVENT_INSERT_EX(Shooter, EntityClass(ev.mShooter));
+			EVENT_INSERT(Shooter);
 			// idf...
 			EVENT_INSERT(Type);
 			EVENT_END;
@@ -476,8 +493,8 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onProjectileCreated:
 		Event::ProjectileCreatedEvent::subscribe([](const ProjectileCreatedEvent& ev) {
 			EVENT_BEGIN(EventCode::onProjectileCreated);
-			EVENT_INSERT_EX(Shooter, EntityClass(ev.mShooter));
-			EVENT_INSERT_EX(Projectile, EntityClass(ev.mProjectile));
+			EVENT_INSERT(Shooter);
+			EVENT_INSERT(Projectile);
 			EVENT_END;
 		});
 		break;
@@ -485,8 +502,8 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onProjectileHitEntity:
 		Event::ProjectileHitEntityEvent::subscribe([](const ProjectileHitEntityEvent& ev) {
 			EVENT_BEGIN(EventCode::onProjectileHitEntity);
-			EVENT_INSERT_EX(Target, EntityClass(ev.mTarget));
-			EVENT_INSERT_EX(Source, EntityClass(ev.mSource));
+			EVENT_INSERT(Target);
+			EVENT_INSERT(Source);
 			EVENT_END;
 		});
 		break;
@@ -494,8 +511,8 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onEntityTransformation:
 		Event::EntityTransformEvent::subscribe([](const EntityTransformEvent& ev) {
 			EVENT_BEGIN(EventCode::onEntityTransformation);
-			EVENT_INSERT_EX(Entity, to_string(ev.mBeforeEntityUniqueId->id));
-			EVENT_INSERT_EX(Entity, EntityClass(ev.mAfterEntity));
+			EVENT_INSERT_EX(EntityId, to_string(ev.mBeforeEntityUniqueId->id));
+			EVENT_INSERT(AfterEntity);
 			EVENT_END;
 		});
 		break;
@@ -504,7 +521,7 @@ void EnableEventListener(EventCode event_code) {
 		Event::ProjectileHitBlockEvent::subscribe([](const ProjectileHitBlockEvent& ev) {
 			EVENT_BEGIN(EventCode::onProjectileHitBlock);
 			EVENT_INSERT(BlockInstance);
-			EVENT_INSERT_EX(Source, EntityClass(ev.mSource));
+			EVENT_INSERT(Source);
 			EVENT_END;
 		});
 		break;
@@ -516,32 +533,32 @@ void EnableEventListener(EventCode event_code) {
 			EVENT_INSERT(Target);
 			EVENT_INSERT(DimensionId);
 			EVENT_END;
-			});
+		});
 		break;
 
 	case EventCode::onUseFrameBlock:
 		Event::PlayerUseFrameBlockEvent::subscribe([](const PlayerUseFrameBlockEvent& ev) {
 			EVENT_BEGIN(EventCode::onUseFrameBlock);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(BlockInstance);
 			EVENT_END;
-			});
+		});
 		break;
 
 	case EventCode::onBlockInteracted:
 		Event::BlockInteractedEvent::subscribe([](const BlockInteractedEvent& ev) {
 			EVENT_BEGIN(EventCode::onBlockInteracted);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(BlockInstance);
 			EVENT_END;
-			});
+		});
 		break;
-		
+
 	case EventCode::onFarmLandDecay:
 		Event::FarmLandDecayEvent::subscribe([](const FarmLandDecayEvent& ev) {
 			EVENT_BEGIN(EventCode::onFarmLandDecay);
 			EVENT_INSERT(BlockInstance);
-			EVENT_INSERT_EX(Actor,EntityClass(ev.mActor));
+			EVENT_INSERT(Actor);
 			EVENT_END;
 		});
 		break;
@@ -579,9 +596,9 @@ void EnableEventListener(EventCode event_code) {
 		Event::HopperPushOutEvent::subscribe([](const HopperPushOutEvent& ev) {
 			EVENT_BEGIN(EventCode::onHopperPushOut);
 			EVENT_INSERT(Pos);
-			EVENT_INSERT(DimensionId);			
+			EVENT_INSERT(DimensionId);
 			EVENT_END;
-			});
+		});
 		break;
 
 	case EventCode::onFireSpread:
@@ -605,10 +622,10 @@ void EnableEventListener(EventCode event_code) {
 	case EventCode::onScoreChanged:
 		Event::PlayerScoreChangedEvent::subscribe([](const PlayerScoreChangedEvent& ev) {
 			EVENT_BEGIN(EventCode::onScoreChanged);
-			EVENT_INSERT_EX(Player, PlayerClass(ev.mPlayer));
+			EVENT_INSERT(Player);
 			EVENT_INSERT(Score);
 			EVENT_INSERT_EX(Objective, ObjectiveClass(ev.mObjective));
-			//ScoreboardId
+			// ScoreboardId
 			EVENT_END;
 		});
 		break;

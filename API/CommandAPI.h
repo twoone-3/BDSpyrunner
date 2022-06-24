@@ -10,7 +10,6 @@ struct CommandClass {
 	CommandClass(const string& name, const string& desc, CommandPermissionLevel perm);
 	string getName();
 	bool setAlias(const string& alias);
-	string setEnum(const string& name, const vector<string>& arr);
 	// name, type, description, identifier, option
 	int64_t mandatory(const string& name, DynamicCommand::ParameterType type,
 		string description = "", string identifier = "", CommandParameterOption option = None);
@@ -33,6 +32,16 @@ struct CommandClass {
 	// setup(Function<Command, Origin, Output, Map<String, Any>>)
 	bool setup();
 	string toString();
+
+	// SoftEnum 是带补全的字符串
+	// 补全项可以实时更改
+	// 不同选项不能接不同参数
+	// Enum 则可以做到
+	// cmd <add|remove> name
+	// cmd <list>
+	// cmd <rename> name name2
+
+	string setEnum(const string& name, const vector<string>& arr);
 	string setSoftEnum(const string& name, const vector<string>& values);
 	bool addSoftEnumValues(const string& name, const vector<string>& values);
 	bool removeSoftEnumValues(const string& name, const vector<string>& values);

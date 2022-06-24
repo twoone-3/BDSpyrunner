@@ -1,9 +1,8 @@
 #pragma once
 #include <Global.hpp>
-#include <MC/BlockInstance.hpp>
 
-//////////////////// Classes ////////////////////
 class Block;
+class BlockInstance;
 struct ContainerClass;
 struct BlockEntityClass;
 struct NbtClass;

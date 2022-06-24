@@ -6,7 +6,7 @@
 #include "BlockAPI.h"
 #include "CommandOriginAPI.h"
 #include "CommandOutputAPI.h"
-#include <RegCommandAPI.h>
+//#include <RegCommandAPI.h>
 
 py::object convertResult(const DynamicCommand::Result& result) {
 	if (!result.isSet)
@@ -19,17 +19,17 @@ py::object convertResult(const DynamicCommand::Result& result) {
 	case DynamicCommand::ParameterType::Float:
 		return py::float_(result.getRaw<float>());
 	case DynamicCommand::ParameterType::String:
-		return py::str(result.getRaw<std::string>());
+		return py::str(result.getRaw<string>());
 	case DynamicCommand::ParameterType::Actor: {
 		py::list arr;
-		for (auto i : result.get<std::vector<Actor*>>()) {
+		for (auto i : result.get<vector<Actor*>>()) {
 			arr.append(EntityClass(i));
 		}
 		return arr;
 	}
 	case DynamicCommand::ParameterType::Player: {
 		py::list arr;
-		for (auto i : result.get<std::vector<Player*>>()) {
+		for (auto i : result.get<vector<Player*>>()) {
 			arr.append(PlayerClass(i));
 		}
 		return arr;
@@ -51,7 +51,7 @@ py::object convertResult(const DynamicCommand::Result& result) {
 	case DynamicCommand::ParameterType::Message:
 		return py::str(result.getRaw<CommandMessage>().getMessage(*result.origin));
 	case DynamicCommand::ParameterType::RawText:
-		return py::str(result.getRaw<std::string>());
+		return py::str(result.getRaw<string>());
 	case DynamicCommand::ParameterType::JsonValue:
 		return py::str(JsonHelpers::serialize(result.getRaw<Json::Value>()));
 	case DynamicCommand::ParameterType::Item:
@@ -62,11 +62,11 @@ py::object convertResult(const DynamicCommand::Result& result) {
 	case DynamicCommand::ParameterType::Effect:
 		return py::str(result.getRaw<MobEffect const*>()->getResourceName());
 	case DynamicCommand::ParameterType::Enum:
-		return py::str(result.getRaw<std::string>());
+		return py::str(result.getRaw<string>());
 	case DynamicCommand::ParameterType::SoftEnum:
-		return py::str(result.getRaw<std::string>());
+		return py::str(result.getRaw<string>());
 	case DynamicCommand::ParameterType::Command:
-		return py::str(result.getRaw<std::unique_ptr<Command>>()->getCommandName());
+		return py::str(result.getRaw<unique_ptr<Command>>()->getCommandName());
 	case DynamicCommand::ParameterType::ActorType:
 		return py::str(result.getRaw<ActorDefinitionIdentifier const*>()->getCanonicalName());
 	default:
@@ -75,72 +75,86 @@ py::object convertResult(const DynamicCommand::Result& result) {
 	}
 }
 
-//////////////////// Command APIs ////////////////////
-
 CommandClass::CommandClass(const string& name, const string& desc, CommandPermissionLevel perm) : thiz(DynamicCommand::createCommand(name, desc, perm)) {}
 
 string CommandClass::getName() {
+	if (thiz == nullptr)
+		return "";
 	return thiz->getCommandName();
 }
 
 bool CommandClass::setAlias(const string& alias) {
+	if (thiz == nullptr)
+		return false;
 	return thiz->setAlias(alias);
-}
-
-string CommandClass::setEnum(const string& name, const vector<string>& arr) {
-	return thiz->setEnum(name, arr);
 }
 
 // name, type, description, identifier, option
 
 int64_t CommandClass::mandatory(const string& name, DynamicCommand::ParameterType type, string description, string identifier, CommandParameterOption option) {
+	if (thiz == nullptr)
+		return -1;
 	return thiz->mandatory(name, type, description, identifier, option);
 }
 
 // name, type, description, option
 
 int64_t CommandClass::mandatory(const string& name, DynamicCommand::ParameterType type, string description, CommandParameterOption option) {
+	if (thiz == nullptr)
+		return -1;
 	return thiz->mandatory(name, type, description, option);
 }
 
 // name, type, description, identifier, option
 
 int64_t CommandClass::optional(const string& name, DynamicCommand::ParameterType type, string description, string identifier, CommandParameterOption option) {
+	if (thiz == nullptr)
+		return -1;
 	return thiz->optional(name, type, description, identifier, option);
 }
 
 // name, type, description, option
 
 int64_t CommandClass::optional(const string& name, DynamicCommand::ParameterType type, string description, CommandParameterOption option) {
+	if (thiz == nullptr)
+		return -1;
 	return thiz->optional(name, type, description, option);
 }
 
 bool CommandClass::addOverload() {
+	if (thiz == nullptr)
+		return false;
 	return thiz->addOverload();
 }
 
 // vector<index>
 
 bool CommandClass::addOverload(const vector<size_t>& args) {
+	if (thiz == nullptr)
+		return false;
 	vector<DynamicCommandInstance::ParameterIndex> params;
 	for (int i = 0; i < args.size(); ++i) {
 		params.emplace_back(thiz.get(), args[i]);
 	}
-	return thiz->addOverload(std::move(params));
+	return thiz->addOverload(move(params));
 }
 
 // vector<identifier>
 
 bool CommandClass::addOverload(vector<string>&& args) {
-	return thiz->addOverload(std::move(args));
+	if (thiz == nullptr)
+		return false;
+	return thiz->addOverload(move(args));
 }
 
 // function (command, origin, output, results){}
 
 bool CommandClass::setCallback(const py::function& cb) {
+	if (thiz == nullptr)
+		return false;
 	thiz->setCallback([cb](const DynamicCommand& command, const CommandOrigin& origin,
 						  CommandOutput& output, std::unordered_map<string, DynamicCommand::Result>& results) {
-		call(cb, CommandOriginClass(const_cast<CommandOrigin*>( & origin)), results);
+		call(cb, CommandOriginClass(const_cast<CommandOrigin*>(&origin)), results);
 	});
 	return true;
 }
@@ -148,68 +162,49 @@ bool CommandClass::setCallback(const py::function& cb) {
 // setup(Function<Command, Origin, Output, Map<String, Any>>)
 
 bool CommandClass::setup() {
-	return DynamicCommand::setup(std::move(thiz));
+	if (thiz == nullptr)
+		return false;
+	return DynamicCommand::setup(move(thiz));
 }
 
 string CommandClass::toString() {
+	if (thiz == nullptr)
+		return "";
 	return fmt::format("<Command({})>", thiz->getCommandName());
 }
 
+string CommandClass::setEnum(const string& name, const vector<string>& arr) {
+	if (thiz == nullptr)
+		return "";
+	return thiz->setEnum(name, arr);
+}
+
 string CommandClass::setSoftEnum(const string& name, const vector<string>& values) {
+	if (thiz == nullptr)
+		return "";
 	return thiz->setSoftEnum(name, values);
 }
 
 bool CommandClass::addSoftEnumValues(const string& name, const vector<string>& values) {
+	if (thiz == nullptr)
+		return false;
 	return thiz->addSoftEnumValues(name, values);
 }
 
 bool CommandClass::removeSoftEnumValues(const string& name, const vector<string>& values) {
+	if (thiz == nullptr)
+		return false;
 	return thiz->removeSoftEnumValues(name, values);
 }
 
 vector<string> CommandClass::getSoftEnumValues(const string& name) {
+	if (thiz == nullptr)
+		return {};
 	return thiz->getSoftEnumValues(name);
 }
 
 vector<string> CommandClass::getSoftEnumNames() {
+	if (thiz == nullptr)
+		return {};
 	return thiz->getSoftEnumNames();
 }
-
-//void onExecute(DynamicCommand const& command, CommandOrigin const& origin, CommandOutput& output,
-//	std::unordered_map<std::string, DynamicCommand::Result>& results) {
-//	auto instance = command.getInstance();
-//	auto& commandName = instance->getCommandName();
-//	if (localShareData->commandCallbacks.find(commandName) == localShareData->commandCallbacks.end()) {
-//		logger.warn("Command {} failed to execute, is the plugin unloaded?", commandName);
-//		return;
-//	}
-//	EngineScope enter(localShareData->commandCallbacks[commandName].fromEngine);
-//	Local<Object> args = Object::newObject();
-//	auto cmd = CommandClass::newCommand(const_cast<DynamicCommandInstance*>(instance));
-//	auto ori = CommandOriginClass::newCommandOrigin(&origin);
-//	auto outp = CommandOutputClass::newCommandOutput(&output);
-//	for (auto& [name, param] : results)
-//		args.set(name, convertResult(param));
-//	localShareData->commandCallbacks[commandName].func.thiz.call({}, cmd, ori, outp, args);
-//}
-
-// not complete
-// void onExecute2(DynamicCommand const& command, CommandOrigin const& origin, CommandOutput& output,
-//	std::unordered_map<std::string, DynamicCommand::Result>& results) {
-//	auto instance = command.getInstance();
-//	auto& commandName = instance->getCommandName();
-//	if (localShareData->commandCallbacks.find(commandName) == localShareData->commandCallbacks.end()) {
-//		logger.warn("Command {} failed to execute, is the plugin unloaded?", commandName);
-//		return;
-//	}
-//	EngineScope enter(localShareData->commandCallbacks[commandName].fromEngine);
-//	try {
-//		// auto ctx = CommandContextClass::newCommandContext(&command, &origin, &output, &results);
-//		// Local<Object> args = Object::newObject();
-//		// for (auto& [name, param] : results)
-//		//     args.set(name, convertResult(param));
-//		// localShareData->commandCallbacks[commandName].func.thiz.call({}, ctx, args);
-//	}
-//	CATCH_WITHOUT_RETURN("Fail in executing command \"" + commandName + "\"!")
-//}
-

@@ -14,11 +14,11 @@
 #include <API/ScoreboardAPI.h>
 #include <API/McAPI.h>
 
-// TODO: 检查全局替换的inline有什么影响
-
 // clang-format off
+
 #define DEF_ENUM(name, type){ auto entries = magic_enum::enum_entries<type>(); auto e = py::enum_<type>(m, name); for (auto& [val, n] : entries) { e.value(n.data(), val); } }
 #define DEF_ENUM_SIMPLE(type) DEF_ENUM(#type, type)
+
 // clang-format on
 
 PYBIND11_EMBEDDED_MODULE(mc, m) {
@@ -177,7 +177,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def_static("newList", &NbtClass::newList)
 		.def_static("newCompound", &NbtClass::newCompound)
 		.def_static("fromSNBT", &NbtClass::fromSNBT)
-		.def_static("fromBinary", &NbtClass::fromBinary)	
+		.def_static("fromBinary", &NbtClass::fromBinary)
 
 		.def("__getitem__", py::overload_cast<int>(&NbtClass::__getitem__))
 		.def("__getitem__", py::overload_cast<const string&>(&NbtClass::__getitem__))
@@ -379,18 +379,22 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getBlock", &BlockEntityClass::getBlock);
 
 	py::class_<SimpleFormClass>(m, "SimpleForm")
+		.def(py::init<const string&, const string&>(), "title"_a, "content"_a = "")
 		.def("setTitle", &SimpleFormClass::setTitle)
 		.def("setContent", &SimpleFormClass::setContent)
-		.def("addButton", &SimpleFormClass::addButton);
+		.def("addButton", &SimpleFormClass::addButton, "text"_a, "image"_a = "")
+		.def("sendForm", &SimpleFormClass::sendForm);
 
 	py::class_<CustomFormClass>(m, "CustomForm")
+		.def(py::init<const string&>(), "title"_a)
 		.def("setTitle", &CustomFormClass::setTitle)
 		.def("addLabel", &CustomFormClass::addLabel)
-		.def("addInput", &CustomFormClass::addInput)
-		.def("addSwitch", &CustomFormClass::addSwitch)
-		.def("addDropdown", &CustomFormClass::addDropdown)
-		.def("addSlider", &CustomFormClass::addSlider)
-		.def("addStepSlider", &CustomFormClass::addStepSlider);
+		.def("addInput", &CustomFormClass::addInput, "name"_a, "title"_a, "placeholder"_a = "", "default_"_a = "")
+		.def("addToggle", &CustomFormClass::addToggle, "name"_a, "title"_a, "default_"_a = false)
+		.def("addDropdown", &CustomFormClass::addDropdown, "name"_a, "title"_a, "options"_a, "default_id"_a = 0)
+		.def("addSlider", &CustomFormClass::addSlider, "name"_a, "title"_a, "min"_a, "max"_a, "step"_a = 1, "default_"_a = 0)
+		.def("addStepSlider", &CustomFormClass::addStepSlider, "name"_a, "title"_a, "options"_a, "default_id"_a = 0)
+		.def("sendForm", &CustomFormClass::sendForm);
 
 	py::class_<ObjectiveClass>(m, "Objective")
 		.def_property("name", &ObjectiveClass::getName, nullptr)

@@ -139,10 +139,7 @@ EntityClass cloneMob(const Vec3& pos, int dim, const EntityClass& ac) {
 }
 
 PlayerClass spawnSimulatedPlayer(const string& name, BlockPos& pos, int dim) {
-	if (auto sp = SimulatedPlayer::create(name, pos, dim))
-		return sp;
-	else
-		return nullptr;
+	return SimulatedPlayer::create(name, pos, dim);
 }
 bool spawnParticle(const string& type, const Vec3& pos, int dim) {
 	Global<Level>->spawnParticleEffect(type, pos, Global<Level>->getDimension(dim));
