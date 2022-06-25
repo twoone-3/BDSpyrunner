@@ -16,7 +16,7 @@
 
 // clang-format off
 
-#define DEF_ENUM(name, type){ auto entries = magic_enum::enum_entries<type>(); auto e = py::enum_<type>(m, name); for (auto& [val, n] : entries) { e.value(n.data(), val); } }
+#define DEF_ENUM(name, type) { auto entries = magic_enum::enum_entries<type>(); auto e = py::enum_<type>(m, name); for (auto& [val, n] : entries) { e.value(n.data(), val); } }
 #define DEF_ENUM_SIMPLE(type) DEF_ENUM(#type, type)
 
 // clang-format on

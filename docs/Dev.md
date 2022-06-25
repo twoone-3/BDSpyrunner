@@ -37,9 +37,10 @@ mc.setListener('onUseItem',onUseItem)
 ```
 将文件保存为`UTF-8`格式以支持中文  
 启动BDS，进入游戏测试，你将在控制台看到输出  
-## 扩展
-第三方相关库
-* [DevHelper](https://github.com/lgc2333/BDSPyRunnerDevModule)
+## 其他
+- [DevHelper](https://github.com/lgc2333/BDSPyRunnerDevModule)
+- [LLSE](https://docs.litebds.com/#/zh_CN/Development/)
+从v2.0.0版本开始，pyr与LLSE同步API，所以你可以直接参考LLSE文档
 ## 结束
 好了现在你已经完全掌握了插件开发的基础内容  
 去尽情发挥创造力吧！

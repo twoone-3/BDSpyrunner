@@ -40,12 +40,35 @@ CustomFormClass::CustomFormClass(const string& title) : thiz(title) {}
 
 //成员函数
 bool CustomFormClass::sendForm(const PlayerClass& target, const py::function& callback) {
-	return thiz.sendToForRawJson(target.thiz,
-		[callback](Player* pl, string data) {
+	return thiz.sendTo(target.thiz,
+		[callback](Player* pl, map<string, std::shared_ptr<CustomFormElement>> data) {
 			if (LL::isServerStopping())
 				return;
-			py::gil_scoped_acquire gil_;// py::eval() need GIL
-			call(callback, PlayerClass(pl), py::eval(data));
+			py::dict res;
+			for (auto& [name, element] : data) {
+				switch (element->getType()) {
+				case Form::CustomFormElement::Type::Label:
+					break;
+				case Form::CustomFormElement::Type::Input:
+					res[name.c_str()] = element->getString();
+					break;
+				case Form::CustomFormElement::Type::Toggle:
+					res[name.c_str()] = element->getBool();
+					break;
+				case Form::CustomFormElement::Type::Dropdown:
+					res[name.c_str()] = element->getNumber();
+					break;
+				case Form::CustomFormElement::Type::Slider:
+					res[name.c_str()] = element->getNumber();
+					break;
+				case Form::CustomFormElement::Type::StepSlider:
+					res[name.c_str()] = element->getNumber();
+					break;
+				default:
+					break;
+				}
+			}
+			call(callback, PlayerClass(pl), res);
 		});
 }
 
@@ -83,13 +106,3 @@ CustomFormClass& CustomFormClass::addStepSlider(const string& name, const string
 	thiz.addStepSlider(name, title, options, default_id);
 	return *this;
 }
-
-//////////////////// APIs ////////////////////
-
-// auto McClass::newSimpleForm() {
-//	return SimpleFormClass::newForm();
-// }
-//
-// auto McClass::newCustomForm() {
-//	return CustomFormClass::newForm();
-// }
