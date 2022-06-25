@@ -35,6 +35,8 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 	DEF_ENUM_SIMPLE(CommandParameterOption);
 	DEF_ENUM_SIMPLE(GameType);
 	DEF_ENUM_SIMPLE(SnbtFormat);
+	DEF_ENUM("TagType", Tag::Type);
+
 #pragma endregion
 #pragma region Classes
 	py::class_<Vec2>(m, "Vec2")
@@ -71,7 +73,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def_property("id", &BlockClass::getId, nullptr)
 		.def_property("pos", &BlockClass::getPos, nullptr)
 		.def_property("dim", &BlockClass::getDim, nullptr)
-		.def_property("tileData", &BlockClass::getTileData, nullptr)
+		.def_property("tile_data", &BlockClass::getTileData, nullptr)
 
 		.def("setNbt", &BlockClass::setNbt)
 		.def("getNbt", &BlockClass::getNbt)
@@ -138,10 +140,10 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 
 	py::class_<CommandOriginClass>(m, "CommandOrigin")
 		.def_property("type", &CommandOriginClass::getOriginType, nullptr)
-		.def_property("typeName", &CommandOriginClass::getOriginTypeName, nullptr)
+		.def_property("type_name", &CommandOriginClass::getOriginTypeName, nullptr)
 		.def_property("name", &CommandOriginClass::getOriginName, nullptr)
 		.def_property("pos", &CommandOriginClass::getPosition, nullptr)
-		.def_property("blockPos", &CommandOriginClass::getBlockPosition, nullptr)
+		.def_property("blockpos", &CommandOriginClass::getBlockPosition, nullptr)
 		.def_property("dim", &CommandOriginClass::getDim, nullptr)
 		.def_property("entity", &CommandOriginClass::getEntity, nullptr)
 		.def_property("player", &CommandOriginClass::getPlayer, nullptr)
@@ -151,7 +153,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 
 	py::class_<CommandOutputClass>(m, "CommandOutput")
 		.def_property("empty", &CommandOutputClass::empty, nullptr)
-		.def_property("successCount", &CommandOutputClass::getSuccessCount, nullptr)
+		.def_property("success_count", &CommandOutputClass::getSuccessCount, nullptr)
 
 		.def("success", py::overload_cast<>(&CommandOutputClass::success))
 		.def("success", py::overload_cast<const string&>(&CommandOutputClass::success))
@@ -208,22 +210,28 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 	py::class_<PlayerClass>(m, "Player")
 		.def_property("name", &PlayerClass::getName, nullptr)
 		.def_property("pos", &PlayerClass::getPos, nullptr)
-		.def_property("blockPos", &PlayerClass::getBlockPos, nullptr)
+		.def_property("blockpos", &PlayerClass::getBlockPos, nullptr)
 		.def_property("dim", &PlayerClass::getDim, nullptr)
-		.def_property("realName", &PlayerClass::getRealName, nullptr)
+		.def_property("real_name", &PlayerClass::getRealName, nullptr)
 		.def_property("xuid", &PlayerClass::getXuid, nullptr)
 		.def_property("uuid", &PlayerClass::getUuid, nullptr)
-		.def_property("permLevel", &PlayerClass::getPermLevel, nullptr)
-		.def_property("gameMode", &PlayerClass::getGameMode, nullptr)
-		.def_property("maxHealth", &PlayerClass::getMaxHealth, nullptr)
+		.def_property("perm_level", &PlayerClass::getPermLevel, nullptr)
+		.def_property("game_mode", &PlayerClass::getGameMode, nullptr)
+		.def_property("max_health", &PlayerClass::getMaxHealth, nullptr)
 		.def_property("health", &PlayerClass::getHealth, nullptr)
-		.def_property("inAir", &PlayerClass::getInAir, nullptr)
-		.def_property("inWater", &PlayerClass::getInWater, nullptr)
+		.def_property("in_air", &PlayerClass::getInAir, nullptr)
+		.def_property("in_water", &PlayerClass::getInWater, nullptr)
 		.def_property("sneaking", &PlayerClass::getSneaking, nullptr)
 		.def_property("speed", &PlayerClass::getSpeed, nullptr)
 		.def_property("direction", &PlayerClass::getDirection, nullptr)
-		.def_property("uniqueId", &PlayerClass::getUniqueID, nullptr)
-		.def_property("langCode", &PlayerClass::getLangCode, nullptr)
+		.def_property("unique_id", &PlayerClass::getUniqueID, nullptr)
+		.def_property("lang_code", &PlayerClass::getLangCode, nullptr)
+
+		.def_property("ip", &PlayerClass::getIP, nullptr)
+		.def_property("avg_ping", &PlayerClass::getAvgPing, nullptr)
+		.def_property("avg_packet_loss", &PlayerClass::getAvgPacketLoss, nullptr)
+		.def_property("os", &PlayerClass::getOs, nullptr)
+		.def_property("client_id", &PlayerClass::getClientId, nullptr)
 
 		.def("isOP", &PlayerClass::isOP)
 		.def("setPermLevel", &PlayerClass::setPermLevel)
@@ -325,28 +333,22 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("simulateStopUsingItem", &PlayerClass::simulateStopUsingItem)
 		.def("simulateStopSneaking", &PlayerClass::simulateStopSneaking)
 
-		.def("getAllItems", &PlayerClass::getAllItems)
-
-		.def_property("ip", &PlayerClass::getIP, nullptr)
-		.def_property("avgPing", &PlayerClass::getAvgPing, nullptr)
-		.def_property("avgPacketLoss", &PlayerClass::getAvgPacketLoss, nullptr)
-		.def_property("os", &PlayerClass::getOs, nullptr)
-		.def_property("clientId", &PlayerClass::getClientId, nullptr);
+		.def("getAllItems", &PlayerClass::getAllItems);
 
 	py::class_<EntityClass>(m, "Entity")
 		.def_property("name", &EntityClass::getName, nullptr)
 		.def_property("type", &EntityClass::getType, nullptr)
 		.def_property("id", &EntityClass::getId, nullptr)
 		.def_property("pos", &EntityClass::getPos, nullptr)
-		.def_property("blockPos", &EntityClass::getBlockPos, nullptr)
+		.def_property("blockpos", &EntityClass::getBlockPos, nullptr)
 		.def_property("dim", &EntityClass::getDim, nullptr)
-		.def_property("maxHealth", &EntityClass::getMaxHealth, nullptr)
+		.def_property("max_health", &EntityClass::getMaxHealth, nullptr)
 		.def_property("health", &EntityClass::getHealth, nullptr)
-		.def_property("inAir", &EntityClass::getInAir, nullptr)
-		.def_property("inWater", &EntityClass::getInWater, nullptr)
+		.def_property("in_air", &EntityClass::getInAir, nullptr)
+		.def_property("in_water", &EntityClass::getInWater, nullptr)
 		.def_property("speed", &EntityClass::getSpeed, nullptr)
 		.def_property("direction", &EntityClass::getDirection, nullptr)
-		.def_property("uniqueId", &EntityClass::getUniqueID, nullptr)
+		.def_property("unique_id", &EntityClass::getUniqueID, nullptr)
 
 		.def("teleport", &EntityClass::teleport)
 		.def("kill", &EntityClass::kill)
@@ -398,7 +400,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 
 	py::class_<ObjectiveClass>(m, "Objective")
 		.def_property("name", &ObjectiveClass::getName, nullptr)
-		.def_property("displayName", &ObjectiveClass::getDisplayName, nullptr)
+		.def_property("display_name", &ObjectiveClass::getDisplayName, nullptr)
 
 		.def("setDisplay", &ObjectiveClass::setDisplay)
 		.def("setScore", &ObjectiveClass::setScore)

@@ -44,6 +44,10 @@ void entry() {
 				logger.debug("Ignoring {}", name);
 				continue;
 			}
+			else if (name == "mc") {
+				logger.debug("Ignoring {}", name);
+				continue;
+			}
 			else {
 				PY_TRY;
 				logger.info("Loading {}", name);

@@ -41,7 +41,7 @@ struct NbtClass {
 	int64_t asInt64();
 	float asFloat();
 	double asDouble();
-	string_view getType();
+	Tag::Type getType();
 	py::bytes toBinary();
 	string toJson(int indentatiton = 4);
 	py::object toObject();

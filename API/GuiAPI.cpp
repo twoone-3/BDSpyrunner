@@ -44,6 +44,7 @@ bool CustomFormClass::sendForm(const PlayerClass& target, const py::function& ca
 		[callback](Player* pl, string data) {
 			if (LL::isServerStopping())
 				return;
+			py::gil_scoped_acquire gil_;// py::eval() need GIL
 			call(callback, PlayerClass(pl), py::eval(data));
 		});
 }

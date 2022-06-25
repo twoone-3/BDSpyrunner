@@ -6,7 +6,6 @@
 #include "BlockAPI.h"
 #include "CommandOriginAPI.h"
 #include "CommandOutputAPI.h"
-//#include <RegCommandAPI.h>
 
 py::object convertResult(const DynamicCommand::Result& result) {
 	if (!result.isSet)

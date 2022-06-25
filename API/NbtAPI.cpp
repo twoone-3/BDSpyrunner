@@ -153,10 +153,10 @@ double NbtClass::asDouble() {
 	return thiz->asDoubleTag()->value();
 }
 
-string_view NbtClass::getType() {
+Tag::Type NbtClass::getType() {
 	if (!thiz)
 		throw py::type_error("NbtClass is empty");
-	return magic_enum::enum_name(thiz->getTagType());
+	return thiz->getTagType();
 }
 
 py::bytes NbtClass::toBinary() {
