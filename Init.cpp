@@ -11,10 +11,9 @@ constexpr const char* PYR_VERSION = "v2.0.0";
 
 void entry() {
 	PY_TRY;
-	namespace fs = filesystem;
 	//如果目录不存在创建目录
-	if (!fs::exists(PLUGIN_PATH))
-		fs::create_directory(PLUGIN_PATH);
+	if (!filesystem::exists(PLUGIN_PATH))
+		filesystem::create_directory(PLUGIN_PATH);
 	//设置模块搜索路径
 	wstring plugins_path = PLUGIN_PATH L";";
 	plugins_path.append(Py_GetPath());
@@ -36,15 +35,11 @@ void entry() {
 })");
 	logger.warn("{}", a->get("列表")->toJson(4));
 #endif
-	for (auto& info : fs::directory_iterator(PLUGIN_PATH)) {
+	for (auto& info : filesystem::directory_iterator(PLUGIN_PATH)) {
 		if (info.path().extension() == ".py") {
 			string name(info.path().stem().u8string());
 			//忽略以'_'开头的文件
 			if (name.front() == '_') {
-				logger.debug("Ignoring {}", name);
-				continue;
-			}
-			else if (name == "mc") {
 				logger.debug("Ignoring {}", name);
 				continue;
 			}

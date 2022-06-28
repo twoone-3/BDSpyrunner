@@ -26,16 +26,17 @@ using namespace std;
 class Callbacker {
 public:
 	Callbacker(EventCode t) : type_(t), arg_() {}
-	~Callbacker() {
-		// logger.debug("{}", arg_.ref_count());
-	}
 	//事件回调
 	bool callback() {
 		bool pass = true;
 		arg_.inc_ref();
 		for (auto& cb : listeners[type_]) {
+			PY_TRY;
+			py::gil_scoped_acquire gil_;
+			pass = bool(cb(arg_));
+			PY_CATCH;
+
 			// TODO: 为什么需要增加引用计数？
-			pass = call(cb, arg_) != py::bool_(false);
 		}
 		return pass;
 	}
@@ -66,9 +67,9 @@ public:
 	}
 
 private:
-	py::gil_scoped_acquire gil_;
 	EventCode type_;
 	py::dict arg_;
+	py::gil_scoped_acquire gil_;
 };
 
 void EnableEventListener(EventCode event_code) {

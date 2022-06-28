@@ -414,7 +414,10 @@ bool PlayerClass::sendCustomForm(const string& str, const py::function& cb) {
 		[this, cb](const string& arg) {
 			if (LL::isServerStopping())
 				return;
-			call(cb, PlayerClass(thiz), py::eval(arg));
+			PY_TRY;
+			py::gil_scoped_acquire gil_;
+			cb(PlayerClass(thiz), py::eval(arg));
+			PY_CATCH;
 		});
 }
 
@@ -429,7 +432,10 @@ bool PlayerClass::sendSimpleForm(const string& title, const string& content, con
 		[this, cb](int arg) {
 			if (LL::isServerStopping())
 				return;
-			call(cb, PlayerClass(thiz), arg);
+			PY_TRY;
+			py::gil_scoped_acquire gil_;
+			cb(PlayerClass(thiz), arg);
+			PY_CATCH;
 		});
 }
 
@@ -440,33 +446,12 @@ bool PlayerClass::sendModalForm(const string& title, const string& content, cons
 		[this, cb](bool arg) {
 			if (LL::isServerStopping())
 				return;
-			call(cb, PlayerClass(thiz), arg);
+			PY_TRY;
+			py::gil_scoped_acquire gil_;
+			cb(PlayerClass(thiz), arg);
+			PY_CATCH;
 		});
 }
-
-// catch (const fifo_json::exception& e) {
-//	logger.error("Fail to parse Json string in sendCustomForm!");
-//	logger.error(TextEncoding::toUTF8(e.what()));
-//	PrintScriptStackTrace();
-//	return {};
-// }
-
-/*
-bool PlayerClass::sendPacket()
-{
-
-	try
-	{
-	if (!thiz)
-		return {};
-		auto id = PacketClass::_getPacketid(args[0]);
-		auto wb = PacketClass::extractPacket(args[0]);
-		auto pkt = MyPkt("", (MinecraftPacketIds)id);
-		pkt.write(wb);
-		Raw_SendPacket(thiz, &pkt);
-	}
-	return {};
-}*/
 
 bool PlayerClass::refreshChunks() {
 	if (!thiz)
@@ -528,8 +513,7 @@ bool PlayerClass::delExtraData(string key) {
 		return {};
 	if (key.empty())
 		return false;
-	player_data.erase(thiz->getRealName() + "-" + key);
-	return true;
+	return player_data.erase(thiz->getRealName() + "-" + key);
 }
 
 NbtClass PlayerClass::getNbt() {
@@ -573,10 +557,7 @@ vector<string> PlayerClass::getAllTags() {
 EntityClass PlayerClass::getEntityFromViewVector(float maxDistance) {
 	if (!thiz)
 		return nullptr;
-	auto entity = thiz->getActorFromViewVector(maxDistance);
-	if (entity)
-		return EntityClass(entity);
-	return nullptr;
+	return EntityClass(thiz->getActorFromViewVector(maxDistance));
 }
 
 BlockClass PlayerClass::getBlockFromViewVector(bool includeLiquid, bool solidOnly, float maxDistance, bool ignoreBorderBlocks, bool fullOnly) {
@@ -586,13 +567,14 @@ BlockClass PlayerClass::getBlockFromViewVector(bool includeLiquid, bool solidOnl
 }
 
 bool PlayerClass::isSimulatedPlayer() {
+	if (!thiz)
+		return false;
 	return thiz->isSimulatedPlayer();
 }
 
 SimulatedPlayer* PlayerClass::asSimulatedPlayer() {
-	if (thiz->isSimulatedPlayer()) {
+	if (thiz->isSimulatedPlayer())
 		return static_cast<SimulatedPlayer*>(thiz);
-	}
 	return nullptr;
 }
 
@@ -860,47 +842,6 @@ string PlayerClass::getClientId() {
 	if (!thiz)
 		return {};
 	return thiz->getClientId();
-}
-
-py::object PlayerClass::getAllItems() {
-	if (!thiz)
-		return {};
-	ItemStack* hand = thiz->getHandSlot();
-	ItemStack* offHand = (ItemStack*)&thiz->getOffhandSlot();
-	vector<const ItemStack*> inventory = thiz->getInventory().getAllSlots();
-	vector<const ItemStack*> armor = thiz->getArmorContainer().getAllSlots();
-	vector<const ItemStack*> endChest = thiz->getEnderChestContainer()->getAllSlots();
-
-	py::dict result;
-
-	// hand
-	result["hand"] = ItemClass(hand);
-
-	// offHand
-	result["offHand"] = ItemClass(offHand);
-
-	// inventory
-	py::list inventoryArr;
-	for (const ItemStack* item : inventory) {
-		inventoryArr.append(ItemClass((ItemStack*)item));
-	}
-	result["inventory"] = inventoryArr;
-
-	// armor
-	py::list armorArr;
-	for (const ItemStack* item : armor) {
-		armorArr.append(ItemClass((ItemStack*)item));
-	}
-	result["armor"] = armorArr;
-
-	// endChest
-	py::list endChestArr;
-	for (const ItemStack* item : endChest) {
-		endChestArr.append(ItemClass((ItemStack*)item));
-	}
-	result["endChest"] = endChestArr;
-
-	return result;
 }
 
 bool PlayerClass::removeItem(int inventory_id, int count) {

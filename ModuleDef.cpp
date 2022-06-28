@@ -8,7 +8,6 @@
 #include <API/ContainerAPI.h>
 #include <API/EntityAPI.h>
 #include <API/NbtAPI.h>
-#include <API/GuiAPI.h>
 #include <API/LoggerAPI.h>
 #include <API/PlayerAPI.h>
 #include <API/ScoreboardAPI.h>
@@ -41,6 +40,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 #pragma region Classes
 	py::class_<Vec2>(m, "Vec2")
 		.def(py::init<float, float>())
+
 		.def_property(
 			"x", [](const Vec2& pos) { return pos.x; }, [](Vec2& pos, float val) { pos.x = val; })
 		.def_property(
@@ -49,6 +49,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 
 	py::class_<Vec3>(m, "Vec3")
 		.def(py::init<float, float, float>())
+
 		.def_property(
 			"x", [](const Vec3& pos) { return pos.x; }, [](Vec3& pos, float val) { pos.x = val; })
 		.def_property(
@@ -59,6 +60,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 
 	py::class_<BlockPos>(m, "BlockPos")
 		.def(py::init<int, int, int>())
+
 		.def_property(
 			"x", [](const BlockPos& pos) { return pos.x; }, [](BlockPos& pos, int val) { pos.x = val; })
 		.def_property(
@@ -98,6 +100,8 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("isEmpty", &ContainerClass::isEmpty);
 
 	py::class_<ItemClass>(m, "Item")
+		.def(py::init())
+
 		.def_property("name", &ItemClass::getName, nullptr)
 		.def_property("type", &ItemClass::getType, nullptr)
 		.def_property("id", &ItemClass::getId, nullptr)
@@ -331,9 +335,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("simulateStopInteracting", &PlayerClass::simulateStopInteracting)
 		.def("simulateStopMoving", &PlayerClass::simulateStopMoving)
 		.def("simulateStopUsingItem", &PlayerClass::simulateStopUsingItem)
-		.def("simulateStopSneaking", &PlayerClass::simulateStopSneaking)
-
-		.def("getAllItems", &PlayerClass::getAllItems);
+		.def("simulateStopSneaking", &PlayerClass::simulateStopSneaking);
 
 	py::class_<EntityClass>(m, "Entity")
 		.def_property("name", &EntityClass::getName, nullptr)
@@ -379,24 +381,6 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("setNbt", &BlockEntityClass::setNbt)
 		.def("getNbt", &BlockEntityClass::getNbt)
 		.def("getBlock", &BlockEntityClass::getBlock);
-
-	py::class_<SimpleFormClass>(m, "SimpleForm")
-		.def(py::init<const string&, const string&>(), "title"_a, "content"_a = "")
-		.def("setTitle", &SimpleFormClass::setTitle)
-		.def("setContent", &SimpleFormClass::setContent)
-		.def("addButton", &SimpleFormClass::addButton, "text"_a, "image"_a = "")
-		.def("sendForm", &SimpleFormClass::sendForm);
-
-	py::class_<CustomFormClass>(m, "CustomForm")
-		.def(py::init<const string&>(), "title"_a)
-		.def("setTitle", &CustomFormClass::setTitle)
-		.def("addLabel", &CustomFormClass::addLabel)
-		.def("addInput", &CustomFormClass::addInput, "name"_a, "title"_a, "placeholder"_a = "", "default_"_a = "")
-		.def("addToggle", &CustomFormClass::addToggle, "name"_a, "title"_a, "default_"_a = false)
-		.def("addDropdown", &CustomFormClass::addDropdown, "name"_a, "title"_a, "options"_a, "default_id"_a = 0)
-		.def("addSlider", &CustomFormClass::addSlider, "name"_a, "title"_a, "min"_a, "max"_a, "step"_a = 1, "default_"_a = 0)
-		.def("addStepSlider", &CustomFormClass::addStepSlider, "name"_a, "title"_a, "options"_a, "default_id"_a = 0)
-		.def("sendForm", &CustomFormClass::sendForm);
 
 	py::class_<ObjectiveClass>(m, "Objective")
 		.def_property("name", &ObjectiveClass::getName, nullptr)

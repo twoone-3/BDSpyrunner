@@ -42,9 +42,6 @@
     <ClCompile Include="API\EventAPI.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\GuiAPI.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="API\ItemAPI.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -99,9 +96,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="API\EventAPI.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="API\GuiAPI.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="API\ItemAPI.h">

@@ -6,6 +6,7 @@ struct NbtClass;
 struct ItemClass {
 	ItemStack* thiz;
 
+	ItemClass();
 	ItemClass(ItemStack* p);
 
 	string getName();

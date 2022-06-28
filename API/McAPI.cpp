@@ -26,7 +26,10 @@ void registerCommand(const string& name, const string& desc, const py::function&
 	command->addOverload();
 	command->setCallback([cb](DynamicCommand const& command, CommandOrigin const& origin,
 							 CommandOutput& output, std::unordered_map<std::string, DynamicCommand::Result>& results) {
-		call(cb, EntityClass((Player*)origin.getPlayer()), results);
+		PY_TRY;
+		py::gil_scoped_acquire gil_;
+		cb(EntityClass((Player*)origin.getPlayer()), results);
+		PY_CATCH;
 	});
 	DynamicCommand::setup(std::move(command));
 }

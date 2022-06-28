@@ -77,7 +77,6 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClCompile Include="API\ContainerAPI.cpp" />
     <ClCompile Include="API\EntityAPI.cpp" />
     <ClCompile Include="API\EventAPI.cpp" />
-    <ClCompile Include="API\GuiAPI.cpp" />
     <ClCompile Include="API\ItemAPI.cpp" />
     <ClCompile Include="API\LoggerAPI.cpp" />
     <ClCompile Include="API\McAPI.cpp" />
@@ -98,7 +97,6 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClInclude Include="API\ContainerAPI.h" />
     <ClInclude Include="API\EntityAPI.h" />
     <ClInclude Include="API\EventAPI.h" />
-    <ClInclude Include="API\GuiAPI.h" />
     <ClInclude Include="API\ItemAPI.h" />
     <ClInclude Include="API\LoggerAPI.h" />
     <ClInclude Include="API\McAPI.h" />

@@ -36,9 +36,10 @@
 
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
+
 // clang-format off
 #define PY_TRY try {
-#define PY_CATCH } catch (const std::exception& e) {logger.error("\n{}", e.what());}
+#define PY_CATCH } catch (const std::exception& e) { logger.error("\n{}", e.what()); }
 #define PLUGIN_PATH "plugins\\py\\"
 
 #define EVENT_BEGIN(code) Callbacker h(code); PY_TRY; h.insert("Event", py::cast(magic_enum::enum_name(code)))
@@ -48,7 +49,6 @@
 // clang-format on
 
 namespace py = pybind11;
-using json_t = nlohmann::detail::value_t;
 using std::unique_ptr;
 
 enum GameType {
@@ -64,17 +64,5 @@ extern Logger logger;
 extern std::unordered_map<enum class EventCode, std::vector<py::function>> listeners;
 extern std::unordered_map<string, py::object> player_data;
 
-std::string DimId2Name(int dimid);
-//输出错误信息
-void PrintError(const std::exception&);
 //字符串转JSON
 fifo_json StrToJson(std::string_view str);
-//安全地调用py
-template <typename... Args>
-py::object call(const py::object& obj, Args&&... args) {
-	PY_TRY;
-	py::gil_scoped_acquire gil_;
-	return obj(std::forward<Args>(args)...);
-	PY_CATCH;
-	return py::none();
-}

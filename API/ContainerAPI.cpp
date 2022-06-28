@@ -64,16 +64,20 @@ bool ContainerClass::setItem(int slot, const ItemClass& i) {
 	ItemStack* item = i.thiz;
 	if (!item)
 		throw std::invalid_argument("invalid item");
-	ItemStack* itemOld = (ItemStack*)&thiz->getItem(slot);
+	ItemStack* itemOld = const_cast<ItemStack*>(&thiz->getItem(slot));
 	if (!itemOld)
 		return false;
 	return itemOld->setItem(item);
 }
 
-vector<const ItemStack*> ContainerClass::getAllItems() {
+vector<ItemClass> ContainerClass::getAllItems() {
 	if (thiz == nullptr)
-		return vector<const ItemStack*>();
-	return thiz->getAllSlots();
+		return {};
+	vector<ItemClass> res;
+	for (auto i : thiz->getAllSlots()) {
+		res.push_back(ItemClass(const_cast<ItemStack*>(i)));
+	}
+	return res;
 }
 
 bool ContainerClass::removeAllItems() {

@@ -143,15 +143,11 @@ struct PlayerClass {
 	bool simulateStopUsingItem();
 	bool simulateStopSneaking();
 
-	// bool simulateSetItem(class ItemStack&, bool, int);
-	// bool simulateGiveItem(class ItemStack&, bool);
-
 	string getIP();
 	int getAvgPing();
 	int getAvgPacketLoss();
 	string getOs();
 	string getClientId();
 
-	py::object getAllItems();
 	bool removeItem(int inventory_id, int count);
 };

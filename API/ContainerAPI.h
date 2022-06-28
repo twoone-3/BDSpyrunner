@@ -17,7 +17,7 @@ struct ContainerClass {
 	bool removeItem(int slot, int number);
 	ItemClass getItem(int slot);
 	bool setItem(int slot, const ItemClass& i);
-	vector<const ItemStack*> getAllItems();
+	vector<ItemClass> getAllItems();
 	bool removeAllItems();
 	bool isEmpty();
 };

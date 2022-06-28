@@ -3,11 +3,8 @@
 #include "McAPI.h"
 #include "EntityAPI.h"
 #include "NbtAPI.h"
-#include <MC/CompoundTag.hpp>
-#include <MC/ItemStack.hpp>
-#include <vector>
-#include <string>
 
+ItemClass::ItemClass() : thiz(ItemStack::create()) {}
 
 ItemClass::ItemClass(ItemStack* p) : thiz(p) {}
 

@@ -25,7 +25,7 @@ NbtClass::NbtClass(NbtClass&& other) noexcept
 	: thiz(move(other.thiz)), is_reference(other.is_reference) {}
 
 NbtClass::~NbtClass() {
-	//logger.warn("析构：{}", (void*)thiz.get());
+	// logger.warn("析构：{}", (void*)thiz.get());
 	if (is_reference)
 		thiz.release();
 }
@@ -97,9 +97,9 @@ NbtClass NbtClass::__getitem__(int key) {
 }
 
 NbtClass NbtClass::__getitem__(const string& key) {
-	//logger.warn("key:{}", key);
-	//logger.warn("val:{}", (void*)thiz->asCompoundTag()->get(key));
-	//logger.warn(thiz->asCompoundTag()->toSNBT(4));
+	// logger.warn("key:{}", key);
+	// logger.warn("val:{}", (void*)thiz->asCompoundTag()->get(key));
+	// logger.warn(thiz->asCompoundTag()->toSNBT(4));
 	if (!thiz)
 		throw py::type_error("NbtClass is empty");
 	if (thiz->getTagType() != Tag::Compound)
@@ -120,37 +120,57 @@ void NbtClass::__setitem__(const string& key, const NbtClass& val) {
 unsigned char NbtClass::asByte() {
 	if (!thiz)
 		throw py::type_error("NbtClass is empty");
+	if (getType() != Tag::Type::Byte)
+		throw py::type_error("NbtClass is not a Byte");
 	return thiz->asByteTag()->value();
 }
 
 short NbtClass::asShort() {
 	if (!thiz)
 		throw py::type_error("NbtClass is empty");
+	if (getType() != Tag::Type::Short)
+		throw py::type_error("NbtClass is not a Short");
 	return thiz->asShortTag()->value();
 }
 
 int NbtClass::asInt() {
 	if (!thiz)
 		throw py::type_error("NbtClass is empty");
+	if (getType() != Tag::Type::Int)
+		throw py::type_error("NbtClass is not a Int");
 	return thiz->asIntTag()->value();
 }
 
 int64_t NbtClass::asInt64() {
 	if (!thiz)
 		throw py::type_error("NbtClass is empty");
+	if (getType() != Tag::Type::Int64)
+		throw py::type_error("NbtClass is not a Int64");
 	return thiz->asInt64Tag()->value();
 }
 
 float NbtClass::asFloat() {
 	if (!thiz)
 		throw py::type_error("NbtClass is empty");
+	if (getType() != Tag::Type::Float)
+		throw py::type_error("NbtClass is not a Float");
 	return thiz->asFloatTag()->value();
 }
 
 double NbtClass::asDouble() {
 	if (!thiz)
 		throw py::type_error("NbtClass is empty");
+	if (getType() != Tag::Type::Double)
+		throw py::type_error("NbtClass is not a Double");
 	return thiz->asDoubleTag()->value();
+}
+
+string NbtClass::asString() {
+	if (!thiz)
+		throw py::type_error("NbtClass is empty");
+	if (getType() != Tag::Type::String)
+		throw py::type_error("NbtClass is not a String");
+	return thiz->asStringTag()->value();
 }
 
 Tag::Type NbtClass::getType() {
