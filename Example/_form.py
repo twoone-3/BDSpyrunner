@@ -41,7 +41,7 @@ class CustomForm:
 		j["options"] = options
 		self.content.append(j)
 
-	def addSlider(self, text, pmin, pmax, step, default):
+	def addSlider(self, text, pmin, pmax, step=1, default=0):
 		'''添加滑块'''
 		j = {}
 		j["type"] = "slider"

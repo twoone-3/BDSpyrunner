@@ -121,7 +121,7 @@ def RemoveBuyShop(goods_name):
 	return True
 
 
-# ====================经济部分(暂时用计分板)==========================================
+# 经济部分
 def GetMoney(player, scoreboard):
 	return player.getScore(scoreboard)
 
@@ -137,19 +137,19 @@ def ReduceMoney(player, num, scoreboard):
 	return True
 
 
-# ===================================================================================
 def GetPlayerInventoryItems(player, itemname, needtag, ench):
-	playeritems = player.getInventory()
+	playeritems = player.getInventory().getAllItems()
 	itemnum = 0
 	for pitem in playeritems:
-		if pitem["Name8"] == itemname:
+		nbt = pitem.getNbt()
+		if nbt["Name"].asString() == itemname:
 			if not needtag:
-				itemnum += pitem["Count1"]
+				itemnum += nbt["Count"].asByte()
 			else:
 				try:
-					ench["Count1"] = pitem["Count1"]
-					if pitem == ench:
-						itemnum += pitem["Count1"]
+					ench["Count"] = nbt["Count"]
+					if nbt == ench:
+						itemnum += nbt["Count"].asByte()
 				except:
 					pass
 
@@ -159,13 +159,14 @@ def GetPlayerInventoryItems(player, itemname, needtag, ench):
 def RemovePlayerInventoryItems(player: Player, itemname, num, needtag, ench):
 	if GetPlayerInventoryItems(player, itemname, needtag, ench) < num:
 		return False
-	playeritems = player.getInventory()
+	playeritems = player.getInventory().getAllItems()
 	slot = 0
 	itemneedreomve = num
 	for pitem in playeritems:
-		if pitem["Name8"] == itemname:
+		nbt = pitem.getNbt()
+		if nbt["Name"].asString() == itemname:
 			if not needtag:
-				itemCount = pitem["Count1"]
+				itemCount = nbt["Count"].asByte()
 				if itemCount >= itemneedreomve:
 					player.removeItem(int(slot), int(itemneedreomve))
 					return True
@@ -174,9 +175,9 @@ def RemovePlayerInventoryItems(player: Player, itemname, num, needtag, ench):
 					itemneedreomve -= itemCount
 			else:
 				try:
-					ench["Count1"] = pitem["Count1"]
-					if pitem == ench:
-						itemCount = pitem["Count1"]
+					ench["Count"] = nbt["Count"]
+					if nbt == ench:
+						itemCount = nbt["Count"].asByte()
 						if itemCount >= itemneedreomve:
 							player.removeItem(int(slot), int(itemneedreomve))
 							return True
@@ -189,7 +190,30 @@ def RemovePlayerInventoryItems(player: Player, itemname, num, needtag, ench):
 	return True
 
 
-# ====================================================================================
+def PshopBuy3(player, selected):
+	num = int(selected[2])
+	if num < 0:
+		player.sendText("§e[shop]§c数量必须为正数")
+		return
+	shop = GetBuyShop(player.getExtraData("gn"))
+	price = shop["price"]
+	scoreboard = shop["scoreboard"]
+	money = int(price * num)
+	nbt = NBT.fromSNBT(shop["nbt"])
+	buynum = nbt["Count"].asByte()
+	if num * buynum > 1500 or num > 30:
+		player.sendText("§e[shop]§c购买失败, 物品过多！")
+		return
+	if ReduceMoney(player, money, scoreboard):
+		# shop['nbt']['Count1']=int(num*buynum)
+		for i in range(num):
+			item = Item()
+			item.setNbt(nbt)
+			player.giveItem(item)
+		# shop['nbt']['Count1']=int(buynum)
+		player.sendText("§e[shop]§a成功购买, 花费金币: " + str(money))
+	else:
+		player.sendText("§e[shop]§c余额不足")
 
 
 def PshopBuy2(player, selected):
@@ -199,128 +223,102 @@ def PshopBuy2(player, selected):
 	cf = CustomForm("商品信息")
 	cf.addLabel(goods_name)
 	cf.addLabel("§e单价：" + str(shop["price"]) + "/个")
-	cf.addSlider("count", "购买数量：", 0, 64)
+	cf.addSlider("购买数量：", 0, 64)  # 2
 	cf.addLabel("物品NBT信息：\n" + string_nbt)
-
-	def PshopBuy3(player, selected):
-		num = selected["count"]
-		if num < 0:
-			player.tell("§e[shop]§c数量必须为正数")
-			return
-		shop = GetBuyShop(goods_name)
-		price = shop["price"]
-		scoreboard = shop["scoreboard"]
-		money = int(price * num)
-		nbt = NBT.fromSNBT(shop["nbt"])
-		buynum = nbt["Count"].asByte()
-		if num * buynum > 1500 or num > 30:
-			player.tell("§e[shop]§c购买失败, 物品过多！")
-			return False
-		if ReduceMoney(player, money, scoreboard):
-			# shop['nbt']['Count1']=int(num*buynum)
-			for i in range(num):
-				item = Item()
-				item.setNbt(nbt)
-				player.giveItem(item)
-			# shop['nbt']['Count1']=int(buynum)
-			player.tell("§e[shop]§a成功购买, 花费金币: " + str(money))
-		else:
-			player.tell("§e[shop]§c余额不足")
-
-	cf.sendForm(player, PshopBuy3)
+	player.setExtraData("gn", goods_name)
+	cf.send(player, PshopBuy3)
 
 
 def PshopBuy(player, selected):
 	typename = pshop["typename"][selected]
 	sf = SimpleForm("回收商店", "请选择商品")
 	if not pshop["listbuy"]:
-		player.tell("§e[shop]§c商店暂时没有货物")
+		player.sendText("§e[shop]§c商店暂时没有货物")
 		return
 	for goods_name in pshop["listbuy"]:
 		if GetBuyShop(goods_name)["typename"] == typename:
 			sf.addButton(goods_name)
-	sf.sendForm(player, PshopBuy2)
+	sf.send(player, PshopBuy2)
+
+
+def PshopSell3(player, selected):
+	num = selected[3]
+	if num < 0:
+		player.sendText("§e[shop]§c数量必须为正数")
+		return
+	shop = GetSellShop(player.getExtraData("gn"))
+	needtag = shop["needtag"]
+	nbt = NBT.fromSNBT(shop["nbt"])
+	itemname = nbt["Name"].asString()
+	if RemovePlayerInventoryItems(player, itemname, num, needtag, nbt):
+		price = shop["price"]
+		money = int(price * num)
+		scoreboard = shop["scoreboard"]
+		AddMoney(player, money, scoreboard)
+		player.sendText("§e[shop]§a回收成功, 获得金币: " + str(money))
+	else:
+		player.sendText("§e[shop]§c物品不足")
+
+
+def PshopSell2(player, selected):
+	goods_name = pshop["listsell"][selected]
+	shop = GetSellShop(goods_name)
+	nbt = NBT.fromSNBT(shop["nbt"])
+	string_nbt = NBT.fromSNBT(shop["nbt"]).toJson(4)
+	cf = CustomForm("商品信息")
+	cf.addLabel(goods_name)
+	cf.addLabel("§e单价：" + str(shop["price"]) + "/个")
+	cf.addLabel(
+	    "§9我拥有的数量：" + str(
+	        GetPlayerInventoryItems(player, nbt["Name"], shop["needtag"], nbt)
+	    )
+	)
+	cf.addSlider("回收数量", 0, 64)
+	cf.addLabel("物品NBT信息：\n" + string_nbt)
+	player.setExtraData("gn", goods_name)
+	cf.send(player, PshopSell3)
 
 
 def PshopSell(player, selected):
 	typename = pshop["typename"][selected]
 	sf = SimpleForm("出售商店", "请选择商品")
 	if not pshop["listsell"]:
-		player.tell("§e[shop]§c商店暂时没有货物")
+		player.sendText("§e[shop]§c商店暂时没有货物")
 		return
 	for goods_name in pshop["listsell"]:
 		if GetSellShop(goods_name)["typename"] == typename:
 			sf.addButton(goods_name)
-
-	def PshopSell2(player, selected):
-		goods_name = pshop["listsell"][selected]
-		shop = GetSellShop(goods_name)
-		nbt = NBT.fromSNBT(shop["nbt"])
-		string_nbt = json2fmtstr(nbt)
-		cf = CustomForm("商品信息")
-		cf.addLabel(goods_name)
-		cf.addLabel("§e单价：" + str(shop["price"]) + "/个")
-		cf.addLabel(
-		    "§9我拥有的数量：" + str(
-		        GetPlayerInventoryItems(
-		            player, nbt["Name"], shop["needtag"], nbt
-		        )
-		    )
-		)
-		cf.addSlider("count", "回收数量", 0, 64)
-		cf.addLabel("物品NBT信息：\n" + string_nbt)
-
-		def PshopSell3(player, selected):
-			num = selected["count"]
-			if num < 0:
-				player.tell("§e[shop]§c数量必须为正数")
-				return
-			shop = GetSellShop(goods_name)
-			needtag = shop["needtag"]
-			nbt = shop["nbt"]
-			itemname = nbt["Name"].asString()
-			if RemovePlayerInventoryItems(player, itemname, num, needtag, nbt):
-				price = shop["price"]
-				money = int(price * num)
-				scoreboard = shop["scoreboard"]
-				AddMoney(player, money, scoreboard)
-				player.tell("§e[shop]§a回收成功, 获得金币: " + str(money))
-			else:
-				player.tell("§e[shop]§c物品不足")
-
-		cf.sendForm(player, PshopSell3)
-
-	sf.sendForm(player, PshopSell2)
+	sf.send(player, PshopSell2)
 
 
 def PshopManage(player, selected):
+	# create type
 	if selected == 0:
 		cf = CustomForm("创建商品分类")
-		cf.addInput("typename", "请输入类型名称")
+		cf.addInput("请输入类型名称")
 
 		def CreateShopType(player, selected):
-			if not selected:
-				return
-			typename = selected["typename"]
+			typename = selected[0]
 			if typename == "":
-				player.tell("§e[shop]§c请输入类型名称")
+				player.sendText("§e[shop]§c名称不能为空")
 				return
-			if typename not in pshop["typename"]:
-				pshop["typename"].append(typename)
-				player.tell("§e[shop]§a创建成功")
+			if typename in pshop["typename"]:
+				player.sendText("§e[shop]§c该分类已存在")
+				return
+			pshop["typename"].append(typename)
+			player.sendText("§e[shop]§a创建成功")
 			UpdateConfig("pshop.json", pshop)
 
-		cf.sendForm(player, CreateShopType)
+		cf.send(player, CreateShopType)
+	# delete type
 	elif selected == 1:
 		cf = CustomForm("删除商品分类")
-		cf.addDropdown("typename", "选择类型", pshop["typename"])
+		cf.addDropdown("选择类型", pshop["typename"])
 
 		def DeleteShopType(player, selected):
-			if not selected:
-				return
-			typename = selected["typename"]
-			if typename == "无":
-				player.tell("§e[shop]§c请先创建商品类型")
+			typename = pshop["typename"][selected[0]]
+			if typename == "":
+				player.sendText("§e[shop]§c请先创建商品类型")
 				return
 			a = []
 			for goods_name in pshop["listsell"]:
@@ -339,85 +337,85 @@ def PshopManage(player, selected):
 			a = []
 			pshop["typename"].remove(typename)
 			UpdateConfig("pshop.json", pshop)
-			player.tell("§e[shop]§a删除成功")
+			player.sendText("§e[shop]§a删除成功")
 
-		cf.sendForm(player, DeleteShopType)
+		cf.send(player, DeleteShopType)
 	# buy
 	elif selected == 2:
 		cf = CustomForm("添加手持物品")
-		cf.addInput("name", "输入商品名称")
-		cf.addInput("scoreboardname", "使用的计分板名称(默认money)")
-		cf.addInput("price", "输入单价")
-		cf.addDropdown("typename", "选择商品类型", pshop["typename"])
+		cf.addInput("输入商品名称")
+		cf.addInput("使用的计分板名称(默认money)")
+		cf.addInput("输入单价")
+		cf.addDropdown("选择商品类型", pshop["typename"])
 
 		def AddBuy(player, selected):
 			if not selected:
 				return
-			goods_name = selected["name"]
+			goods_name = selected[0]
 			if goods_name == "":
-				player.tell("§e[shop]§c请输入商品名称")
+				player.sendText("§e[shop]§c请输入商品名称")
 				return
-			scoreboard = selected["scoreboardname"]
+			scoreboard = selected[1]
 			if scoreboard == "":
 				scoreboard = "money"
-			typename = selected["typename"]
+			typename = pshop["typename"][selected[3]]
 			if typename == "无":
-				player.tell("§e[shop]§c请先创建商品类型")
+				player.sendText("§e[shop]§c请先创建商品类型")
 				return
-			if selected["price"].isdigit():
-				price = int(selected["price"])
+			if selected[2].isdigit():
+				price = int(selected[2])
 				if price < 0:
-					player.tell("§e[shop]§c价格不能为负数")
+					player.sendText("§e[shop]§c价格不能为负数")
 					return
 				nbt = player.getHand().getNbt().toSNBT(0, SnbtFormat.Minimize)
 				CreateBuyShop(goods_name, typename, scoreboard, price, nbt)
-				player.tell("§e[shop]§a添加成功")
+				player.sendText("§e[shop]§a添加成功")
 			else:
-				player.tell("§e[shop]§c请输入正确的价格")
+				player.sendText("§e[shop]§c请输入正确的价格")
 				return
 
-		cf.sendForm(player, AddBuy)
+		cf.send(player, AddBuy)
 	elif selected == 3:
 		cf = CustomForm("删除购买商品")
-		cf.addDropdown("goods", "请选择商品", pshop["listbuy"])
+		cf.addDropdown("请选择商品", pshop["listbuy"])
 
 		def RemoveBuy(player, selected):
 			if not selected:
 				return
-			goods_name = selected["goods"]
+			goods_name = pshop["listbuy"][selected[0]]
 			if RemoveBuyShop(goods_name):
-				player.tell("§e[shop]§a移除成功")
+				player.sendText("§e[shop]§a移除成功")
 			else:
-				player.tell("§e[shop]§c移除失败")
+				player.sendText("§e[shop]§c移除失败")
 
-		cf.sendForm(player, RemoveBuy)
+		cf.send(player, RemoveBuy)
 	# sell
 	elif selected == 4:
 		cf = CustomForm("添加手持物品")
-		cf.addInput("name", "输入商品名称")
-		cf.addInput("scoreboardname", "使用的计分板名称(默认money)")
-		cf.addInput("price", "输入单价")
-		cf.addToggle("need_same_nbt", "是否需要nbt一致", False)
-		cf.addDropdown("typename", "选择商品类型", pshop["typename"])
+		cf.addInput("输入商品名称")
+		cf.addInput("使用的计分板名称(默认money)")
+		cf.addInput("输入单价")
+		cf.addToggle("是否需要nbt一致", False)
+		cf.addDropdown("选择商品类型", pshop["typename"])
 
 		def AddSell(player, selected):
 			if not selected:
 				return
-			goods_name = selected["name"]
+			goods_name = selected[0]
 			if goods_name == "":
-				player.tell("§e[shop]§c请输入商品名称")
+				player.sendText("§e[shop]§c请输入商品名称")
 				return
-			scoreboard = selected["scoreboardname"]
+			scoreboard = selected[1]
 			if scoreboard == "":
 				scoreboard = "money"
-			typename = selected["typename"]
+			typename = pshop["typename"][selected[4]]
 			if typename == "无":
-				player.tell("§e[shop]§c请先创建商品类型")
+				player.sendText("§e[shop]§c请先创建商品类型")
 				return
-			if selected["price"].isdigit():
-				price = int(selected["price"])
+			if selected[2].isdigit():
+				price = int(selected[2])
 				if price < 0:
-					player.tell("§e[shop]§c价格不能为负数")
+					player.sendText("§e[shop]§c价格不能为负数")
 					return
 				nbt = player.getHand().getNbt().toSNBT(0, SnbtFormat.Minimize)
 				CreateSellShop(
@@ -426,29 +424,28 @@ def PshopManage(player, selected):
 				    scoreboard,
 				    price,
 				    nbt,
-				    selected["need_same_nbt"],
+				    selected[3],
 				)
-				player.tell("§e[shop]§a添加成功")
+				player.sendText("§e[shop]§a添加成功")
 			else:
-				player.tell("§e[shop]§c请输入正确的价格")
+				player.sendText("§e[shop]§c请输入正确的价格")
 				return
 
-		cf.sendForm(player, AddSell)
+		cf.send(player, AddSell)
 	elif selected == 5:
 		cf = CustomForm("删除出售商品")
-		cf.addDropdown("goods", "请选择商品", pshop["listsell"])
+		cf.addDropdown("请选择商品", pshop["listsell"])
 
 		def RemoveSell(player, selected):
-			goods_name = selected["goods"]
+			goods_name = pshop["listsell"][selected[0]]
 			if RemoveSellShop(goods_name):
-				player.tell("§e[shop]§a移除成功")
+				player.sendText("§e[shop]§a移除成功")
 			else:
-				player.tell("§e[shop]§c移除失败")
+				player.sendText("§e[shop]§c移除失败")
 
-		cf.sendForm(player, RemoveSell)
+		cf.send(player, RemoveSell)
 
 
-# ====================================================================================
 def PshopInit():
 	global pshop
 	MakeDirs(home)
@@ -468,23 +465,23 @@ def PshopInit():
 		op = str(results["operator"])
 		if op == "buy":
 			if not pshop["typename"]:
-				player.tell("§e[shop]§c商店还没有设置商品分类")
+				player.sendText("§e[shop]§c商店还没有设置商品分类")
 				return
 			sf = SimpleForm("购买商店", "选择商品类型")
 			for shoptype in pshop["typename"]:
 				sf.addButton(shoptype)
-			sf.sendForm(player, PshopBuy)
+			sf.send(player, PshopBuy)
 		elif op == "sell":
 			if not pshop["typename"]:
-				player.tell("§e[shop]§c商店还没有设置商品分类")
+				player.sendText("§e[shop]§c商店还没有设置商品分类")
 				return
 			sf = SimpleForm("出售商店", "选择商品类型")
 			for shoptype in pshop["typename"]:
 				sf.addButton(shoptype)
-			sf.sendForm(player, PshopSell)
+			sf.send(player, PshopSell)
 		elif op == "manage":
 			if not player.isOP():
-				player.tell("§e[shop]§c权限不足")
+				player.sendText("§e[shop]§c权限不足")
 				return False
 			sf = SimpleForm("商店管理员", "请选择")
 			sf.addButton("创建商品分类")
@@ -493,19 +490,19 @@ def PshopInit():
 			sf.addButton("移除出售商店")
 			sf.addButton("添加回收商店")
 			sf.addButton("移除回收商店")
-			sf.sendForm(player, PshopManage)
+			sf.send(player, PshopManage)
 
 	c = Command("pshop", "商店命令", CommandPermissionLevel.Any)
 	c.mandatory(
-	    "operator",
-	    ParameterType.SoftEnum,
-	    c.setSoftEnum("operator", ["buy", "sell", "manage"]),
+	    "operator", ParameterType.SoftEnum,
+	    c.setSoftEnum("operator", ["buy", "sell", "manage"])
 	)
 	c.overload(["operator"])
 	c.setCallback(PshopCallback)
 	c.setup()
 
 	def onJoin(e):
+		newScoreObjective("money", "money")
 		e["Player"].addScore("money", 0)  # 添加计分板
 
 	setListener("onJoin", onJoin)
