@@ -164,10 +164,7 @@ bool setMaxNumPlayers(int num) {
 	return back == 0;
 }
 ObjectiveClass getDisplayObjective(const string& slot) {
-	auto res = Global<Scoreboard>->getDisplayObjective(slot);
-	if (!res)
-		return nullptr;
-	return (Objective*)res;
+	return (Objective*)Global<Scoreboard>->getDisplayObjective(slot);
 }
 ObjectiveClass clearDisplayObjective(const string& slot) {
 	return Global<Scoreboard>->clearDisplayObjective(slot);
