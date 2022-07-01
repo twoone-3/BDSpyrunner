@@ -35,7 +35,7 @@ bool EconomySystem::init() {
 		return false;
 	}
 
-	HMODULE h = llmoney->handler;
+	HMODULE h = llmoney->handle;
 
 	money::get = (LLMoneyGet_T)GetProcAddress(h, "LLMoneyGet");
 	if (!money::get)
