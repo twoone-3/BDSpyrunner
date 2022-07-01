@@ -53,5 +53,5 @@ ObjectiveClass clearDisplayObjective(const string& slot);
 ObjectiveClass getScoreObjective(const string& name);
 ObjectiveClass newScoreObjective(const string& name, const string& display);
 bool removeScoreObjective(const string& name);
-vector<const Objective*> getAllScoreObjectives();
+vector<ObjectiveClass> getAllScoreObjectives();
 }

@@ -39,7 +39,7 @@
 
 // clang-format off
 #define PY_TRY try {
-#define PY_CATCH } catch (const std::exception& e) { logger.error("\n{}", e.what()); }
+#define PY_CATCH } catch (const std::exception& e) { logger.error("\n{}", e.what()); } catch (...) { logger.fatal("An unknown exception was occurred! Function: {}", __FUNCSIG__); }
 #define PLUGIN_PATH "plugins\\py\\"
 
 #define EVENT_BEGIN(code) Callbacker h(code); PY_TRY; h.insert("Event", py::cast(magic_enum::enum_name(code)))

@@ -24,13 +24,14 @@ void registerCommand(const string& name, const string& desc, const py::function&
 	using ParamType = DynamicCommand::ParameterType;
 	auto command = DynamicCommand::createCommand(name, desc, perm);
 	command->addOverload();
-	command->setCallback([cb](DynamicCommand const& command, CommandOrigin const& origin,
-							 CommandOutput& output, std::unordered_map<std::string, DynamicCommand::Result>& results) {
-		PY_TRY;
-		py::gil_scoped_acquire gil_;
-		cb(EntityClass((Player*)origin.getPlayer()), results);
-		PY_CATCH;
-	});
+	command->setCallback(
+		[cb](DynamicCommand const& command, CommandOrigin const& origin,
+			CommandOutput& output, std::unordered_map<std::string, DynamicCommand::Result>& results) {
+			PY_TRY;
+			py::gil_scoped_acquire gil_;
+			cb(EntityClass((Player*)origin.getPlayer()), results);
+			PY_CATCH;
+		});
 	DynamicCommand::setup(std::move(command));
 }
 
@@ -169,16 +170,10 @@ ObjectiveClass getDisplayObjective(const string& slot) {
 	return (Objective*)res;
 }
 ObjectiveClass clearDisplayObjective(const string& slot) {
-	auto res = Global<Scoreboard>->clearDisplayObjective(slot);
-	if (!res)
-		return nullptr;
-	return res;
+	return Global<Scoreboard>->clearDisplayObjective(slot);
 }
 ObjectiveClass getScoreObjective(const string& name) {
-	auto res = Global<Scoreboard>->getObjective(name);
-	if (!res)
-		return nullptr;
-	return res;
+	return Global<Scoreboard>->getObjective(name);
 }
 ObjectiveClass newScoreObjective(const string& name, const string& display) {
 	return Scoreboard::newObjective(name, display);
@@ -190,7 +185,11 @@ bool removeScoreObjective(const string& name) {
 	Global<Scoreboard>->removeObjective(obj);
 	return true;
 }
-vector<const Objective*> getAllScoreObjectives() {
-	return Global<Scoreboard>->getObjectives();
+vector<ObjectiveClass> getAllScoreObjectives() {
+	vector<ObjectiveClass> res;
+	for (auto x:Global<Scoreboard>->getObjectives()) {
+		res.push_back(ObjectiveClass(const_cast<Objective*>(x)));
+	}
+	return res;
 }
 } // namespace mc

@@ -33,7 +33,7 @@ void entry() {
     },
     "列表": []
 })");
-	logger.warn("{}", a->get("列表")->toJson(4));
+	logger.warn("{}", a->value()["列表"].get()->toJson(4));
 #endif
 	for (auto& info : filesystem::directory_iterator(PLUGIN_PATH)) {
 		if (info.path().extension() == ".py") {

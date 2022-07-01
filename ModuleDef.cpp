@@ -194,6 +194,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("asInt64", &NbtClass::asInt64)
 		.def("asFloat", &NbtClass::asFloat)
 		.def("asDouble", &NbtClass::asDouble)
+		.def("asString", &NbtClass::asString)
 		.def("toBinary", &NbtClass::toBinary)
 		.def("toJson", &NbtClass::toJson, "indent"_a = 4)
 		.def("toSNBT", &NbtClass::toSNBT, "indent"_a = 4, "format"_a = SnbtFormat::PartialNewLine)
@@ -231,6 +232,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def_property("unique_id", &PlayerClass::getUniqueID, nullptr)
 		.def_property("lang_code", &PlayerClass::getLangCode, nullptr)
 
+		.def("__repr__", [](const PlayerClass& p) { return fmt::format("Player* = {}", (void*)p.thiz); })
 		.def_property("ip", &PlayerClass::getIP, nullptr)
 		.def_property("avg_ping", &PlayerClass::getAvgPing, nullptr)
 		.def_property("avg_packet_loss", &PlayerClass::getAvgPacketLoss, nullptr)
@@ -245,7 +247,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("teleport", &PlayerClass::teleport)
 		.def("kill", &PlayerClass::kill)
 		.def("kick", &PlayerClass::kick, "msg"_a = "Disconnecting from the server")
-		.def("tell", &PlayerClass::tell, "msg"_a = "", "type"_a = TextType::RAW)
+		.def("sendText", &PlayerClass::sendText, "msg"_a = "", "type"_a = TextType::RAW)
 		.def("talkAs", &PlayerClass::talkAs)
 		.def("rename", &PlayerClass::rename)
 		.def("setOnFire", &PlayerClass::setOnFire)
@@ -267,7 +269,6 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getRespawnPosition", &PlayerClass::getRespawnPosition)
 		.def("setRespawnPosition", &PlayerClass::setRespawnPosition)
 		.def("refreshItems", &PlayerClass::refreshItems)
-
 		.def("getScore", &PlayerClass::getScore)
 		.def("setScore", &PlayerClass::setScore)
 		.def("addScore", &PlayerClass::addScore)
@@ -335,7 +336,9 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("simulateStopInteracting", &PlayerClass::simulateStopInteracting)
 		.def("simulateStopMoving", &PlayerClass::simulateStopMoving)
 		.def("simulateStopUsingItem", &PlayerClass::simulateStopUsingItem)
-		.def("simulateStopSneaking", &PlayerClass::simulateStopSneaking);
+		.def("simulateStopSneaking", &PlayerClass::simulateStopSneaking)
+			
+		.def("removeItem",&PlayerClass::removeItem);
 
 	py::class_<EntityClass>(m, "Entity")
 		.def_property("name", &EntityClass::getName, nullptr)

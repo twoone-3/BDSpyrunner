@@ -12,7 +12,11 @@ struct NbtClass;
 struct PlayerClass {
 	Player* thiz;
 
+	PlayerClass() = delete;
 	PlayerClass(Player* p);
+	PlayerClass(const PlayerClass& other);
+	PlayerClass(PlayerClass&& other) = delete;
+	~PlayerClass();
 
 	string getName();
 	Vec3 getPos();
@@ -41,18 +45,14 @@ struct PlayerClass {
 	bool teleport(const Vec3& pos, int dim);
 	bool kill();
 	bool kick(const string& msg = "Disconnecting from the server");
-	bool tell(const string& msg, TextType type = TextType::RAW);
+	bool sendText(const string& msg, TextType type = TextType::RAW);
 	bool talkAs(const string& msg);
 	bool talkTo(const string& msg, Player* target);
 	bool rename(const string& name);
 	bool transServer(const string& ip, short port = 19132);
 	bool crash();
 	bool hurt(int damage);
-	bool setOnFire(int time) {
-		if (!thiz)
-			return {};
-		return thiz->setOnFire(time, true);
-	}
+	bool setOnFire(int time);
 	bool refreshChunks();
 	bool giveItem(const ItemClass& item);
 	bool clearItem(const string& type);

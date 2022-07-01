@@ -3,7 +3,6 @@
 #include "McAPI.h"
 
 #include "BlockAPI.h"
-#include "GuiAPI.h"
 #include "CommandAPI.h"
 #include "ContainerAPI.h"
 #include "ItemAPI.h"
@@ -21,6 +20,8 @@
 #include <MC/VanillaBlocks.hpp>
 #include <MC/ItemStack.hpp>
 
+#include <MC/AvailableCommandsPacket.hpp>
+
 using namespace std;
 
 class Callbacker {
@@ -29,14 +30,12 @@ public:
 	//事件回调
 	bool callback() {
 		bool pass = true;
-		arg_.inc_ref();
+		arg_.inc_ref(); // TODO: 为什么需要增加引用计数？
 		for (auto& cb : listeners[type_]) {
 			PY_TRY;
 			py::gil_scoped_acquire gil_;
 			pass = bool(cb(arg_));
 			PY_CATCH;
-
-			// TODO: 为什么需要增加引用计数？
 		}
 		return pass;
 	}

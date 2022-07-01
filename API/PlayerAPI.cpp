@@ -2,27 +2,12 @@
 #include "BlockAPI.h"
 #include "EntityAPI.h"
 #include "PlayerAPI.h"
-#include "McAPI.h"
 #include "ContainerAPI.h"
 #include "ItemAPI.h"
-#include "GuiAPI.h"
 #include "NbtAPI.h"
-#include <MC/Player.hpp>
-#include <MC/NetworkIdentifier.hpp>
-#include <MC/Actor.hpp>
-#include <MC/Container.hpp>
 #include <MC/SimpleContainer.hpp>
-#include <MC/Scoreboard.hpp>
-#include <MC/Objective.hpp>
-#include <MC/ScoreboardId.hpp>
-#include <MC/ListTag.hpp>
-#include <MC/CompoundTag.hpp>
 #include <MC/SimulatedPlayer.hpp>
-#include <MC/BlockSource.hpp>
 #include <PlayerInfoAPI.h>
-#include <unordered_map>
-#include <algorithm>
-using namespace std;
 
 py::dict NavigateResultToObject(const ScriptNavigationResult& res) {
 	py::dict obj;
@@ -31,41 +16,51 @@ py::dict NavigateResultToObject(const ScriptNavigationResult& res) {
 	return obj;
 }
 
-PlayerClass::PlayerClass(Player* p) : thiz(p) {}
+PlayerClass::PlayerClass(Player* p) : thiz(p) {
+	//logger.warn("playerclass was constructed, address is {}", (void*)p);
+}
+
+PlayerClass::PlayerClass(const PlayerClass& other) : thiz(other.thiz) {
+	//logger.warn("playerclass was copied, address is {}", (void*)other.thiz);
+}
+
+PlayerClass::~PlayerClass() {
+	//logger.warn("playerclass was deconstructed, address is {}", (void*)thiz);
+}
 
 string PlayerClass::getName() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return "";
 	return thiz->getName();
 }
 
 Vec3 PlayerClass::getPos() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return Vec3::ZERO;
 	return thiz->getPosition();
 }
 
 BlockPos PlayerClass::getBlockPos() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return BlockPos::ZERO;
 	return thiz->getBlockPos();
 }
 
 int PlayerClass::getDim() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return 0;
 	return thiz->getDimensionId();
 }
 
 string PlayerClass::getRealName() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return "";
 	return thiz->getRealName();
 }
 
 string PlayerClass::getXuid() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return "";
 	string xuid;
 	try {
 		xuid = thiz->getXuid();
@@ -78,8 +73,8 @@ string PlayerClass::getXuid() {
 }
 
 string PlayerClass::getUuid() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return "";
 	string uuid;
 	try {
 		uuid = thiz->getUuid();
@@ -92,69 +87,68 @@ string PlayerClass::getUuid() {
 }
 
 CommandPermissionLevel PlayerClass::getPermLevel() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->getCommandPermissionLevel();
 }
 
 GameType PlayerClass::getGameMode() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->getPlayerGameType();
 }
 
 float PlayerClass::getSpeed() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return 0.f;
 	return thiz->getSpeed();
 }
 
 Vec2 PlayerClass::getDirection() {
-	if (!thiz)
-		return Vec2(0, 0);
+	if (thiz == nullptr)
+		return Vec2::ZERO;
 	return thiz->getRotation();
 }
 
 int PlayerClass::getMaxHealth() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return 0;
 	return thiz->getMaxHealth();
 }
 
 int PlayerClass::getHealth() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return 0;
 	return thiz->getHealth();
 }
 
 bool PlayerClass::getInAir() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return !thiz->isOnGround() && !thiz->isInWater();
 }
 
 bool PlayerClass::getInWater() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->isInWater();
 }
 
 bool PlayerClass::getSneaking() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->isSneaking();
 }
 
 string PlayerClass::getUniqueID() {
-	if (!thiz)
-		return {};
-	else
-		return std::to_string(thiz->getUniqueID().id);
+	if (thiz == nullptr)
+		return "";
+	return std::to_string(thiz->getUniqueID().id);
 }
 
 string PlayerClass::getLangCode() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return "";
 	return thiz->getLanguageCode();
 }
 
@@ -163,126 +157,132 @@ bool PlayerClass::teleport(const Vec3& pos, int dim) {
 }
 
 bool PlayerClass::kill() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	thiz->kill();
 	return true;
 }
 
 bool PlayerClass::kick(const string& msg) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->kick(msg);
 }
 
-bool PlayerClass::tell(const string& msg, TextType type) {
-	if (!thiz)
-		return {};
+bool PlayerClass::sendText(const string& msg, TextType type) {
+	if (thiz == nullptr)
+		return false;
 	return thiz->sendTextPacket(msg, type);
 }
 
 bool PlayerClass::talkAs(const string& msg) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->sendTextTalkPacket(msg, nullptr);
 }
 
 bool PlayerClass::talkTo(const string& msg, Player* target) {
 	if (!target)
 		return false;
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->sendTextTalkPacket(msg, target);
 }
 
 bool PlayerClass::rename(const string& name) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->rename(name);
 }
 
 bool PlayerClass::transServer(const string& address, short port) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->transferServer(address, port);
 }
 
 bool PlayerClass::crash() {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->crashClient();
 }
 
 bool PlayerClass::hurt(int damage) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->hurtEntity(damage);
 }
 
-bool PlayerClass::isOP() {
+bool PlayerClass::setOnFire(int time) {
 	if (!thiz)
-		return {};
+		return false;
+	return thiz->setOnFire(time, true);
+}
+
+bool PlayerClass::isOP() {
+	if (thiz == nullptr)
+		return false;
 	return thiz->isOperator();
 }
 
 bool PlayerClass::setPermLevel(CommandPermissionLevel perm) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	thiz->setPermissions(perm);
 	return true;
 }
 
 bool PlayerClass::setGameMode(GameType mode) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	thiz->setPlayerGameType(mode);
 	return true;
 }
 
 bool PlayerClass::runcmd(const string& cmd) {
-	if (!thiz)
-		return {};
+	if (thiz == nullptr)
+		return false;
 	return thiz->runcmd(cmd);
 }
 
 BlockClass PlayerClass::getBlockStandingOn() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {{}, 0};
 	return {thiz->getBlockPosCurrentlyStandingOn(nullptr), thiz->getDimensionId()};
 }
 
 ItemClass PlayerClass::getHand() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return nullptr;
 	return thiz->getHandSlot();
 }
 
 ItemClass PlayerClass::getOffHand() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return nullptr;
 	return (ItemStack*)&thiz->getOffhandSlot();
 }
 
 ContainerClass PlayerClass::getInventory() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return nullptr;
 	return &thiz->getInventory();
 }
 
 ContainerClass PlayerClass::getArmor() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return nullptr;
 	return &thiz->getArmorContainer();
 }
 
 ContainerClass PlayerClass::getEnderChest() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return nullptr;
 	return thiz->getEnderChestContainer();
 }
 
 std::pair<BlockPos, int> PlayerClass::getRespawnPosition() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	auto position = thiz->getRespawnPosition();
 	if (position.first.y == 32767) {
@@ -294,7 +294,7 @@ std::pair<BlockPos, int> PlayerClass::getRespawnPosition() {
 }
 
 bool PlayerClass::setRespawnPosition(BlockPos pos, int dim) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	if (dim < 0)
 		return false;
@@ -303,55 +303,55 @@ bool PlayerClass::setRespawnPosition(BlockPos pos, int dim) {
 }
 
 bool PlayerClass::refreshItems() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->refreshInventory();
 }
 
 int PlayerClass::getScore(const string& key) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return Global<Scoreboard>->getScore(thiz, key);
 }
 
 bool PlayerClass::setScore(const string& key, int value) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return Global<Scoreboard>->setScore(thiz, key, value);
 }
 
 bool PlayerClass::addScore(const string& key, int value) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return Global<Scoreboard>->addScore(thiz, key, value);
 }
 
 bool PlayerClass::reduceScore(const string& key, int value) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return Global<Scoreboard>->reduceScore(thiz, key, value);
 }
 
 bool PlayerClass::deleteScore(const string& key) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return ::Global<Scoreboard>->deleteScore(thiz, key);
 }
 
 bool PlayerClass::setSidebar(const string& title, std::vector<std::pair<std::string, int>> data, ObjectiveSortOrder order) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->setSidebar(title, data, order);
 }
 
 bool PlayerClass::removeSidebar() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->removeSidebar();
 }
 
 bool PlayerClass::setBossBar(int64_t uid, const string& name, float percent, BossEventColour colour) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	if (percent < 0)
 		percent = 0;
@@ -363,105 +363,111 @@ bool PlayerClass::setBossBar(int64_t uid, const string& name, float percent, Bos
 }
 
 bool PlayerClass::removeBossBar() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->sendBossEventPacket(BossEvent::Hide, "", 0, BossEventColour::Red); // Remove
 }
 
 bool PlayerClass::removeBossBar(int64_t uid) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	thiz->removeBossEvent(uid);
 	return true;
 }
 
 bool PlayerClass::addLevel(int value) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	thiz->addLevels(value);
 	return true;
 }
 
 int PlayerClass::getLevel() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->getPlayerLevel();
 }
 
 void PlayerClass::resetLevel() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return;
 	thiz->resetPlayerLevel();
 }
 
 int PlayerClass::getXpNeededForNextLevel() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->getXpNeededForNextLevel();
 }
 
 bool PlayerClass::addExperience(int value) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	thiz->addExperience(value);
 	return true;
 }
 
 bool PlayerClass::sendCustomForm(const string& str, const py::function& cb) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
+	Player* p = thiz;
 	return thiz->sendCustomFormPacket(str,
-		[this, cb](const string& arg) {
+		[p, cb](const string& arg) {
 			if (LL::isServerStopping())
+				return;
+			if (arg == "null\n")
 				return;
 			PY_TRY;
 			py::gil_scoped_acquire gil_;
-			cb(PlayerClass(thiz), py::eval(arg));
+			auto json = py::module_::import("json");
+			cb(PlayerClass(p), json.attr("loads")(arg));
 			PY_CATCH;
 		});
 }
 
 bool PlayerClass::sendSimpleForm(const string& title, const string& content, const vector<string>& buttons, const vector<string>& images, const py::function& cb) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
-	// if (buttons.empty() || images.empty())
-	//	throw py::value_error("buttons and images shuold not be empty");
 	if (buttons.size() != images.size())
 		throw py::value_error("The number of buttons is not equal to the number of images");
+	Player* p = thiz;
 	return thiz->sendSimpleFormPacket(title, content, buttons, images,
-		[this, cb](int arg) {
+		[p, cb](int arg) {
 			if (LL::isServerStopping())
+				return;
+			if (arg == -1)
 				return;
 			PY_TRY;
 			py::gil_scoped_acquire gil_;
-			cb(PlayerClass(thiz), arg);
+			cb(PlayerClass(p), arg);
 			PY_CATCH;
 		});
 }
 
 bool PlayerClass::sendModalForm(const string& title, const string& content, const string& button1, const string& button2, const py::function& cb) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
+	Player* p = thiz;
 	return thiz->sendModalFormPacket(title, content, button1, button2,
-		[this, cb](bool arg) {
+		[p, cb](bool arg) {
 			if (LL::isServerStopping())
 				return;
 			PY_TRY;
 			py::gil_scoped_acquire gil_;
-			cb(PlayerClass(thiz), arg);
+			cb(PlayerClass(p), arg);
 			PY_CATCH;
 		});
 }
 
 bool PlayerClass::refreshChunks() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	thiz->resendAllChunks();
 	return true;
 }
 
 bool PlayerClass::giveItem(const ItemClass& item) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return false;
 	if (!item.thiz)
 		return false;
@@ -469,26 +475,26 @@ bool PlayerClass::giveItem(const ItemClass& item) {
 }
 
 bool PlayerClass::clearItem(const string& type) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->clearItem(type);
 }
 
 bool PlayerClass::isSprinting() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->isSprinting();
 }
 
 bool PlayerClass::setSprinting(bool b) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	thiz->setSprinting(b);
 	return true;
 }
 
 bool PlayerClass::setExtraData(string key, const py::object& value) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	if (key.empty())
 		return false;
@@ -497,7 +503,7 @@ bool PlayerClass::setExtraData(string key, const py::object& value) {
 }
 
 py::object PlayerClass::getExtraData(string key) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	if (key.empty())
 		return {};
@@ -509,7 +515,7 @@ py::object PlayerClass::getExtraData(string key) {
 }
 
 bool PlayerClass::delExtraData(string key) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	if (key.empty())
 		return false;
@@ -517,13 +523,13 @@ bool PlayerClass::delExtraData(string key) {
 }
 
 NbtClass PlayerClass::getNbt() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->getNbt();
 }
 
 bool PlayerClass::setNbt(const NbtClass& nbt) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	if (!nbt.thiz)
 		return {};
@@ -531,43 +537,43 @@ bool PlayerClass::setNbt(const NbtClass& nbt) {
 }
 
 bool PlayerClass::addTag(const string& tag) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->addTag(tag);
 }
 
 bool PlayerClass::hasTag(const string& tag) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->hasTag(tag);
 }
 
 bool PlayerClass::removeTag(const string& tag) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->removeTag(tag);
 }
 
 vector<string> PlayerClass::getAllTags() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->getAllTags();
 }
 
 EntityClass PlayerClass::getEntityFromViewVector(float maxDistance) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return nullptr;
 	return EntityClass(thiz->getActorFromViewVector(maxDistance));
 }
 
 BlockClass PlayerClass::getBlockFromViewVector(bool includeLiquid, bool solidOnly, float maxDistance, bool ignoreBorderBlocks, bool fullOnly) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return BlockInstance::Null;
 	return thiz->getBlockFromViewVector(includeLiquid, solidOnly, maxDistance, ignoreBorderBlocks, fullOnly);
 }
 
 bool PlayerClass::isSimulatedPlayer() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return false;
 	return thiz->isSimulatedPlayer();
 }
@@ -815,41 +821,42 @@ bool PlayerClass::simulateDestory(const BlockPos& pos, ScriptFacing face) {
 }
 
 string PlayerClass::getIP() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->getNetworkIdentifier()->getIP();
 }
 
 int PlayerClass::getAvgPing() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->getAvgPing();
 }
 
 int PlayerClass::getAvgPacketLoss() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return 0;
 }
 
 string PlayerClass::getOs() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->getDeviceName();
 }
 
 string PlayerClass::getClientId() {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	return thiz->getClientId();
 }
 
 bool PlayerClass::removeItem(int inventory_id, int count) {
-	if (!thiz)
+	if (thiz == nullptr)
 		return {};
 	Container& container = thiz->getInventory();
 	if (inventory_id > container.getSize())
 		return false;
 	container.removeItem(inventory_id, count);
+	thiz->sendInventory(true);
 	return true;
 }

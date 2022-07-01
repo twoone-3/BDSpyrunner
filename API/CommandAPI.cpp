@@ -151,13 +151,14 @@ bool CommandClass::addOverload(vector<string>&& args) {
 bool CommandClass::setCallback(const py::function& cb) {
 	if (thiz == nullptr)
 		return false;
-	thiz->setCallback([cb](const DynamicCommand& command, const CommandOrigin& origin,
-						  CommandOutput& output, std::unordered_map<string, DynamicCommand::Result>& results) {
-		PY_TRY;
-		py::gil_scoped_acquire gil_;
-		cb(CommandOriginClass(const_cast<CommandOrigin*>(&origin)), results);
-		PY_CATCH;
-	});
+	thiz->setCallback(
+		[cb](const DynamicCommand& command, const CommandOrigin& origin,
+			CommandOutput& output, std::unordered_map<string, DynamicCommand::Result>& results) {
+			PY_TRY;
+			py::gil_scoped_acquire gil_;
+			cb(CommandOriginClass(const_cast<CommandOrigin*>(&origin)), results);
+			PY_CATCH;
+		});
 	return true;
 }
 
