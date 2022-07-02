@@ -1,5 +1,0 @@
-﻿- [🔎简介](README)
-- [⚙API](API)
-- [📦事件](Event)
-- [💻插件开发](Dev)
-- [📝FAQ](FAQ)
