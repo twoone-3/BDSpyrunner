@@ -123,11 +123,11 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 
 		.def("setEnum", &CommandClass::setEnum)
 		.def("setAlias", &CommandClass::setAlias)
-		.def("mandatory", py::overload_cast<const string&, DynamicCommand::ParameterType, string, string, CommandParameterOption>(&CommandClass::mandatory),
+		.def("mandatory2", py::overload_cast<const string&, DynamicCommand::ParameterType, string, string, CommandParameterOption>(&CommandClass::mandatory),
 			"name"_a, "type"_a, "description"_a = "", "identifier"_a = "", "option"_a = None)
 		.def("mandatory", py::overload_cast<const string&, DynamicCommand::ParameterType, string, CommandParameterOption>(&CommandClass::mandatory),
 			"name"_a, "type"_a, "description"_a = "", "option"_a = None)
-		.def("optional", py::overload_cast<const string&, DynamicCommand::ParameterType, string, string, CommandParameterOption>(&CommandClass::optional),
+		.def("optional2", py::overload_cast<const string&, DynamicCommand::ParameterType, string, string, CommandParameterOption>(&CommandClass::optional),
 			"name"_a, "type"_a, "description"_a = "", "identifier"_a = "", "option"_a = None)
 		.def("optional", py::overload_cast<const string&, DynamicCommand::ParameterType, string, CommandParameterOption>(&CommandClass::optional),
 			"name"_a, "type"_a, "description"_a = "", "option"_a = None)
@@ -409,7 +409,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getAllEntities", &mc::getAllEntities)
 		.def("setServerMotd", &LL::setServerMotd)
 		.def("broadcastText", &Level::broadcastText, "text"_a, "type"_a = TextType::RAW)
-		.def("broadcastTitle", &Level::broadcastTitle, "text"_a, "type"_a = TitleType::SetTitle, "fade_in_duration"_a, "remain_duration"_a, "fade_out_duration"_a)
+		.def("broadcastTitle", &Level::broadcastTitle, "text"_a, "type"_a = TitleType::SetTitle, "fade_in_duration"_a=100, "remain_duration"_a=500, "fade_out_duration"_a=100)
 		.def("getBlock", &mc::getBlock)
 		.def("setBlock", py::overload_cast<const BlockPos&, int, const string&, int>(&mc::setBlock))
 		.def("setBlock", py::overload_cast<const BlockPos&, int, const BlockClass&>(&mc::setBlock))
@@ -419,7 +419,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("spawnItem", &mc::spawnItem)
 		.def("setSignBlockMessage", &mc::setSignBlockMessage)
 		.def("isSlimeChunk", &mc::IsSlimeChunk)
-
+		
 		.def("spawnMob", &Level::spawnMob)
 		.def("cloneMob", &mc::cloneMob)
 		.def("spawnSimulatedPlayer", &mc::spawnSimulatedPlayer)

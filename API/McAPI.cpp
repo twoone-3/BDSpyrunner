@@ -83,9 +83,8 @@ NbtClass getStructure(const BlockPos& pos1, const BlockPos& pos2, int dim, bool 
 }
 
 //从NBT结构数据导出结构到指定地点
-void setStructure(const NbtClass& nbt, const BlockPos& pos, int dim, Mirror mir, Rotation rot) {
-	StructureTemplate::fromTag("name", *nbt.thiz->asCompoundTag())
-		.toWorld(dim, pos, mir, rot);
+bool setStructure(const NbtClass& nbt, const BlockPos& pos, int dim, Mirror mir, Rotation rot) {
+	auto st = StructureTemplate::fromTag("name", *nbt.thiz->asCompoundTag());
 	/*for (int x = 0; x != size.x; ++x) {
 		for (int y = 0; y != size.y; ++y) {
 			for (int z = 0; z != size.z; ++z) {
@@ -94,6 +93,7 @@ void setStructure(const NbtClass& nbt, const BlockPos& pos, int dim, Mirror mir,
 			}
 		}
 	}*/
+	return st.toWorld(dim, pos, mir, rot);
 }
 
 //产生爆炸
@@ -105,17 +105,17 @@ void explode(const Vec3& pos, int dim, float power, bool destroy, float range, b
 }
 
 //生成物品
-void spawnItem(ItemClass& item, Vec3& pos, int dim) {
+void spawnItem(ItemClass& item, Vec3 pos, int dim) {
 	Global<Level>->getSpawner().spawnItem(pos, dim, item.thiz);
 }
 
 //设置牌子文字
-void setSignBlockMessage(const string& name, BlockPos bp, int dim) {
+void setSignBlockMessage( BlockPos pos, int dim,const string& text) {
 	BlockSource* bs = Level::getBlockSource(dim);
 	if (bs == nullptr)
 		throw py::value_error("Unknown dimension ID");
-	auto sign = static_cast<SignBlockActor*>(Global<Level>->getBlockEntity(bp, dim));
-	sign->setMessage(name, name);
+	auto sign = static_cast<SignBlockActor*>(Global<Level>->getBlockEntity(pos, dim));
+	sign->setMessage(text, text);
 	sign->setChanged();
 }
 
@@ -127,7 +127,7 @@ int IsSlimeChunk(unsigned x, unsigned z) {
 	for (unsigned i = 2; i < 398; ++i) {
 		mt2 = (1812433253u * (mt2 ^ (mt2 >> 30u)) + i);
 	}
-	unsigned k = (mt0 & 0x80000000u) + (mt1 & 0x7FFFFFFFU);
+	unsigned k = (mt0 & 0x80000000u) + (mt1 & 0x7FFFFFFFu);
 	mt0 = mt2 ^ (k >> 1u);
 	if (k & 1)
 		mt0 ^= 2567483615u;
