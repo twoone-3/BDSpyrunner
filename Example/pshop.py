@@ -56,10 +56,9 @@ def UpdateConfig(path, config):
 	return None
 
 
-def CreateSellShop(goods_name, typename, scoreboard, price, nbt, bool_needtag):
+def CreateSellShop(goods_name, typename, price, nbt, bool_needtag):
 	global pshop
 	pshop["selldata"][goods_name] = {}
-	pshop["selldata"][goods_name]["scoreboard"] = scoreboard
 	pshop["selldata"][goods_name]["price"] = price
 	pshop["selldata"][goods_name]["typename"] = typename
 	pshop["selldata"][goods_name]["nbt"] = nbt
@@ -87,14 +86,13 @@ def RemoveSellShop(goods_name):
 	return True
 
 
-def CreateBuyShop(goods_name, typename, scoreboard, price, nbt):
+def CreateBuyShop(goods_name, typename, price, nbt):
 	global pshop
 	try:
-		nbt["Count1"] = 1
+		nbt["Count"] = 1
 	except:
 		pass
 	pshop["buydata"][goods_name] = {}
-	pshop["buydata"][goods_name]["scoreboard"] = scoreboard
 	pshop["buydata"][goods_name]["price"] = price
 	pshop["buydata"][goods_name]["typename"] = typename
 	pshop["buydata"][goods_name]["nbt"] = nbt
@@ -122,19 +120,16 @@ def RemoveBuyShop(goods_name):
 
 
 # 经济部分
-def GetMoney(player, scoreboard):
-	return player.getScore(scoreboard)
+def GetMoney(player):
+	return getMoney(player.xuid)
 
 
-def AddMoney(player, num, scoreboard):
-	player.addScore(scoreboard, num)
+def AddMoney(player, num):
+	return addMoney(player.xuid, num)
 
 
-def ReduceMoney(player, num, scoreboard):
-	if GetMoney(player, scoreboard) < num:
-		return False
-	player.reduceScore(scoreboard, num)
-	return True
+def ReduceMoney(player, num):
+	return reduceMoney(player.xuid, num)
 
 
 def GetPlayerInventoryItems(player, itemname, needtag, ench):
@@ -197,14 +192,13 @@ def PshopBuy3(player, selected):
 		return
 	shop = GetBuyShop(player.getExtraData("gn"))
 	price = shop["price"]
-	scoreboard = shop["scoreboard"]
 	money = int(price * num)
 	nbt = NBT.fromSNBT(shop["nbt"])
 	buynum = nbt["Count"].asByte()
 	if num * buynum > 1500 or num > 30:
 		player.sendText("§e[shop]§c购买失败, 物品过多！")
 		return
-	if ReduceMoney(player, money, scoreboard):
+	if ReduceMoney(player, money):
 		# shop['nbt']['Count1']=int(num*buynum)
 		for i in range(num):
 			item = Item()
@@ -253,8 +247,7 @@ def PshopSell3(player, selected):
 	if RemovePlayerInventoryItems(player, itemname, num, needtag, nbt):
 		price = shop["price"]
 		money = int(price * num)
-		scoreboard = shop["scoreboard"]
-		AddMoney(player, money, scoreboard)
+		AddMoney(player, money)
 		player.sendText("§e[shop]§a回收成功, 获得金币: " + str(money))
 	else:
 		player.sendText("§e[shop]§c物品不足")
@@ -344,7 +337,6 @@ def PshopManage(player, selected):
 	elif selected == 2:
 		cf = CustomForm("添加手持物品")
 		cf.addInput("输入商品名称")
-		cf.addInput("使用的计分板名称(默认money)")
 		cf.addInput("输入单价")
 		cf.addDropdown("选择商品类型", pshop["typename"])
 
@@ -355,20 +347,17 @@ def PshopManage(player, selected):
 			if goods_name == "":
 				player.sendText("§e[shop]§c请输入商品名称")
 				return
-			scoreboard = selected[1]
-			if scoreboard == "":
-				scoreboard = "money"
-			typename = pshop["typename"][selected[3]]
+			typename = pshop["typename"][selected[2]]
 			if typename == "无":
 				player.sendText("§e[shop]§c请先创建商品类型")
 				return
-			if selected[2].isdigit():
-				price = int(selected[2])
+			if selected[1].isdigit():
+				price = int(selected[1])
 				if price < 0:
 					player.sendText("§e[shop]§c价格不能为负数")
 					return
 				nbt = player.getHand().getNbt().toSNBT(0, SnbtFormat.Minimize)
-				CreateBuyShop(goods_name, typename, scoreboard, price, nbt)
+				CreateBuyShop(goods_name, typename, price, nbt)
 				player.sendText("§e[shop]§a添加成功")
 			else:
 				player.sendText("§e[shop]§c请输入正确的价格")
@@ -393,7 +382,6 @@ def PshopManage(player, selected):
 	elif selected == 4:
 		cf = CustomForm("添加手持物品")
 		cf.addInput("输入商品名称")
-		cf.addInput("使用的计分板名称(默认money)")
 		cf.addInput("输入单价")
 		cf.addToggle("是否需要nbt一致", False)
 		cf.addDropdown("选择商品类型", pshop["typename"])
@@ -405,15 +393,12 @@ def PshopManage(player, selected):
 			if goods_name == "":
 				player.sendText("§e[shop]§c请输入商品名称")
 				return
-			scoreboard = selected[1]
-			if scoreboard == "":
-				scoreboard = "money"
-			typename = pshop["typename"][selected[4]]
+			typename = pshop["typename"][selected[3]]
 			if typename == "无":
 				player.sendText("§e[shop]§c请先创建商品类型")
 				return
-			if selected[2].isdigit():
-				price = int(selected[2])
+			if selected[1].isdigit():
+				price = int(selected[1])
 				if price < 0:
 					player.sendText("§e[shop]§c价格不能为负数")
 					return
@@ -421,10 +406,9 @@ def PshopManage(player, selected):
 				CreateSellShop(
 				    goods_name,
 				    typename,
-				    scoreboard,
 				    price,
 				    nbt,
-				    selected[3],
+				    selected[2],
 				)
 				player.sendText("§e[shop]§a添加成功")
 			else:
@@ -450,14 +434,15 @@ def PshopInit():
 	global pshop
 	MakeDirs(home)
 
-	if not os.path.exists(home + "pshop.json"):
-		UpdateConfig("pshop.json", pshop)
-		logger.info("创建配置文件：pshop.json")
 	pshop["selldata"] = {}
 	pshop["buydata"] = {}
 	pshop["listsell"] = []
 	pshop["listbuy"] = []
 	pshop["typename"] = []
+
+	if not os.path.exists(home + "pshop.json"):
+		UpdateConfig("pshop.json", pshop)
+		logger.info("创建配置文件：pshop.json")
 	pshop = ReadConfig("pshop.json")
 
 	def PshopCallback(origin, results):
@@ -500,12 +485,6 @@ def PshopInit():
 	c.overload(["operator"])
 	c.setCallback(PshopCallback)
 	c.setup()
-
-	def onJoin(e):
-		newScoreObjective("money", "money")
-		e["Player"].addScore("money", 0)  # 添加计分板
-
-	setListener("onJoin", onJoin)
 
 
 PshopInit()

@@ -7,6 +7,7 @@
 #include <API/ItemAPI.h>
 #include <API/ContainerAPI.h>
 #include <API/EntityAPI.h>
+#include <API/MoneyAPI.h>
 #include <API/NbtAPI.h>
 #include <API/LoggerAPI.h>
 #include <API/PlayerAPI.h>
@@ -15,12 +16,12 @@
 
 // clang-format off
 
-#define DEF_ENUM(name, type) { auto entries = magic_enum::enum_entries<type>(); auto e = py::enum_<type>(m, name); for (auto& [val, n] : entries) { e.value(n.data(), val); } }
+#define DEF_ENUM(name, type) { auto entries = magic_enum::enum_entries<type>(); auto e = py::enum_<type>(mc_module, name); for (auto& [val, n] : entries) { e.value(n.data(), val); } }
 #define DEF_ENUM_SIMPLE(type) DEF_ENUM(#type, type)
 
 // clang-format on
 
-PYBIND11_EMBEDDED_MODULE(mc, m) {
+PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 	using py::literals::operator""_a;
 	PY_TRY;
 #pragma region Enums
@@ -38,7 +39,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 
 #pragma endregion
 #pragma region Classes
-	py::class_<Vec2>(m, "Vec2")
+	py::class_<Vec2>(mc_module, "Vec2")
 		.def(py::init<float, float>())
 
 		.def_property(
@@ -47,7 +48,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 			"y", [](const Vec2& pos) { return pos.y; }, [](Vec2& pos, float val) { pos.y = val; })
 		.def("__repr__", &Vec2::toString);
 
-	py::class_<Vec3>(m, "Vec3")
+	py::class_<Vec3>(mc_module, "Vec3")
 		.def(py::init<float, float, float>())
 
 		.def_property(
@@ -58,7 +59,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 			"z", [](const Vec3& pos) { return pos.z; }, [](Vec3& pos, float val) { pos.z = val; })
 		.def("__repr__", &Vec3::toString);
 
-	py::class_<BlockPos>(m, "BlockPos")
+	py::class_<BlockPos>(mc_module, "BlockPos")
 		.def(py::init<int, int, int>())
 
 		.def_property(
@@ -69,7 +70,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 			"z", [](const BlockPos& pos) { return pos.z; }, [](BlockPos& pos, int val) { pos.z = val; })
 		.def("__repr__", &BlockPos::toString);
 
-	py::class_<BlockClass>(m, "Block")
+	py::class_<BlockClass>(mc_module, "Block")
 		.def_property("name", &BlockClass::getName, nullptr)
 		.def_property("type", &BlockClass::getType, nullptr)
 		.def_property("id", &BlockClass::getId, nullptr)
@@ -85,7 +86,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getBlockEntity", &BlockClass::getBlockEntity)
 		.def("removeBlockEntity", &BlockClass::removeBlockEntity);
 
-	py::class_<ContainerClass>(m, "Container")
+	py::class_<ContainerClass>(mc_module, "Container")
 		.def_property("size", &ContainerClass::getSize, nullptr)
 		.def_property("type", &ContainerClass::getType, nullptr)
 
@@ -99,7 +100,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("removeAllItems", &ContainerClass::removeAllItems)
 		.def("isEmpty", &ContainerClass::isEmpty);
 
-	py::class_<ItemClass>(m, "Item")
+	py::class_<ItemClass>(mc_module, "Item")
 		.def(py::init())
 
 		.def_property("name", &ItemClass::getName, nullptr)
@@ -117,7 +118,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("setNbt", &ItemClass::setNbt)
 		.def("getNbt", &ItemClass::getNbt);
 
-	py::class_<CommandClass>(m, "Command")
+	py::class_<CommandClass>(mc_module, "Command")
 		.def(py::init<string, string, CommandPermissionLevel>())
 		.def_property("name", &CommandClass::getName, nullptr)
 
@@ -142,7 +143,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("setCallback", &CommandClass::setCallback)
 		.def("setup", &CommandClass::setup);
 
-	py::class_<CommandOriginClass>(m, "CommandOrigin")
+	py::class_<CommandOriginClass>(mc_module, "CommandOrigin")
 		.def_property("type", &CommandOriginClass::getOriginType, nullptr)
 		.def_property("type_name", &CommandOriginClass::getOriginTypeName, nullptr)
 		.def_property("name", &CommandOriginClass::getOriginName, nullptr)
@@ -155,7 +156,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getNbt", &CommandOriginClass::getNbt)
 		.def("toString", &CommandOriginClass::toString);
 
-	py::class_<CommandOutputClass>(m, "CommandOutput")
+	py::class_<CommandOutputClass>(mc_module, "CommandOutput")
 		.def_property("empty", &CommandOutputClass::empty, nullptr)
 		.def_property("success_count", &CommandOutputClass::getSuccessCount, nullptr)
 
@@ -165,11 +166,11 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("addMessage", &CommandOutputClass::addMessage)
 		.def("toString", &CommandOutputClass::toString);
 
-	py::class_<DynamicCommand::Result>(m, "CommandResult")
+	py::class_<DynamicCommand::Result>(mc_module, "CommandResult")
 		.def("__repr__", [](const DynamicCommand::Result& thiz) { return py::str(convertResult(thiz)); })
 		.def("toObject", [](const DynamicCommand::Result& thiz) { return convertResult(thiz); });
 
-	py::class_<NbtClass>(m, "NBT")
+	py::class_<NbtClass>(mc_module, "NBT")
 		.def_property("type", &NbtClass::getType, nullptr)
 		.def_static("newByte", &NbtClass::newByte)
 		.def_static("newShort", &NbtClass::newShort)
@@ -200,7 +201,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("toSNBT", &NbtClass::toSNBT, "indent"_a = 4, "format"_a = SnbtFormat::PartialNewLine)
 		.def("append", &NbtClass::append);
 
-	py::class_<LoggerClass>(m, "Logger")
+	py::class_<LoggerClass>(mc_module, "Logger")
 		.def(py::init<string>(), "title"_a)
 		.def("debug", &LoggerClass::debug)
 		.def("info", &LoggerClass::info)
@@ -212,7 +213,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("setFile", &LoggerClass::setFile)
 		.def("setPlayer", &LoggerClass::setPlayer);
 
-	py::class_<PlayerClass>(m, "Player")
+	py::class_<PlayerClass>(mc_module, "Player")
 		.def_property("name", &PlayerClass::getName, nullptr)
 		.def_property("pos", &PlayerClass::getPos, nullptr)
 		.def_property("blockpos", &PlayerClass::getBlockPos, nullptr)
@@ -340,7 +341,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 			
 		.def("removeItem",&PlayerClass::removeItem);
 
-	py::class_<EntityClass>(m, "Entity")
+	py::class_<EntityClass>(mc_module, "Entity")
 		.def_property("name", &EntityClass::getName, nullptr)
 		.def_property("type", &EntityClass::getType, nullptr)
 		.def_property("id", &EntityClass::getId, nullptr)
@@ -377,7 +378,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getEntityFromViewVector", &EntityClass::getEntityFromViewVector)
 		.def("getBlockFromViewVector", &EntityClass::getBlockFromViewVector);
 
-	py::class_<BlockEntityClass>(m, "BlockEntity")
+	py::class_<BlockEntityClass>(mc_module, "BlockEntity")
 		.def_property("pos", &BlockEntityClass::getPos, nullptr)
 		.def_property("type", &BlockEntityClass::getType, nullptr)
 
@@ -385,7 +386,7 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("getNbt", &BlockEntityClass::getNbt)
 		.def("getBlock", &BlockEntityClass::getBlock);
 
-	py::class_<ObjectiveClass>(m, "Objective")
+	py::class_<ObjectiveClass>(mc_module, "Objective")
 		.def_property("name", &ObjectiveClass::getName, nullptr)
 		.def_property("display_name", &ObjectiveClass::getDisplayName, nullptr)
 
@@ -395,9 +396,10 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("reduceScore", &ObjectiveClass::reduceScore)
 		.def("deleteScore", &ObjectiveClass::deleteScore)
 		.def("getScore", &ObjectiveClass::getScore);
+
 #pragma endregion
 #pragma region Functions
-	m
+	mc_module
 		.def("getBbsVersion", &LL::getBdsVersion)
 		.def("getServerProtocolVersion", &LL::getServerProtocolVersion)
 		.def("runCommand", &Level::runcmd)
@@ -433,7 +435,15 @@ PYBIND11_EMBEDDED_MODULE(mc, m) {
 		.def("removeScoreObjective", &mc::removeScoreObjective)
 		.def("getAllScoreObjectives", &mc::getAllScoreObjectives)
 
-		.def("setMaxPlayers", &mc::setMaxNumPlayers);
+		.def("setMaxPlayers", &mc::setMaxNumPlayers)
+
+		.def("getMoney", &EconomySystem::getMoney)
+		.def("setMoney", &EconomySystem::setMoney)
+		.def("addMoney", &EconomySystem::addMoney)
+		.def("reduceMoney", &EconomySystem::reduceMoney)
+		.def("transMoney", &EconomySystem::transMoney)
+		.def("getMoneyHist", &EconomySystem::getMoneyHist)
+		.def("clearMoneyHist", &EconomySystem::clearMoneyHist);
 #pragma endregion
 	PY_CATCH;
 }

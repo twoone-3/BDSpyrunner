@@ -1,4 +1,5 @@
 #include <API/EventAPI.h>
+#include <API/MoneyAPI.h>
 #include <Global.hpp>
 #include <LoggerAPI.h>
 
@@ -6,11 +7,12 @@ using namespace std;
 
 constexpr unsigned PYR_VERSION_MAJOR = 2;
 constexpr unsigned PYR_VERSION_MINOR = 0;
-constexpr unsigned PYR_VERSION_MICRO = 0;
-constexpr const char* PYR_VERSION = "v2.0.0";
+constexpr unsigned PYR_VERSION_MICRO = 1;
+constexpr const char* PYR_VERSION = "v2.0.1";
 
 void entry() {
 	PY_TRY;
+	EconomySystem::init();
 	//如果目录不存在创建目录
 	if (!filesystem::exists(PLUGIN_PATH))
 		filesystem::create_directory(PLUGIN_PATH);

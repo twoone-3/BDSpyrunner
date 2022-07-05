@@ -159,7 +159,7 @@ class Block:
 	dim: int
 	tile_data: int
 
-	def setNbt(nbt):
+	def setNbt(self, nbt):
 		pass
 
 	def getNbt(self) -> "NBT":
@@ -220,7 +220,7 @@ class Item:
 	count: int
 	aux: int
 
-	def __init__():
+	def __init__(self):
 		pass
 
 	def set(self):
@@ -241,7 +241,7 @@ class Item:
 	def setLore(self):
 		pass
 
-	def setNbt(self):
+	def setNbt(self, nbt):
 		pass
 
 	def getNbt(self):
@@ -260,35 +260,45 @@ class Command:
 	def setAlias(self):
 		pass
 
-	def mandatory(
+	def mandatory2(
 	    self,
 	    name,
-	    type: str,
+	    type: ParameterType,
 	    description: str = "",
 	    identifier: str = "",
-	    option=CommandParameterOption.None_,
+	    option=CommandParameterOption.None_
 	):
 		pass
 
 	def mandatory(
 	    self,
 	    name,
-	    type: str,
+	    type: ParameterType,
 	    description: str = "",
-	    option=CommandParameterOption.None_,
+	    option=CommandParameterOption.None_
 	):
 		pass
 
-	#           "name"_a, "type"_a, "description"_a = "", "option"_a = None)
-	def optional(self):
+	def optional2(
+	    self,
+	    name,
+	    type: ParameterType,
+	    description: str = "",
+	    identifier: str = "",
+	    option=CommandParameterOption.None_
+	):
 		pass
 
-	#           "name"_a, "type"_a, "description"_a = "", "identifier"_a = "", "option"_a = None)
-	def optional(self):
+	def optional(
+	    self,
+	    name,
+	    type: ParameterType,
+	    description: str = "",
+	    option=CommandParameterOption.None_
+	):
 		pass
 
-	#           "name"_a, "type"_a, "description"_a = "", "option"_a = None)
-	def setSoftEnum(self):
+	def setSoftEnum(self, name, enums):
 		pass
 
 	def addSoftEnumValues(self):
@@ -303,16 +313,10 @@ class Command:
 	def getSoftEnumNames(self):
 		pass
 
-	def overload(self):
+	def overload(self, value=None):
 		pass
 
-	def overload(self):
-		pass
-
-	def overload(self):
-		pass
-
-	def setCallback(self):
+	def setCallback(self, callback):
 		pass
 
 	def setup(self):
@@ -340,10 +344,7 @@ class CommandOutput:
 	empty: bool
 	success_count: int
 
-	def success(self):
-		pass
-
-	def success(self):
+	def success(self, msg=None):
 		pass
 
 	def error(self):
@@ -413,20 +414,17 @@ class NBT:
 		pass
 
 	@staticmethod
-	def fromSNBT() -> "NBT":
+	def fromSNBT(snbt) -> "NBT":
 		pass
 
 	@staticmethod
 	def fromBinary() -> "NBT":
 		pass
 
-	def __getitem__(self):
+	def __getitem__(self, key):
 		pass
 
-	def __getitem__(self):
-		pass
-
-	def __setitem__(self):
+	def __setitem__(self, key, value):
 		pass
 
 	def asByte(self):
@@ -450,10 +448,10 @@ class NBT:
 	def toBinary(self):
 		pass
 
-	def toJson(self):
+	def toJson(self, indent=4):
 		pass
 
-	def toSNBT(self):
+	def toSNBT(self, indent=4, format=SnbtFormat.PartialNewLine):
 		pass
 
 	def append(self):
@@ -465,28 +463,28 @@ class Logger:
 	def __init__(self, title: str) -> None:
 		pass
 
-	def debug(self):
+	def debug(self, msg: str):
 		pass
 
-	def info(self):
+	def info(self, msg: str):
 		pass
 
-	def warn(self):
+	def warn(self, msg: str):
 		pass
 
-	def error(self):
+	def error(self, msg: str):
 		pass
 
-	def fatal(self):
+	def fatal(self, msg: str):
 		pass
 
-	def setTitle(self):
+	def setTitle(self, title: str):
 		pass
 
-	def setFile(self):
+	def setFile(self, file: str):
 		pass
 
-	def setPlayer(self):
+	def setPlayer(self, player):
 		pass
 
 
@@ -749,6 +747,9 @@ class Player:
 	def simulateStopSneaking(self):
 		pass
 
+	def removeItem(self, slot, num):
+		pass
+
 
 class Entity:
 	name: str
@@ -882,7 +883,7 @@ def runCommandEx():
 	pass
 
 
-def setListener():
+def setListener(event, callback):
 	pass
 
 
@@ -982,7 +983,7 @@ def getScoreObjective():
 	pass
 
 
-def newScoreObjective():
+def newScoreObjective(name, display):
 	pass
 
 
@@ -995,4 +996,32 @@ def getAllScoreObjectives():
 
 
 def setMaxPlayers():
+	pass
+
+
+def getMoney(xuid):
+	pass
+
+
+def setMoney(xuid, num):
+	pass
+
+
+def addMoney(xuid, num):
+	pass
+
+
+def reduceMoney(xuid, num):
+	pass
+
+
+def transMoney(xuid1, xuid2, num, notes):
+	pass
+
+
+def getMoneyHistt(xuid, time):
+	pass
+
+
+def clearMoneyHistist(time):
 	pass

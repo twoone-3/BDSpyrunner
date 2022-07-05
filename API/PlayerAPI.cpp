@@ -415,7 +415,7 @@ bool PlayerClass::sendCustomForm(const string& str, const py::function& cb) {
 		[p, cb](const string& arg) {
 			if (LL::isServerStopping())
 				return;
-			if (arg == "null\n")
+			if (arg == "null")
 				return;
 			PY_TRY;
 			py::gil_scoped_acquire gil_;
@@ -860,3 +860,4 @@ bool PlayerClass::removeItem(int inventory_id, int count) {
 	thiz->sendInventory(true);
 	return true;
 }
+
