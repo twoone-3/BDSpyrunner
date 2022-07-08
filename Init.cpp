@@ -13,18 +13,18 @@ constexpr const char* PYR_VERSION = "v2.0.1";
 void entry() {
 	PY_TRY;
 	EconomySystem::init();
-	//如果目录不存在创建目录
+	// 如果目录不存在创建目录
 	if (!filesystem::exists(PLUGIN_PATH))
 		filesystem::create_directory(PLUGIN_PATH);
-	//设置模块搜索路径
+	// 设置模块搜索路径
 	wstring plugins_path = PLUGIN_PATH L";";
 	plugins_path.append(Py_GetPath());
 	Py_SetPath(plugins_path.c_str());
-	//初始化解释器
+	// 初始化解释器
 	py::initialize_interpreter();
-	//输出版本号信息
+	// 输出版本号信息
 	logger.info("{} loaded.", PYR_VERSION);
-	//启用线程支持
+	// 启用线程支持
 	PyEval_InitThreads();
 #if 0
 	auto a = CompoundTag::fromSNBT(R"({
@@ -40,7 +40,7 @@ void entry() {
 	for (auto& info : filesystem::directory_iterator(PLUGIN_PATH)) {
 		if (info.path().extension() == ".py") {
 			string name(info.path().stem().u8string());
-			//忽略以'_'开头的文件
+			// 忽略以'_'开头的文件
 			if (name.front() == '_') {
 				logger.debug("Ignoring {}", name);
 				continue;
@@ -53,7 +53,7 @@ void entry() {
 			}
 		}
 	}
-	//启动子线程前执行，释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
+	// 启动子线程前执行，释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
 	PyEval_ReleaseThread(PyThreadState_Get());
 	PY_CATCH;
 }
