@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include <Global.hpp>
+#include <MC/Tag.hpp>
+#include <MC/CompoundTag.hpp>
 
 class Tag;
 struct NbtClass {

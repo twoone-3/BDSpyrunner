@@ -8,6 +8,9 @@
 #include "McAPI.h"
 #include "ContainerAPI.h"
 #include "NbtAPI.h"
+#include <MC/Command.hpp>
+#include <MC/CommandOrigin.hpp>
+#include <MC/Dimension.hpp>
 
 CommandOriginClass::CommandOriginClass(CommandOrigin* p) : thiz(p) {}
 
@@ -15,7 +18,7 @@ int CommandOriginClass::getOriginType() {
 	return (int)thiz->getOriginType();
 }
 
-string_view CommandOriginClass::getOriginTypeName() { // TODO: check string_view can transform to pyobject
+string_view CommandOriginClass::getOriginTypeName() {
 	return magic_enum::enum_name((OriginType)thiz->getOriginType());
 }
 

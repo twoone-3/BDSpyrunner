@@ -2,13 +2,14 @@
 #include <API/MoneyAPI.h>
 #include <Global.hpp>
 #include <LoggerAPI.h>
+#include <LLAPI.h>
 
 using namespace std;
 
 constexpr unsigned PYR_VERSION_MAJOR = 2;
 constexpr unsigned PYR_VERSION_MINOR = 0;
-constexpr unsigned PYR_VERSION_MICRO = 1;
-constexpr const char* PYR_VERSION = "v2.0.1";
+constexpr unsigned PYR_VERSION_MICRO = 2;
+constexpr const char* PYR_VERSION = "v2.0.2";
 
 void entry() {
 	PY_TRY;

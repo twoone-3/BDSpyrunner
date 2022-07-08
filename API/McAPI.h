@@ -1,5 +1,7 @@
 #pragma once
 #include <Global.hpp>
+#include <MC/Command.hpp>
+
 struct PlayerClass;
 struct EntityClass;
 struct NbtClass;
@@ -8,6 +10,7 @@ struct ItemClass;
 struct ObjectiveClass;
 
 namespace mc {
+
 void setListener(const string& event_name, const py::function& cb);
 //注册命令
 void registerCommand(const string& name, const string& desc, const py::function& cb, CommandPermissionLevel perm = GameMasters);
@@ -34,10 +37,11 @@ void explode(const Vec3& pos, int dim, float power, bool destroy, float range, b
 //生成物品
 void spawnItem(ItemClass& item, Vec3 pos, int dim);
 //设置牌子文字
-void setSignBlockMessage(BlockPos pos, int dim,const string& text );
+void setSignBlockMessage(BlockPos pos, int dim, const string& text);
 //是否为史莱姆区块
 int IsSlimeChunk(unsigned x, unsigned z);
 
+EntityClass spawnMob(const Vec3& pos, int dim, const string& type);
 EntityClass cloneMob(const Vec3& pos, int dim, const EntityClass& ac);
 
 PlayerClass spawnSimulatedPlayer(const string& name, BlockPos& pos, int dim);

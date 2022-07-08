@@ -6,6 +6,11 @@
 #include "BlockAPI.h"
 #include "CommandOriginAPI.h"
 #include "CommandOutputAPI.h"
+#include <MC/Dimension.hpp>
+#include <MC/ItemInstance.hpp>
+#include <MC/ItemStack.hpp>
+#include <MC/JsonHelpers.hpp>
+#include <MC/MobEffect.hpp>
 
 py::object convertResult(const DynamicCommand::Result& result) {
 	if (!result.isSet)

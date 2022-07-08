@@ -5,9 +5,15 @@
 #include "ContainerAPI.h"
 #include "ItemAPI.h"
 #include "NbtAPI.h"
+#include <PlayerInfoAPI.h>
+#include <LLAPI.h>
+#include <MC/BlockSource.hpp>
+#include <MC/Command.hpp>
+#include <MC/Scoreboard.hpp>
 #include <MC/SimpleContainer.hpp>
 #include <MC/SimulatedPlayer.hpp>
-#include <PlayerInfoAPI.h>
+#include <MC/Level.hpp>
+#include <MC/Packet.hpp>
 
 py::dict NavigateResultToObject(const ScriptNavigationResult& res) {
 	py::dict obj;
@@ -16,17 +22,9 @@ py::dict NavigateResultToObject(const ScriptNavigationResult& res) {
 	return obj;
 }
 
-PlayerClass::PlayerClass(Player* p) : thiz(p) {
-	//logger.warn("playerclass was constructed, address is {}", (void*)p);
-}
+PlayerClass::PlayerClass(Player* p) : thiz(p) {}
 
-PlayerClass::PlayerClass(const PlayerClass& other) : thiz(other.thiz) {
-	//logger.warn("playerclass was copied, address is {}", (void*)other.thiz);
-}
-
-PlayerClass::~PlayerClass() {
-	//logger.warn("playerclass was deconstructed, address is {}", (void*)thiz);
-}
+PlayerClass::PlayerClass(const PlayerClass& other) : thiz(other.thiz) {}
 
 string PlayerClass::getName() {
 	if (thiz == nullptr)
@@ -805,7 +803,6 @@ bool PlayerClass::simulateStopSneaking() {
 }
 
 bool PlayerClass::simulateInteract(const BlockPos& pos, ScriptFacing face) {
-	// TODO: need dimension???
 	SimulatedPlayer* sp = asSimulatedPlayer();
 	if (!sp)
 		return {};
@@ -813,7 +810,6 @@ bool PlayerClass::simulateInteract(const BlockPos& pos, ScriptFacing face) {
 }
 
 bool PlayerClass::simulateDestory(const BlockPos& pos, ScriptFacing face) {
-	// TODO: need dimension???
 	SimulatedPlayer* sp = asSimulatedPlayer();
 	if (!sp)
 		return {};
@@ -861,3 +857,27 @@ bool PlayerClass::removeItem(int inventory_id, int count) {
 	return true;
 }
 
+class SetActorDataPacket : public Packet {
+public:
+	ActorRuntimeID rid;
+	std::vector<std::unique_ptr<DataItem>> items;
+
+	MCAPI virtual MinecraftPacketIds getId() const;
+	MCAPI virtual std::string getName() const;
+	MCAPI virtual void write(BinaryStream&) const;
+
+private:
+	MCAPI virtual StreamReadResult _read(ReadOnlyBinaryStream&);
+};
+
+bool PlayerClass::setHeadShow(const string& name) {
+	if (thiz == nullptr)
+		return {};
+	SetActorDataPacket packet;
+	packet.rid = thiz->getRuntimeID();
+	if (packet.rid.id == 0)
+		return false;
+	packet.items.emplace_back(DataItem::create(ActorDataIDs::NAMETAG, name));
+	thiz->sendNetworkPacket(packet);
+	return true;
+}

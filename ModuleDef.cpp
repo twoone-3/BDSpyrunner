@@ -1,4 +1,9 @@
 #include <Global.hpp>
+#include <EventAPI.h>
+#include <ServerAPI.h>
+#include <MC/Level.hpp>
+#include <MC/StructureSettings.hpp>
+
 #include <API/BlockAPI.h>
 #include <API/BlockEntityAPI.h>
 #include <API/CommandAPI.h>
@@ -338,8 +343,8 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("simulateStopMoving", &PlayerClass::simulateStopMoving)
 		.def("simulateStopUsingItem", &PlayerClass::simulateStopUsingItem)
 		.def("simulateStopSneaking", &PlayerClass::simulateStopSneaking)
-			
-		.def("removeItem",&PlayerClass::removeItem);
+
+		.def("removeItem", &PlayerClass::removeItem);
 
 	py::class_<EntityClass>(mc_module, "Entity")
 		.def_property("name", &EntityClass::getName, nullptr)
@@ -411,7 +416,7 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("getAllEntities", &mc::getAllEntities)
 		.def("setServerMotd", &LL::setServerMotd)
 		.def("broadcastText", &Level::broadcastText, "text"_a, "type"_a = TextType::RAW)
-		.def("broadcastTitle", &Level::broadcastTitle, "text"_a, "type"_a = TitleType::SetTitle, "fade_in_duration"_a=100, "remain_duration"_a=500, "fade_out_duration"_a=100)
+		.def("broadcastTitle", &Level::broadcastTitle, "text"_a, "type"_a = TitleType::SetTitle, "fade_in_duration"_a = 100, "remain_duration"_a = 500, "fade_out_duration"_a = 100)
 		.def("getBlock", &mc::getBlock)
 		.def("setBlock", py::overload_cast<const BlockPos&, int, const string&, int>(&mc::setBlock))
 		.def("setBlock", py::overload_cast<const BlockPos&, int, const BlockClass&>(&mc::setBlock))
@@ -421,8 +426,8 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("spawnItem", &mc::spawnItem)
 		.def("setSignBlockMessage", &mc::setSignBlockMessage)
 		.def("isSlimeChunk", &mc::IsSlimeChunk)
-		
-		.def("spawnMob", &Level::spawnMob)
+
+		.def("spawnMob", &mc::spawnMob)
 		.def("cloneMob", &mc::cloneMob)
 		.def("spawnSimulatedPlayer", &mc::spawnSimulatedPlayer)
 		.def("spawnParticle", &mc::spawnParticle)

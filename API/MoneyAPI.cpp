@@ -5,8 +5,6 @@
 #include <LoggerAPI.h>
 #include <I18nAPI.h>
 
-////////////// Helper //////////////
-
 typedef money_t (*LLMoneyGet_T)(xuid_t);
 typedef string (*LLMoneyGetHist_T)(xuid_t, int);
 typedef bool (*LLMoneyTrans_T)(xuid_t, xuid_t, money_t, string const&);
@@ -16,16 +14,14 @@ typedef bool (*LLMoneyReduce_T)(xuid_t, money_t);
 typedef void (*LLMoneyClearHist_T)(int);
 
 namespace money {
-	LLMoneyGet_T get = nullptr;
-	LLMoneySet_T set = nullptr;
-	LLMoneyAdd_T add = nullptr;
-	LLMoneyReduce_T reduce = nullptr;
-	LLMoneyTrans_T transfer = nullptr;
-	LLMoneyGetHist_T getHistory = nullptr;
-	LLMoneyClearHist_T clearHIstory = nullptr;
+LLMoneyGet_T get = nullptr;
+LLMoneySet_T set = nullptr;
+LLMoneyAdd_T add = nullptr;
+LLMoneyReduce_T reduce = nullptr;
+LLMoneyTrans_T transfer = nullptr;
+LLMoneyGetHist_T getHistory = nullptr;
+LLMoneyClearHist_T clearHIstory = nullptr;
 };
-
-////////////// Helper //////////////
 
 
 bool EconomySystem::init() {

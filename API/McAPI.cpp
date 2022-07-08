@@ -6,7 +6,13 @@
 #include <API/ItemAPI.h>
 #include <API/EventAPI.h>
 #include <API/ScoreboardAPI.h>
+#include <DynamicCommandAPI.h>
+#include <MC/Level.hpp>
+#include <MC/Scoreboard.hpp>
 #include <MC/SimulatedPlayer.hpp>
+#include <MC/Spawner.hpp>
+#include <MC/StructureTemplate.hpp>
+#include <MC/SignBlockActor.hpp>
 
 namespace mc {
 void setListener(const string& event_name, const py::function& cb) {
@@ -110,7 +116,7 @@ void spawnItem(ItemClass& item, Vec3 pos, int dim) {
 }
 
 //…Ë÷√≈∆◊”Œƒ◊÷
-void setSignBlockMessage( BlockPos pos, int dim,const string& text) {
+void setSignBlockMessage(BlockPos pos, int dim, const string& text) {
 	BlockSource* bs = Level::getBlockSource(dim);
 	if (bs == nullptr)
 		throw py::value_error("Unknown dimension ID");
@@ -136,6 +142,10 @@ int IsSlimeChunk(unsigned x, unsigned z) {
 	mt0 ^= (mt0 << 15u) & 0xEFC60000u;
 	mt0 ^= (mt0 >> 18u);
 	return !(mt0 % 10);
+}
+
+EntityClass spawnMob(const Vec3& pos, int dim, const string& type) {
+	return Level::spawnMob(pos, dim, type);
 }
 
 EntityClass cloneMob(const Vec3& pos, int dim, const EntityClass& ac) {
@@ -184,7 +194,7 @@ bool removeScoreObjective(const string& name) {
 }
 vector<ObjectiveClass> getAllScoreObjectives() {
 	vector<ObjectiveClass> res;
-	for (auto x:Global<Scoreboard>->getObjectives()) {
+	for (auto x : Global<Scoreboard>->getObjectives()) {
 		res.push_back(ObjectiveClass(const_cast<Objective*>(x)));
 	}
 	return res;

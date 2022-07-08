@@ -3,6 +3,7 @@
 #include "McAPI.h"
 #include "EntityAPI.h"
 #include "NbtAPI.h"
+#include <MC/ItemStack.hpp>
 
 ItemClass::ItemClass() : thiz(ItemStack::create()) {}
 

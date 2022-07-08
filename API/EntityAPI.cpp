@@ -7,8 +7,10 @@
 #include "ContainerAPI.h"
 #include "NbtAPI.h"
 #include <MC/ItemActor.hpp>
+#include <MC/Level.hpp>
 #include <MC/SimpleContainer.hpp>
 #include <MC/CommandUtils.hpp>
+#include <MC/Mob.hpp>
 
 EntityClass::EntityClass(Actor* a) : thiz(a) {}
 

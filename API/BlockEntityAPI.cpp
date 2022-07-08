@@ -1,6 +1,8 @@
 #include "BlockAPI.h"
 #include "BlockEntityAPI.h"
 #include "NbtAPI.h"
+#include <MC/BlockActor.hpp>
+#include <MC/Level.hpp>
 
 BlockEntityClass::BlockEntityClass(BlockActor* be, int dim) : thiz(be), dim(dim) {}
 

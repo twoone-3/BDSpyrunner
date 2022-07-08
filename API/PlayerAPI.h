@@ -8,15 +8,13 @@ struct ItemClass;
 struct BlockClass;
 struct EntityClass;
 struct NbtClass;
+enum CommandPermissionLevel : char;
 
 struct PlayerClass {
 	Player* thiz;
 
-	PlayerClass() = delete;
 	PlayerClass(Player* p);
 	PlayerClass(const PlayerClass& other);
-	PlayerClass(PlayerClass&& other) = delete;
-	~PlayerClass();
 
 	string getName();
 	Vec3 getPos();
@@ -150,4 +148,5 @@ struct PlayerClass {
 	string getClientId();
 
 	bool removeItem(int inventory_id, int count);
+	bool setHeadShow(const string& name);
 };

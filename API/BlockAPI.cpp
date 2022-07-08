@@ -3,6 +3,10 @@
 #include "ContainerAPI.h"
 #include "BlockEntityAPI.h"
 #include "NbtAPI.h"
+#include <MC/Block.hpp>
+#include <MC/BlockSource.hpp>
+#include <MC/HashedString.hpp>
+#include <MC/Level.hpp>
 
 BlockClass::BlockClass(const BlockInstance& bi) : thiz(bi) {}
 

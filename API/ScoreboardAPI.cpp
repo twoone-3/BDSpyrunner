@@ -1,12 +1,10 @@
-#include <Global.hpp>
-#include <MC/Scoreboard.hpp>
-#include <MC/Objective.hpp>
-#include <MC/Player.hpp>
 #include "ScoreboardAPI.h"
 #include "McAPI.h"
 #include "PlayerAPI.h"
+#include <MC/Scoreboard.hpp>
+#include <MC/Objective.hpp>
+#include <MC/Player.hpp>
 #include <optional>
-using namespace std;
 
 ObjectiveClass::ObjectiveClass(Objective* obj) : thiz(obj) {}
 

@@ -25,7 +25,6 @@ NbtClass::NbtClass(NbtClass&& other) noexcept
 	: thiz(move(other.thiz)), is_reference(other.is_reference) {}
 
 NbtClass::~NbtClass() {
-	// logger.warn("析构：{}", (void*)thiz.get());
 	if (is_reference)
 		thiz.release();
 }

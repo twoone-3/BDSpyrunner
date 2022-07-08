@@ -1,11 +1,6 @@
 #include <Global.hpp>
 #include "LoggerAPI.h"
 #include "PlayerAPI.h"
-//#include <iostream>
-//#include <fstream>
-//#include <sstream>
-//#include <string>
-#include <MC/Player.hpp>
 
 LoggerClass::LoggerClass(const string& title) : thiz(title) {}
 

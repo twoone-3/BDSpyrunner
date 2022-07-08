@@ -1,26 +1,17 @@
 #include <Global.hpp>
 #include "EventAPI.h"
 #include "McAPI.h"
-
 #include "BlockAPI.h"
 #include "CommandAPI.h"
 #include "ContainerAPI.h"
-#include "ItemAPI.h"
 #include "EntityAPI.h"
+#include "ItemAPI.h"
 #include "PlayerAPI.h"
 #include "ScoreboardAPI.h"
 #include <EventAPI.h>
-#include <ScheduleAPI.h>
-#include <MC/BlockSource.hpp>
 #include <MC/ActorDamageSource.hpp>
-#include <MC/MobEffectInstance.hpp>
-#include <MC/HashedString.hpp>
-#include <MC/Objective.hpp>
-#include <MC/BlockInstance.hpp>
-#include <MC/VanillaBlocks.hpp>
-#include <MC/ItemStack.hpp>
-
-#include <MC/AvailableCommandsPacket.hpp>
+#include <MC/BlockSource.hpp>
+#include <MC/Mob.hpp>
 
 using namespace std;
 

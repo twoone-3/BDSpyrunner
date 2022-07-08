@@ -1,5 +1,7 @@
 #include "ContainerAPI.h"
 #include "ItemAPI.h"
+#include <MC/Container.hpp>
+#include <MC/ItemStack.hpp>
 
 ContainerClass::ContainerClass(Container* p) : thiz(p) {}
 

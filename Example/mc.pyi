@@ -750,6 +750,9 @@ class Player:
 	def removeItem(self, slot, num):
 		pass
 
+	def setHeadShow(text):
+		pass
+
 
 class Entity:
 	name: str
