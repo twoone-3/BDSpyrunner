@@ -310,6 +310,9 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("getBlockFromViewVector", &PlayerClass::getBlockFromViewVector,
 			"includeLiquid"_a = false, "solidOnly"_a = false, "maxDistance"_a = 5.25f, "ignoreBorderBlocks"_a = true, "fullOnly"_a = false)
 
+		.def("removeItem", &PlayerClass::removeItem)
+		.def("setHeadShow", &PlayerClass::setHeadShow)
+
 		// SimulatedPlayer API
 		.def("isSimulatedPlayer", &PlayerClass::isSimulatedPlayer)
 		.def("simulateSneak", &PlayerClass::simulateSneak)
@@ -319,8 +322,8 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("simulateDestory", py::overload_cast<const BlockPos&, ScriptFacing>(&PlayerClass::simulateDestory))
 		.def("simulateDisconnect", &PlayerClass::simulateDisconnect)
 		.def("simulateInteract", py::overload_cast<>(&PlayerClass::simulateInteract))
-		.def("simulateInteract", py::overload_cast<const EntityClass&>(&PlayerClass::simulateInteract))
-		.def("simulateInteract", py::overload_cast<const BlockPos&, ScriptFacing>(&PlayerClass::simulateInteract))
+		.def("simulateInteractEntity", py::overload_cast<const EntityClass&>(&PlayerClass::simulateInteract))
+		.def("simulateInteractBlock", py::overload_cast<const BlockPos&, ScriptFacing>(&PlayerClass::simulateInteract))
 		.def("simulateJump", &PlayerClass::simulateJump)
 		.def("simulateLocalMove", &PlayerClass::simulateLocalMove, "target"_a, "speed"_a = 1.0f)
 		.def("simulateWorldMove", &PlayerClass::simulateWorldMove, "target"_a, "speed"_a = 1.0f)
@@ -330,22 +333,21 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("simulateLookAt", py::overload_cast<const BlockPos&>(&PlayerClass::simulateLookAt))
 		.def("simulateSetBodyRotation", &PlayerClass::simulateSetBodyRotation)
 		.def("simulateNavigateTo", py::overload_cast<vector<Vec3>, float>(&PlayerClass::simulateNavigateTo), "path"_a, "speed"_a = 1.0f)
-		.def("simulateNavigateTo", py::overload_cast<const Vec3&, float>(&PlayerClass::simulateNavigateTo), "poa"_a, "speed"_a = 1.0f)
+		.def("simulateNavigateTo", py::overload_cast<const Vec3&, float>(&PlayerClass::simulateNavigateTo), "pos"_a, "speed"_a = 1.0f)
 		.def("simulateNavigateTo", py::overload_cast<const EntityClass&, float>(&PlayerClass::simulateNavigateTo), "target"_a, "speed"_a = 1.0f)
 		.def("simulateUseItem", py::overload_cast<>(&PlayerClass::simulateUseItem))
-		.def("simulateUseItem", py::overload_cast<int>(&PlayerClass::simulateUseItem))
-		.def("simulateUseItem", py::overload_cast<const ItemClass&>(&PlayerClass::simulateUseItem))
-		.def("simulateUseItem", py::overload_cast<const ItemClass&, const BlockPos&, ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem),
+		.def("simulateUseItem2", py::overload_cast<int>(&PlayerClass::simulateUseItem))
+		.def("simulateUseItem3", py::overload_cast<const ItemClass&>(&PlayerClass::simulateUseItem))
+		.def("simulateUseItem4", py::overload_cast<const ItemClass&, const BlockPos&, ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem),
 			"item"_a, "pos"_a, "face"_a, "relativePos"_a = Vec3(0.5, 0.5, 0.5))
-		.def("simulateUseItem", py::overload_cast<int, const BlockPos&, ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem),
+		.def("simulateUseItem5", py::overload_cast<int, const BlockPos&, ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem),
 			"slot"_a, "pos"_a, "face"_a, "relativePos"_a = Vec3(0.5, 0.5, 0.5))
 		.def("simulateStopDestroyingBlock", &PlayerClass::simulateStopDestroyingBlock)
 		.def("simulateStopInteracting", &PlayerClass::simulateStopInteracting)
 		.def("simulateStopMoving", &PlayerClass::simulateStopMoving)
 		.def("simulateStopUsingItem", &PlayerClass::simulateStopUsingItem)
-		.def("simulateStopSneaking", &PlayerClass::simulateStopSneaking)
+		.def("simulateStopSneaking", &PlayerClass::simulateStopSneaking);
 
-		.def("removeItem", &PlayerClass::removeItem);
 
 	py::class_<EntityClass>(mc_module, "Entity")
 		.def_property("name", &EntityClass::getName, nullptr)
@@ -396,7 +398,7 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def_property("name", &ObjectiveClass::getName, nullptr)
 		.def_property("display_name", &ObjectiveClass::getDisplayName, nullptr)
 
-		.def("setDisplay", &ObjectiveClass::setDisplay)
+		.def("setDisplay", &ObjectiveClass::setDisplay, "slot"_a, "sort"_a=0)
 		.def("setScore", &ObjectiveClass::setScore)
 		.def("addScore", &ObjectiveClass::addScore)
 		.def("reduceScore", &ObjectiveClass::reduceScore)

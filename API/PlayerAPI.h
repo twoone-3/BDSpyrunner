@@ -147,6 +147,6 @@ struct PlayerClass {
 	string getOs();
 	string getClientId();
 
-	bool removeItem(int inventory_id, int count);
+	bool removeItem(int slot, int count);
 	bool setHeadShow(const string& name);
 };

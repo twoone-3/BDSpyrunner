@@ -723,6 +723,12 @@ class Player:
 	) -> Block:
 		pass
 
+	def removeItem(self, slot, num) -> bool:
+		pass
+
+	def setHeadShow(self, text) -> bool:
+		pass
+
 	# SimulatedPlayer API
 	def isSimulatedPlayer(self) -> bool:
 		pass
@@ -742,28 +748,52 @@ class Player:
 	def simulateInteract(self) -> bool:
 		pass
 
+	def simulateInteractEntity(self, target: Entity) -> bool:
+		pass
+
+	def simulateInteractBlock(self, pos, face: ScriptFacing) -> bool:
+		pass
+
 	def simulateJump(self) -> bool:
 		pass
 
-	def simulateLocalMove(self) -> bool:
+	def simulateLocalMove(self, target, speed=1.0) -> bool:
 		pass
 
-	def simulateWorldMove(self) -> bool:
+	def simulateWorldMove(self, target, speed=1.0) -> bool:
 		pass
 
-	def simulateMoveTo(self) -> bool:
+	def simulateMoveTo(self, target, speed=1.0) -> bool:
 		pass
 
-	def simulateLookAt(self) -> bool:
+	def simulateLookAt(self, target) -> bool:
 		pass
 
-	def simulateSetBodyRotation(self) -> bool:
+	def simulateSetBodyRotation(self, rotation: float) -> bool:
 		pass
 
-	def simulateNavigateTo(self) -> bool:
+	def simulateNavigateTo(
+	    self, path_or_target: list[Vec3] or Entity or Vec3, speed=1.0
+	) -> bool:
 		pass
 
 	def simulateUseItem(self) -> bool:
+		pass
+
+	def simulateUseItem2(self, slot) -> bool:
+		pass
+
+	def simulateUseItem3(self, item) -> bool:
+		pass
+
+	def simulateUseItem4(
+	    self, item, pos, face, relativePos=Vec3(0.5, 0.5, 0.5)
+	) -> bool:
+		pass
+
+	def simulateUseItem5(
+	    self, slot, pos, face, relativePos=Vec3(0.5, 0.5, 0.5)
+	) -> bool:
 		pass
 
 	def simulateStopDestroyingBlock(self) -> bool:
@@ -779,12 +809,6 @@ class Player:
 		pass
 
 	def simulateStopSneaking(self) -> bool:
-		pass
-
-	def removeItem(self, slot, num) -> bool:
-		pass
-
-	def setHeadShow(self, text) -> bool:
 		pass
 
 
@@ -803,67 +827,74 @@ class Entity:
 	direction: Vec2
 	unique_id: str
 
-	def teleport(self) -> bool:
+	def teleport(self, pos, dim) -> bool:
 		pass
 
 	def kill(self) -> bool:
 		pass
 
-	def hurt(self) -> bool:
+	def hurt(self, damage) -> bool:
 		pass
 
-	def setOnFire(self) -> bool:
+	def setOnFire(self, value) -> bool:
 		pass
 
 	def isPlayer(self) -> bool:
 		pass
 
-	def toPlayer(self) -> bool:
+	def toPlayer(self) -> Player:
 		pass
 
 	def isItemEntity(self) -> bool:
 		pass
 
-	def toItem(self) -> bool:
+	def toItem(self) -> Item:
 		pass
 
-	def getBlockStandingOn(self) -> bool:
+	def getBlockStandingOn(self) -> Block:
 		pass
 
-	def getArmor(self) -> bool:
+	def getArmor(self) -> Container:
 		pass
 
 	def hasContainer(self) -> bool:
 		pass
 
-	def getContainer(self) -> bool:
+	def getContainer(self) -> Container:
 		pass
 
 	def refreshItems(self) -> bool:
 		pass
 
-	def setNbt(self) -> bool:
+	def setNbt(self, nbt) -> bool:
 		pass
 
-	def getNbt(self) -> bool:
+	def getNbt(self) -> NBT:
 		pass
 
-	def addTag(self) -> bool:
+	def addTag(self, tag) -> bool:
 		pass
 
-	def removeTag(self) -> bool:
+	def removeTag(self, tag) -> bool:
 		pass
 
-	def hasTag(self) -> bool:
+	def hasTag(self, tag) -> bool:
 		pass
 
-	def getAllTags(self) -> bool:
+	def getAllTags(self) -> list[str]:
 		pass
 
-	def getEntityFromViewVector(self) -> bool:
+	def getEntityFromViewVector(self, max_distance=5.25) -> Entity:
 		pass
 
-	def getBlockFromViewVector(self) -> bool:
+	def getBlockFromViewVector(
+	    self,
+	    includeLiquid=False,
+	    solidOnly=False,
+	    maxDistance=5.25,
+	    ignoreBorderBlocks=True,
+	    fullOnly=False,
+	) -> Block:
 		pass
 
 
@@ -871,13 +902,13 @@ class BlockEntity:
 	pos: Vec3
 	type: str
 
-	def setNbt(self) -> bool:
+	def setNbt(self, nbt) -> bool:
 		pass
 
-	def getNbt(self) -> bool:
+	def getNbt(self) -> NBT:
 		pass
 
-	def getBlock(self) -> bool:
+	def getBlock(self) -> Block:
 		pass
 
 
@@ -885,22 +916,22 @@ class Objective:
 	name: str
 	display_name: str
 
-	def setDisplay(self) -> bool:
+	def setDisplay(self, slot: str, sort=0) -> bool:
 		pass
 
-	def setScore(self) -> bool:
+	def setScore(self, id, score) -> bool:
 		pass
 
-	def addScore(self) -> bool:
+	def addScore(self, id, score) -> bool:
 		pass
 
-	def reduceScore(self) -> bool:
+	def reduceScore(self, id, score) -> bool:
 		pass
 
-	def deleteScore(self) -> bool:
+	def deleteScore(self, id) -> bool:
 		pass
 
-	def getScore(self) -> bool:
+	def getScore(self, id) -> bool:
 		pass
 
 

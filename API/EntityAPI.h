@@ -2,10 +2,11 @@
 #include <Global.hpp>
 
 class Actor;
-struct ContainerClass;
-struct PlayerClass;
 struct BlockClass;
+struct ContainerClass;
+struct ItemClass;
 struct NBTClass;
+struct PlayerClass;
 struct EntityClass {
 	Actor* thiz;
 
@@ -33,7 +34,7 @@ struct EntityClass {
 	bool isPlayer();
 	PlayerClass toPlayer();
 	bool isItemEntity();
-	EntityClass toItem();
+	ItemClass toItem();
 	BlockClass getBlockStandingOn();
 	ContainerClass getArmor();
 	bool hasContainer();

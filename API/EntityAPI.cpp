@@ -137,15 +137,12 @@ bool EntityClass::isItemEntity() {
 	return thiz->isItemActor();
 }
 
-EntityClass EntityClass::toItem() {
+ItemClass EntityClass::toItem() {
 	if (thiz == nullptr)
 		return nullptr;
 	if (!thiz->isItemActor())
 		return nullptr;
-	auto it = (ItemActor*)thiz;
-	if (!it)
-		return nullptr;
-	return reinterpret_cast<Actor*>(it->getItemStack());
+	return reinterpret_cast<ItemActor*>(thiz)->getItemStack();
 }
 
 BlockClass EntityClass::getBlockStandingOn() {

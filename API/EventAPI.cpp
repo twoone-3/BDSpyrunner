@@ -18,7 +18,7 @@ using namespace std;
 class Callbacker {
 public:
 	Callbacker(EventCode t) : type_(t), arg_() {}
-	//事件回调
+
 	bool callback() {
 		bool pass = true;
 		arg_.inc_ref(); // TODO: 为什么需要增加引用计数？
