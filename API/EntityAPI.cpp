@@ -5,7 +5,7 @@
 #include "PlayerAPI.h"
 #include "McAPI.h"
 #include "ContainerAPI.h"
-#include "NbtAPI.h"
+#include "NBTAPI.h"
 #include <MC/ItemActor.hpp>
 #include <MC/Level.hpp>
 #include <MC/SimpleContainer.hpp>
@@ -178,13 +178,13 @@ bool EntityClass::refreshItems() {
 	return reinterpret_cast<Mob*>(thiz)->refreshInventory();
 }
 
-NbtClass EntityClass::getNbt() {
+NBTClass EntityClass::getNbt() {
 	if (thiz == nullptr)
 		return nullptr;
 	return thiz->getNbt();
 }
 
-bool EntityClass::setNbt(const NbtClass& nbt) {
+bool EntityClass::setNbt(const NBTClass& nbt) {
 	if (thiz == nullptr)
 		return false;
 	if (!nbt.thiz)

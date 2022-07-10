@@ -3,7 +3,7 @@
 
 class BlockActor;
 struct BlockClass;
-struct NbtClass;
+struct NBTClass;
 struct BlockEntityClass {
 	BlockActor* thiz;
 	int dim;
@@ -13,7 +13,7 @@ struct BlockEntityClass {
 	BlockPos getPos();
 	int getType();
 
-	NbtClass getNbt();
-	bool setNbt(const NbtClass& nbt);
+	NBTClass getNbt();
+	bool setNbt(const NBTClass& nbt);
 	BlockClass getBlock();
 };

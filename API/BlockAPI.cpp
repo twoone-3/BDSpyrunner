@@ -2,7 +2,7 @@
 #include "McAPI.h"
 #include "ContainerAPI.h"
 #include "BlockEntityAPI.h"
-#include "NbtAPI.h"
+#include "NBTAPI.h"
 #include <MC/Block.hpp>
 #include <MC/BlockSource.hpp>
 #include <MC/HashedString.hpp>
@@ -38,11 +38,11 @@ unsigned short BlockClass::getTileData() {
 	return thiz.getBlock()->getTileData();
 }
 
-NbtClass BlockClass::getNbt() {
+NBTClass BlockClass::getNbt() {
 	return thiz.getBlock()->getNbt();
 }
 
-bool BlockClass::setNbt(const NbtClass& nbt) {
+bool BlockClass::setNbt(const NBTClass& nbt) {
 	return Level::setBlock(getPos(), getDim(), nbt.thiz->asCompoundTag());
 }
 

@@ -1,8 +1,6 @@
 #include <Global.hpp>
 #include <EventAPI.h>
 #include <ServerAPI.h>
-#include <MC/Level.hpp>
-#include <MC/StructureSettings.hpp>
 
 #include <API/BlockAPI.h>
 #include <API/BlockEntityAPI.h>
@@ -13,17 +11,17 @@
 #include <API/ContainerAPI.h>
 #include <API/EntityAPI.h>
 #include <API/MoneyAPI.h>
-#include <API/NbtAPI.h>
+#include <API/NBTAPI.h>
 #include <API/LoggerAPI.h>
 #include <API/PlayerAPI.h>
 #include <API/ScoreboardAPI.h>
 #include <API/McAPI.h>
 
-// clang-format off
+#include <MC/Level.hpp>
 
+// clang-format off
 #define DEF_ENUM(name, type) { auto entries = magic_enum::enum_entries<type>(); auto e = py::enum_<type>(mc_module, name); for (auto& [val, n] : entries) { e.value(n.data(), val); } }
 #define DEF_ENUM_SIMPLE(type) DEF_ENUM(#type, type)
-
 // clang-format on
 
 PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
@@ -40,6 +38,9 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 	DEF_ENUM_SIMPLE(CommandParameterOption);
 	DEF_ENUM_SIMPLE(GameType);
 	DEF_ENUM_SIMPLE(SnbtFormat);
+	DEF_ENUM_SIMPLE(ObjectiveSortOrder);
+	DEF_ENUM_SIMPLE(BossEventColour);
+	DEF_ENUM_SIMPLE(ScriptFacing);
 	DEF_ENUM("TagType", Tag::Type);
 
 #pragma endregion
@@ -175,36 +176,36 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("__repr__", [](const DynamicCommand::Result& thiz) { return py::str(convertResult(thiz)); })
 		.def("toObject", [](const DynamicCommand::Result& thiz) { return convertResult(thiz); });
 
-	py::class_<NbtClass>(mc_module, "NBT")
-		.def_property("type", &NbtClass::getType, nullptr)
-		.def_static("newByte", &NbtClass::newByte)
-		.def_static("newShort", &NbtClass::newShort)
-		.def_static("newInt", &NbtClass::newInt)
-		.def_static("newLong", &NbtClass::newInt64)
-		.def_static("newFloat", &NbtClass::newFloat)
-		.def_static("newDouble", &NbtClass::newDouble)
-		.def_static("newByteArray", &NbtClass::newByteArray)
-		.def_static("newString", &NbtClass::newString)
-		.def_static("newIntArray", &NbtClass::newIntArray)
-		.def_static("newList", &NbtClass::newList)
-		.def_static("newCompound", &NbtClass::newCompound)
-		.def_static("fromSNBT", &NbtClass::fromSNBT)
-		.def_static("fromBinary", &NbtClass::fromBinary)
+	py::class_<NBTClass>(mc_module, "NBT")
+		.def_property("type", &NBTClass::getType, nullptr)
+		.def_static("newByte", &NBTClass::newByte)
+		.def_static("newShort", &NBTClass::newShort)
+		.def_static("newInt", &NBTClass::newInt)
+		.def_static("newLong", &NBTClass::newInt64)
+		.def_static("newFloat", &NBTClass::newFloat)
+		.def_static("newDouble", &NBTClass::newDouble)
+		.def_static("newByteArray", &NBTClass::newByteArray)
+		.def_static("newString", &NBTClass::newString)
+		.def_static("newIntArray", &NBTClass::newIntArray)
+		.def_static("newList", &NBTClass::newList)
+		.def_static("newCompound", &NBTClass::newCompound)
+		.def_static("fromSNBT", &NBTClass::fromSNBT)
+		.def_static("fromBinary", &NBTClass::fromBinary)
 
-		.def("__getitem__", py::overload_cast<int>(&NbtClass::__getitem__))
-		.def("__getitem__", py::overload_cast<const string&>(&NbtClass::__getitem__))
-		.def("__setitem__", &NbtClass::__setitem__)
-		.def("asByte", &NbtClass::asByte)
-		.def("asShort", &NbtClass::asShort)
-		.def("asInt", &NbtClass::asInt)
-		.def("asInt64", &NbtClass::asInt64)
-		.def("asFloat", &NbtClass::asFloat)
-		.def("asDouble", &NbtClass::asDouble)
-		.def("asString", &NbtClass::asString)
-		.def("toBinary", &NbtClass::toBinary)
-		.def("toJson", &NbtClass::toJson, "indent"_a = 4)
-		.def("toSNBT", &NbtClass::toSNBT, "indent"_a = 4, "format"_a = SnbtFormat::PartialNewLine)
-		.def("append", &NbtClass::append);
+		.def("__getitem__", py::overload_cast<int>(&NBTClass::__getitem__))
+		.def("__getitem__", py::overload_cast<const string&>(&NBTClass::__getitem__))
+		.def("__setitem__", &NBTClass::__setitem__)
+		.def("asByte", &NBTClass::asByte)
+		.def("asShort", &NBTClass::asShort)
+		.def("asInt", &NBTClass::asInt)
+		.def("asInt64", &NBTClass::asInt64)
+		.def("asFloat", &NBTClass::asFloat)
+		.def("asDouble", &NBTClass::asDouble)
+		.def("asString", &NBTClass::asString)
+		.def("toBinary", &NBTClass::toBinary)
+		.def("toJson", &NBTClass::toJson, "indent"_a = 4)
+		.def("toSNBT", &NBTClass::toSNBT, "indent"_a = 4, "format"_a = SnbtFormat::PartialNewLine)
+		.def("append", &NBTClass::append);
 
 	py::class_<LoggerClass>(mc_module, "Logger")
 		.def(py::init<string>(), "title"_a)
@@ -305,7 +306,7 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("removeTag", &PlayerClass::removeTag)
 		.def("hasTag", &PlayerClass::hasTag)
 		.def("getAllTags", &PlayerClass::getAllTags)
-		.def("getEntityFromViewVector", &PlayerClass::getEntityFromViewVector)
+		.def("getEntityFromViewVector", &PlayerClass::getEntityFromViewVector, "max_distance"_a = 5.25f)
 		.def("getBlockFromViewVector", &PlayerClass::getBlockFromViewVector,
 			"includeLiquid"_a = false, "solidOnly"_a = false, "maxDistance"_a = 5.25f, "ignoreBorderBlocks"_a = true, "fullOnly"_a = false)
 
@@ -420,8 +421,8 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("getBlock", &mc::getBlock)
 		.def("setBlock", py::overload_cast<const BlockPos&, int, const string&, int>(&mc::setBlock))
 		.def("setBlock", py::overload_cast<const BlockPos&, int, const BlockClass&>(&mc::setBlock))
-		.def("getStructure", &mc::getStructure)
-		.def("setStructure", &mc::setStructure)
+		.def("getStructure", &mc::getStructure, "pos1"_a, "pos2"_a, "dim"_a, "ignore_entities"_a = true, "ignore_blocks"_a = false)
+		.def("setStructure", &mc::setStructure, "nbt"_a, "pos"_a, "dim"_a, "mir"_a = None_15, "rot"_a = None_14)
 		.def("explode", &mc::explode)
 		.def("spawnItem", &mc::spawnItem)
 		.def("setSignBlockMessage", &mc::setSignBlockMessage)

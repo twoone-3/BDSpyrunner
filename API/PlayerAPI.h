@@ -7,7 +7,7 @@ struct ContainerClass;
 struct ItemClass;
 struct BlockClass;
 struct EntityClass;
-struct NbtClass;
+struct NBTClass;
 enum CommandPermissionLevel : char;
 
 struct PlayerClass {
@@ -93,8 +93,8 @@ struct PlayerClass {
 	py::object getExtraData(string key);
 	bool delExtraData(string key);
 
-	NbtClass getNbt();
-	bool setNbt(const NbtClass& nbt);
+	NBTClass getNbt();
+	bool setNbt(const NBTClass& nbt);
 	bool addTag(const string& tag);
 	bool hasTag(const string& tag);
 	bool removeTag(const string& tag);

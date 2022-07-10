@@ -2,7 +2,7 @@
 #include "ItemAPI.h"
 #include "McAPI.h"
 #include "EntityAPI.h"
-#include "NbtAPI.h"
+#include "NBTAPI.h"
 #include <MC/ItemStack.hpp>
 
 ItemClass::ItemClass() : thiz(ItemStack::create()) {}
@@ -78,12 +78,12 @@ bool ItemClass::setLore(const vector<string>& lores) {
 	return thiz->setLore(lores);
 }
 
-NbtClass ItemClass::getNbt() {
+NBTClass ItemClass::getNbt() {
 	if (!thiz)
 		throw std::invalid_argument("invalid item");
 	return thiz->getNbt();
 }
 
-bool ItemClass::setNbt(const NbtClass& nbt) {
+bool ItemClass::setNbt(const NBTClass& nbt) {
 	return thiz->setNbt(nbt.thiz->asCompoundTag());
 }

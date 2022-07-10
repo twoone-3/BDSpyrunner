@@ -1,5 +1,5 @@
 #include "CommandOriginAPI.h"
-#include "NbtAPI.h"
+#include "NBTAPI.h"
 #include "EntityAPI.h"
 #include "BlockAPI.h"
 #include "EntityAPI.h"
@@ -7,7 +7,7 @@
 #include "PlayerAPI.h"
 #include "McAPI.h"
 #include "ContainerAPI.h"
-#include "NbtAPI.h"
+#include "NBTAPI.h"
 #include <MC/Command.hpp>
 #include <MC/CommandOrigin.hpp>
 #include <MC/Dimension.hpp>
@@ -46,7 +46,7 @@ PlayerClass CommandOriginClass::getPlayer() {
 	return reinterpret_cast<Player*>(thiz->getPlayer());
 }
 
-NbtClass CommandOriginClass::getNbt() {
+NBTClass CommandOriginClass::getNbt() {
 	return std::make_unique<CompoundTag>(thiz->serialize());
 }
 

@@ -4,7 +4,7 @@
 #include "PlayerAPI.h"
 #include "ContainerAPI.h"
 #include "ItemAPI.h"
-#include "NbtAPI.h"
+#include "NBTAPI.h"
 #include <PlayerInfoAPI.h>
 #include <LLAPI.h>
 #include <MC/BlockSource.hpp>
@@ -520,13 +520,13 @@ bool PlayerClass::delExtraData(string key) {
 	return player_data.erase(thiz->getRealName() + "-" + key);
 }
 
-NbtClass PlayerClass::getNbt() {
+NBTClass PlayerClass::getNbt() {
 	if (thiz == nullptr)
 		return {};
 	return thiz->getNbt();
 }
 
-bool PlayerClass::setNbt(const NbtClass& nbt) {
+bool PlayerClass::setNbt(const NBTClass& nbt) {
 	if (thiz == nullptr)
 		return {};
 	if (!nbt.thiz)

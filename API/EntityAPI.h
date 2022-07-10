@@ -5,7 +5,7 @@ class Actor;
 struct ContainerClass;
 struct PlayerClass;
 struct BlockClass;
-struct NbtClass;
+struct NBTClass;
 struct EntityClass {
 	Actor* thiz;
 
@@ -40,8 +40,8 @@ struct EntityClass {
 	ContainerClass getContainer();
 	bool refreshItems();
 
-	NbtClass getNbt();
-	bool setNbt(const NbtClass& nbt);
+	NBTClass getNbt();
+	bool setNbt(const NBTClass& nbt);
 	bool addTag(const string& tag);
 	bool removeTag(const string& tag);
 	bool hasTag(const string& tag);

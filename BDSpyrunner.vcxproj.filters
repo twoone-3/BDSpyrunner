@@ -51,7 +51,7 @@
     <ClCompile Include="API\McAPI.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\NbtAPI.cpp">
+    <ClCompile Include="API\NBTAPI.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="API\PlayerAPI.cpp">
@@ -107,7 +107,7 @@
     <ClInclude Include="API\McAPI.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\NbtAPI.h">
+    <ClInclude Include="API\NBTAPI.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="API\PlayerAPI.h">

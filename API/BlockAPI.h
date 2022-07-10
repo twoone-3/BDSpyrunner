@@ -5,7 +5,7 @@
 class Block;
 struct ContainerClass;
 struct BlockEntityClass;
-struct NbtClass;
+struct NBTClass;
 struct BlockClass {
 	BlockInstance thiz;
 
@@ -20,8 +20,8 @@ struct BlockClass {
 	int getDim();
 	unsigned short getTileData();
 
-	NbtClass getNbt();
-	bool setNbt(const NbtClass&);
+	NBTClass getNbt();
+	bool setNbt(const NBTClass&);
 	bool hasContainer();
 	ContainerClass getContainer();
 	bool hasBlockEntity();

@@ -1,4 +1,7 @@
 # pyr的代码补全文件
+# Copyright (c) 2022 twoone3
+# All rights reserved.
+# last change: 2022.7.10
 
 from enum import Enum
 
@@ -101,6 +104,31 @@ class SnbtFormat(Enum):
 	Minimize = 2
 
 
+class ObjectiveSortOrder(Enum):
+	Ascending = 0,
+	Descending = 1
+
+
+class BossEventColour(Enum):
+	Grey = 0,
+	Blue = 1,
+	Red = 2,
+	Green = 3,
+	Yellow = 4,
+	Purple = 5,
+	White = 6
+
+
+class ScriptFacing(Enum):
+	Unknown = -1,
+	Down = 0,
+	Up = 1,
+	North = 2,
+	South = 3,
+	West = 4,
+	East = 5,
+
+
 class TagType(Enum):
 	End = 0
 	Byte = 1
@@ -162,22 +190,22 @@ class Block:
 	def setNbt(self, nbt):
 		pass
 
-	def getNbt(self) -> "NBT":
+	def getNbt(self) -> NBT:
 		pass
 
-	def hasContainer(self):
+	def hasContainer(self) -> bool:
 		pass
 
-	def getContainer(self):
+	def getContainer(self) -> Container:
 		pass
 
-	def hasBlockEntity(self):
+	def hasBlockEntity(self) -> bool:
 		pass
 
-	def getBlockEntity(self):
+	def getBlockEntity(self) -> BlockEntity:
 		pass
 
-	def removeBlockEntity(self):
+	def removeBlockEntity(self) -> bool:
 		pass
 
 
@@ -185,31 +213,31 @@ class Container:
 	size: int
 	type: str
 
-	def addItem(self):
+	def addItem(self, item) -> bool:
 		pass
 
-	def addItemToFirstEmptySlot(self):
+	def addItemToFirstEmptySlot(self, item) -> bool:
 		pass
 
-	def hasRoomFor(self):
+	def hasRoomFor(self, item) -> bool:
 		pass
 
-	def removeItem(self):
+	def removeItem(self, slot, number) -> bool:
 		pass
 
-	def getItem(self):
+	def getItem(self, slot) -> Item:
 		pass
 
-	def setItem(self):
+	def setItem(self, slot, item) -> bool:
 		pass
 
-	def getAllItems(self):
+	def getAllItems(self) -> list[Item]:
 		pass
 
-	def removeAllItems(self):
+	def removeAllItems(self) -> bool:
 		pass
 
-	def isEmpty(self):
+	def isEmpty(self) -> bool:
 		pass
 
 
@@ -223,41 +251,41 @@ class Item:
 	def __init__(self):
 		pass
 
-	def set(self):
+	def set(self, other) -> bool:
 		pass
 
-	def clone(self):
+	def clone(self) -> Item:
 		pass
 
-	def isNull(self):
+	def isNull(self) -> bool:
 		pass
 
-	def setNull(self):
+	def setNull(self) -> bool:
 		pass
 
-	def setAux(self):
+	def setAux(self, aux) -> bool:
 		pass
 
-	def setLore(self):
+	def setLore(self, lore: list[str]) -> bool:
 		pass
 
-	def setNbt(self, nbt):
+	def setNbt(self, nbt) -> bool:
 		pass
 
-	def getNbt(self):
+	def getNbt(self) -> NBT:
 		pass
 
 
 class Command:
 	name: str
 
-	def __init__(self, cmd: str, desc: str, level) -> None:
+	def __init__(self, cmd: str, desc: str, level):
 		pass
 
-	def setEnum(self):
+	def setEnum(self, name: str, enums: list[str]) -> str:
 		pass
 
-	def setAlias(self):
+	def setAlias(self, alias: str) -> bool:
 		pass
 
 	def mandatory2(
@@ -267,7 +295,7 @@ class Command:
 	    description: str = "",
 	    identifier: str = "",
 	    option=CommandParameterOption.None_
-	):
+	) -> int:
 		pass
 
 	def mandatory(
@@ -276,7 +304,7 @@ class Command:
 	    type: ParameterType,
 	    description: str = "",
 	    option=CommandParameterOption.None_
-	):
+	) -> int:
 		pass
 
 	def optional2(
@@ -286,7 +314,7 @@ class Command:
 	    description: str = "",
 	    identifier: str = "",
 	    option=CommandParameterOption.None_
-	):
+	) -> int:
 		pass
 
 	def optional(
@@ -295,31 +323,31 @@ class Command:
 	    type: ParameterType,
 	    description: str = "",
 	    option=CommandParameterOption.None_
-	):
+	) -> int:
 		pass
 
-	def setSoftEnum(self, name, enums):
+	def setSoftEnum(self, name, enums: list[str]) -> bool:
 		pass
 
-	def addSoftEnumValues(self):
+	def addSoftEnumValues(self, name, values: list[str]) -> bool:
 		pass
 
-	def removeSoftEnumValues(self):
+	def removeSoftEnumValues(self, name, values: list[str]) -> bool:
 		pass
 
-	def getSoftEnumValues(self):
+	def getSoftEnumValues(self, name) -> list[str]:
 		pass
 
-	def getSoftEnumNames(self):
+	def getSoftEnumNames(self) -> list[str]:
 		pass
 
-	def overload(self, value=None):
+	def overload(self, value=None) -> bool:
 		pass
 
-	def setCallback(self, callback):
+	def setCallback(self, callback) -> bool:
 		pass
 
-	def setup(self):
+	def setup(self) -> bool:
 		pass
 
 
@@ -330,13 +358,13 @@ class CommandOrigin:
 	pos: Vec3
 	blockpos: BlockPos
 	dim: int
-	entity: "Entity"
-	player: "Player"
+	entity: Entity
+	player: Player
 
-	def getNbt(self):
+	def getNbt(self) -> NBT:
 		pass
 
-	def toString(self):
+	def toString(self) -> str:
 		pass
 
 
@@ -344,16 +372,16 @@ class CommandOutput:
 	empty: bool
 	success_count: int
 
-	def success(self, msg=None):
+	def success(self, msg=None) -> bool:
 		pass
 
-	def error(self):
+	def error(self, msg) -> bool:
 		pass
 
-	def addMessage(self):
+	def addMessage(self, msg) -> bool:
 		pass
 
-	def toString(self):
+	def toString(self) -> str:
 		pass
 
 
@@ -370,91 +398,91 @@ class NBT:
 	type: TagType
 
 	@staticmethod
-	def newByte() -> "NBT":
+	def newByte(value: int) -> NBT:
 		pass
 
 	@staticmethod
-	def newShort() -> "NBT":
+	def newShort(value: int) -> NBT:
 		pass
 
 	@staticmethod
-	def newInt() -> "NBT":
+	def newInt(value: int) -> NBT:
 		pass
 
 	@staticmethod
-	def newLong() -> "NBT":
+	def newLong(value: int) -> NBT:
 		pass
 
 	@staticmethod
-	def newFloat() -> "NBT":
+	def newFloat(value: float) -> NBT:
 		pass
 
 	@staticmethod
-	def newDouble() -> "NBT":
+	def newDouble(value: float) -> NBT:
 		pass
 
 	@staticmethod
-	def newByteArray() -> "NBT":
+	def newByteArray(value: bytearray) -> NBT:
 		pass
 
 	@staticmethod
-	def newString() -> "NBT":
+	def newString(value: str) -> NBT:
 		pass
 
 	@staticmethod
-	def newIntArray() -> "NBT":
+	def newIntArray() -> NBT:
 		pass
 
 	@staticmethod
-	def newList() -> "NBT":
+	def newList() -> NBT:
 		pass
 
 	@staticmethod
-	def newCompound() -> "NBT":
+	def newCompound() -> NBT:
 		pass
 
 	@staticmethod
-	def fromSNBT(snbt) -> "NBT":
+	def fromSNBT(snbt: str) -> NBT:
 		pass
 
 	@staticmethod
-	def fromBinary() -> "NBT":
+	def fromBinary(bin: bytes) -> NBT:
 		pass
 
-	def __getitem__(self, key):
+	def __getitem__(self, key) -> NBT:
 		pass
 
 	def __setitem__(self, key, value):
 		pass
 
-	def asByte(self):
+	def asByte(self) -> int:
 		pass
 
-	def asShort(self):
+	def asShort(self) -> int:
 		pass
 
-	def asInt(self):
+	def asInt(self) -> int:
 		pass
 
-	def asInt64(self):
+	def asInt64(self) -> int:
 		pass
 
-	def asFloat(self):
+	def asFloat(self) -> float:
 		pass
 
-	def asDouble(self):
+	def asDouble(self) -> float:
 		pass
 
-	def toBinary(self):
+	def toBinary(self) -> bytes:
 		pass
 
-	def toJson(self, indent=4):
+	def toJson(self, indent=4) -> str:
 		pass
 
-	def toSNBT(self, indent=4, format=SnbtFormat.PartialNewLine):
+	def toSNBT(self, indent=4, format=SnbtFormat.PartialNewLine) -> str:
 		pass
 
-	def append(self):
+	def append(self, value: NBT):
 		pass
 
 
@@ -481,10 +509,10 @@ class Logger:
 	def setTitle(self, title: str):
 		pass
 
-	def setFile(self, file: str):
+	def setFile(self, file: str) -> bool:
 		pass
 
-	def setPlayer(self, player):
+	def setPlayer(self, playe: Player) -> bool:
 		pass
 
 
@@ -514,169 +542,175 @@ class Player:
 	os: str
 	clinet_id: str
 
-	def isOP(self):
+	def isOP(self) -> bool:
 		pass
 
-	def setPermLevel(self):
+	def setPermLevel(self, perm: CommandPermissionLevel) -> bool:
 		pass
 
-	def setGameMode(self):
+	def setGameMode(self, mode: GameType) -> bool:
 		pass
 
-	def runcmd(self):
+	def runcmd(self, cmd) -> bool:
 		pass
 
-	def teleport(self):
+	def teleport(self, pos, dim) -> bool:
 		pass
 
-	def kill(self):
+	def kill(self) -> bool:
 		pass
 
-	def kick(self):
+	def kick(self, msg) -> bool:
 		pass
 
-	def tell(self):
+	def sendText(self, msg, type=TextType.RAW) -> bool:
 		pass
 
-	def talkAs(self):
+	def talkAs(self, msg) -> bool:
 		pass
 
-	def rename(self):
+	def rename(self, name) -> bool:
 		pass
 
-	def setOnFire(self):
+	def setOnFire(self, time: int) -> bool:
 		pass
 
-	def transServer(self):
+	def transServer(self, ip: str, port=19132) -> bool:
 		pass
 
-	def crash(self):
+	def crash(self) -> bool:
 		pass
 
-	def hurt(self):
+	def hurt(self, damage) -> bool:
 		pass
 
-	def refreshChunks(self):
+	def refreshChunks(self) -> bool:
 		pass
 
-	def giveItem(self):
+	def giveItem(self, item) -> bool:
 		pass
 
-	def clearItem(self):
+	def clearItem(self, type: str) -> bool:
 		pass
 
-	def isSprinting(self):
+	def isSprinting(self) -> bool:
 		pass
 
-	def setSprinting(self):
+	def setSprinting(self, value) -> bool:
 		pass
 
-	def getBlockStandingOn(self):
+	def getBlockStandingOn(self) -> Block:
 		pass
 
-	def getHand(self):
+	def getHand(self) -> Item:
 		pass
 
-	def getOffHand(self):
+	def getOffHand(self) -> Item:
 		pass
 
-	def getInventory(self):
+	def getInventory(self) -> Container:
 		pass
 
-	def getArmor(self):
+	def getArmor(self) -> Container:
 		pass
 
-	def getEnderChest(self):
+	def getEnderChest(self) -> Container:
 		pass
 
-	def getRespawnPosition(self):
+	def getRespawnPosition(self) -> tuple[BlockPos, int]:
 		pass
 
-	def setRespawnPosition(self):
+	def setRespawnPosition(self, pos, dim) -> bool:
 		pass
 
-	def refreshItems(self):
+	def refreshItems(self) -> bool:
 		pass
 
-	def getScore(self):
+	def getScore(self, key) -> bool:
 		pass
 
-	def setScore(self):
+	def setScore(self, key, value) -> bool:
 		pass
 
-	def addScore(self):
+	def addScore(self, key, value) -> bool:
 		pass
 
-	def reduceScore(self):
+	def reduceScore(self, key, value) -> bool:
 		pass
 
-	def deleteScore(self):
+	def deleteScore(self, key) -> bool:
 		pass
 
-	def setSidebar(self):
+	def setSidebar(
+	    self, title, data: list[tuple[str, int]], order: ObjectiveSortOrder
+	) -> bool:
 		pass
 
-	def removeSidebar(self):
+	def removeSidebar(self) -> bool:
 		pass
 
-	def setBossBar(self):
+	def setBossBar(self, uid, name, percent, colour: BossEventColour) -> bool:
 		pass
 
-	def removeBossBar(self):
+	def removeBossBar(self, uid=None) -> bool:
 		pass
 
-	def addLevel(self):
+	def addLevel(self, value) -> bool:
 		pass
 
-	def getLevel(self):
+	def getLevel(self) -> int:
 		pass
 
-	def resetLevel(self):
+	def resetLevel(self) -> None:
 		pass
 
-	def getXpNeededForNextLevel(self):
+	def getXpNeededForNextLevel(self) -> int:
 		pass
 
-	def addExperience(self):
+	def addExperience(self, value) -> bool:
 		pass
 
-	def sendSimpleForm(self):
+	def sendSimpleForm(
+	    self, title, content, buttons, images, callback
+	) -> bool:
 		pass
 
-	def sendModalForm(self):
+	def sendModalForm(
+	    self, title, content, button1, button2, callback
+	) -> bool:
 		pass
 
-	def sendCustomForm(self):
+	def sendCustomForm(self, str, callback) -> bool:
 		pass
 
-	def setExtraData(self):
+	def setExtraData(self, key, value) -> bool:
 		pass
 
-	def getExtraData(self):
+	def getExtraData(self, key) -> bool:
 		pass
 
-	def delExtraData(self):
+	def delExtraData(self, key) -> bool:
 		pass
 
-	def setNbt(self):
+	def setNbt(self, nbt) -> bool:
 		pass
 
-	def getNbt(self):
+	def getNbt(self) -> NBT:
 		pass
 
-	def addTag(self):
+	def addTag(self, tag: str) -> bool:
 		pass
 
-	def removeTag(self):
+	def removeTag(self, tag: str) -> bool:
 		pass
 
-	def hasTag(self):
+	def hasTag(self, tag: str) -> bool:
 		pass
 
-	def getAllTags(self):
+	def getAllTags(self) -> list[str]:
 		pass
 
-	def getEntityFromViewVector(self):
+	def getEntityFromViewVector(self, max_distance=5.25) -> Entity:
 		pass
 
 	def getBlockFromViewVector(
@@ -686,71 +720,71 @@ class Player:
 	    maxDistance=5.25,
 	    ignoreBorderBlocks=True,
 	    fullOnly=False,
-	):
+	) -> Block:
 		pass
 
 	# SimulatedPlayer API
-	def isSimulatedPlayer(self):
+	def isSimulatedPlayer(self) -> bool:
 		pass
 
-	def simulateSneak(self):
+	def simulateSneak(self) -> bool:
 		pass
 
-	def simulateAttack(self):
+	def simulateAttack(self, target: Entity or None) -> bool:
 		pass
 
-	def simulateDestory(self):
+	def simulateDestory(self, face: ScriptFacing or None) -> bool:
 		pass
 
-	def simulateDisconnect(self):
+	def simulateDisconnect(self) -> bool:
 		pass
 
-	def simulateInteract(self):
+	def simulateInteract(self) -> bool:
 		pass
 
-	def simulateJump(self):
+	def simulateJump(self) -> bool:
 		pass
 
-	def simulateLocalMove(self):
+	def simulateLocalMove(self) -> bool:
 		pass
 
-	def simulateWorldMove(self):
+	def simulateWorldMove(self) -> bool:
 		pass
 
-	def simulateMoveTo(self):
+	def simulateMoveTo(self) -> bool:
 		pass
 
-	def simulateLookAt(self):
+	def simulateLookAt(self) -> bool:
 		pass
 
-	def simulateSetBodyRotation(self):
+	def simulateSetBodyRotation(self) -> bool:
 		pass
 
-	def simulateNavigateTo(self):
+	def simulateNavigateTo(self) -> bool:
 		pass
 
-	def simulateUseItem(self):
+	def simulateUseItem(self) -> bool:
 		pass
 
-	def simulateStopDestroyingBlock(self):
+	def simulateStopDestroyingBlock(self) -> bool:
 		pass
 
-	def simulateStopInteracting(self):
+	def simulateStopInteracting(self) -> bool:
 		pass
 
-	def simulateStopMoving(self):
+	def simulateStopMoving(self) -> bool:
 		pass
 
-	def simulateStopUsingItem(self):
+	def simulateStopUsingItem(self) -> bool:
 		pass
 
-	def simulateStopSneaking(self):
+	def simulateStopSneaking(self) -> bool:
 		pass
 
-	def removeItem(self, slot, num):
+	def removeItem(self, slot, num) -> bool:
 		pass
 
-	def setHeadShow(text):
+	def setHeadShow(self, text) -> bool:
 		pass
 
 
@@ -769,67 +803,67 @@ class Entity:
 	direction: Vec2
 	unique_id: str
 
-	def teleport(self):
+	def teleport(self) -> bool:
 		pass
 
-	def kill(self):
+	def kill(self) -> bool:
 		pass
 
-	def hurt(self):
+	def hurt(self) -> bool:
 		pass
 
-	def setOnFire(self):
+	def setOnFire(self) -> bool:
 		pass
 
-	def isPlayer(self):
+	def isPlayer(self) -> bool:
 		pass
 
-	def toPlayer(self):
+	def toPlayer(self) -> bool:
 		pass
 
-	def isItemEntity(self):
+	def isItemEntity(self) -> bool:
 		pass
 
-	def toItem(self):
+	def toItem(self) -> bool:
 		pass
 
-	def getBlockStandingOn(self):
+	def getBlockStandingOn(self) -> bool:
 		pass
 
-	def getArmor(self):
+	def getArmor(self) -> bool:
 		pass
 
-	def hasContainer(self):
+	def hasContainer(self) -> bool:
 		pass
 
-	def getContainer(self):
+	def getContainer(self) -> bool:
 		pass
 
-	def refreshItems(self):
+	def refreshItems(self) -> bool:
 		pass
 
-	def setNbt(self):
+	def setNbt(self) -> bool:
 		pass
 
-	def getNbt(self):
+	def getNbt(self) -> bool:
 		pass
 
-	def addTag(self):
+	def addTag(self) -> bool:
 		pass
 
-	def removeTag(self):
+	def removeTag(self) -> bool:
 		pass
 
-	def hasTag(self):
+	def hasTag(self) -> bool:
 		pass
 
-	def getAllTags(self):
+	def getAllTags(self) -> bool:
 		pass
 
-	def getEntityFromViewVector(self):
+	def getEntityFromViewVector(self) -> bool:
 		pass
 
-	def getBlockFromViewVector(self):
+	def getBlockFromViewVector(self) -> bool:
 		pass
 
 
@@ -837,13 +871,13 @@ class BlockEntity:
 	pos: Vec3
 	type: str
 
-	def setNbt(self):
+	def setNbt(self) -> bool:
 		pass
 
-	def getNbt(self):
+	def getNbt(self) -> bool:
 		pass
 
-	def getBlock(self):
+	def getBlock(self) -> bool:
 		pass
 
 
@@ -851,180 +885,194 @@ class Objective:
 	name: str
 	display_name: str
 
-	def setDisplay(self):
+	def setDisplay(self) -> bool:
 		pass
 
-	def setScore(self):
+	def setScore(self) -> bool:
 		pass
 
-	def addScore(self):
+	def addScore(self) -> bool:
 		pass
 
-	def reduceScore(self):
+	def reduceScore(self) -> bool:
 		pass
 
-	def deleteScore(self):
+	def deleteScore(self) -> bool:
 		pass
 
-	def getScore(self):
+	def getScore(self) -> bool:
 		pass
 
 
-def getBbsVersion():
+def getBbsVersion() -> str:
 	pass
 
 
-def getServerProtocolVersion():
+def getServerProtocolVersion() -> int:
 	pass
 
 
-def runCommand():
+def runCommand(cmd) -> bool:
 	pass
 
 
-def runCommandEx():
+def runCommandEx(cmd) -> tuple[str, bool]:
 	pass
 
 
-def setListener(event, callback):
+def setListener(event, callback) -> bool:
 	pass
 
 
-def registerCommand():
+def registerCommand(
+    name, desc, callback, perm=CommandPermissionLevel.GameMasters
+) -> bool:
 	pass
 
 
-def getPlayer():
+def getPlayer(name) -> list[Player]:
 	pass
 
 
-def getOnlinePlayers():
+def getOnlinePlayers() -> list[Player]:
 	pass
 
 
-def getAllEntities():
+def getAllEntities() -> list[Entity]:
 	pass
 
 
-def setServerMotd():
+def setServerMotd(motd: str) -> bool:
 	pass
 
 
-def broadcastText():
+def broadcastText(text, type=TextType.RAW) -> bool:
 	pass
 
 
-def broadcastTitle():
+def broadcastTitle(
+    text,
+    type=TitleType.SetTitle,
+    fade_in_duration=100,
+    remain_duration=500,
+    fade_out_duration=100
+) -> bool:
 	pass
 
 
-def getBlock():
+def getBlock(pos, dim) -> Block:
 	pass
 
 
-def setBlock():
+def setBlock(pos, dim, block: Block or str, tile_data=None) -> bool:
 	pass
 
 
-def getStructure():
+def getStructure(
+    pos1, pos2, dim, ignore_entities=True, ignore_blocks=False
+) -> NBT:
 	pass
 
 
-def setStructure():
+def setStructure(
+    nbt, pos, dim, mir=Mirror.None_15, rot=Rotation.None_14
+) -> None:
 	pass
 
 
-def explode():
+def explode(
+    pos, dim, power: float, destroy: bool, range: float, fire: bool
+) -> None:
 	pass
 
 
-def spawnItem():
+def spawnItem(item: Item, pos, dim) -> None:
 	pass
 
 
-def setSignBlockMessage():
+def setSignBlockMessage(pos, dim, text) -> None:
 	pass
 
 
-def isSlimeChunk():
+def isSlimeChunk(x, z) -> bool:
 	pass
 
 
-def spawnMob():
+def spawnMob(pos, dim, type) -> Entity:
 	pass
 
 
-def cloneMob():
+def cloneMob(pos, dim, entity: Entity) -> Entity:
 	pass
 
 
-def spawnSimulatedPlayer():
+def spawnSimulatedPlayer(name, pos, dim) -> Player:
 	pass
 
 
-def spawnParticle():
+def spawnParticle(type, pos, dim) -> bool:
 	pass
 
 
-def setMotd():
+def setMotd(motd) -> bool:
 	pass
 
 
-def sendCmdOutput():
+def sendCmdOutput(output) -> bool:
 	pass
 
 
-def getDisplayObjective():
+def getDisplayObjective(slot) -> Objective:
 	pass
 
 
-def clearDisplayObjective():
+def clearDisplayObjective(slot) -> Objective:
 	pass
 
 
-def getScoreObjective():
+def getScoreObjective(name) -> Objective:
 	pass
 
 
-def newScoreObjective(name, display):
+def newScoreObjective(name, display) -> Objective:
 	pass
 
 
-def removeScoreObjective():
+def removeScoreObjective(name) -> bool:
 	pass
 
 
-def getAllScoreObjectives():
+def getAllScoreObjectives() -> list[Objective]:
 	pass
 
 
-def setMaxPlayers():
+def setMaxPlayers(num) -> bool:
 	pass
 
 
-def getMoney(xuid):
+def getMoney(xuid) -> int:
 	pass
 
 
-def setMoney(xuid, num):
+def setMoney(xuid, num) -> bool:
 	pass
 
 
-def addMoney(xuid, num):
+def addMoney(xuid, num) -> bool:
 	pass
 
 
-def reduceMoney(xuid, num):
+def reduceMoney(xuid, num) -> bool:
 	pass
 
 
-def transMoney(xuid1, xuid2, num, notes):
+def transMoney(xuid1, xuid2, num, notes) -> bool:
 	pass
 
 
-def getMoneyHistt(xuid, time):
+def getMoneyHistt(xuid, time) -> str:
 	pass
 
 
-def clearMoneyHistist(time):
+def clearMoneyHistist(time) -> bool:
 	pass

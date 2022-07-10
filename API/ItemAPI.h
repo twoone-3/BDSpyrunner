@@ -2,7 +2,7 @@
 #include <Global.hpp>
 
 class ItemStack;
-struct NbtClass;
+struct NBTClass;
 struct ItemClass {
 	ItemStack* thiz;
 
@@ -21,6 +21,6 @@ struct ItemClass {
 	bool setNull();
 	bool setAux(short);
 	bool setLore(const vector<string>&);
-	NbtClass getNbt();
-	bool setNbt(const NbtClass&);
+	NBTClass getNbt();
+	bool setNbt(const NBTClass&);
 };

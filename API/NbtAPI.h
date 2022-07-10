@@ -4,39 +4,39 @@
 #include <MC/CompoundTag.hpp>
 
 class Tag;
-struct NbtClass {
+struct NBTClass {
 	unique_ptr<Tag> thiz;
 	bool is_reference;
 
-	NbtClass();
-	NbtClass(Tag* other);
+	NBTClass();
+	NBTClass(Tag* other);
 	template<typename T>
-	NbtClass(unique_ptr<T>&& other) {
+	NBTClass(unique_ptr<T>&& other) {
 		thiz = std::move(other);
 		is_reference = false;
 	}
-	NbtClass(const NbtClass& other);
-	NbtClass(NbtClass&& other) noexcept;
-	~NbtClass();
+	NBTClass(const NBTClass& other);
+	NBTClass(NBTClass&& other) noexcept;
+	~NBTClass();
 	
-	static NbtClass newEnd();
-	static NbtClass newByte(unsigned char value);
-	static NbtClass newShort(short value);
-	static NbtClass newInt(int value);
-	static NbtClass newInt64(int64_t value);
-	static NbtClass newFloat(float value);
-	static NbtClass newDouble(double value);
-	static NbtClass newString(const string& value);
-	static NbtClass newByteArray(const py::bytearray& value);
-	static NbtClass newList();
-	static NbtClass newCompound();
-	static NbtClass newIntArray();
-	static NbtClass fromSNBT(const string& snbt);
-	static NbtClass fromBinary(const py::bytes& bytes);
+	static NBTClass newEnd();
+	static NBTClass newByte(unsigned char value);
+	static NBTClass newShort(short value);
+	static NBTClass newInt(int value);
+	static NBTClass newInt64(int64_t value);
+	static NBTClass newFloat(float value);
+	static NBTClass newDouble(double value);
+	static NBTClass newString(const string& value);
+	static NBTClass newByteArray(const py::bytearray& value);
+	static NBTClass newList();
+	static NBTClass newCompound();
+	static NBTClass newIntArray();
+	static NBTClass fromSNBT(const string& snbt);
+	static NBTClass fromBinary(const py::bytes& bytes);
 
-	NbtClass __getitem__(int key);
-	NbtClass __getitem__(const string& key);
-	void __setitem__(const string& key, const NbtClass& val);
+	NBTClass __getitem__(int key);
+	NBTClass __getitem__(const string& key);
+	void __setitem__(const string& key, const NBTClass& val);
 	unsigned char asByte();
 	short asShort();
 	int asInt();
@@ -49,5 +49,5 @@ struct NbtClass {
 	string toJson(int indentatiton = 4);
 	py::object toObject();
 	string toSNBT(int indent, SnbtFormat snbtFormat = SnbtFormat::PartialNewLine);
-	void append(const NbtClass& value);
+	void append(const NBTClass& value);
 };

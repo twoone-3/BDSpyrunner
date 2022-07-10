@@ -1,6 +1,6 @@
 #include "BlockAPI.h"
 #include "BlockEntityAPI.h"
-#include "NbtAPI.h"
+#include "NBTAPI.h"
 #include <MC/BlockActor.hpp>
 #include <MC/Level.hpp>
 
@@ -14,11 +14,11 @@ int BlockEntityClass::getType() {
 	return (int)thiz->getType();
 }
 
-NbtClass BlockEntityClass::getNbt() {
+NBTClass BlockEntityClass::getNbt() {
 	return thiz->getNbt();
 }
 
-bool BlockEntityClass::setNbt(const NbtClass& nbt) {
+bool BlockEntityClass::setNbt(const NBTClass& nbt) {
 	if (!nbt.thiz)
 		return false;
 	return thiz->setNbt(nbt.thiz->asCompoundTag());

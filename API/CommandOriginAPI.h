@@ -3,7 +3,7 @@
 
 struct EntityClass;
 struct PlayerClass;
-struct NbtClass;
+struct NBTClass;
 class CommandOrigin;
 struct CommandOriginClass {
 	CommandOrigin* thiz;
@@ -17,6 +17,6 @@ struct CommandOriginClass {
 	int getDim();
 	EntityClass getEntity();
 	PlayerClass getPlayer();
-	NbtClass getNbt();
+	NBTClass getNbt();
 	const char* toString();
 };
