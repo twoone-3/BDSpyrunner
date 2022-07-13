@@ -166,7 +166,7 @@ void Actor::setSize(float f1, float f2) {
 //获取状态列表
 
 auto Actor::getAllEffects() {
-	//return SymCall<vector<MobEffectInstance>*>("?getAllEffects@Actor@@QEBAAEBV?$vector@VMobEffectInstance@@V?$allocator@VMobEffectInstance@@@std@@@std@@XZ", this);
+	return SymCall<uintptr_t>("?getAllEffects@Actor@@QEBAAEBV?$vector@VMobEffectInstance@@V?$allocator@VMobEffectInstance@@@std@@@std@@XZ", this);
 }
 class TeleportRotationData {
 public:
@@ -178,8 +178,8 @@ void Actor::teleport(Vec3* target, int did) {
 	TeleportRotationData data;
 	SymCall("?computeTarget@TeleportCommand@@SA?AVTeleportTarget@@AEAVActor@@VVec3@@PEAV4@V?$AutomaticID@VDimension@@H@@AEBV?$optional@VTeleportRotationData@@@std@@H@Z",
 		&mem, this, target, 0, did, &data, 15);
-	SymCall("?applyTarget@TeleportCommand@@SAXAEAVActor@@VTeleportTarget@@@Z",
-		this, &mem);
+	SymCall("?applyTarget@TeleportCommand@@SAXAEAVActor@@VTeleportTarget@@_N@Z",
+		this, &mem, 0);
 }
 
 //新增标签
@@ -323,22 +323,14 @@ PlayerPermissionLevel Player::getPlayerPermissionLevel() {
 }
 
 //设置游戏时命令权限
-
 void Player::setPermissions(PlayerPermissionLevel m) {
 	//SymCall("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z",
-	///*
-	_Big_uint128 v11[5];
-	//*/
+	_Big_uint128 v93[4];
 	SymCall("?setPermissions@Player@@QEAAXW4CommandPermissionLevel@@@Z",
 		this, m);
-	///*
-	memset(v11, 0, sizeof(v11));
-	auto v2 = *(uintptr_t*)(this + 32);
-	Level* level = this->getLevel();
-	auto v4 = (*(uintptr_t(__fastcall**)(Level*))(*(uintptr_t*)level + 2576))(level);
-	SymCall<uintptr_t>("??0AdventureSettingsPacket@@QEAA@AEBUAdventureSettings@@AEBVAbilities@@UActorUniqueID@@_N@Z",
-		v11, v4, this + 2512, v2, 0);
-		//*/
+	/*memset(v93, 0, sizeof(v93));
+	SymCall<uintptr_t>("??0UpdateAbilitiesPacket@@QEAA@UActorUniqueID@@AEBVLayeredAbilities@@@Z",
+		v93, Actor::getUniqueID(), this + 2508);*/
 }
 
 //获取设备id

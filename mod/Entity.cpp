@@ -496,7 +496,7 @@ PyObject* PyEntity_SendModalForm(PyObject* self, PyObject* args) {
 }
 
 //…Ë÷√≤‡±ﬂ¿∏
-PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
+PyObject* PyEntity_SetSideBar(PyObject* self, PyObject* args) {
 	const char* title = "";
 	const char* data = "";
 	if (PyArg_ParseTuple(args, "ss:setSidebar", &title, &data)) {
@@ -517,7 +517,7 @@ PyObject* PyEntity_SetSidebar(PyObject* self, PyObject* args) {
 	Py_RETURN_NONE;
 }
 
-PyObject* PyEntity_RemoveSidebar(PyObject* self, PyObject*) {
+PyObject* PyEntity_RemoveSideBar(PyObject* self, PyObject*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
@@ -526,7 +526,7 @@ PyObject* PyEntity_RemoveSidebar(PyObject* self, PyObject*) {
 }
 
 //Boss¿∏
-PyObject* PyEntity_SetBossbar(PyObject* self, PyObject* args) {
+PyObject* PyEntity_SetBossBar(PyObject* self, PyObject* args) {
 	const char* name = "";
 	float per;
 	if (PyArg_ParseTuple(args, "sf:setBossbar", &name, &per)) {
@@ -538,7 +538,7 @@ PyObject* PyEntity_SetBossbar(PyObject* self, PyObject* args) {
 	Py_RETURN_NONE;
 }
 
-PyObject* PyEntity_RemoveBossbar(PyObject* self, PyObject*) {
+PyObject* PyEntity_RemoveBossBar(PyObject* self, PyObject*) {
 	Player* p = PyEntity::asPlayer(self);
 	if (!p)
 		return nullptr;
@@ -636,10 +636,10 @@ PyMethodDef PyEntity_Methods[]{
 	{"sendCustomForm", PyEntity_SendCustomForm, METH_VARARGS, nullptr},
 	{"sendSimpleForm", PyEntity_SendSimpleForm, METH_VARARGS, nullptr},
 	{"sendModalForm", PyEntity_SendModalForm, METH_VARARGS, nullptr},
-	{"setSidebar", PyEntity_SetSidebar, METH_VARARGS, nullptr},
-	{"removeSidebar", PyEntity_RemoveSidebar, METH_NOARGS, nullptr},
-	{"setBossbar", PyEntity_SetBossbar, METH_VARARGS, nullptr},
-	{"removeBossbar", PyEntity_RemoveBossbar, METH_NOARGS, nullptr},
+	{"setSideBar", PyEntity_SetSideBar, METH_VARARGS, nullptr},
+	{"removeSideBar", PyEntity_RemoveSideBar, METH_NOARGS, nullptr},
+	{"setBossBar", PyEntity_SetBossBar, METH_VARARGS, nullptr},
+	{"removeBossBar", PyEntity_RemoveBossBar, METH_NOARGS, nullptr},
 	{"addTag", PyEntity_AddTag, METH_VARARGS, nullptr},
 	{"removeTag", PyEntity_RemoveTag, METH_VARARGS, nullptr},
 	{"getTags", PyEntity_GetTags, METH_NOARGS, nullptr},

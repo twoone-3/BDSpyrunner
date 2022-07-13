@@ -46,7 +46,10 @@ def runcmd(command: str) -> None:
     return mco.runcmd(command)
 
 def setCommandDescription(cmd:str, description:str, function: Callable[[object], Optional[bool]] = None) -> None:
-    return mco.setCommandDescription(cmd, description, function)
+    if function:
+        return mco.setCommandDescription(cmd, description, function)
+    else:
+        return mco.setCommandDescription(cmd, description)
 
 def getPlayerByXuid(xuid: str) -> mco.Entity:
     return mco.getPlayerByXuid(xuid)
