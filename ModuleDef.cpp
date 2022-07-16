@@ -40,7 +40,7 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 	DEF_ENUM_SIMPLE(SnbtFormat);
 	DEF_ENUM_SIMPLE(ObjectiveSortOrder);
 	DEF_ENUM_SIMPLE(BossEventColour);
-	DEF_ENUM_SIMPLE(ScriptFacing);
+	DEF_ENUM("ScriptFacing", ScriptModuleMinecraft::ScriptFacing);
 	DEF_ENUM("TagType", Tag::Type);
 
 #pragma endregion
@@ -319,11 +319,11 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("simulateAttack", py::overload_cast<>(&PlayerClass::simulateAttack))
 		.def("simulateAttack", py::overload_cast<const EntityClass&>(&PlayerClass::simulateAttack))
 		.def("simulateDestory", py::overload_cast<>(&PlayerClass::simulateDestory))
-		.def("simulateDestory", py::overload_cast<const BlockPos&, ScriptFacing>(&PlayerClass::simulateDestory))
+		.def("simulateDestory", py::overload_cast<const BlockPos&, ScriptModuleMinecraft::ScriptFacing>(&PlayerClass::simulateDestory))
 		.def("simulateDisconnect", &PlayerClass::simulateDisconnect)
 		.def("simulateInteract", py::overload_cast<>(&PlayerClass::simulateInteract))
 		.def("simulateInteractEntity", py::overload_cast<const EntityClass&>(&PlayerClass::simulateInteract))
-		.def("simulateInteractBlock", py::overload_cast<const BlockPos&, ScriptFacing>(&PlayerClass::simulateInteract))
+		.def("simulateInteractBlock", py::overload_cast<const BlockPos&, ScriptModuleMinecraft::ScriptFacing>(&PlayerClass::simulateInteract))
 		.def("simulateJump", &PlayerClass::simulateJump)
 		.def("simulateLocalMove", &PlayerClass::simulateLocalMove, "target"_a, "speed"_a = 1.0f)
 		.def("simulateWorldMove", &PlayerClass::simulateWorldMove, "target"_a, "speed"_a = 1.0f)
@@ -338,9 +338,9 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("simulateUseItem", py::overload_cast<>(&PlayerClass::simulateUseItem))
 		.def("simulateUseItem2", py::overload_cast<int>(&PlayerClass::simulateUseItem))
 		.def("simulateUseItem3", py::overload_cast<const ItemClass&>(&PlayerClass::simulateUseItem))
-		.def("simulateUseItem4", py::overload_cast<const ItemClass&, const BlockPos&, ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem),
+		.def("simulateUseItem4", py::overload_cast<const ItemClass&, const BlockPos&, ScriptModuleMinecraft::ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem),
 			"item"_a, "pos"_a, "face"_a, "relativePos"_a = Vec3(0.5, 0.5, 0.5))
-		.def("simulateUseItem5", py::overload_cast<int, const BlockPos&, ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem),
+		.def("simulateUseItem5", py::overload_cast<int, const BlockPos&, ScriptModuleMinecraft::ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem),
 			"slot"_a, "pos"_a, "face"_a, "relativePos"_a = Vec3(0.5, 0.5, 0.5))
 		.def("simulateStopDestroyingBlock", &PlayerClass::simulateStopDestroyingBlock)
 		.def("simulateStopInteracting", &PlayerClass::simulateStopInteracting)

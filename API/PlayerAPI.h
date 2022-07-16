@@ -1,5 +1,6 @@
 #pragma once
 #include <Global.hpp>
+#include <MC/ScriptModuleMinecraft.hpp>
 
 class SimulatedPlayer;
 class Player;
@@ -114,11 +115,11 @@ struct PlayerClass {
 	bool simulateAttack();
 	bool simulateAttack(const EntityClass& target);
 	bool simulateDestory();
-	bool simulateDestory(const BlockPos& pos, ScriptFacing face);
+	bool simulateDestory(const BlockPos& pos, ScriptModuleMinecraft::ScriptFacing face);
 	bool simulateDisconnect();
 	bool simulateInteract();
 	bool simulateInteract(const EntityClass& target);
-	bool simulateInteract(const BlockPos& pos, ScriptFacing face);
+	bool simulateInteract(const BlockPos& pos, ScriptModuleMinecraft::ScriptFacing face);
 	bool simulateJump();
 	bool simulateLocalMove(const Vec3& target, float speed = 1.0f);
 	bool simulateWorldMove(const Vec3& target, float speed = 1.0f);
@@ -133,8 +134,8 @@ struct PlayerClass {
 	bool simulateUseItem();
 	bool simulateUseItem(int slot);
 	bool simulateUseItem(const ItemClass& item);
-	bool simulateUseItem(const ItemClass& item, const BlockPos& pos, ScriptFacing face = ScriptFacing::Down, const Vec3& relativePos = {0.5, 0.5, 0.5});
-	bool simulateUseItem(int slot, const BlockPos& pos, ScriptFacing face = ScriptFacing::Down, const Vec3& relativePos = {0.5, 0.5, 0.5});
+	bool simulateUseItem(const ItemClass& item, const BlockPos& pos, ScriptModuleMinecraft::ScriptFacing face = ScriptModuleMinecraft::ScriptFacing::Down, const Vec3& relativePos = {0.5, 0.5, 0.5});
+	bool simulateUseItem(int slot, const BlockPos& pos, ScriptModuleMinecraft::ScriptFacing face = ScriptModuleMinecraft::ScriptFacing::Down, const Vec3& relativePos = {0.5, 0.5, 0.5});
 	bool simulateStopDestroyingBlock();
 	bool simulateStopInteracting();
 	bool simulateStopMoving();

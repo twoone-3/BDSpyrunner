@@ -425,8 +425,8 @@ void EnableEventListener(EventCode event_code) {
 		Event::WitherBossDestroyEvent::subscribe([](const WitherBossDestroyEvent& ev) {
 			EVENT_BEGIN(EventCode::onWitherBossDestroy);
 			EVENT_INSERT_EX(WitherBoss, EntityClass((Actor*)ev.mWitherBoss));
-			EVENT_INSERT_EX(PointA, ev.mDestroyRange.pointA);
-			EVENT_INSERT_EX(PointB, ev.mDestroyRange.pointB);
+			EVENT_INSERT_EX(Min, ev.mDestroyRange.min);
+			EVENT_INSERT_EX(Max, ev.mDestroyRange.max);
 			EVENT_END;
 		});
 		break;

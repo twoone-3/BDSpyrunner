@@ -15,7 +15,7 @@
 #include <MC/Level.hpp>
 #include <MC/Packet.hpp>
 
-py::dict NavigateResultToObject(const ScriptNavigationResult& res) {
+py::dict NavigateResultToObject(const ScriptModuleMinecraft::ScriptNavigationResult& res) {
 	py::dict obj;
 	obj["isFullPath"] = res.mIsFullPath;
 	obj["path"] = res.mPath;
@@ -749,14 +749,14 @@ bool PlayerClass::simulateUseItem(const ItemClass& item) {
 	return sp->simulateUseItem(*item.thiz);
 }
 
-bool PlayerClass::simulateUseItem(const ItemClass& item, const BlockPos& pos, ScriptFacing face, const Vec3& relativePos) {
+bool PlayerClass::simulateUseItem(const ItemClass& item, const BlockPos& pos, ScriptModuleMinecraft::ScriptFacing face, const Vec3& relativePos) {
 	SimulatedPlayer* sp = asSimulatedPlayer();
 	if (!sp)
 		return {};
 	return sp->simulateUseItemOnBlock(*item.thiz, pos, face, relativePos);
 }
 
-bool PlayerClass::simulateUseItem(int slot, const BlockPos& pos, ScriptFacing face, const Vec3& relativePos) {
+bool PlayerClass::simulateUseItem(int slot, const BlockPos& pos, ScriptModuleMinecraft::ScriptFacing face, const Vec3& relativePos) {
 	SimulatedPlayer* sp = asSimulatedPlayer();
 	if (!sp)
 		return {};
@@ -802,14 +802,14 @@ bool PlayerClass::simulateStopSneaking() {
 	return sp->simulateStopSneaking();
 }
 
-bool PlayerClass::simulateInteract(const BlockPos& pos, ScriptFacing face) {
+bool PlayerClass::simulateInteract(const BlockPos& pos, ScriptModuleMinecraft::ScriptFacing face) {
 	SimulatedPlayer* sp = asSimulatedPlayer();
 	if (!sp)
 		return {};
 	return sp->simulateInteract(pos, face);
 }
 
-bool PlayerClass::simulateDestory(const BlockPos& pos, ScriptFacing face) {
+bool PlayerClass::simulateDestory(const BlockPos& pos, ScriptModuleMinecraft::ScriptFacing face) {
 	SimulatedPlayer* sp = asSimulatedPlayer();
 	if (!sp)
 		return {};

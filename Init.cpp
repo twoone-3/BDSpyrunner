@@ -8,8 +8,8 @@ using namespace std;
 
 constexpr unsigned PYR_VERSION_MAJOR = 2;
 constexpr unsigned PYR_VERSION_MINOR = 0;
-constexpr unsigned PYR_VERSION_MICRO = 3;
-constexpr const char* PYR_VERSION = "v2.0.3";
+constexpr unsigned PYR_VERSION_MICRO = 4;
+constexpr const char* PYR_VERSION = "v2.0.4";
 
 void entry() {
 	PY_TRY;
