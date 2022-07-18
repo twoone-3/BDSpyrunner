@@ -264,8 +264,8 @@ Container* Player::getArmorContainer() {
 //获取末影箱
 
 Container* Player::getEnderChestContainer() {
-	//IDA Player::addAdditionalSaveData EnderChestInventory
-	return Dereference<Container*>(this, 4184);
+	//IDA Player::Player Line762: v71 = EnderChestContainer::EnderChestContainer(v70);
+	return Dereference<Container*>(this, 4960);
 }
 
 //设置一个装备
@@ -324,13 +324,12 @@ PlayerPermissionLevel Player::getPlayerPermissionLevel() {
 
 //设置游戏时命令权限
 void Player::setPermissions(PlayerPermissionLevel m) {
-	//SymCall("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z",
-	_Big_uint128 v93[4];
+	_Big_uint128 v93[8];
 	SymCall("?setPermissions@Player@@QEAAXW4CommandPermissionLevel@@@Z",
 		this, m);
-	/*memset(v93, 0, sizeof(v93));
+	memset(v93, 0, sizeof(v93));
 	SymCall<uintptr_t>("??0UpdateAbilitiesPacket@@QEAA@UActorUniqueID@@AEBVLayeredAbilities@@@Z",
-		v93, Actor::getUniqueID(), this + 2508);*/
+		v93, Actor::getUniqueID(), this + 2508);
 }
 
 //获取设备id
