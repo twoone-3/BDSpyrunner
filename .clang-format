@@ -1,44 +1,54 @@
-# Visual Studio 生成的 .clang-format 文件
-
-# 此文件中的样式选项是通过“工具”>“选项”
-# 复制当前 IDE 格式配置的最佳尝试
+# Author: twoone-3
+# Reference: https://releases.llvm.org/13.0.0/tools/clang/docs/ClangFormatStyleOptions.html
 
 AccessModifierOffset: -4
 AlignAfterOpenBracket: DontAlign
-AllowShortBlocksOnASingleLine: true
+AlignArrayOfStructures: Left
+AlignConsecutiveAssignments: None
+AlignConsecutiveBitFields: None
+AlignConsecutiveDeclarations: None
+AlignConsecutiveMacros: None
+AlignEscapedNewlines: Left
+AlignOperands: DontAlign
+AlignTrailingComments: false
+AllowAllArgumentsOnNextLine: true
+AllowAllConstructorInitializersOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: None
+AlwaysBreakTemplateDeclarations: Yes
 BasedOnStyle: LLVM
-BraceWrapping:
-  AfterClass: false
-  AfterControlStatement: false
-  AfterEnum: false
-  AfterFunction: false
-  AfterNamespace: false
-  AfterStruct: false
-  AfterUnion: false
-  BeforeCatch: true
-  BeforeElse: true
-  IndentBraces: false
-  SplitEmptyFunction: false
-  SplitEmptyRecord: false
-BreakBeforeBraces: Custom
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBraces: Attach
 ColumnLimit: 0
 Cpp11BracedListStyle: true
-FixNamespaceComments: false
-IndentCaseLabels: false
+FixNamespaceComments: true
+IndentCaseLabels: true
 IndentPPDirectives: None
 IndentWidth: 4
-MaxEmptyLinesToKeep: 10
+KeepEmptyLinesAtTheStartOfBlocks: false
+Language: Cpp
+MaxEmptyLinesToKeep: 1
 NamespaceIndentation: None
 PointerAlignment: Left
 SortIncludes: false
 SortUsingDeclarations: false
 SpaceAfterCStyleCast: false
+SpaceAfterTemplateKeyword: true
 SpaceBeforeAssignmentOperators: true
+SpaceBeforeCtorInitializerColon: true
 SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: false
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
+Standard: Latest
 TabWidth: 4
-UseTab: true
+UseTab: Always

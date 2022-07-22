@@ -130,14 +130,10 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 
 		.def("setEnum", &CommandClass::setEnum)
 		.def("setAlias", &CommandClass::setAlias)
-		.def("mandatory2", py::overload_cast<const string&, DynamicCommand::ParameterType, string, string, CommandParameterOption>(&CommandClass::mandatory),
-			"name"_a, "type"_a, "description"_a = "", "identifier"_a = "", "option"_a = None)
-		.def("mandatory", py::overload_cast<const string&, DynamicCommand::ParameterType, string, CommandParameterOption>(&CommandClass::mandatory),
-			"name"_a, "type"_a, "description"_a = "", "option"_a = None)
-		.def("optional2", py::overload_cast<const string&, DynamicCommand::ParameterType, string, string, CommandParameterOption>(&CommandClass::optional),
-			"name"_a, "type"_a, "description"_a = "", "identifier"_a = "", "option"_a = None)
-		.def("optional", py::overload_cast<const string&, DynamicCommand::ParameterType, string, CommandParameterOption>(&CommandClass::optional),
-			"name"_a, "type"_a, "description"_a = "", "option"_a = None)
+		.def("mandatory2", py::overload_cast<const string&, DynamicCommand::ParameterType, string, string, CommandParameterOption>(&CommandClass::mandatory), "name"_a, "type"_a, "description"_a = "", "identifier"_a = "", "option"_a = None)
+		.def("mandatory", py::overload_cast<const string&, DynamicCommand::ParameterType, string, CommandParameterOption>(&CommandClass::mandatory), "name"_a, "type"_a, "description"_a = "", "option"_a = None)
+		.def("optional2", py::overload_cast<const string&, DynamicCommand::ParameterType, string, string, CommandParameterOption>(&CommandClass::optional), "name"_a, "type"_a, "description"_a = "", "identifier"_a = "", "option"_a = None)
+		.def("optional", py::overload_cast<const string&, DynamicCommand::ParameterType, string, CommandParameterOption>(&CommandClass::optional), "name"_a, "type"_a, "description"_a = "", "option"_a = None)
 		.def("setSoftEnum", &CommandClass::setSoftEnum)
 		.def("addSoftEnumValues", &CommandClass::addSoftEnumValues)
 		.def("removeSoftEnumValues", &CommandClass::removeSoftEnumValues)
@@ -307,8 +303,7 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("hasTag", &PlayerClass::hasTag)
 		.def("getAllTags", &PlayerClass::getAllTags)
 		.def("getEntityFromViewVector", &PlayerClass::getEntityFromViewVector, "max_distance"_a = 5.25f)
-		.def("getBlockFromViewVector", &PlayerClass::getBlockFromViewVector,
-			"includeLiquid"_a = false, "solidOnly"_a = false, "maxDistance"_a = 5.25f, "ignoreBorderBlocks"_a = true, "fullOnly"_a = false)
+		.def("getBlockFromViewVector", &PlayerClass::getBlockFromViewVector, "includeLiquid"_a = false, "solidOnly"_a = false, "maxDistance"_a = 5.25f, "ignoreBorderBlocks"_a = true, "fullOnly"_a = false)
 
 		.def("removeItem", &PlayerClass::removeItem)
 		.def("setHeadShow", &PlayerClass::setHeadShow)
@@ -338,16 +333,13 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def("simulateUseItem", py::overload_cast<>(&PlayerClass::simulateUseItem))
 		.def("simulateUseItem2", py::overload_cast<int>(&PlayerClass::simulateUseItem))
 		.def("simulateUseItem3", py::overload_cast<const ItemClass&>(&PlayerClass::simulateUseItem))
-		.def("simulateUseItem4", py::overload_cast<const ItemClass&, const BlockPos&, ScriptModuleMinecraft::ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem),
-			"item"_a, "pos"_a, "face"_a, "relativePos"_a = Vec3(0.5, 0.5, 0.5))
-		.def("simulateUseItem5", py::overload_cast<int, const BlockPos&, ScriptModuleMinecraft::ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem),
-			"slot"_a, "pos"_a, "face"_a, "relativePos"_a = Vec3(0.5, 0.5, 0.5))
+		.def("simulateUseItem4", py::overload_cast<const ItemClass&, const BlockPos&, ScriptModuleMinecraft::ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem), "item"_a, "pos"_a, "face"_a, "relativePos"_a = Vec3(0.5, 0.5, 0.5))
+		.def("simulateUseItem5", py::overload_cast<int, const BlockPos&, ScriptModuleMinecraft::ScriptFacing, const Vec3&>(&PlayerClass::simulateUseItem), "slot"_a, "pos"_a, "face"_a, "relativePos"_a = Vec3(0.5, 0.5, 0.5))
 		.def("simulateStopDestroyingBlock", &PlayerClass::simulateStopDestroyingBlock)
 		.def("simulateStopInteracting", &PlayerClass::simulateStopInteracting)
 		.def("simulateStopMoving", &PlayerClass::simulateStopMoving)
 		.def("simulateStopUsingItem", &PlayerClass::simulateStopUsingItem)
 		.def("simulateStopSneaking", &PlayerClass::simulateStopSneaking);
-
 
 	py::class_<EntityClass>(mc_module, "Entity")
 		.def_property("name", &EntityClass::getName, nullptr)
@@ -398,7 +390,7 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 		.def_property("name", &ObjectiveClass::getName, nullptr)
 		.def_property("display_name", &ObjectiveClass::getDisplayName, nullptr)
 
-		.def("setDisplay", &ObjectiveClass::setDisplay, "slot"_a, "sort"_a=0)
+		.def("setDisplay", &ObjectiveClass::setDisplay, "slot"_a, "sort"_a = 0)
 		.def("setScore", &ObjectiveClass::setScore)
 		.def("addScore", &ObjectiveClass::addScore)
 		.def("reduceScore", &ObjectiveClass::reduceScore)

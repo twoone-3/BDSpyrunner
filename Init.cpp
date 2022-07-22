@@ -8,8 +8,8 @@ using namespace std;
 
 constexpr unsigned PYR_VERSION_MAJOR = 2;
 constexpr unsigned PYR_VERSION_MINOR = 0;
-constexpr unsigned PYR_VERSION_MICRO = 4;
-constexpr const char* PYR_VERSION = "v2.0.4";
+constexpr unsigned PYR_VERSION_MICRO = 5;
+constexpr const char* PYR_VERSION = "v2.0.5";
 
 void entry() {
 	PY_TRY;
@@ -45,8 +45,7 @@ void entry() {
 			if (name.front() == '_') {
 				logger.debug("Ignoring {}", name);
 				continue;
-			}
-			else {
+			} else {
 				PY_TRY;
 				logger.info("Loading {}", name);
 				py::module_::import(name.c_str());
@@ -73,5 +72,6 @@ extern "C" _declspec(dllexport) void onPostInit() {
 			PYR_VERSION_MINOR,
 			PYR_VERSION_MICRO,
 			LL::Version::Release),
-		{{"Author", "twoone3"}});
+		"https://github.com/twoone-3/BDSpyrunner.git",
+		"GPL v3.0");
 }
