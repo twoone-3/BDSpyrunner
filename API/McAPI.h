@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <Global.hpp>
 #include <MC/StructureTemplate.hpp>
 #include <MC/Command.hpp>
@@ -19,19 +19,17 @@ py::list getAllEntities();
 BlockClass getBlock(const BlockPos& pos, int dim);
 bool setBlock(const BlockPos& pos, int dim, const string& name, int tile_data);
 bool setBlock(const BlockPos& pos, int dim, const BlockClass& b);
-//´ÓÖ¸¶¨µØµã»ñÈ¡NBT½á¹¹Êı¾İ
-NBTClass getStructure(const BlockPos& pos1, const BlockPos& pos2, int dim,
-	bool ignore_entities = true, bool ignore_blocks = false);
-//´ÓNBT½á¹¹Êı¾İµ¼³ö½á¹¹µ½Ö¸¶¨µØµã
-bool setStructure(const NBTClass& nbt, const BlockPos& pos, int dim,
-	Mirror mir = None_15, Rotation rot = None_14);
-//²úÉú±¬Õ¨
+//ä»æŒ‡å®šåœ°ç‚¹è·å–NBTç»“æ„æ•°æ®
+NBTClass getStructure(const BlockPos& pos1, const BlockPos& pos2, int dim, bool ignore_entities = true, bool ignore_blocks = false);
+//ä»NBTç»“æ„æ•°æ®å¯¼å‡ºç»“æ„åˆ°æŒ‡å®šåœ°ç‚¹
+bool setStructure(const NBTClass& nbt, const BlockPos& pos, int dim, Mirror mir = None_15, Rotation rot = None_14);
+//äº§ç”Ÿçˆ†ç‚¸
 void explode(const Vec3& pos, int dim, float power, bool destroy, float range, bool fire);
-//Éú³ÉÎïÆ·
+//ç”Ÿæˆç‰©å“
 void spawnItem(ItemClass& item, Vec3 pos, int dim);
-//ÉèÖÃÅÆ×ÓÎÄ×Ö
+//è®¾ç½®ç‰Œå­æ–‡å­—
 void setSignBlockMessage(BlockPos pos, int dim, const string& text);
-//ÊÇ·ñÎªÊ·À³Ä·Çø¿é
+//æ˜¯å¦ä¸ºå²è±å§†åŒºå—
 int IsSlimeChunk(unsigned x, unsigned z);
 
 EntityClass spawnMob(const Vec3& pos, int dim, const string& type);
@@ -51,4 +49,4 @@ ObjectiveClass getScoreObjective(const string& name);
 ObjectiveClass newScoreObjective(const string& name, const string& display);
 bool removeScoreObjective(const string& name);
 vector<ObjectiveClass> getAllScoreObjectives();
-}
+}// namespace mc

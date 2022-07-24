@@ -10,7 +10,7 @@ struct NBTClass {
 
 	NBTClass();
 	NBTClass(Tag* other);
-	template<typename T>
+	template <typename T>
 	NBTClass(unique_ptr<T>&& other) {
 		thiz = std::move(other);
 		is_reference = false;
@@ -18,7 +18,7 @@ struct NBTClass {
 	NBTClass(const NBTClass& other);
 	NBTClass(NBTClass&& other) noexcept;
 	~NBTClass();
-	
+
 	static NBTClass newEnd();
 	static NBTClass newByte(unsigned char value);
 	static NBTClass newShort(short value);

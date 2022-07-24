@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <Global.hpp>
 #include <MC/ScriptModuleMinecraft.hpp>
 
@@ -85,10 +85,8 @@ struct PlayerClass {
 	bool addExperience(int value);
 
 	bool sendCustomForm(const string& str, const py::function& cb);
-	bool sendSimpleForm(const string& title, const string& content,
-		const vector<string>& buttons, const vector<string>& images, const py::function& cb);
-	bool sendModalForm(const string& title, const string& content,
-		const string& button1, const string& button2, const py::function& cb);
+	bool sendSimpleForm(const string& title, const string& content, const vector<string>& buttons, const vector<string>& images, const py::function& cb);
+	bool sendModalForm(const string& title, const string& content, const string& button1, const string& button2, const py::function& cb);
 
 	bool setExtraData(string key, const py::object& value);
 	py::object getExtraData(string key);
@@ -102,11 +100,11 @@ struct PlayerClass {
 	vector<string> getAllTags();
 	EntityClass getEntityFromViewVector(float maxDistance = 5.25f);
 	BlockClass getBlockFromViewVector(
-		bool includeLiquid = false,
-		bool solidOnly = false,
-		float maxDistance = 5.25f,
-		bool ignoreBorderBlocks = true,
-		bool fullOnly = false);
+	    bool includeLiquid = false,
+	    bool solidOnly = false,
+	    float maxDistance = 5.25f,
+	    bool ignoreBorderBlocks = true,
+	    bool fullOnly = false);
 
 	bool isSimulatedPlayer();
 

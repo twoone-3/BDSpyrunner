@@ -1,6 +1,5 @@
-#include "CommandOutputAPI.h"
+﻿#include "CommandOutputAPI.h"
 #include <MC/CommandOutput.hpp>
-
 
 CommandOutputClass::CommandOutputClass(CommandOutput* p) : thiz(p) {}
 

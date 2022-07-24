@@ -1,4 +1,4 @@
-#include <Global.hpp>
+﻿#include <Global.hpp>
 #include "LoggerAPI.h"
 #include "PlayerAPI.h"
 

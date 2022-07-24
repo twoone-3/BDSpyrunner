@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <Global.hpp>
 
 class BlockActor;
@@ -8,7 +8,7 @@ struct BlockEntityClass {
 	BlockActor* thiz;
 	int dim;
 
-	BlockEntityClass(BlockActor* be,int dim);
+	BlockEntityClass(BlockActor* be, int dim);
 
 	BlockPos getPos();
 	int getType();

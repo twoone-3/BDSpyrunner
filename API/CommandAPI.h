@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <Global.hpp>
 #include <DynamicCommandAPI.h>
 
@@ -11,17 +11,13 @@ struct CommandClass {
 	string getName();
 	bool setAlias(const string& alias);
 	// name, type, description, identifier, option
-	int64_t mandatory(const string& name, DynamicCommand::ParameterType type,
-		string description = "", string identifier = "", CommandParameterOption option = None);
+	int64_t mandatory(const string& name, DynamicCommand::ParameterType type, string description = "", string identifier = "", CommandParameterOption option = None);
 	// name, type, description, option
-	int64_t mandatory(const string& name, DynamicCommand::ParameterType type,
-		string description = "", CommandParameterOption option = None);
+	int64_t mandatory(const string& name, DynamicCommand::ParameterType type, string description = "", CommandParameterOption option = None);
 	// name, type, description, identifier, option
-	int64_t optional(const string& name, DynamicCommand::ParameterType type,
-		string description = "", string identifier = "", CommandParameterOption option = None);
+	int64_t optional(const string& name, DynamicCommand::ParameterType type, string description = "", string identifier = "", CommandParameterOption option = None);
 	// name, type, description, option
-	int64_t optional(const string& name, DynamicCommand::ParameterType type,
-		string description = "", CommandParameterOption option = None);
+	int64_t optional(const string& name, DynamicCommand::ParameterType type, string description = "", CommandParameterOption option = None);
 	bool addOverload();
 	// vector<index>
 	bool addOverload(const vector<size_t>& args);
@@ -33,10 +29,10 @@ struct CommandClass {
 	bool setup();
 	string toString();
 
-	// SoftEnum ÊÇ´ø²¹È«µÄ×Ö·û´®
-	// ²¹È«Ïî¿ÉÒÔÊµÊ±¸ü¸Ä
-	// ²»Í¬Ñ¡Ïî²»ÄÜ½Ó²»Í¬²ÎÊı
-	// Enum Ôò¿ÉÒÔ×öµ½
+	// SoftEnum æ˜¯å¸¦è¡¥å…¨çš„å­—ç¬¦ä¸²
+	// è¡¥å…¨é¡¹å¯ä»¥å®æ—¶æ›´æ”¹
+	// ä¸åŒé€‰é¡¹ä¸èƒ½æ¥ä¸åŒå‚æ•°
+	// Enum åˆ™å¯ä»¥åšåˆ°
 	// cmd <add|remove> name
 	// cmd <list>
 	// cmd <rename> name name2
@@ -48,4 +44,3 @@ struct CommandClass {
 	vector<string> getSoftEnumValues(const string& name);
 	vector<string> getSoftEnumNames();
 };
-

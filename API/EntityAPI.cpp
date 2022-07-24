@@ -1,4 +1,4 @@
-#include "BlockAPI.h"
+﻿#include "BlockAPI.h"
 #include "EntityAPI.h"
 #include "PlayerAPI.h"
 #include "ItemAPI.h"
@@ -82,7 +82,7 @@ float EntityClass::getSpeed() {
 
 Vec2 EntityClass::getDirection() {
 	if (thiz == nullptr)
-		return Vec2(0.f,0.f);
+		return Vec2(0.f, 0.f);
 	return *thiz->getDirection();
 }
 
@@ -219,7 +219,7 @@ EntityClass EntityClass::getEntityFromViewVector(float maxDistance) {
 	return thiz->getActorFromViewVector(maxDistance);
 }
 
-BlockClass EntityClass::getBlockFromViewVector(bool includeLiquid, bool solidOnly, float maxDistance, bool ignoreBorderBlocks, bool fullOnly) {	
+BlockClass EntityClass::getBlockFromViewVector(bool includeLiquid, bool solidOnly, float maxDistance, bool ignoreBorderBlocks, bool fullOnly) {
 	if (thiz == nullptr)
 		return BlockInstance::Null;
 	return thiz->getBlockFromViewVector(includeLiquid, solidOnly, maxDistance, ignoreBorderBlocks, fullOnly);

@@ -8,8 +8,8 @@ using namespace std;
 
 constexpr unsigned PYR_VERSION_MAJOR = 2;
 constexpr unsigned PYR_VERSION_MINOR = 0;
-constexpr unsigned PYR_VERSION_MICRO = 5;
-constexpr const char* PYR_VERSION = "v2.0.5";
+constexpr unsigned PYR_VERSION_MICRO = 6;
+constexpr const char* PYR_VERSION = "v2.0.6";
 
 void entry() {
 	PY_TRY;
@@ -45,7 +45,8 @@ void entry() {
 			if (name.front() == '_') {
 				logger.debug("Ignoring {}", name);
 				continue;
-			} else {
+			}
+			else {
 				PY_TRY;
 				logger.info("Loading {}", name);
 				py::module_::import(name.c_str());
@@ -66,12 +67,12 @@ THook(int, "main", int argc, char* argv[], char* envp[]) {
 extern "C" _declspec(dllexport) void onPostInit() {
 	std::ios::sync_with_stdio(false);
 	LL::registerPlugin(
-		"BDSpyrunner",
-		"Loading python in BDS",
-		LL::Version(PYR_VERSION_MAJOR,
-			PYR_VERSION_MINOR,
-			PYR_VERSION_MICRO,
-			LL::Version::Release),
-		"https://github.com/twoone-3/BDSpyrunner.git",
-		"GPL v3.0");
+	    "BDSpyrunner",
+	    "Loading python in BDS",
+	    LL::Version(PYR_VERSION_MAJOR,
+	        PYR_VERSION_MINOR,
+	        PYR_VERSION_MICRO,
+	        LL::Version::Release),
+	    "https://github.com/twoone-3/BDSpyrunner.git",
+	    "GPL v3.0");
 }

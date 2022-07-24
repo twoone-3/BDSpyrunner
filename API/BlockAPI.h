@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <Global.hpp>
 #include <MC/BlockInstance.hpp>
 

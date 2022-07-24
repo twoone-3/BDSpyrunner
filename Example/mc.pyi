@@ -1,7 +1,7 @@
 # pyr的代码补全文件
 # Copyright (c) 2022 twoone3
 # All rights reserved.
-# last change: 2022.7.10
+# last change: 2022.7.24
 
 from enum import Enum
 
@@ -524,7 +524,7 @@ class Player:
 	real_name: str
 	xuid: str
 	uuid: str
-	perm_level: int
+	perm_level: CommandPermissionLevel
 	game_mode: GameType
 	max_health: int
 	health: int
@@ -954,7 +954,7 @@ def runCommandEx(cmd) -> tuple[str, bool]:
 def setListener(event, callback) -> bool:
 	pass
 
-
+# callback: (player: Player, result: dict[str, CommandResult]) -> None
 def registerCommand(
     name, desc, callback, perm=CommandPermissionLevel.GameMasters
 ) -> bool:

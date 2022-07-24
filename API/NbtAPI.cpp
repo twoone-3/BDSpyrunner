@@ -22,7 +22,7 @@ NBTClass::NBTClass(Tag* other) : thiz(other), is_reference(true) {}
 NBTClass::NBTClass(const NBTClass& other) : thiz(other.thiz->copy()), is_reference(false) {}
 
 NBTClass::NBTClass(NBTClass&& other) noexcept
-	: thiz(move(other.thiz)), is_reference(other.is_reference) {}
+    : thiz(move(other.thiz)), is_reference(other.is_reference) {}
 
 NBTClass::~NBTClass() {
 	if (is_reference)

@@ -1,4 +1,4 @@
-#include "MoneyAPI.h"
+﻿#include "MoneyAPI.h"
 #include "API/EventAPI.h"
 #include <Global.hpp>
 #include <LLAPI.h>
@@ -21,8 +21,7 @@ LLMoneyReduce_T reduce = nullptr;
 LLMoneyTrans_T transfer = nullptr;
 LLMoneyGetHist_T getHistory = nullptr;
 LLMoneyClearHist_T clearHIstory = nullptr;
-};
-
+};// namespace money
 
 bool EconomySystem::init() {
 	auto llmoney = LL::getPlugin("LLMoney");

@@ -1,4 +1,4 @@
-#include <Global.hpp>
+﻿#include <Global.hpp>
 #include "BlockAPI.h"
 #include "EntityAPI.h"
 #include "PlayerAPI.h"
@@ -356,14 +356,14 @@ bool PlayerClass::setBossBar(int64_t uid, const string& name, float percent, Bos
 	else if (percent > 100)
 		percent = 100;
 	float value = percent / 100;
-	thiz->updateBossEvent(uid, name, value, colour); // TODO: test whether it work
+	thiz->updateBossEvent(uid, name, value, colour);// TODO: test whether it work
 	return thiz->sendBossEventPacket(BossEvent::Show, name, value, colour);
 }
 
 bool PlayerClass::removeBossBar() {
 	if (thiz == nullptr)
 		return {};
-	return thiz->sendBossEventPacket(BossEvent::Hide, "", 0, BossEventColour::Red); // Remove
+	return thiz->sendBossEventPacket(BossEvent::Hide, "", 0, BossEventColour::Red);// Remove
 }
 
 bool PlayerClass::removeBossBar(int64_t uid) {
@@ -410,17 +410,17 @@ bool PlayerClass::sendCustomForm(const string& str, const py::function& cb) {
 		return {};
 	Player* p = thiz;
 	return thiz->sendCustomFormPacket(str,
-		[p, cb](const string& arg) {
-			if (LL::isServerStopping())
-				return;
-			if (arg == "null")
-				return;
-			PY_TRY;
-			py::gil_scoped_acquire gil_;
-			auto json = py::module_::import("json");
-			cb(PlayerClass(p), json.attr("loads")(arg));
-			PY_CATCH;
-		});
+	    [p, cb](const string& arg) {
+		    if (LL::isServerStopping())
+			    return;
+		    if (arg == "null")
+			    return;
+		    PY_TRY;
+		    py::gil_scoped_acquire gil_;
+		    auto json = py::module_::import("json");
+		    cb(PlayerClass(p), json.attr("loads")(arg));
+		    PY_CATCH;
+	    });
 }
 
 bool PlayerClass::sendSimpleForm(const string& title, const string& content, const vector<string>& buttons, const vector<string>& images, const py::function& cb) {
@@ -429,32 +429,30 @@ bool PlayerClass::sendSimpleForm(const string& title, const string& content, con
 	if (buttons.size() != images.size())
 		throw py::value_error("The number of buttons is not equal to the number of images");
 	Player* p = thiz;
-	return thiz->sendSimpleFormPacket(title, content, buttons, images,
-		[p, cb](int arg) {
-			if (LL::isServerStopping())
-				return;
-			if (arg == -1)
-				return;
-			PY_TRY;
-			py::gil_scoped_acquire gil_;
-			cb(PlayerClass(p), arg);
-			PY_CATCH;
-		});
+	return thiz->sendSimpleFormPacket(title, content, buttons, images, [p, cb](int arg) {
+		if (LL::isServerStopping())
+			return;
+		if (arg == -1)
+			return;
+		PY_TRY;
+		py::gil_scoped_acquire gil_;
+		cb(PlayerClass(p), arg);
+		PY_CATCH;
+	});
 }
 
 bool PlayerClass::sendModalForm(const string& title, const string& content, const string& button1, const string& button2, const py::function& cb) {
 	if (thiz == nullptr)
 		return {};
 	Player* p = thiz;
-	return thiz->sendModalFormPacket(title, content, button1, button2,
-		[p, cb](bool arg) {
-			if (LL::isServerStopping())
-				return;
-			PY_TRY;
-			py::gil_scoped_acquire gil_;
-			cb(PlayerClass(p), arg);
-			PY_CATCH;
-		});
+	return thiz->sendModalFormPacket(title, content, button1, button2, [p, cb](bool arg) {
+		if (LL::isServerStopping())
+			return;
+		PY_TRY;
+		py::gil_scoped_acquire gil_;
+		cb(PlayerClass(p), arg);
+		PY_CATCH;
+	});
 }
 
 bool PlayerClass::refreshChunks() {

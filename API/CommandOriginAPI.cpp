@@ -1,4 +1,4 @@
-#include "CommandOriginAPI.h"
+﻿#include "CommandOriginAPI.h"
 #include "NBTAPI.h"
 #include "EntityAPI.h"
 #include "BlockAPI.h"

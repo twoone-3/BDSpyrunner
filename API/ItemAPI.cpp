@@ -1,4 +1,4 @@
-#include <Global.hpp>
+﻿#include <Global.hpp>
 #include "ItemAPI.h"
 #include "McAPI.h"
 #include "EntityAPI.h"

@@ -1,9 +1,10 @@
-#include "Global.hpp"
+﻿#include "Global.hpp"
 
 fifo_json StrToJson(std::string_view str) {
 	try {
 		return fifo_json::parse(str);
-	} catch (const std::exception& e) {
+	}
+	catch (const std::exception& e) {
 		logger.error("\nParsing JSON failed! {}", e.what());
 		return nullptr;
 	}

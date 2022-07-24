@@ -1,4 +1,4 @@
-#include "ScoreboardAPI.h"
+﻿#include "ScoreboardAPI.h"
 #include "McAPI.h"
 #include "PlayerAPI.h"
 #include <MC/Scoreboard.hpp>

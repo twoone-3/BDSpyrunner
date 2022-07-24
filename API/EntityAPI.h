@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <Global.hpp>
 
 class Actor;
@@ -49,9 +49,9 @@ struct EntityClass {
 	vector<string> getAllTags();
 	EntityClass getEntityFromViewVector(float maxDistance = 5.25f);
 	BlockClass getBlockFromViewVector(
-		bool includeLiquid = false,
-		bool solidOnly = false,
-		float maxDistance = 5.25f,
-		bool ignoreBorderBlocks = true,
-		bool fullOnly = false);
+	    bool includeLiquid = false,
+	    bool solidOnly = false,
+	    float maxDistance = 5.25f,
+	    bool ignoreBorderBlocks = true,
+	    bool fullOnly = false);
 };

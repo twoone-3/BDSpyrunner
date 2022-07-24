@@ -1,4 +1,4 @@
-#include "McAPI.h"
+ï»¿#include "McAPI.h"
 #include <DynamicCommandAPI.h>
 
 #include <API/EntityAPI.h>
@@ -20,10 +20,10 @@ void setListener(const string& event_name, const py::function& cb) {
 	auto event_code = magic_enum::enum_cast<EventCode>(event_name);
 	if (!event_code)
 		throw py::value_error("Invalid event name " + event_name);
-	//Èç¹û¼àÌýÆ÷Î´ÆôÓÃ£¬ÔòÆôÓÃ
+	//å¦‚æžœç›‘å¬å™¨æœªå¯ç”¨ï¼Œåˆ™å¯ç”¨
 	if (listeners.find(event_code.value()) == listeners.end())
 		EnableEventListener(event_code.value());
-	//Ìí¼Ó»Øµ÷º¯Êý
+	//æ·»åŠ å›žè°ƒå‡½æ•°
 	listeners[event_code.value()].push_back(cb);
 }
 
@@ -32,13 +32,12 @@ void registerCommand(const string& name, const string& desc, const py::function&
 	auto command = DynamicCommand::createCommand(name, desc, perm);
 	command->addOverload();
 	command->setCallback(
-		[cb](DynamicCommand const& command, CommandOrigin const& origin,
-			CommandOutput& output, std::unordered_map<std::string, DynamicCommand::Result>& results) {
-			PY_TRY;
-			py::gil_scoped_acquire gil_;
-			cb(EntityClass((Player*)origin.getPlayer()), results);
-			PY_CATCH;
-		});
+	    [cb](DynamicCommand const& command, CommandOrigin const& origin, CommandOutput& output, std::unordered_map<std::string, DynamicCommand::Result>& results) {
+		    PY_TRY;
+		    py::gil_scoped_acquire gil_;
+		    cb(PlayerClass((Player*)origin.getPlayer()), results);
+		    PY_CATCH;
+	    });
 	DynamicCommand::setup(std::move(command));
 }
 
@@ -85,12 +84,12 @@ NBTClass getStructure(const BlockPos& pos1, const BlockPos& pos2, int dim, bool 
 bool setStructure(const NBTClass& nbt, const BlockPos& pos, int dim, Mirror mir, Rotation rot) {
 	auto st = StructureTemplate::fromTag("name", *nbt.thiz->asCompoundTag());
 	/*for (int x = 0; x != size.x; ++x) {
-		for (int y = 0; y != size.y; ++y) {
-			for (int z = 0; z != size.z; ++z) {
-				BlockPos pos{ x, y, z };
-				bs->neighborChanged(pos, pos);
-			}
-		}
+	    for (int y = 0; y != size.y; ++y) {
+	        for (int z = 0; z != size.z; ++z) {
+	            BlockPos pos{ x, y, z };
+	            bs->neighborChanged(pos, pos);
+	        }
+	    }
 	}*/
 	return st.toWorld(dim, pos, mir, rot);
 }
@@ -156,7 +155,10 @@ bool sendCmdOutput(const string& output) {
 	finalOutput += "\r\n";
 
 	SymCall("??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z",
-		ostream&, ostream&, const char*, size_t)(cout, finalOutput.c_str(), finalOutput.size());
+	    ostream&,
+	    ostream&,
+	    const char*,
+	    size_t)(cout, finalOutput.c_str(), finalOutput.size());
 	return true;
 }
 
@@ -198,4 +200,4 @@ vector<ObjectiveClass> getAllScoreObjectives() {
 	return res;
 }
 
-} // namespace mc
+}// namespace mc

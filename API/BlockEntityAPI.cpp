@@ -1,4 +1,4 @@
-#include "BlockAPI.h"
+﻿#include "BlockAPI.h"
 #include "BlockEntityAPI.h"
 #include "NBTAPI.h"
 #include <MC/BlockActor.hpp>
