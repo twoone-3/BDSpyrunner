@@ -127,20 +127,12 @@
     <Library Include="Lib\python37.lib">
       <Filter>库文件</Filter>
     </Library>
-    <Library Include="SDK\Lib\LiteLoader.lib">
-      <Filter>库文件</Filter>
-    </Library>
-    <Library Include="SDK\Lib\SymDBHelper.lib">
-      <Filter>库文件</Filter>
-    </Library>
-    <Library Include="SDK\Lib\bedrock_server_api.lib">
-      <Filter>库文件</Filter>
-    </Library>
-    <Library Include="SDK\Lib\bedrock_server_var.lib">
-      <Filter>库文件</Filter>
-    </Library>
     <Library Include="SDK\Lib\bedrock_server_var.lib" />
     <Library Include="SDK\Lib\bedrock_server_api.lib" />
+    <Library Include="SDK\Lib\bedrock_server_api.lib" />
+    <Library Include="SDK\Lib\bedrock_server_var.lib" />
+    <Library Include="SDK\Lib\LiteLoader.lib" />
+    <Library Include="SDK\Lib\SymDBHelper.lib" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".clang-format" />

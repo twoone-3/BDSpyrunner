@@ -14,7 +14,7 @@ logger = Logger("pshop")
 pshop = {}
 
 
-def str2json(data):
+def str2json(data: str):
 	jsondata = json.loads(data)
 	return jsondata
 

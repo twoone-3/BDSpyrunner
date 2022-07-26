@@ -288,9 +288,24 @@ class Command:
 	def setAlias(self, alias: str) -> bool:
 		pass
 
+	def setSoftEnum(self, name, enums: list[str]) -> str:
+		pass
+
+	def addSoftEnumValues(self, name, values: list[str]) -> bool:
+		pass
+
+	def removeSoftEnumValues(self, name, values: list[str]) -> bool:
+		pass
+
+	def getSoftEnumValues(self, name) -> list[str]:
+		pass
+
+	def getSoftEnumNames(self) -> list[str]:
+		pass
+
 	def mandatory2(
 	    self,
-	    name,
+	    name: str,
 	    type: ParameterType,
 	    description: str = "",
 	    identifier: str = "",
@@ -300,7 +315,7 @@ class Command:
 
 	def mandatory(
 	    self,
-	    name,
+	    name: str,
 	    type: ParameterType,
 	    description: str = "",
 	    option=CommandParameterOption.None_
@@ -324,21 +339,6 @@ class Command:
 	    description: str = "",
 	    option=CommandParameterOption.None_
 	) -> int:
-		pass
-
-	def setSoftEnum(self, name, enums: list[str]) -> bool:
-		pass
-
-	def addSoftEnumValues(self, name, values: list[str]) -> bool:
-		pass
-
-	def removeSoftEnumValues(self, name, values: list[str]) -> bool:
-		pass
-
-	def getSoftEnumValues(self, name) -> list[str]:
-		pass
-
-	def getSoftEnumNames(self) -> list[str]:
 		pass
 
 	def overload(self, value=None) -> bool:
@@ -471,6 +471,9 @@ class NBT:
 		pass
 
 	def asDouble(self) -> float:
+		pass
+
+	def asString(self) -> str:
 		pass
 
 	def toBinary(self) -> bytes:
@@ -953,6 +956,7 @@ def runCommandEx(cmd) -> tuple[str, bool]:
 
 def setListener(event, callback) -> bool:
 	pass
+
 
 # callback: (player: Player, result: dict[str, CommandResult]) -> None
 def registerCommand(
