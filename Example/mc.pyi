@@ -950,7 +950,7 @@ def runCommand(cmd) -> bool:
 	pass
 
 
-def runCommandEx(cmd) -> tuple[str, bool]:
+def runCommandEx(cmd) -> tuple[bool, str]:
 	pass
 
 
