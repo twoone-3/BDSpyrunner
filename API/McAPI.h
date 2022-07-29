@@ -12,12 +12,19 @@ struct ObjectiveClass;
 
 namespace mc {
 void setListener(const string& event_name, const py::function& cb);
+
 void registerCommand(const string& name, const string& desc, const py::function& cb, CommandPermissionLevel perm = GameMasters);
+
 PlayerClass getPlayer(const string& name);
+
 py::list getOnlinePlayers();
+
 py::list getAllEntities();
+
 BlockClass getBlock(const BlockPos& pos, int dim);
+
 bool setBlock(const BlockPos& pos, int dim, const string& name, int tile_data);
+
 bool setBlock(const BlockPos& pos, int dim, const BlockClass& b);
 //从指定地点获取NBT结构数据
 NBTClass getStructure(const BlockPos& pos1, const BlockPos& pos2, int dim, bool ignore_entities = true, bool ignore_blocks = false);
@@ -33,6 +40,7 @@ void setSignBlockMessage(BlockPos pos, int dim, const string& text);
 int IsSlimeChunk(unsigned x, unsigned z);
 
 EntityClass spawnMob(const Vec3& pos, int dim, const string& type);
+
 EntityClass cloneMob(const Vec3& pos, int dim, const EntityClass& ac);
 
 PlayerClass spawnSimulatedPlayer(const string& name, BlockPos& pos, int dim);
@@ -44,9 +52,15 @@ bool sendCmdOutput(const string& output);
 bool setMaxNumPlayers(int num);
 
 ObjectiveClass getDisplayObjective(const string& slot);
+
 ObjectiveClass clearDisplayObjective(const string& slot);
+
 ObjectiveClass getScoreObjective(const string& name);
+
 ObjectiveClass newScoreObjective(const string& name, const string& display);
+
 bool removeScoreObjective(const string& name);
+
 vector<ObjectiveClass> getAllScoreObjectives();
+
 }// namespace mc
