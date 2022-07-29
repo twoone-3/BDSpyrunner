@@ -110,8 +110,8 @@ void EnableEventListener(EventCode event_code) {
 				EVENT_BEGIN(EventCode::onPlayerCmd);
 				EVENT_INSERT(Player);
 				EVENT_INSERT(Command);
-				EVENT_INSERT_EX("isSuccess", ev.mResult->isSuccess());
-				EVENT_INSERT_EX("FullCode", ev.mResult->getFullCode());
+				EVENT_INSERT_EX(isSuccess, ev.mResult->isSuccess());
+				EVENT_INSERT_EX(FullCode, ev.mResult->getFullCode());
 				EVENT_END;
 			});
 			break;
