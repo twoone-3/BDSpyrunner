@@ -11,6 +11,7 @@
 #include <MC/ItemStack.hpp>
 #include <MC/JsonHelpers.hpp>
 #include <MC/MobEffect.hpp>
+#include <LoggerAPI.h>
 
 py::object convertResult(const DynamicCommand::Result& result) {
 	if (!result.isSet)

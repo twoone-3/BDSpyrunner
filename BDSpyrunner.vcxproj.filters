@@ -45,9 +45,6 @@
     <ClCompile Include="API\ItemAPI.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\LoggerAPI.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="API\McAPI.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -99,9 +96,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="API\ItemAPI.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="API\LoggerAPI.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="API\McAPI.h">

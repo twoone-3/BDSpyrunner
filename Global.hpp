@@ -1,10 +1,4 @@
 #pragma once
-#pragma execution_character_set("utf-8")
-#include <LoggerAPI.h>
-
-#include <third-party/magic_enum/magic_enum.hpp>
-#include <third-party/Nlohmann/fifo_json.hpp>
-
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
 
@@ -21,6 +15,10 @@
 
 namespace py = pybind11;
 using std::unique_ptr;
+using std::string;
+using std::string_view;
+using std::vector;
+using std::unordered_map;
 
 enum GameType {
 	Survival = 0,
@@ -28,12 +26,9 @@ enum GameType {
 	Adventure = 2,
 	Spectator = 6,
 };
-
-// 全局变量
+enum class EventCode;
+class Logger;
 
 extern Logger logger;
-extern std::unordered_map<enum class EventCode, std::vector<py::function>> listeners;
-extern std::unordered_map<string, py::object> player_data;
-
-// 字符串转JSON
-fifo_json StrToJson(std::string_view str);
+extern unordered_map<EventCode, vector<py::function>> listeners;
+extern unordered_map<string, py::object> player_data;

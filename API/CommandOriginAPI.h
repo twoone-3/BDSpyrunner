@@ -5,6 +5,8 @@ struct EntityClass;
 struct PlayerClass;
 struct NBTClass;
 class CommandOrigin;
+class BlockPos;
+class Vec3;
 struct CommandOriginClass {
 	CommandOrigin* thiz;
 

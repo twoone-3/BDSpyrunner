@@ -14,6 +14,7 @@
 #include <MC/SimulatedPlayer.hpp>
 #include <MC/Spawner.hpp>
 #include <MC/SignBlockActor.hpp>
+#include <LoggerAPI.h>
 
 namespace mc {
 void setListener(const string& event_name, const py::function& cb) {
@@ -65,7 +66,12 @@ py::list getAllEntities() {
 }
 
 BlockClass getBlock(const BlockPos& pos, int dim) {
-	return BlockInstance::createBlockInstance(Level::getBlock(pos, dim), pos, dim);
+	if (Global<Level> == nullptr)
+		throw std::runtime_error("Level is not loaded");
+	Block* b = Level::getBlockEx(pos, dim);
+	if (b == nullptr)
+		throw py::value_error("Failed to find block");
+	return BlockInstance::createBlockInstance(b, pos, dim);
 }
 
 bool setBlock(const BlockPos& pos, int dim, const string& name, int tile_data) {

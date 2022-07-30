@@ -11,6 +11,7 @@
 #include <MC/Command.hpp>
 #include <MC/CommandOrigin.hpp>
 #include <MC/Dimension.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 CommandOriginClass::CommandOriginClass(CommandOrigin* p) : thiz(p) {}
 

@@ -53,6 +53,7 @@
       <ErrorReporting>Send</ErrorReporting>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -79,7 +80,6 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClCompile Include="API\EntityAPI.cpp" />
     <ClCompile Include="API\EventAPI.cpp" />
     <ClCompile Include="API\ItemAPI.cpp" />
-    <ClCompile Include="API\LoggerAPI.cpp" />
     <ClCompile Include="API\McAPI.cpp" />
     <ClCompile Include="API\NBTAPI.cpp" />
     <ClCompile Include="API\PlayerAPI.cpp" />
@@ -99,7 +99,6 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClInclude Include="API\EntityAPI.h" />
     <ClInclude Include="API\EventAPI.h" />
     <ClInclude Include="API\ItemAPI.h" />
-    <ClInclude Include="API\LoggerAPI.h" />
     <ClInclude Include="API\McAPI.h" />
     <ClInclude Include="API\NBTAPI.h" />
     <ClInclude Include="API\PlayerAPI.h" />

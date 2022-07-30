@@ -12,12 +12,12 @@
 #include <API/EntityAPI.h>
 #include <API/MoneyAPI.h>
 #include <API/NBTAPI.h>
-#include <API/LoggerAPI.h>
 #include <API/PlayerAPI.h>
 #include <API/ScoreboardAPI.h>
 #include <API/McAPI.h>
 
 #include <MC/Level.hpp>
+#include <LoggerAPI.h>
 
 // clang-format off
 #define DEF_ENUM(name, type) { auto entries = magic_enum::enum_entries<type>(); auto e = py::enum_<type>(mc_module, name); for (auto& [val, n] : entries) { e.value(n.data(), val); } }
@@ -203,17 +203,24 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
 	    .def("toSNBT", &NBTClass::toSNBT, "indent"_a = 4, "format"_a = SnbtFormat::PartialNewLine)
 	    .def("append", &NBTClass::append);
 
-	py::class_<LoggerClass>(mc_module, "Logger")
+	py::class_<Logger>(mc_module, "Logger")
 	    .def(py::init<string>(), "title"_a)
-	    .def("debug", &LoggerClass::debug)
-	    .def("info", &LoggerClass::info)
-	    .def("warn", &LoggerClass::warn)
-	    .def("error", &LoggerClass::error)
-	    .def("fatal", &LoggerClass::fatal)
+	    .def("debug", [](Logger& l, const string& msg) { l.debug(msg); })
+	    .def("info", [](Logger& l, const string& msg) { l.info(msg); })
+	    .def("warn", [](Logger& l, const string& msg) { l.warn(msg); })
+	    .def("error", [](Logger& l, const string& msg) { l.error(msg); })
+	    .def("fatal", [](Logger& l, const string& msg) { l.fatal(msg); })
 
-	    .def("setTitle", &LoggerClass::setTitle)
-	    .def("setFile", &LoggerClass::setFile)
-	    .def("setPlayer", &LoggerClass::setPlayer);
+	    .def("setTitle", [](Logger& l, const string& title) { l.title = title; })
+	    .def("setFile", [](Logger& l, const string& file, int level) {
+		    l.setFile(file, std::ios::app);
+		    l.fileLevel = level;
+		    return l.ofs.is_open();
+	    })
+	    .def("setPlayer", [](Logger& l, const PlayerClass& player, int level) {
+		    l.player = player.thiz;
+		    l.playerLevel = level;
+	    });
 
 	py::class_<PlayerClass>(mc_module, "Player")
 	    .def_property("name", &PlayerClass::getName, nullptr)

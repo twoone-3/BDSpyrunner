@@ -14,6 +14,7 @@
 #include <MC/SimulatedPlayer.hpp>
 #include <MC/Level.hpp>
 #include <MC/Packet.hpp>
+#include <LoggerAPI.h>
 
 py::dict NavigateResultToObject(const ScriptModuleMinecraft::ScriptNavigationResult& res) {
 	py::dict obj;
