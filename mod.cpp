@@ -407,7 +407,7 @@ THOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tr
 		}
 		else {
 			debug = true;
-			cout << '>>> ';
+			cout << ">>> ";
 		}
 		return false;
 	}
@@ -415,7 +415,7 @@ THOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tr
 		//Py_BEGIN_CALL;
 		PyRun_SimpleString(cmd->c_str());
 		//Py_END_CALL;
-		cout << '>>> ';
+		cout << ">>> ";
 		return false;
 	}
 	h.setArg(ToPyStr(*cmd));
