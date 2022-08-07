@@ -34,7 +34,7 @@
     <LinkIncremental>false</LinkIncremental>
     <PublicIncludeDirectories>
     </PublicIncludeDirectories>
-    <IncludePath>.;include;SDK\Header;$(IncludePath)</IncludePath>
+    <IncludePath>include;SDK\Header;$(IncludePath)</IncludePath>
     <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <EnableClangTidyCodeAnalysis>false</EnableClangTidyCodeAnalysis>
@@ -71,40 +71,40 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="API\BlockAPI.cpp" />
-    <ClCompile Include="API\BlockEntityAPI.cpp" />
-    <ClCompile Include="API\CommandAPI.cpp" />
-    <ClCompile Include="API\CommandOriginAPI.cpp" />
-    <ClCompile Include="API\CommandOutputAPI.cpp" />
-    <ClCompile Include="API\ContainerAPI.cpp" />
-    <ClCompile Include="API\EntityAPI.cpp" />
-    <ClCompile Include="API\EventAPI.cpp" />
-    <ClCompile Include="API\ItemAPI.cpp" />
-    <ClCompile Include="API\McAPI.cpp" />
-    <ClCompile Include="API\NBTAPI.cpp" />
-    <ClCompile Include="API\PlayerAPI.cpp" />
-    <ClCompile Include="API\ScoreboardAPI.cpp" />
-    <ClCompile Include="ModuleDef.cpp" />
-    <ClCompile Include="API\MoneyAPI.cpp" />
-    <ClCompile Include="Global.cpp" />
-    <ClCompile Include="Init.cpp" />
+    <ClCompile Include="src\api\block.cpp" />
+    <ClCompile Include="src\api\block_entity.cpp" />
+    <ClCompile Include="src\api\command.cpp" />
+    <ClCompile Include="src\api\command_origin.cpp" />
+    <ClCompile Include="src\api\command_output.cpp" />
+    <ClCompile Include="src\api\container.cpp" />
+    <ClCompile Include="src\api\entity.cpp" />
+    <ClCompile Include="src\api\event.cpp" />
+    <ClCompile Include="src\api\item.cpp" />
+    <ClCompile Include="src\api\utils.cpp" />
+    <ClCompile Include="src\api\nbt.cpp" />
+    <ClCompile Include="src\api\player.cpp" />
+    <ClCompile Include="src\api\scoreboard.cpp" />
+    <ClCompile Include="src\api.cpp" />
+    <ClCompile Include="src\api\money.cpp" />
+    <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="API\BlockAPI.h" />
-    <ClInclude Include="API\BlockEntityAPI.h" />
-    <ClInclude Include="API\CommandAPI.h" />
-    <ClInclude Include="API\CommandOriginAPI.h" />
-    <ClInclude Include="API\CommandOutputAPI.h" />
-    <ClInclude Include="API\ContainerAPI.h" />
-    <ClInclude Include="API\EntityAPI.h" />
-    <ClInclude Include="API\EventAPI.h" />
-    <ClInclude Include="API\ItemAPI.h" />
-    <ClInclude Include="API\McAPI.h" />
-    <ClInclude Include="API\NBTAPI.h" />
-    <ClInclude Include="API\PlayerAPI.h" />
-    <ClInclude Include="API\ScoreboardAPI.h" />
-    <ClInclude Include="API\MoneyAPI.h" />
-    <ClInclude Include="Global.hpp" />
+    <ClInclude Include="src\api\block.h" />
+    <ClInclude Include="src\api\block_entity.h" />
+    <ClInclude Include="src\api\command.h" />
+    <ClInclude Include="src\api\command_origin.h" />
+    <ClInclude Include="src\api\command_output.h" />
+    <ClInclude Include="src\api\container.h" />
+    <ClInclude Include="src\api\entity.h" />
+    <ClInclude Include="src\api\event.h" />
+    <ClInclude Include="src\api\item.h" />
+    <ClInclude Include="src\api\utils.h" />
+    <ClInclude Include="src\api\nbt.h" />
+    <ClInclude Include="src\api\player.h" />
+    <ClInclude Include="src\api\scoreboard.h" />
+    <ClInclude Include="src\api\money.h" />
+    <ClInclude Include="src\global.h" />
+    <ClInclude Include="src\py_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="Lib\python37.lib" />

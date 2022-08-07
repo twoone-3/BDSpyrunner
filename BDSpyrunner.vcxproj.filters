@@ -14,102 +14,102 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="API\BlockAPI.cpp">
+    <ClCompile Include="src\api\block.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\BlockEntityAPI.cpp">
+    <ClCompile Include="src\api\block_entity.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\CommandAPI.cpp">
+    <ClCompile Include="src\api\command.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\CommandOriginAPI.cpp">
+    <ClCompile Include="src\api\command_origin.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\CommandOutputAPI.cpp">
+    <ClCompile Include="src\api\command_output.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\ContainerAPI.cpp">
+    <ClCompile Include="src\api\container.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\EntityAPI.cpp">
+    <ClCompile Include="src\api\entity.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\EventAPI.cpp">
+    <ClCompile Include="src\api\event.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\ItemAPI.cpp">
+    <ClCompile Include="src\api\item.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\McAPI.cpp">
+    <ClCompile Include="src\api\utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\NBTAPI.cpp">
+    <ClCompile Include="src\api\nbt.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\PlayerAPI.cpp">
+    <ClCompile Include="src\api\player.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\ScoreboardAPI.cpp">
+    <ClCompile Include="src\api\scoreboard.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Global.cpp">
+    <ClCompile Include="src\main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Init.cpp">
+    <ClCompile Include="src\api\money.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="API\MoneyAPI.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="ModuleDef.cpp">
+    <ClCompile Include="src\api.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="API\BlockAPI.h">
+    <ClInclude Include="src\api\block.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\BlockEntityAPI.h">
+    <ClInclude Include="src\api\block_entity.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\CommandAPI.h">
+    <ClInclude Include="src\api\command.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\CommandOriginAPI.h">
+    <ClInclude Include="src\api\command_origin.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\CommandOutputAPI.h">
+    <ClInclude Include="src\api\command_output.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\ContainerAPI.h">
+    <ClInclude Include="src\api\container.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\EntityAPI.h">
+    <ClInclude Include="src\api\entity.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\EventAPI.h">
+    <ClInclude Include="src\api\event.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\ItemAPI.h">
+    <ClInclude Include="src\api\item.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\McAPI.h">
+    <ClInclude Include="src\api\utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\NBTAPI.h">
+    <ClInclude Include="src\api\nbt.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\PlayerAPI.h">
+    <ClInclude Include="src\api\player.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\ScoreboardAPI.h">
+    <ClInclude Include="src\api\scoreboard.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Global.hpp">
+    <ClInclude Include="src\global.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="API\MoneyAPI.h">
+    <ClInclude Include="src\api\money.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\py_utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
