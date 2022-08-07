@@ -1,7 +1,7 @@
-# pyr的代码补全文件
+# Code completion file for BDSpyrunner
 # Copyright (c) 2022 twoone3
 # All rights reserved.
-# last change: 2022.7.24
+# last change: 2022.8.7
 
 from enum import Enum
 
@@ -965,7 +965,7 @@ def registerCommand(
 	pass
 
 
-def getPlayer(name) -> list[Player]:
+def getPlayer(name) -> Player:
 	pass
 
 

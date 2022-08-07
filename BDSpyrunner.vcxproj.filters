@@ -11,6 +11,7 @@
     </Filter>
     <Filter Include="库文件">
       <UniqueIdentifier>{b5a862e5-3add-4a64-bbd2-2343fd629406}</UniqueIdentifier>
+      <Extensions>lib</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -135,8 +136,5 @@
     <Library Include="SDK\Lib\bedrock_server_var.lib">
       <Filter>库文件</Filter>
     </Library>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".clang-format" />
   </ItemGroup>
 </Project>
