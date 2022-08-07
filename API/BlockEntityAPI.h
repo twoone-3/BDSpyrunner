@@ -2,18 +2,19 @@
 #include <Global.hpp>
 
 class BlockActor;
+class BlockPos;
 struct BlockClass;
 struct NBTClass;
 struct BlockEntityClass {
-	BlockActor* thiz;
-	int dim;
+  BlockActor* thiz;
+  int dim;
 
-	BlockEntityClass(BlockActor* be, int dim);
+  BlockEntityClass(BlockActor* be, int dim);
 
-	BlockPos getPos();
-	int getType();
+  BlockPos getPos();
+  int getType();
 
-	NBTClass getNbt();
-	bool setNbt(const NBTClass& nbt);
-	BlockClass getBlock();
+  NBTClass getNbt();
+  bool setNbt(const NBTClass& nbt);
+  BlockClass getBlock();
 };

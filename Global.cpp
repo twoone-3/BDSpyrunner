@@ -1,4 +1,5 @@
 ﻿#include "Global.hpp"
+
 #include <LoggerAPI.h>
 
 Logger logger("BDSpyrunner");

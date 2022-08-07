@@ -5,7 +5,7 @@
 // | |  | | (_| | (_| | | (__  | |____| | | | |_| | | | | | | | |____|_|   |_|
 // |_|  |_|\__,_|\__, |_|\___| |______|_| |_|\__,_|_| |_| |_|  \_____|
 //                __/ | https://github.com/Neargye/magic_enum
-//               |___/  version 0.8.0
+//               |___/  version 0.8.1
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // SPDX-License-Identifier: MIT
@@ -34,7 +34,7 @@
 
 #define MAGIC_ENUM_VERSION_MAJOR 0
 #define MAGIC_ENUM_VERSION_MINOR 8
-#define MAGIC_ENUM_VERSION_PATCH 0
+#define MAGIC_ENUM_VERSION_PATCH 1
 
 #include <array>
 #include <cassert>
@@ -70,6 +70,7 @@
 #  pragma warning(disable : 26495) // Variable 'static_string<N>::chars_' is uninitialized.
 #  pragma warning(disable : 28020) // Arithmetic overflow: Using operator '-' on a 4 byte value and then casting the result to a 8 byte value.
 #  pragma warning(disable : 26451) // The expression '0<=_Param_(1)&&_Param_(1)<=1-1' is not true at this call.
+#  pragma warning(disable : 4514) // Unreferenced inline function has been removed.
 #endif
 
 // Checks magic_enum compiler compatibility.
@@ -195,22 +196,22 @@ struct range_max : std::integral_constant<int, MAGIC_ENUM_RANGE_MAX> {};
 template <typename T>
 struct range_max<T, std::void_t<decltype(customize::enum_range<T>::max)>> : std::integral_constant<decltype(customize::enum_range<T>::max), customize::enum_range<T>::max> {};
 
-template <std::size_t N>
+template <std::uint16_t N>
 class static_string {
  public:
-  constexpr explicit static_string(string_view str) noexcept : static_string{str, std::make_index_sequence<N>{}} {
+  constexpr explicit static_string(string_view str) noexcept : static_string{str, std::make_integer_sequence<std::uint16_t, N>{}} {
     assert(str.size() == N);
   }
 
   constexpr const char* data() const noexcept { return chars_; }
 
-  constexpr std::size_t size() const noexcept { return N; }
+  constexpr std::uint16_t size() const noexcept { return N; }
 
   constexpr operator string_view() const noexcept { return {data(), size()}; }
 
  private:
-  template <std::size_t... I>
-  constexpr static_string(string_view str, std::index_sequence<I...>) noexcept : chars_{str[I]..., '\0'} {}
+  template <std::uint16_t... I>
+  constexpr static_string(string_view str, std::integer_sequence<std::uint16_t, I...>) noexcept : chars_{str[I]..., '\0'} {}
 
   char chars_[N + 1];
 };
@@ -224,7 +225,7 @@ class static_string<0> {
 
   constexpr const char* data() const noexcept { return nullptr; }
 
-  constexpr std::size_t size() const noexcept { return 0; }
+  constexpr std::uint16_t size() const noexcept { return 0; }
 
   constexpr operator string_view() const noexcept { return {}; }
 };
@@ -739,7 +740,7 @@ struct constexpr_hash_t<Value, std::enable_if_t<std::is_same_v<Value, string_vie
     constexpr std::uint32_t operator()(string_view value) const noexcept {
       auto acc = static_cast<std::uint64_t>(2166136261ULL);
       for (const auto c : value) {
-        acc = ((acc ^ static_cast<std::uint64_t>(c)) * static_cast<std::uint64_t>(16777619ULL)) & std::numeric_limits<std::uint32_t>::max();
+        acc = ((acc ^ static_cast<std::uint64_t>(c)) * static_cast<std::uint64_t>(16777619ULL)) & (std::numeric_limits<std::uint32_t>::max)();
       }
       return static_cast<std::uint32_t>(acc);
     }
@@ -747,7 +748,7 @@ struct constexpr_hash_t<Value, std::enable_if_t<std::is_same_v<Value, string_vie
 };
 
 template <typename Hash>
-constexpr static Hash hash_v{};
+[[maybe_unused]] constexpr static Hash hash_v{};
 
 template <auto* GlobValues, typename Hash>
 constexpr auto calculate_cases(std::size_t Page) noexcept {
@@ -760,18 +761,25 @@ constexpr auto calculate_cases(std::size_t Page) noexcept {
 
   std::array<switch_t, 256> result{};
   auto fill = result.begin();
-  for (auto first = values.begin() + Page, last = values.begin() + Page + values_to; first != last; ) {
-    *fill++ = hash_v<Hash>(*first++);
+  {
+    auto first = values.begin() + static_cast<std::ptrdiff_t>(Page);
+    auto last = values.begin() + static_cast<std::ptrdiff_t>(Page + values_to);
+    while (first != last) {
+      *fill++ = hash_v<Hash>(*first++);
+    }
   }
 
   // dead cases, try to avoid case collisions
   for (switch_t last_value = result[values_to - 1]; fill != result.end() && last_value != (std::numeric_limits<switch_t>::max)(); *fill++ = ++last_value) {
   }
 
-  auto it = result.begin();
-  for (auto last_value = (std::numeric_limits<switch_t>::min)(); fill != result.end(); *fill++ = last_value++) {
-    while (last_value == *it) {
-      ++last_value, ++it;
+  {
+    auto it = result.begin();
+    auto last_value = (std::numeric_limits<switch_t>::min)();
+    for (; fill != result.end(); *fill++ = last_value++) {
+      while (last_value == *it) {
+        ++last_value, ++it;
+      }
     }
   }
 

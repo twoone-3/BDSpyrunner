@@ -3,20 +3,20 @@
 
 class CommandOutput;
 struct CommandOutputClass {
-	CommandOutput* thiz;
+  CommandOutput* thiz;
 
-	CommandOutputClass(CommandOutput* p);
+  CommandOutputClass(CommandOutput* p);
 
-	bool empty();
+  bool empty();
 
-	int getSuccessCount();
+  int getSuccessCount();
 
-	bool success();
-	bool success(const string& msg);
+  bool success();
+  bool success(const string& msg);
 
-	bool addMessage(const string& msg);
+  bool addMessage(const string& msg);
 
-	bool error(const string& msg);
+  bool error(const string& msg);
 
-	const char* toString();
+  const char* toString();
 };
