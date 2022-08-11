@@ -506,8 +506,8 @@ void EnableEventListener(EventCode event_code) {
         EVENT_INSERT(Actor);
         EVENT_INSERT(Container);
         EVENT_INSERT(Slot);
-        EVENT_INSERT(NewItemStack);
         EVENT_INSERT(PreviousItemStack);
+        EVENT_INSERT(NewItemStack);
         EVENT_END;
       });
       break;

@@ -1,7 +1,7 @@
-# Code completion file for BDSpyrunner
+# pyr的代码补全文件
 # Copyright (c) 2022 twoone3
 # All rights reserved.
-# last change: 2022.8.7
+# last change: 2022.7.24
 
 from enum import Enum
 
@@ -950,7 +950,7 @@ def runCommand(cmd) -> bool:
 	pass
 
 
-def runCommandEx(cmd) -> tuple[bool, str]:
+def runCommandEx(cmd) -> tuple[str, bool]:
 	pass
 
 
@@ -965,7 +965,7 @@ def registerCommand(
 	pass
 
 
-def getPlayer(name) -> Player:
+def getPlayer(name) -> list[Player]:
 	pass
 
 

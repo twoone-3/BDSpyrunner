@@ -7,8 +7,8 @@
 
 constexpr unsigned PYR_VERSION_MAJOR = 2;
 constexpr unsigned PYR_VERSION_MINOR = 0;
-constexpr unsigned PYR_VERSION_MICRO = 8;
-constexpr const char* PYR_VERSION = "v2.0.8";
+constexpr unsigned PYR_VERSION_MICRO = 9;
+constexpr const char* PYR_VERSION = "v2.0.9";
 
 Logger logger("BDSpyrunner");
 
