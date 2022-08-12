@@ -56,6 +56,11 @@ Vec3* Actor::getPosDelta() {
 }
 */
 
+//获取速度
+float Actor::getSpeedInMetersPerSecond() {
+	return SymCall<float>("?getSpeedInMetersPerSecond@Actor@@QEBAMXZ", this);
+}
+
 //是否悬空
 
 bool Actor::isStanding() {//IDA MovePlayerPacket::MovePlayerPacket
@@ -361,7 +366,7 @@ void Player::sendInventroy() {
 //刷新区块
 
 void Player::resendAllChunks() {
-	SymCall("?resendAllChunks@ServerPlayer@@UEAAXXZ", this);
+	SymCall("?resendAllChunks@Player@@UEAAXXZ", this);
 }
 
 //发送数据包

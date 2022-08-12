@@ -1,6 +1,6 @@
 import mco
 from typing import Optional, Callable
-import api.getPlayerList as api
+import time
 
 # Listener
 def setListener(event: str, function: Callable[[object], Optional[bool]]) -> None:
@@ -56,7 +56,6 @@ def getPlayerByXuid(xuid: str) -> mco.Entity:
 
 def getPlayerList() -> list:
     return mco.getPlayerList()
-    return api.getPlayerList()
 
 def setDamage(dmg:int) -> None:
     return mco.setDamage(dmg)
@@ -77,15 +76,40 @@ def setStructure(data:str, x:int, y:int, z:int, did:int) -> None:
     return mco.setStructure(data, x, y, z, did)
 
 def explode(x:float, y:float, z:float, did:int, power:float, destroy:bool, range:float, fire:bool) -> None:
-    return mco.explode(x, y, z, did, power, destroy, range, fire)
+    return explode(x, y, z, did, power, destroy, range, fire)
 
 def spawnItem(data:str, x:int, y:int, z:int, did:int) -> None:
-    return mco.spawnItem(data, x, y, z, did)
+    return spawnItem(data, x, y, z, did)
 
 def isSlimeChunk(x:int, y:int) -> bool:
-    return mco.isSlimeChunk(x, y)
+    return isSlimeChunk(x, y)
 
 def setSignBlockMessage(msg:str, x:int, y:int, z:int, did:int) -> None:
-    return mco.setSignBlockMessage(msg, x, y, z, did)
+    return setSignBlockMessage(msg, x, y, z, did)
 
-api.init()
+######### PRIVATE API ##########
+'''
+log_out_function_inner = __import__("mc").logout
+def log_out_function_replace(content: str):
+    log_out_function_inner(content + "\n")
+logger = log_out_function_replace
+'''
+logger = print
+
+def log(*content, name: str = "Plugin", level: str = "INFO", info: str = ""):
+    date = time.strftime('%H:%M:%S')
+    strs = ""
+    for string in content:
+        strs += str(string)
+    content = strs[2:-3]
+    if __name__ != '__main__':
+        if name != "plugin" and content != "Test Message" and level != "INFO" and info != "":
+            logger(f"{date} {level} [{name}][{info}] {content}")
+        elif name != "plugin" and level != "INFO":
+            logger(f"{date} {level} [{name}] {content}")
+        elif name != "plugin" and info != "":
+            logger(f"{date} INFO [{name}][{info}] {content}")
+        elif info != "":
+            logger(f"{date} INFO [{name}][{info}] {content}")
+        else:
+            logger(f"{date} INFO [{name}] {content}")

@@ -360,7 +360,7 @@ PyObject* PyEntity_SendTextPacket(PyObject* self, PyObject* args) {
 		Player* p = PyEntity::asPlayer(self);
 		if (!p)
 			return nullptr;
-		p->sendTextPacket(mode, msg);
+		//p->sendTextPacket(mode, msg);
 	}
 	Py_RETURN_NONE;
 }

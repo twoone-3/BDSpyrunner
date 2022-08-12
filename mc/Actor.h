@@ -46,6 +46,8 @@ struct Actor {
 	Vec3* getPosPrev();
 	//获取生物坐标的变化量
 	//Vec3* getPosDelta();
+	//获取速度
+	float getSpeedInMetersPerSecond();
 	//是否悬空
 	bool isStanding();
 	//是否潜行

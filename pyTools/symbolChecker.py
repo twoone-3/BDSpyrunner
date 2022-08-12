@@ -78,8 +78,8 @@ def searchStrInFile(filePath, str):
             lines = sourceFile.readlines()
             for line in lines:
                 if "//" in line:  # Does not match the symbol in the comment
-                    pass
-                    #continue
+                    #pass
+                    continue
                 if str in line:
                     return True
     except:
@@ -110,19 +110,26 @@ if __name__ == "__main__":
         pdbFilePath = sys.argv[1]
         sourceCodePath = sys.argv[2]
         verboseMode = sys.argv[3]
+        overWrite = sys.argv[4]
         if verboseMode != "y":
             verboseMode = False
+        if overWrite != "y":
+            overWrite = False
     except:
         pdbFilePath = input(r"pdb file path (such as E:\bds\bedrock_server.pdb): ")
         sourceCodePath = input("plugin source code path: ")
         verboseMode = input("type y to enable verbose mode: ")
+        overWrite = input("type y to overwrite the cache: ")
         if verboseMode != "y":
             verboseMode = False
+        if overWrite != "y":
+            overWrite = False
 
     #os.system("del /f /q pdbInfo.txt")
     print("\nSymbol Checker For BDS Projects\n")
     downloadCVDUMP()
-    print("Generating pdbInfo.txt...")
-    os.system(f".\cvdump.exe -headers -p {pdbFilePath} > pdbInfo.txt")
+    if overWrite:
+        print("Generating pdbInfo.txt...")
+        os.system(f".\cvdump.exe -headers -p {pdbFilePath} > pdbInfo.txt")
     compare()
     #os.system("del /f /q pdbInfo.txt")

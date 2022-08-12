@@ -63,7 +63,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='WillowSauceR-local|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\..\IDA\1.19.10.03-Win\bdxcore_mod\</OutDir>
+    <OutDir>F:\IDA\1.19.20.02-Win\bdxcore_mod\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LemeAlone-local|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -101,6 +101,7 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -175,6 +176,11 @@ copy $(OutputPath)$(ProjectName).pdb ..\BDS\plugins\$(ProjectName).pdb
     <ClInclude Include="mod\Entity.h" />
     <ClInclude Include="mod\Version.h" />
     <ClInclude Include="mod\CPython.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="pyTools\mc.py" />
+    <None Include="pyTools\symbolChecker.py" />
+    <None Include="pyTools\test.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

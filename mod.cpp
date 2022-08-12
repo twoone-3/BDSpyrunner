@@ -316,8 +316,8 @@ THOOK(BDS_Main, int, "main",
 	cout << "[BDSpyrunner] " << PYR_VERSION << " loaded." << endl;
 	return original(argc, argv, envp);
 }
-//Level的构造函数
-THOOK(Level_construct, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NEAEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$WeakRefT@UEntityRefTraits@@@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@VItemRegistryRef@@V?$weak_ptr@VBlockTypeRegistry@@@4@V?$optional@VDimensionDefinitionGroup@@@4@@Z",
+//Level的构造函数				
+THOOK(Level_construct, Level*, "??0Level@@QEAA@AEBV?$not_null@V?$NonOwnerPointer@VSoundPlayerInterface@@@Bedrock@@@gsl@@V?$unique_ptr@VLevelStorage@@U?$default_delete@VLevelStorage@@@std@@@std@@V?$unique_ptr@VLevelLooseFileStorage@@U?$default_delete@VLevelLooseFileStorage@@@std@@@4@AEAVIMinecraftEventing@@_NW4SubClientId@@AEAVScheduler@@V?$not_null@V?$NonOwnerPointer@VStructureManager@@@Bedrock@@@2@AEAVResourcePackManager@@AEBV?$not_null@V?$NonOwnerPointer@VIEntityRegistryOwner@@@Bedrock@@@2@V?$WeakRefT@UEntityRefTraits@@@@V?$unique_ptr@VBlockComponentFactory@@U?$default_delete@VBlockComponentFactory@@@std@@@4@V?$unique_ptr@VBlockDefinitionGroup@@U?$default_delete@VBlockDefinitionGroup@@@std@@@4@VItemRegistryRef@@V?$weak_ptr@VBlockTypeRegistry@@@4@V?$optional@VDimensionDefinitionGroup@@@4@@Z",
 	Level* _this, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5, uintptr_t a6, uintptr_t a7, uintptr_t a8, uintptr_t a9, uintptr_t a10, uintptr_t a11, uintptr_t a12, uintptr_t a13, uintptr_t a14, uintptr_t a15, uintptr_t a16) {
 	return global<Level> = original(_this, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16);
 }
@@ -348,7 +348,8 @@ THOOK(ServerScoreboard_construct, Scoreboard*, "??0ServerScoreboard@@QEAA@VComma
 	return global<Scoreboard> = original(_this, a1, a2);
 }
 // Player构造函数
-THOOK(Player_construct, Player*, "??0Player@@QEAA@AEAVLevel@@AEAVPacketSender@@W4GameType@@AEBVNetworkIdentifier@@EVUUID@mce@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@5V?$unique_ptr@VCertificate@@U?$default_delete@VCertificate@@@std@@@8@AEAVEntityContext@@55@Z", void* _this, void* arg1, void* arg2, void* arg3, void* arg4, void* arg5, void* arg6, void* arg7, void* arg8, void* arg9, void* arg10, void* arg11, void* arg12) {
+THOOK(Player_construct, Player*, "??0Player@@QEAA@AEAVLevel@@AEAVPacketSender@@W4GameType@@AEBVNetworkIdentifier@@W4SubClientId@@VUUID@mce@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@6V?$unique_ptr@VCertificate@@U?$default_delete@VCertificate@@@std@@@9@AEAVEntityContext@@66@Z",
+	void* _this, void* arg1, void* arg2, void* arg3, void* arg4, void* arg5, void* arg6, void* arg7, void* arg8, void* arg9, void* arg10, void* arg11, void* arg12) {
 	//会构造两次，取第一次值
 	if (global<std::vector<Player*>> == nullptr)
 		global<std::vector<Player*>> = new std::vector<Player*>;
@@ -678,20 +679,26 @@ THOOK(onInputCommand, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdent
 }
 //玩家选择表单
 THOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormResponsePacket@@$0A@@@UEBAXAEBVNetworkIdentifier@@AEAVNetEventCallback@@AEAV?$shared_ptr@VPacket@@@std@@@Z",
-	uintptr_t _this, uintptr_t id, ServerNetworkHandler* handle,/*ModalFormResponsePacket*/uintptr_t* ppkt) {
+	uintptr_t _this, uintptr_t id, ServerNetworkHandler* handle, uintptr_t* ppkt) {
 	EventCallBackHelper h(EventCode::onSelectForm);
 	uintptr_t pkt = *ppkt;
 	Player* p = handle->_getServerPlayer(id, pkt);
-	if (p) {
-		unsigned fid = Dereference<unsigned>(pkt, 48);
-		string data = Dereference<string>(pkt, 56);
-		if (data.back() == '\n')
-			data.pop_back();
-		h
-			.insert("player", p)
-			.insert("selected", data)
-			.insert("formid", fid);
-		h.call();
+	if (!Dereference<bool>(pkt, 81)) {
+		if (Dereference<bool>(pkt, 72)) {
+			int fid = Dereference<int>(pkt, 48);
+			//Json::value_type* json = Dereference<Json::value_type*>(pkt, 56);
+			string dst;
+			string& data = 
+				SymCall<string&>("?toStyledString@Value@Json@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
+					pkt + 56, &dst);
+			if (data.back() == '\n')
+				data.pop_back();
+			h
+				.insert("player", p)
+				.insert("selected", data)
+				.insert("formid", fid);
+			h.call();
+		}
 	}
 	original(_this, id, handle, ppkt);
 }
@@ -762,28 +769,13 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 //玩家移动
 THOOK(onMove, void*, "??0MovePlayerPacket@@QEAA@AEBVPlayer@@W4PositionMode@1@HH@Z",
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
-	/*
-	Vec3* deltaPos = p->getPosDelta();
-	//Vec3* prevPos = p->getPosPrev();
-	//Vec3* pos = p->getPos();
-	//cout << "lastPos: " << deltaPos->x << ", " << deltaPos->y << ", " << deltaPos->z << endl;
-	//cout << "prevPos: " << prevPos->x << ", " << prevPos->y << ", " << prevPos->z << endl;
-	//cout << "CurrPos: " << pos->x << ", " << pos->y << ", " << pos->z << endl;
-	if (p->isStanding()) {
-		if (deltaPos->x < 0.01 && float(deltaPos->y) == float(-0.0784) && deltaPos->z < 0.01)
-			if(deltaPos->x > -0.01 && deltaPos->z > -0.01)
-				return original(_this, p, a3, a4, a5);
-	}else {
-		if (deltaPos->x < 0.01 && deltaPos->y < 0.01 && deltaPos->z < 0.01)
-			if (deltaPos->x > -0.01 && deltaPos->y > -0.01 && deltaPos->z > -0.01)
-				return original(_this, p, a3, a4, a5);
-	}
-	*/
-	//if (lastPos->x != pos->x || lastPos->y != pos->y || lastPos->z != pos->z) { //最开始的过滤代码，因为getPos()和getPosPrev()获取到的值一样而无效
+	float speed = p->getSpeedInMetersPerSecond();
+	//cout << "getSpeedInMetersPerSecond: " << getSpeedInMetersPerSecond << endl;
+	if (speed > 1) {
 		EventCallBackHelper h(EventCode::onMove);
 		h.setArg(ToEntity(p)).call();
 		return original(_this, p, a3, a4, a5);
-	//}
+	}
 	return original(_this, p, a3, a4, a5);
 }
 //玩家穿戴
@@ -813,6 +805,7 @@ THOOK(onScoreChanged, void, "?onScoreChanged@ServerScoreboard@@UEAAXAEBUScoreboa
 		.insert("playersnum", a2->getPlayerScore(a1)->getCount())
 		.insert("objectivename", a2->getScoreName())
 		.insert("objectivedisname", a2->getScoreDisplayName());
+	h.call();
 	original(_this, a1, a2);
 }
 //耕地破坏

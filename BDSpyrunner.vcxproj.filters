@@ -120,4 +120,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="pyTools\mc.py" />
+    <None Include="pyTools\symbolChecker.py" />
+    <None Include="pyTools\test.py" />
+  </ItemGroup>
 </Project>
