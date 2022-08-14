@@ -683,23 +683,29 @@ THOOK(onSelectForm, void, "?handle@?$PacketHandlerDispatcherInstance@VModalFormR
 	EventCallBackHelper h(EventCode::onSelectForm);
 	uintptr_t pkt = *ppkt;
 	Player* p = handle->_getServerPlayer(id, pkt);
+	string data;
+	int fid = Dereference<int>(pkt, 48);
+
 	if (!Dereference<bool>(pkt, 81)) {
 		if (Dereference<bool>(pkt, 72)) {
-			int fid = Dereference<int>(pkt, 48);
 			//Json::value_type* json = Dereference<Json::value_type*>(pkt, 56);
 			string dst;
-			string& data = 
+			data = 
 				SymCall<string&>("?toStyledString@Value@Json@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 					pkt + 56, &dst);
-			if (data.back() == '\n')
-				data.pop_back();
-			h
-				.insert("player", p)
-				.insert("selected", data)
-				.insert("formid", fid);
-			h.call();
 		}
 	}
+
+	if (data.empty())
+		data = "null";
+	
+	if (data.back() == '\n')
+		data.pop_back();
+	h
+		.insert("player", p)
+		.insert("selected", data)
+		.insert("formid", fid);
+	h.call();
 	original(_this, id, handle, ppkt);
 }
 //命令方块更新
