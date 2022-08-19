@@ -6,9 +6,9 @@
 #include "py_utils.h"
 
 constexpr unsigned PYR_VERSION_MAJOR = 2;
-constexpr unsigned PYR_VERSION_MINOR = 0;
-constexpr unsigned PYR_VERSION_MICRO = 9;
-constexpr const char* PYR_VERSION = "v2.0.9";
+constexpr unsigned PYR_VERSION_MINOR = 1;
+constexpr unsigned PYR_VERSION_MICRO = 0;
+constexpr const char* PYR_VERSION = "v2.1.0";
 
 Logger logger("BDSpyrunner");
 
@@ -20,6 +20,7 @@ void entry() {
   // 创建插件目录
   if (!fs::exists(PLUGIN_PATH)) {
     fs::create_directory(PLUGIN_PATH);
+    logger.warn("create plugin directory: {}", PLUGIN_PATH);
   }
   // 初始化解释器
   py::initialize_interpreter(true, 0, nullptr, false);
@@ -27,8 +28,6 @@ void entry() {
   py::module_::import("sys").attr("path").attr("insert")(0, PLUGIN_PATH);
   // 输出版本号信息
   logger.info("{} loaded.", PYR_VERSION);
-  // 启用线程支持
-  PyEval_InitThreads();
 #if 0
   auto a = CompoundTag::fromSNBT(R"({
     "a24z": {
@@ -56,7 +55,7 @@ void entry() {
     }
   }
   // 启动子线程前执行，释放PyEval_InitThreads获得的全局锁，否则子线程可能无法获取到全局锁。
-  PyEval_ReleaseThread(PyThreadState_Get());
+  PyEval_ReleaseThread(PyThreadState_GET());
   PY_CATCH;
 }
 

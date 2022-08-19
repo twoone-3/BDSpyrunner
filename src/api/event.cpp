@@ -15,13 +15,20 @@
 #include "scoreboard.h"
 #include "utils.h"
 
-#define EVENT_BEGIN(code) \
-  Callbacker h(code);     \
-  PY_TRY;                 \
-  h.insert("Event", py::cast(magic_enum::enum_name(code)))
+#define EVENT_BEGIN(code)     \
+  PY_TRY                      \
+  py::gil_scoped_acquire gil; \
+  Callbacker h(code);         \
+  h.insert("Event", magic_enum::enum_name(code))
 #define EVENT_INSERT(key) h.insert(#key, ev.m##key)
 #define EVENT_INSERT_EX(key, value) h.insert(#key, (value))
-#define EVENT_END PY_CATCH return h.callback()
+#define EVENT_END                   \
+  return h.callback();              \
+  }                                 \
+  catch (const std::exception& e) { \
+    logger.error("\n{}", e.what()); \
+    return false;                   \
+  }
 
 class Callbacker {
  public:
@@ -32,7 +39,6 @@ class Callbacker {
     arg_.inc_ref();  // TODO: 为什么需要增加引用计数？
     for (auto& cb : listeners[type_]) {
       PY_TRY;
-      py::gil_scoped_acquire gil_;
       pass = bool(cb(arg_));
       PY_CATCH;
     }
@@ -67,7 +73,6 @@ class Callbacker {
  private:
   EventCode type_;
   py::dict arg_;
-  py::gil_scoped_acquire gil_;
 };
 
 void EnableEventListener(EventCode event_code) {

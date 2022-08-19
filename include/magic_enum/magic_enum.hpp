@@ -62,6 +62,8 @@
 
 #if defined(__clang__)
 #  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wunknown-warning-option"
+#  pragma clang diagnostic ignored "-Wenum-constexpr-conversion"
 #elif defined(__GNUC__)
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Wmaybe-uninitialized" // May be used uninitialized 'return {};'.
@@ -213,7 +215,7 @@ class static_string {
   template <std::uint16_t... I>
   constexpr static_string(string_view str, std::integer_sequence<std::uint16_t, I...>) noexcept : chars_{str[I]..., '\0'} {}
 
-  char chars_[N + 1];
+  char chars_[static_cast<std::size_t>(N) + 1];
 };
 
 template <>
@@ -244,12 +246,12 @@ constexpr string_view pretty_name(string_view name) noexcept {
     }
   }
 
-  if (name.size() > 0 && ((name.front() >= 'a' && name.front() <= 'z') ||
-                          (name.front() >= 'A' && name.front() <= 'Z') ||
+  if (name.size() > 0 && ((name[0] >= 'a' && name[0] <= 'z') ||
+                          (name[0] >= 'A' && name[0] <= 'Z') ||
 #if defined(MAGIC_ENUM_ENABLE_NONASCII)
-                          (name.front() & 0x80) ||
+                          (name[0]) & 0x80) ||
 #endif
-                          (name.front() == '_'))) {
+                          (name[0] == '_'))) {
     return name;
   }
 
@@ -291,7 +293,7 @@ constexpr std::size_t find(string_view str, char c) noexcept {
 
     return string_view::npos;
   } else {
-    return str.find_first_of(c);
+    return str.find(c);
   }
 }
 
@@ -381,13 +383,7 @@ template <typename E>
 constexpr auto n() noexcept {
   static_assert(is_enum_v<E>, "magic_enum::detail::n requires enum type.");
 
-  [[maybe_unused]] constexpr auto custom = customize::enum_type_name<E>();
-  static_assert(std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t>, "magic_enum::customize requires customize_t type.");
-  if constexpr (custom.index() == 0) {
-    constexpr auto name = std::get<string_view>(custom);
-    static_assert(!name.empty(), "magic_enum::customize requires not empty string.");
-    return static_string<name.size()>{name};
-  } else if constexpr (custom.index() == 1 && supported<E>::value) {
+  if constexpr (supported<E>::value) {
 #if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER)
@@ -402,19 +398,28 @@ constexpr auto n() noexcept {
 }
 
 template <typename E>
-inline constexpr auto type_name_v = n<E>();
+constexpr auto type_name() noexcept {
+  static_assert(is_enum_v<E>, "magic_enum::detail::n requires enum type.");
+
+  [[maybe_unused]] constexpr auto custom = customize::enum_type_name<E>();
+  static_assert(std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t>, "magic_enum::customize requires customize_t type.");
+  if constexpr (std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t> && custom.index() == 0) {
+    constexpr auto name = std::get<string_view>(custom);
+    static_assert(!name.empty(), "magic_enum::customize requires not empty string.");
+    return static_string<name.size()>{name};
+  } else {
+    return n<E>();
+  }
+}
+
+template <typename E>
+inline constexpr auto type_name_v = type_name<E>();
 
 template <typename E, E V>
 constexpr auto n() noexcept {
   static_assert(is_enum_v<E>, "magic_enum::detail::n requires enum type.");
 
-  [[maybe_unused]] constexpr auto custom = customize::enum_name<E>(V);
-  static_assert(std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t>, "magic_enum::customize requires customize_t type.");
-  if constexpr (custom.index() == 0) {
-    constexpr auto name = std::get<string_view>(custom);
-    static_assert(!name.empty(), "magic_enum::customize requires not empty string.");
-    return static_string<name.size()>{name};
-  } else if constexpr (custom.index() == 1 && supported<E>::value) {
+  if constexpr (supported<E>::value) {
 #if defined(__clang__) || defined(__GNUC__)
     constexpr auto name = pretty_name({__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__) - 2});
 #elif defined(_MSC_VER)
@@ -429,28 +434,64 @@ constexpr auto n() noexcept {
 }
 
 template <typename E, E V>
-inline constexpr auto enum_name_v = n<E, V>();
+constexpr auto enum_name() noexcept {
+  static_assert(is_enum_v<E>, "magic_enum::detail::n requires enum type.");
+
+  [[maybe_unused]] constexpr auto custom = customize::enum_name<E>(V);
+  static_assert(std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t>, "magic_enum::customize requires customize_t type.");
+  if constexpr (std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t> && custom.index() == 0) {
+    constexpr auto name = std::get<string_view>(custom);
+    static_assert(!name.empty(), "magic_enum::customize requires not empty string.");
+    return static_string<name.size()>{name};
+  } else {
+    return n<E, V>();
+  }
+}
+
+template <typename E, E V>
+inline constexpr auto enum_name_v = enum_name<E, V>();
 
 template <typename E, auto V>
 constexpr bool is_valid() noexcept {
   static_assert(is_enum_v<E>, "magic_enum::detail::is_valid requires enum type.");
 
-  return n<E, static_cast<E>(V)>().size() != 0;
+#if defined(__clang__) && __clang_major__ >= 16
+  // https://reviews.llvm.org/D130058, https://reviews.llvm.org/D131307
+  constexpr E v = __builtin_bit_cast(E, V);
+  [[maybe_unused]] constexpr auto custom = customize::enum_name<E>(v);
+  static_assert(std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t>, "magic_enum::customize requires customize_t type.");
+  if constexpr (std::is_same_v<std::decay_t<decltype(custom)>, customize::customize_t> && custom.index() == 0) {
+    constexpr auto name = std::get<string_view>(custom);
+    static_assert(!name.empty(), "magic_enum::customize requires not empty string.");
+    return name.size() != 0;
+  } else {
+    return n<E, v>().size() != 0;
+  }
+#else
+  return enum_name<E, static_cast<E>(V)>().size() != 0;
+#endif
+}
+
+template <typename E, int O, bool IsFlags, typename U = std::underlying_type_t<E>>
+constexpr U ualue(std::size_t i) noexcept {
+  static_assert(is_enum_v<E>, "magic_enum::detail::ualue requires enum type.");
+
+  if constexpr (std::is_same_v<U, bool>) { // bool special case
+    static_assert(O == 0, "magic_enum::detail::ualue requires valid offset.");
+
+    return static_cast<U>(i);
+  } else if constexpr (IsFlags) {
+    return static_cast<U>(U{1} << static_cast<U>(static_cast<int>(i) + O));
+  } else {
+    return static_cast<U>(static_cast<int>(i) + O);
+  }
 }
 
 template <typename E, int O, bool IsFlags, typename U = std::underlying_type_t<E>>
 constexpr E value(std::size_t i) noexcept {
   static_assert(is_enum_v<E>, "magic_enum::detail::value requires enum type.");
 
-  if constexpr (std::is_same_v<U, bool>) { // bool special case
-    static_assert(O == 0, "magic_enum::detail::value requires valid offset.");
-
-    return static_cast<E>(i);
-  } else if constexpr (IsFlags) {
-    return static_cast<E>(U{1} << static_cast<U>(static_cast<int>(i) + O));
-  } else {
-    return static_cast<E>(static_cast<int>(i) + O);
-  }
+  return static_cast<E>(ualue<E, O, IsFlags>(i));
 }
 
 template <typename E, bool IsFlags, typename U = std::underlying_type_t<E>>
@@ -510,7 +551,7 @@ constexpr std::size_t values_count(const bool (&valid)[N]) noexcept {
 template <typename E, bool IsFlags, int Min, std::size_t... I>
 constexpr auto values(std::index_sequence<I...>) noexcept {
   static_assert(is_enum_v<E>, "magic_enum::detail::values requires enum type.");
-  constexpr bool valid[sizeof...(I)] = {is_valid<E, value<E, Min, IsFlags>(I)>()...};
+  constexpr bool valid[sizeof...(I)] = {is_valid<E, ualue<E, Min, IsFlags>(I)>()...};
   constexpr std::size_t count = values_count(valid);
 
   if constexpr (count > 0) {
@@ -748,7 +789,7 @@ struct constexpr_hash_t<Value, std::enable_if_t<std::is_same_v<Value, string_vie
 };
 
 template <typename Hash>
-[[maybe_unused]] constexpr static Hash hash_v{};
+inline constexpr Hash hash_v{};
 
 template <auto* GlobValues, typename Hash>
 constexpr auto calculate_cases(std::size_t Page) noexcept {

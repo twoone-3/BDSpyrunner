@@ -115,9 +115,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="Lib\python37.lib">
-      <Filter>库文件</Filter>
-    </Library>
     <Library Include="SDK\Lib\bedrock_server_api.lib">
       <Filter>库文件</Filter>
     </Library>

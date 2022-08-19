@@ -5,16 +5,11 @@
 #include "global.h"
 
 #define PY_TRY try {
-#define PY_CATCH                                                    \
-  }                                                                 \
-  catch (const std::exception& e) {                                 \
-    logger.error("\n{}", e.what());                                 \
-  }                                                                 \
-  catch (...) {                                                     \
-    logger.fatal("An unknown exception was occurred! Function: {}", \
-                 __FUNCSIG__);                                      \
+#define PY_CATCH                    \
+  }                                 \
+  catch (const std::exception& e) { \
+    logger.error("\n{}", e.what()); \
   }
-
 namespace py = pybind11;
 
 inline unordered_map<EventCode, vector<py::function>> listeners;
