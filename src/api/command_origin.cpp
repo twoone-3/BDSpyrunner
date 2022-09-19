@@ -40,7 +40,7 @@ PlayerClass CommandOriginClass::getPlayer() {
 }
 
 NBTClass CommandOriginClass::getNbt() {
-  return make_unique<CompoundTag>(thiz->serialize());
+  return std::make_unique<CompoundTag>(thiz->serialize());
 }
 
 const char* CommandOriginClass::toString() { return "<CommandOrigin>"; }
