@@ -63,7 +63,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='WillowSauceR-local|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>F:\IDA\1.19.20.02-Win\bdxcore_mod\</OutDir>
+    <OutDir>F:\IDA\1.19.30.04-Win\bdxcore_mod\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LemeAlone-local|x64'">
     <LinkIncremental>false</LinkIncremental>

@@ -24,19 +24,19 @@ variable prefix definition:
 	e_: entity
 
 Entity的属性
-name:str - 实体名字                          # pass
-uuid:str - 玩家UUID                          # pass
-xuid:str - 玩家XUID                          # pass  
-pos:list - 实体坐标                          # pass
-did:int - 实体维度ID                         # pass
-is_standing:bool - 实体是否站立在方块上       # pass
-is_sneaking:bool - 实体是否潜行              # pass
-health:int - 实体当前生命                    # pass
-maxhealth:int - 实体最大生命                 # pass
-perm:int - 玩家权限值                        # pass
+name:str - 实体名字                          # test
+uuid:str - 玩家UUID                          # test
+xuid:str - 玩家XUID                          # test  
+pos:list - 实体坐标                          # test
+did:int - 实体维度ID                         # test
+is_standing:bool - 实体是否站立在方块上       # test
+is_sneaking:bool - 实体是否潜行              # test
+health:int - 实体当前生命                    # test
+maxhealth:int - 实体最大生命                 # test
+perm:int - 玩家权限值                        # test
 platform_online_id:str - 玩家设备ID          # empty string
-platform:int - 玩家设备操作系统               # pass
-IP:str - 玩家IP                              # pass
+platform:int - 玩家设备操作系统               # test
+IP:str - 玩家IP                              # test
 
 Unresponsive listeners:
 onCloseContainer
@@ -54,141 +54,141 @@ onPistonPush
 def testonConsoleCmd(cmd): #testonConsoleInput
 	printLog("[TEST] Listener onConsoleInput s_cmd = " + cmd)
 #mc.setListener('onConsoleCmd', testonConsoleCmd) # onConsoleInput -> onConsoleCmd
-# status: pass
+# status: test
 
 def testonConsoleOutput(output):
 	printLog("[TEST] Listener onConsoleOutput s_output = " + output)
 #mc.setListener('onConsoleOutput', testonConsoleOutput)
-# status: pass
+# status: test
 
 def testonJoin(player): #testonPlayerJoin
 	mc.getPlayerList()[0].sendCustomForm('{"content":[{"type":"label","text":"114514"}], "type":"custom_form","title":"test"}')
 	#printLog("[TEST] Listener onJoin s_player.name = " + str(player.name) + "s_player.xuid = " + str(player.xuid))
 mc.setListener('onJoin', testonJoin) #onPlayerJoin -> onJoin
-# status: pass
+# status: test
 
 def testonLeft(player): #testonPlayerLeft
 	printLog(f"[TEST] Listener onLeft s_player.uuid = " + player.uuid + "s_player.IP = " + player.IP)
 mc.setListener('onLeft', testonLeft) #onPlayerLeft -> onLeft
-# status: pass
+# status: test
 
 def testonPlayerAttack(e):
 	printLog(f"[TEST] Listener onPlayerAttack l_e['player'].pos = {listToStr(e['player'].pos)}, e['actor'].health = {e['actor'].health}")
 	playerList = mc.getPlayerList()
 	printLog("[TEST] mcAPI l_getPlayerList = %s" % (playerList))
 #mc.setListener('onPlayerAttack', testonPlayerAttack)
-# status: pass
+# status: test
 
 def testonFormSelected(e): #testonSelectForm
 	printLog(f"[TEST] Listener onFormSelected i_e['formid'] = {e['formid']}, l_e['selected'] = {e['selected']}, s_e['player'].name = {e['player'].name}")
 	e['player'].teleport(0,100,0,0)
 #mc.setListener("onFormSelected", testonFormSelected)
-# status: pass
+# status: test
 # import mc
 # mc.getPlayerList()[0].sendCustomForm('{"content":[{"type":"label","text":"114514"}], "type":"custom_form","title":"test"}')
 
 def testonUseItem(e):
 	printLog(f"[TEST] Listener onUseItem i_e['itemid'] = {e['itemid']}, i_e['player'].did = {e['player'].did}")
 #mc.setListener("onUseItem", testonUseItem)
-# status: pass
+# status: test
 
 def testonPlaceBlock(e):
 	printLog(f"[TEST] Listener onPlaceBlock i_e['blockid'] = {e['blockid']}, b_e['player'].is_standing = {e['player'].is_standing}") # Entity.isstand -> Entity.is_standing
 #mc.setListener("onPlaceBlock", testonPlaceBlock)
-# status: pass
+# status: test
 
 def testonDestroyBlock(e):
 	printLog(f"[TEST] Listener onDestroyBlock l_e['position'] = {listToStr(e['position'])}, {e['position'][1]}, {e['position'][2]}）, b_e['player'].is_sneaking = {e['player'].is_sneaking}") # issneak -> is_sneaking
 #mc.setListener("onDestroyBlock", testonDestroyBlock)
-# status: pass
+# status: test
 
 def testonOpenContainer(e):
 	printLog(f"[TEST] Listener onOpenContainer l_e['position'] = {listToStr(e['position'])}, i_e['player'].typeid = {e['player'].typeid}")
 #mc.setListener("onOpenContainer", testonOpenContainer)
-# status: pass
+# status: test
 
 def testonCloseContainer(e):
 	printLog(f"[TEST] Listener onCloseContainer l_e['position'] = {listToStr(e['position'])}, s_e['player'].typename = e['player'].typename)")
 #mc.setListener("onCloseContainer", testonCloseContainer)
-# status: pass
+# status: test
 
 def testonContainerChange(e):
 	printLog('[TEST] Listener onContainerChange l_e["position"] = （%f,%f,%f）, i_itemid = %d, i_itemcount = %d, s_IP = %s' %
 												(e['position'][0], e['position'][1], e['position'][2], e['itemid'], e['itemcount'], e['player'].IP))
 #mc.setListener("onContainerChange", testonContainerChange)
-# status: pass
+# status: test
 
 def testonChangeDim(player): #testonChangeDimension
 	printLog('[TEST] Listener onChangeDim s_playerDim = %s' % (player.did))
 #mc.setListener("onChangeDim", testonChangeDim)
-# status: pass
+# status: test
 
 def testonMobDie(e):
 	printLog('[TEST] Listener onMobDie i_e["dmcase"] = %s, e_e["actor1"] = %s, i_e["actor2"].maxhealth = %s' % (e["dmcase"], e["actor1"], e["actor2"].maxhealth))
 #mc.setListener("onMobDie", testonMobDie)
 #actor1 always return nullptr
 #return nullptr when use /kill command to kill mob
-# status: pass
+# status: test
 
 def testonMobHurt(e):
 	printLog('[TEST] Listener onMobHurt i_e["dmcase"] = %s, i_e["actor1"].health = %s, s_e["actor2"].name = %s, i_e["damage"] = %s' % (e["dmcase"], e["actor1"].health, e["actor2"].name, e["damage"]))
 #mc.setListener("onMobHurt", testonMobHurt)
-# status: pass
+# status: test
 
 def testonRespawn(player):
 	printLog(f'[TEST] Listener onRespawn s_player.xuid = {player.xuid}')
 #mc.setListener("onRespawn", testonRespawn)
-# status: pass
+# status: test
 
 def testonChat(e):
 	printLog(f'[TEST] Listener onChat s_e["sender"] = {e["sender"]}, s_e["target"] = {e["target"]}, s_e["msg"] = {e["msg"]}, s_e["style"] = {e["style"]}')
 #mc.setListener("onChat", testonChat)
-# status: pass
+# status: test
 
 def testonInputText(e):
 	printLog(f'[TEST] Listener onInputText s_e["msg"] = {e["msg"]}, s_e["player"].IP = {e["player"].IP}')
 #mc.setListener("onInputText", testonInputText)
-# status: pass
+# status: test
 
 def testonCommandBlockUpdate(e):
 	printLog(f'[TEST] Listener onCommandBlockUpdate i_e["player"].did = {e["player"].did}, s_e["cmd"] = {e["cmd"]}, s_e["mode"] = {e["mode"]}, s_e["condition"] = {e["condition"]}, s_e["redstone"] = {e["redstone"]}, s_e["output"] = {e["output"]}, s_e["rawname"] = {e["rawname"]}, s_e["delay"] = {e["delay"]}, l_e["position] = {e["position"]} ')
 #mc.setListener("onCommandBlockUpdate", testonCommandBlockUpdate)
-# status: pass
+# status: test
 
 def testonPlayerCmd(e):
 	printLog(f'[TEST] Listener onPlayerCmd s_e["cmd"] = {e["cmd"]}, s_e["player"] = {e["player"]} ')
 #mc.setListener("onPlayerCmd", testonPlayerCmd)
-# status: pass
+# status: test
 
 def testonCmdBlockExecute(e):
 	printLog(f'[TEST] Listener onCmdBlockExecute s_e["cmd"] = {e["cmd"]}, s_e["rawname"] = {e["rawname"]}, l_e["position] = {e["position"]}, s_e["mode"] = {e["mode"]}, s_e["condition"] = {e["condition"]}')
 #mc.setListener("onCmdBlockExecute", testonCmdBlockExecute)
-# status: pass
+# status: test
 
 def testonLevelExplode(e):
 	printLog(f'[TEST] Listener onLevelExplode l_e["actor"].pos = {e["actor"].pos}, l_e["position"] = {e["position"]}, i_dimensionid = {e["dimensionid"]}, s_e["power"] = {e["power"]}')
 #mc.setListener("onLevelExplode", testonLevelExplode)
-# status: pass
+# status: test
 
 def testonSetArmor(e):
 	printLog(f'[TEST] Listener onSetArmor s_e["player"].name = {e["player"].name}, i_e["itemid"] = {e["itemid"]}, i_e["itemcount"] = {e["itemcount"]}, s_e["itemname"] = {e["itemname"]}, s_e["itemaux"] = {e["itemaux"]}, s_e["slot"] = {e["slot"]}')
 #mc.setListener("onSetArmor", testonSetArmor)
-# status: pass
+# status: test
 
 def testonFarmLandDecay(e): 
 	printLog(f'[TEST] Listener onFarmLandDecay i_e["player"].platform_online_id = {e["player"].platform_online_id}, l_e["position"] = {e["position"]}, l_e["dimensionid"] = {e["dimensionid"]}')
 #mc.setListener("onFarmLandDecay", testonFarmLandDecay)
-# status: pass
+# status: test
 
 def testonUseRespawnAnchor(e): #testonUseRespawnAnchorBlock
 	printLog(f'[TEST] Listener onUseRespawnAnchor i_e["player"].perm = {e["player"].perm}, l_e["position"] = {e["position"]}, i_e["dimensionid"] = {e["dimensionid"]}')
 #mc.setListener("onUseRespawnAnchor", testonUseRespawnAnchor)
-# status: pass
+# status: test
 
 def testonScoreChanged(e):
 	printLog(f'[TEST] Listener onScoreChanged i_e["scoreboardid"] = {e["scoreboardid"]}, i_e["playersnum"] = {e["playersnum"]}, s_e["objectivename"] = {e["objectivename"]}, s_e["objectivedisname"] = {e["objectivedisname"]}')
 mc.setListener("onScoreChanged", testonScoreChanged)
-# status: pass
+# status: test
 # scripts:
 #/scoreboard objectives add test dummy test
 #/scoreboard players add @a test 114514
@@ -196,28 +196,28 @@ mc.setListener("onScoreChanged", testonScoreChanged)
 def testonMove(e):
 	printLog(f'[TEST] Listener onMove l_e.pos = {listToStr(e.pos)}')
 #mc.setListener("onMove", testonMove)
-# status: pass
+# status: test
 
 def testonPistonPush(e):
 	printLog(f'[TEST] Listener onPistonPush s_e["blockname"] = {e["blockname"]}, i_e["blockid"] = {e["blockid"]}, l_e["blockpos"] = {e["blockpos"]}, l_e["pistonpos"] = e["pistonpos"], i_e["dimensionid"] = {e["dimensionid"]}')
 #mc.setListener("onPistonPush", testonPistonPush)
-# status: pass with problem
+# status: test with problem
 #key pistonpos will cause crash and it has been removed from dll plugin, please fix
 
 def testonEndermanRandomTeleport(e):
 	printLog(f'[TEST] Listener onEndermanRandomTeleport l_e.pos = {listToStr(e.pos)}')
 #mc.setListener("onEndermanRandomTeleport", testonEndermanRandomTeleport)
-# status: pass
+# status: test
 
 def testonServerStarted(e):
 	printLog(f'[TEST] Listener onServerStarted')
 #mc.setListener("onServerStarted", testonServerStarted)
-# status: pass
+# status: test
 
 def testonDropItem(e):
 	printLog(f'[TEST] Listener onDropItem s_e["player"].name = {e["player"].name}, i_e["itemid"] = {e["itemid"]}, i_e["itemcount"] = {e["itemcount"]}, s_e["itemname"] = {e["itemname"]}, i_e["itemcount"] = {e["itemaux"]}')
 #mc.setListener("onDropItem", testonDropItem)
-# status: pass
+# status: test
 
 def testonTakeItem(e):
 	printLog(f'[TEST] Listener onTakeItem b_e["player"].is_sneaking = {e["player"].is_sneaking}, l_e["actor"].pos = {listToStr(e["actor"].pos)}')
@@ -227,42 +227,42 @@ def testonTakeItem(e):
 def testonRide(e):
 	printLog(f'[TEST] Listener onRide s_e["actor1"].name = {e["actor1"].name}, s_e["actor2"].name = {e["actor2"].name}')
 #mc.setListener("onRide", testonRide)
-# status: pass
+# status: test
 
 def testonUseFrameBlock(e):
 	printLog(f'[TEST] Listener onUseFrameBlock s_e["player"].name = {e["player"].name}, l_e["blockpos"] = {listToStr(e["blockpos"])}, i_e["dimensionid"] = {e["dimensionid"]}')
 #mc.setListener("onUseFrameBlock", testonUseFrameBlock)
-# status: pass
+# status: test
 
 def testonJump(e):
 	printLog(f'[TEST] Listener onJump l_e.pos = {e.pos}')
 #mc.setListener("onJump", testonJump)
-# status: pass
+# status: test
 
 def testonSneak(e):
 	printLog(f'[TEST] Listener onSneak s_e.platform_online_id = {e.platform_online_id}')
 #mc.setListener("onSneak", testonSneak)
-# status: pass
+# status: test
 
 def testonBlockInteracted(e):
 	printLog(f'[TEST] Listener onBlockInteracted s_e["player"].name = {e["player"].name}, l_e["blockpos"] = {listToStr(e["blockpos"])}, s_e["blockname"] = {e["blockname"]}, i_e["blockid"] = {e["blockid"]}, i_e["dimensionid"] = {e["dimensionid"]}')
 #mc.setListener("onBlockInteracted", testonBlockInteracted)
-# status: pass
+# status: test
 
 def testonFireSpread(e):
 	printLog(f'[TEST] Listener onFireSpread l_e["blockpos"] = {listToStr(e["blockpos"])}, s_e["blockname"] = {e["blockname"]}, i_e["blockid"] = {e["blockid"]}')
 #mc.setListener("onFireSpread", testonFireSpread)
-# status: pass
+# status: test
 
 def testonBlockExploded(e):
 	printLog(f'[TEST] Listener onBlockExploded s_e["actor"].name = {e["actor"].name}, l_e["blockpos"] = {listToStr(e["blockpos"])}, s_e["blockname"] = {e["blockname"]}, i_e["blockid"] = {e["blockid"]}, i_e["dimensionid"] = {e["dimensionid"]}')
 #mc.setListener("onBlockExploded", testonBlockExploded)
-# status: pass
+# status: test
 
 def testonUseSignBlock(e):
 	printLog(f'[TEST] Listener onUseSignBlock i_e["player"].platform = {e["player"].platform}, s_e["text"] = {e["text"]}, l_e["position"] = {e["position"]}')
 #mc.setListener("onUseSignBlock", testonUseSignBlock)
-# status: pass
+# status: test
 
 #temple
 def test(e):
