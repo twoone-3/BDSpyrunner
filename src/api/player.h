@@ -1,5 +1,6 @@
 ﻿#pragma once
-#include <MC/ScriptModuleMinecraft.hpp>
+#include <llapi/mc/ScriptModuleMinecraft.hpp>
+#include <llapi/mc/Vec3.hpp>
 
 #include "../py_utils.h"
 
@@ -10,7 +11,6 @@ struct ItemClass;
 struct BlockClass;
 struct EntityClass;
 struct NBTClass;
-enum CommandPermissionLevel : char;
 
 struct PlayerClass {
   Player* thiz;
@@ -143,11 +143,11 @@ struct PlayerClass {
   bool simulateUseItem(const ItemClass& item, const BlockPos& pos,
                        ScriptModuleMinecraft::ScriptFacing face =
                            ScriptModuleMinecraft::ScriptFacing::Down,
-                       const Vec3& relativePos = {0.5, 0.5, 0.5});
+                       const Vec3& relativePos = Vec3(0.5, 0.5, 0.5));
   bool simulateUseItem(int slot, const BlockPos& pos,
                        ScriptModuleMinecraft::ScriptFacing face =
                            ScriptModuleMinecraft::ScriptFacing::Down,
-                       const Vec3& relativePos = {0.5, 0.5, 0.5});
+                       const Vec3& relativePos = Vec3(0.5, 0.5, 0.5));
   bool simulateStopDestroyingBlock();
   bool simulateStopInteracting();
   bool simulateStopMoving();

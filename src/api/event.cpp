@@ -1,9 +1,9 @@
 #include "event.h"
 
-#include <EventAPI.h>
+#include <llapi/EventAPI.h>
 
-#include <MC/ActorDamageSource.hpp>
-#include <MC/BlockSource.hpp>
+#include <llapi/mc/ActorDamageSource.hpp>
+#include <llapi/mc/BlockSource.hpp>
 
 #include "../global.h"
 #include "block.h"

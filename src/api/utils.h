@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include <MC/Command.hpp>
-#include <MC/StructureTemplate.hpp>
+#include <llapi/mc/Command.hpp>
+#include <llapi/mc/StructureTemplate.hpp>
 
 #include "../py_utils.h"
 
@@ -16,7 +16,7 @@ void setListener(const string& event_name, const py::function& cb);
 
 void registerCommand(const string& name, const string& desc,
                      const py::function& cb,
-                     CommandPermissionLevel perm = GameMasters);
+    CommandPermissionLevel perm = CommandPermissionLevel::GameMasters);
 
 PlayerClass getPlayer(const string& name);
 
@@ -34,7 +34,7 @@ NBTClass getStructure(const BlockPos& pos1, const BlockPos& pos2, int dim,
                       bool ignore_entities = true, bool ignore_blocks = false);
 //从NBT结构数据导出结构到指定地点
 bool setStructure(const NBTClass& nbt, const BlockPos& pos, int dim,
-                  Mirror mir = None_15, Rotation rot = None_14);
+                  Mirror mir = Mirror::None_15, Rotation rot = Rotation::None_14);
 //产生爆炸
 void explode(const Vec3& pos, int dim, float power, bool destroy, float range,
              bool fire);

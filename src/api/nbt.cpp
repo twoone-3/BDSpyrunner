@@ -1,17 +1,17 @@
 ﻿#include "nbt.h"
 
-#include <MC/ByteArrayTag.hpp>
-#include <MC/ByteTag.hpp>
-#include <MC/CompoundTag.hpp>
-#include <MC/DoubleTag.hpp>
-#include <MC/EndTag.hpp>
-#include <MC/FloatTag.hpp>
-#include <MC/Int64Tag.hpp>
-#include <MC/IntArrayTag.hpp>
-#include <MC/IntTag.hpp>
-#include <MC/ListTag.hpp>
-#include <MC/ShortTag.hpp>
-#include <MC/StringTag.hpp>
+#include <llapi/mc/ByteArrayTag.hpp>
+#include <llapi/mc/ByteTag.hpp>
+#include <llapi/mc/CompoundTag.hpp>
+#include <llapi/mc/DoubleTag.hpp>
+#include <llapi/mc/EndTag.hpp>
+#include <llapi/mc/FloatTag.hpp>
+#include <llapi/mc/Int64Tag.hpp>
+#include <llapi/mc/IntArrayTag.hpp>
+#include <llapi/mc/IntTag.hpp>
+#include <llapi/mc/ListTag.hpp>
+#include <llapi/mc/ShortTag.hpp>
+#include <llapi/mc/StringTag.hpp>
 
 #include "../global.h"
 #include "block.h"
@@ -75,7 +75,7 @@ NBTClass NBTClass::fromBinary(const py::bytes& bytes) {
 
 NBTClass NBTClass::__getitem__(int key) {
   if (!thiz) throw py::type_error("NBTClass is empty");
-  if (thiz->getTagType() != Tag::List)
+  if (thiz->getTagType() != Tag::Type::List)
     throw py::type_error("NBT is not a list");
   return thiz->asListTag()->get(key);
 }
@@ -85,14 +85,14 @@ NBTClass NBTClass::__getitem__(const string& key) {
   // logger.warn("val:{}", (void*)thiz->asCompoundTag()->get(key));
   // logger.warn(thiz->asCompoundTag()->toSNBT(4));
   if (!thiz) throw py::type_error("NBTClass is empty");
-  if (thiz->getTagType() != Tag::Compound)
+  if (thiz->getTagType() != Tag::Type::Compound)
     throw py::type_error("NBT is not a compound");
   return thiz->asCompoundTag()->operator[](key);
 }
 
 void NBTClass::__setitem__(const string& key, const NBTClass& val) {
   if (!thiz) throw py::type_error("NBTClass is empty");
-  if (thiz->getTagType() != Tag::Compound)
+  if (thiz->getTagType() != Tag::Type::Compound)
     throw py::type_error("NBT is not a compound");
   if (!val.thiz) throw py::type_error("NBTClass is empty");
   thiz->asCompoundTag()->put(key, val.thiz->copy());
@@ -174,7 +174,7 @@ string NBTClass::toSNBT(int indent, SnbtFormat snbtFormat) {
 
 void NBTClass::append(const NBTClass& value) {
   if (!thiz) throw py::type_error("NBTClass is empty");
-  if (thiz->getTagType() != Tag::List)
+  if (thiz->getTagType() != Tag::Type::List)
     throw py::type_error("NBT is not a list");
   // TODO: find out why it don't work
   thiz->asListTag()->add(value.thiz->copy());

@@ -1,12 +1,12 @@
 ﻿#include "command.h"
 
-#include <LoggerAPI.h>
+#include <llapi/LoggerAPI.h>
 
-#include <MC/Dimension.hpp>
-#include <MC/ItemInstance.hpp>
-#include <MC/ItemStack.hpp>
-#include <MC/JsonHelpers.hpp>
-#include <MC/MobEffect.hpp>
+#include <llapi/mc/Dimension.hpp>
+#include <llapi/mc/ItemInstance.hpp>
+#include <llapi/mc/ItemStack.hpp>
+#include <llapi/mc/JsonHelpers.hpp>
+#include <llapi/mc/MobEffect.hpp>
 
 #include "block.h"
 #include "command_origin.h"

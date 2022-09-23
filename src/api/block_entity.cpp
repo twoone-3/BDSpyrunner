@@ -1,7 +1,7 @@
 ﻿#include "block_entity.h"
 
-#include <MC/BlockActor.hpp>
-#include <MC/Level.hpp>
+#include <llapi/mc/BlockActor.hpp>
+#include <llapi/mc/Level.hpp>
 
 #include "block.h"
 #include "nbt.h"

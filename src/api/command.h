@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include <DynamicCommandAPI.h>
+#include <llapi/DynamicCommandAPI.h>
 
 #include "../py_utils.h"
 
@@ -13,21 +13,25 @@ struct CommandClass {
   string getName();
   bool setAlias(const string& alias);
   // name, type, description, identifier, option
-  int64_t mandatory(const string& name, DynamicCommand::ParameterType type,
-                    string description = "", string identifier = "",
-                    CommandParameterOption option = None);
+  int64_t mandatory(
+      const string& name, DynamicCommand::ParameterType type,
+      string description = "", string identifier = "",
+      CommandParameterOption option = CommandParameterOption::None);
   // name, type, description, option
-  int64_t mandatory(const string& name, DynamicCommand::ParameterType type,
-                    string description = "",
-                    CommandParameterOption option = None);
+  int64_t mandatory(
+      const string& name, DynamicCommand::ParameterType type,
+      string description = "",
+      CommandParameterOption option = CommandParameterOption::None);
   // name, type, description, identifier, option
-  int64_t optional(const string& name, DynamicCommand::ParameterType type,
-                   string description = "", string identifier = "",
-                   CommandParameterOption option = None);
+  int64_t optional(
+      const string& name, DynamicCommand::ParameterType type,
+      string description = "", string identifier = "",
+      CommandParameterOption option = CommandParameterOption::None);
   // name, type, description, option
-  int64_t optional(const string& name, DynamicCommand::ParameterType type,
-                   string description = "",
-                   CommandParameterOption option = None);
+  int64_t optional(
+      const string& name, DynamicCommand::ParameterType type,
+      string description = "",
+      CommandParameterOption option = CommandParameterOption::None);
   bool addOverload();
   // vector<index>
   bool addOverload(const vector<size_t>& args);

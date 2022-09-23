@@ -1,8 +1,8 @@
-﻿#include <EventAPI.h>
-#include <LoggerAPI.h>
-#include <ServerAPI.h>
+﻿#include <llapi/EventAPI.h>
+#include <llapi/LoggerAPI.h>
+#include <llapi/ServerAPI.h>
 
-#include <MC/Level.hpp>
+#include <llapi/mc/Level.hpp>
 
 #include "api/block.h"
 #include "api/block_entity.h"
@@ -157,23 +157,23 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
                              string, string, CommandParameterOption>(
                &CommandClass::mandatory),
            "name"_a, "type"_a, "description"_a = "", "identifier"_a = "",
-           "option"_a = None)
+           "option"_a = CommandParameterOption::None)
       .def("mandatory",
            py::overload_cast<const string&, DynamicCommand::ParameterType,
                              string, CommandParameterOption>(
                &CommandClass::mandatory),
-           "name"_a, "type"_a, "description"_a = "", "option"_a = None)
+           "name"_a, "type"_a, "description"_a = "", "option"_a = CommandParameterOption::None)
       .def("optional2",
            py::overload_cast<const string&, DynamicCommand::ParameterType,
                              string, string, CommandParameterOption>(
                &CommandClass::optional),
            "name"_a, "type"_a, "description"_a = "", "identifier"_a = "",
-           "option"_a = None)
+           "option"_a = CommandParameterOption::None)
       .def("optional",
            py::overload_cast<const string&, DynamicCommand::ParameterType,
                              string, CommandParameterOption>(
                &CommandClass::optional),
-           "name"_a, "type"_a, "description"_a = "", "option"_a = None)
+           "name"_a, "type"_a, "description"_a = "", "option"_a = CommandParameterOption::None)
       .def("overload", py::overload_cast<>(&CommandClass::addOverload))
       .def("overload",
            py::overload_cast<const vector<size_t>&>(&CommandClass::addOverload))
@@ -510,7 +510,7 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
       .def("runCommandEx", &Level::runcmdEx)
       .def("setListener", &mc::setListener)
       .def("registerCommand", &mc::registerCommand, "name"_a, "desc"_a,
-           "callback"_a, "perm"_a = GameMasters)
+           "callback"_a, "perm"_a = CommandPermissionLevel::GameMasters)
       .def("getPlayer", &mc::getPlayer)
       .def("getOnlinePlayers", &mc::getOnlinePlayers)
       .def("getAllEntities", &mc::getAllEntities)
@@ -530,7 +530,7 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
       .def("getStructure", &mc::getStructure, "pos1"_a, "pos2"_a, "dim"_a,
            "ignore_entities"_a = true, "ignore_blocks"_a = false)
       .def("setStructure", &mc::setStructure, "nbt"_a, "pos"_a, "dim"_a,
-           "mir"_a = None_15, "rot"_a = None_14)
+           "mir"_a = Mirror::None_15, "rot"_a = Rotation::None_14)
       .def("explode", &mc::explode)
       .def("spawnItem", &mc::spawnItem)
       .def("setSignBlockMessage", &mc::setSignBlockMessage)

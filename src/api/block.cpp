@@ -1,9 +1,9 @@
 ﻿#include "block.h"
 
-#include <MC/Block.hpp>
-#include <MC/BlockSource.hpp>
-#include <MC/HashedString.hpp>
-#include <MC/Level.hpp>
+#include <llapi/mc/Block.hpp>
+#include <llapi/mc/BlockSource.hpp>
+#include <llapi/mc/HashedString.hpp>
+#include <llapi/mc/Level.hpp>
 
 #include "block_entity.h"
 #include "container.h"

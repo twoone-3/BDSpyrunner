@@ -1,8 +1,8 @@
 ﻿#include "scoreboard.h"
 
-#include <MC/Objective.hpp>
-#include <MC/Player.hpp>
-#include <MC/Scoreboard.hpp>
+#include <llapi/mc/Objective.hpp>
+#include <llapi/mc/Player.hpp>
+#include <llapi/mc/Scoreboard.hpp>
 #include <optional>
 
 #include "player.h"

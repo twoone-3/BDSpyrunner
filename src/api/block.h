@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include <MC/BlockInstance.hpp>
+#include <llapi/mc/BlockInstance.hpp>
 
 #include "../global.h"
 

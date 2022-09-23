@@ -1,16 +1,16 @@
 ﻿#include "player.h"
 
-#include <LLAPI.h>
-#include <LoggerAPI.h>
-#include <PlayerInfoAPI.h>
+#include <llapi/LLAPI.h>
+#include <llapi/LoggerAPI.h>
+#include <llapi/PlayerInfoAPI.h>
 
-#include <MC/BlockSource.hpp>
-#include <MC/Command.hpp>
-#include <MC/Level.hpp>
-#include <MC/Packet.hpp>
-#include <MC/Scoreboard.hpp>
-#include <MC/SimpleContainer.hpp>
-#include <MC/SimulatedPlayer.hpp>
+#include <llapi/mc/BlockSource.hpp>
+#include <llapi/mc/Command.hpp>
+#include <llapi/mc/Level.hpp>
+#include <llapi/mc/Packet.hpp>
+#include <llapi/mc/Scoreboard.hpp>
+#include <llapi/mc/SimpleContainer.hpp>
+#include <llapi/mc/SimulatedPlayer.hpp>
 
 #include "block.h"
 #include "container.h"

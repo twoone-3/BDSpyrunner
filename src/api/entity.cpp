@@ -1,10 +1,12 @@
 ﻿#include "entity.h"
 
-#include <MC/CommandUtils.hpp>
-#include <MC/ItemActor.hpp>
-#include <MC/Level.hpp>
-#include <MC/Mob.hpp>
-#include <MC/SimpleContainer.hpp>
+#include <llapi/mc/CommandUtils.hpp>
+#include <llapi/mc/ItemActor.hpp>
+#include <llapi/mc/Level.hpp>
+#include <llapi/mc/Mob.hpp>
+#include <llapi/mc/SimpleContainer.hpp>
+#include <llapi/mc/Vec2.hpp>
+#include <llapi/mc/Tag.hpp>
 
 #include "block.h"
 #include "container.h"

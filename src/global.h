@@ -3,7 +3,7 @@
 #include <string>
 #include <unordered_map>
 
-#define PLUGIN_PATH "./plugins/py/"
+#define PLUGIN_PATH "./plugins/"
 
 using std::pair;
 using std::string;

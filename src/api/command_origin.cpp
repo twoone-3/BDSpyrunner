@@ -1,8 +1,8 @@
 ﻿#include "command_origin.h"
 
-#include <MC/Command.hpp>
-#include <MC/CommandOrigin.hpp>
-#include <MC/Dimension.hpp>
+#include <llapi/mc/Command.hpp>
+#include <llapi/mc/CommandOrigin.hpp>
+#include <llapi/mc/Dimension.hpp>
 #include <magic_enum/magic_enum.hpp>
 
 #include "block.h"

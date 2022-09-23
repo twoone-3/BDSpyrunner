@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include <MC/CompoundTag.hpp>
-#include <MC/Tag.hpp>
+#include <llapi/mc/CompoundTag.hpp>
+#include <llapi/mc/Tag.hpp>
 
 #include "../py_utils.h"
 

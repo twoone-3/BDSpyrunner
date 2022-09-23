@@ -1,5 +1,5 @@
-#include <LLAPI.h>
-#include <LoggerAPI.h>
+#include <llapi/LLAPI.h>
+#include <llapi/LoggerAPI.h>
 
 #include "api/event.h"
 #include "api/money.h"

@@ -1,13 +1,13 @@
 ﻿#include "utils.h"
 
-#include <DynamicCommandAPI.h>
-#include <LoggerAPI.h>
+#include <llapi/DynamicCommandAPI.h>
+#include <llapi/LoggerAPI.h>
 
-#include <MC/Level.hpp>
-#include <MC/Scoreboard.hpp>
-#include <MC/SignBlockActor.hpp>
-#include <MC/SimulatedPlayer.hpp>
-#include <MC/Spawner.hpp>
+#include <llapi/mc/Level.hpp>
+#include <llapi/mc/Scoreboard.hpp>
+#include <llapi/mc/SignBlockActor.hpp>
+#include <llapi/mc/SimulatedPlayer.hpp>
+#include <llapi/mc/Spawner.hpp>
 
 #include "block.h"
 #include "entity.h"
