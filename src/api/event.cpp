@@ -294,13 +294,14 @@ void EnableEventListener(EventCode event_code) {
           });
       break;
     case EventCode::onMove:
-      PlayerMoveEvent::subscribe([](const PlayerMoveEvent& ev) {
-        EVENT_BEGIN(EventCode::onMove);
-        EVENT_INSERT(Player);
-        EVENT_INSERT(Pos);
-        EVENT_END;
-      });
-      break;
+      logger.warn("onMove was invaliable!");
+      //PlayerMoveEvent::subscribe([](const PlayerMoveEvent& ev) {
+      //  EVENT_BEGIN(EventCode::onMove);
+      //  EVENT_INSERT(Player);
+      //  EVENT_INSERT(Pos);
+      //  EVENT_END;
+      //});
+      //break;
     case EventCode::onChangeSprinting:
       PlayerSprintEvent::subscribe([](const PlayerSprintEvent& ev) {
         EVENT_BEGIN(EventCode::onChangeSprinting);

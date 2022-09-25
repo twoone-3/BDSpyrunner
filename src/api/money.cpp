@@ -1,8 +1,7 @@
 ﻿#include "money.h"
 
-#include <I18nAPI.h>
-#include <LLAPI.h>
-#include <LoggerAPI.h>
+#include <llapi/I18nAPI.h>
+#include <llapi/LoggerAPI.h>
 
 #include "../global.h"
 //#include "event.h"

@@ -1,7 +1,7 @@
 #include "container.h"
 
-#include <MC/Container.hpp>
-#include <MC/ItemStack.hpp>
+#include <llapi/mc/Container.hpp>
+#include <llapi/mc/ItemStack.hpp>
 
 #include "item.h"
 
