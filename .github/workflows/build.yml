@@ -17,7 +17,7 @@ jobs:
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           mkdir Tools/Server
-          ServerLink=$(curl -s https://raw.githubusercontent.com/LiteLDev/LiteLoaderBDS/main/Scripts/LINK.txt)
+          ServerLink=$(curl -s https://raw.githubusercontent.com/LiteLDev/LiteLoaderBDS/main/scripts/LINK.txt)
           curl -L -o Tools/Server/server.zip "$ServerLink"
           unzip -q Tools/Server/server.zip -d Tools/Server/
         shell: bash
@@ -26,14 +26,14 @@ jobs:
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           cd Tools
-          LibraryBuilder.exe Server
+          LibraryBuilder.exe -o Lib Server
         shell: cmd
 
       - name: Temporarily Save Libs
         uses: actions/upload-artifact@v2
         with:
           name: libs
-          path: LiteLoader/Lib
+          path: Lib
 
   build_pyr:
     runs-on: windows-2022
