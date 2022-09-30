@@ -26,7 +26,7 @@ jobs:
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           cd Tools
-          LibraryBuilder.exe -o Lib Server
+          LibraryBuilder -o .\Lib Server
         shell: cmd
 
       - name: Temporarily Save Libs
