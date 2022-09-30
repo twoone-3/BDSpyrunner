@@ -17,7 +17,7 @@ jobs:
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           mkdir Tools/Server
-          ServerLink=$(curl -s https://raw.githubusercontent.com/LiteLDev/LiteLoaderBDS/main/Scripts/LINK.txt)
+          ServerLink=$(curl -s https://raw.githubusercontent.com/LiteLDev/LiteLoaderBDS/main/scripts/LINK.txt)
           curl -L -o Tools/Server/server.zip "$ServerLink"
           unzip -q Tools/Server/server.zip -d Tools/Server/
         shell: bash
