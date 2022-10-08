@@ -240,8 +240,8 @@ Tag* ObjecttoTag(const Json& value) {
 		case TagType::List: {
 			Tag* list = ArraytoTag(val);
 			c->put(new_key, list);
-			list->deleteList();
-			delete list;
+			//list->deleteList();
+			//delete list;
 			break;
 		}
 		case TagType::Compound: {
