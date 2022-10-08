@@ -269,8 +269,8 @@ Container* Player::getArmorContainer() {
 //获取末影箱
 
 Container* Player::getEnderChestContainer() {
-	//IDA Player::Player Line762: v71 = EnderChestContainer::EnderChestContainer(v70);
-	return Dereference<Container*>(this, 5440);
+	//IDA Player::Player Line831: v79 = (EnderChestContainer **)((char *)v14 + 5232);
+	return Dereference<Container*>(this, 5232);
 }
 
 //设置一个装备
