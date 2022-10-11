@@ -16,7 +16,7 @@ jobs:
 
       - name: Fetch SDK
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: FetchSDK.cmd
+        run: git submodule foreach "git checkout main && git pull"
         shell: cmd
 
       - name: Download Server
