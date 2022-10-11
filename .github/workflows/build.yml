@@ -34,7 +34,7 @@ jobs:
       - name: Build Library
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          cd SDK/Tools
+          cd SDK/tools
           LibraryBuilder.exe  -o ../Lib/ ./Server/
         shell: cmd
 
@@ -55,8 +55,12 @@ jobs:
           mkdir temp/release
           cp x64/Release/BDSpyrunner.dll temp/release/
           cp x64/Release/BDSpyrunner.pdb temp/release/
-          Tools/7z/7za.exe a BDSpyrunner.zip temp/release/** -tzip
         shell: bash
+
+      - uses: montudor/action-zip@v1
+        with:
+          args: zip -qq -r BDSpyrunner.zip temp/release/
+
 
       - name: Upload BDSpyrunner
         uses: actions/upload-artifact@v2
