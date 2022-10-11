@@ -1,68 +1,84 @@
-﻿name: Build and Release
+﻿name: Build BDSpyrunner
 
-on:
-  push:
-    tags: v*
+on: [ push ]
+
+env:
+  SOLUTION_FILE_PATH: .
+  BUILD_CONFIGURATION: Release
+  Platform: X64
 
 jobs:
-  build_lib:
+  build:
     runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v2
-        with:
-          repository: "LiteLDev/LiteLoaderBDS"
+
+      - name: Fetch SDK
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: FetchSDK.cmd
+        shell: cmd
 
       - name: Download Server
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          mkdir Tools/Server
-          ServerLink=$(curl -s https://raw.githubusercontent.com/LiteLDev/LiteLoaderBDS/main/scripts/LINK.txt)
-          curl -L -o Tools/Server/server.zip "$ServerLink"
-          unzip -q Tools/Server/server.zip -d Tools/Server/
+          mkdir SDK/Tools/Server
+          curl -L -o LINK.txt https://raw.githubusercontent.com/LiteLDev/LiteLoaderBDS//develop/scripts/LINK.txt
+          ServerLink=$(cat 'LINK.txt')
+          echo "ServerLink: $ServerLink"
+          curl -L -o SDK/Tools/Server/server.zip "$ServerLink"
+          unzip SDK/Tools/Server/server.zip -d SDK/Tools/Server/ > /dev/null
+          ls SDK/Tools/Server
         shell: bash
 
       - name: Build Library
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          cd Tools
-          LibraryBuilder -o ../lib Server
+          cd SDK/Tools
+          LibraryBuilder.exe  -o ../Lib/ ./Server/
         shell: cmd
 
-      - name: Temporarily Save Libs
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v1
+
+      - name: Build
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        id: build
+        run: |
+          MSBuild.exe ./BDSpyrunner.sln -property:Configuration=Release
+        shell: bash
+
+      - name: Pack Release
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          mkdir temp
+          mkdir temp/release
+          cp x64/Release/BDSpyrunner.dll temp/release/
+          cp x64/Release/BDSpyrunner.pdb temp/release/
+          Tools/7z/7za.exe a BDSpyrunner.zip temp/release/** -tzip
+        shell: bash
+
+      - name: Upload BDSpyrunner
         uses: actions/upload-artifact@v2
         with:
-          name: libs
-          path: Lib
+          name: BDSpyrunner
+          path: ${{ github.workspace }}\temp\release
 
-  build_pyr:
-    runs-on: windows-2022
-    needs: build_lib
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Update SDK
-        run: git submodule update --init --recursive --remote
-      
-      - name: Retrieve Saved Libs
-        uses: actions/download-artifact@v2
-        with:
-          name: libs
-          path: SDK/Lib/
-
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
-        with:
-          msbuild-architecture: x64
-
-      - name: Build Project
+      - name: Prepare for creating Release
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: msbuild /m /p:Configuration=Release ./
+        id: rel
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+          mv BDSpyrunner.zip BDSpyrunner-${GITHUB_REF#refs/*/}.zip
+        shell: bash
 
-      - name: GH Release
-        uses: softprops/action-gh-release@v0.1.14
+      - name: Create New Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
+          body_path: ${{ github.workspace }}\RELEASENOTE.md
           files: |
-            ./x64/Release/BDSpyrunner.dll
-            ./x64/Release/BDSpyrunner.pdb
+            ${{ github.workspace }}\BDSpyrunner-${{ steps.rel.outputs.tag }}.zip
+        env:
+          GITHUB_REPOSITORY: twoone-3/BDSpyrunner
