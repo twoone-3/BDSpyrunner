@@ -1,6 +1,6 @@
 ﻿#include "item.h"
 
-#include <MC/ItemStack.hpp>
+#include <llapi/mc/ItemStack.hpp>
 
 #include "../global.h"
 #include "entity.h"
