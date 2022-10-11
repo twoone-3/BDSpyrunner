@@ -22,13 +22,13 @@ jobs:
       - name: Download Server
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          mkdir SDK/Tools/Server
+          mkdir SDK/tools/Server
           curl -L -o LINK.txt https://raw.githubusercontent.com/LiteLDev/LiteLoaderBDS//develop/scripts/LINK.txt
           ServerLink=$(cat 'LINK.txt')
           echo "ServerLink: $ServerLink"
-          curl -L -o SDK/Tools/Server/server.zip "$ServerLink"
-          unzip SDK/Tools/Server/server.zip -d SDK/Tools/Server/ > /dev/null
-          ls SDK/Tools/Server
+          curl -L -o SDK/tools/Server/server.zip "$ServerLink"
+          unzip SDK/tools/Server/server.zip -d SDK/tools/Server/ > /dev/null
+          ls SDK/tools/Server
         shell: bash
 
       - name: Build Library
