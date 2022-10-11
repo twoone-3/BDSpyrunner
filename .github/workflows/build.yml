@@ -35,7 +35,7 @@ jobs:
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           cd SDK/tools
-          LibraryBuilder.exe  -o ../Lib/ ./Server/
+          LibraryBuilder.exe -o ../Lib/ ./Server/
         shell: cmd
 
       - name: Add MSBuild to PATH
@@ -55,12 +55,8 @@ jobs:
           mkdir temp/release
           cp x64/Release/BDSpyrunner.dll temp/release/
           cp x64/Release/BDSpyrunner.pdb temp/release/
+          7z a BDSpyrunner.zip temp/release/** -tzip
         shell: bash
-
-      - uses: montudor/action-zip@v1
-        with:
-          args: zip -qq -r BDSpyrunner.zip temp/release/
-
 
       - name: Upload BDSpyrunner
         uses: actions/upload-artifact@v2
