@@ -95,26 +95,26 @@ class SnbtFormat(Enum):
     Minimize = 2
 
 class ObjectiveSortOrder(Enum):
-    Ascending = (0,)
+    Ascending = 0
     Descending = 1
 
 class BossEventColour(Enum):
-    Grey = (0,)
-    Blue = (1,)
-    Red = (2,)
-    Green = (3,)
-    Yellow = (4,)
-    Purple = (5,)
+    Grey = 0
+    Blue = 1
+    Red = 2
+    Green = 3
+    Yellow = 4
+    Purple = 5
     White = 6
 
 class ScriptFacing(Enum):
-    Unknown = (-1,)
-    Down = (0,)
-    Up = (1,)
-    North = (2,)
-    South = (3,)
-    West = (4,)
-    East = (5,)
+    Unknown = -1
+    Down = 0
+    Up = 1
+    North = 2
+    South = 3
+    West = 4
+    East = 5
 
 class TagType(Enum):
     End = 0
