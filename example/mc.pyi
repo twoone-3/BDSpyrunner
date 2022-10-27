@@ -158,7 +158,7 @@ class Vec2:
 class Vec3:
 	x: float
 	y: float
-	x: float
+	z: float
 
 	def __init__(self, x: float, y: float, z: float) -> None:
 		pass
