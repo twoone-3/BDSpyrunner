@@ -181,7 +181,7 @@ public:
 void Actor::teleport(Vec3* target, int did) {
 	char mem[128];
 	TeleportRotationData data;
-	SymCall("?computeTarget@TeleportCommand@@SA?AVTeleportTarget@@AEAVActor@@VVec3@@PEAV4@V?$AutomaticID@VDimension@@H@@AEBV?$optional@VTeleportRotationData@@@std@@H@Z",
+	SymCall("?computeTarget@TeleportCommand@@SA?AVTeleportTarget@@AEAVActor@@VVec3@@PEAV4@V?$AutomaticID@VDimension@@H@@AEBV?$optional@VRotationData@RotationCommandUtils@@@std@@H@Z",
 		&mem, this, target, 0, did, &data, 15);
 	SymCall("?applyTarget@TeleportCommand@@SAXAEAVActor@@VTeleportTarget@@_N@Z",
 		this, &mem, 0);

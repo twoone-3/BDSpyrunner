@@ -21,7 +21,7 @@ StructureTemplate::StructureTemplate(const span<char>& s) {
 }
 
 StructureTemplate::~StructureTemplate() {
-	SymCall("??1StructureTemplate@@QEAA@XZ", this);
+	SymCall("??1StructureTemplate@@UEAA@XZ", this);
 }
 
 Tag* StructureTemplate::save() {
