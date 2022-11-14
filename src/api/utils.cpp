@@ -21,10 +21,10 @@ namespace mc {
 void setListener(const string& event_name, const py::function& cb) {
   auto event_code = magic_enum::enum_cast<EventCode>(event_name);
   if (!event_code) throw py::value_error("Invalid event name " + event_name);
-  //如果监听器未启用，则启用
+  // 如果监听器未启用，则启用
   if (listeners.find(event_code.value()) == listeners.end())
     EnableEventListener(event_code.value());
-  //添加回调函数
+  // 添加回调函数
   listeners[event_code.value()].push_back(cb);
 }
 
@@ -86,7 +86,7 @@ NBTClass getStructure(const BlockPos& pos1, const BlockPos& pos2, int dim,
                       bool ignore_entities, bool ignore_blocks) {
   auto st = StructureTemplate::fromWorld("name", dim, pos1, pos2,
                                          ignore_entities, ignore_blocks);
-  return st.save();
+  return st->save();  // TODO: check memory leak
 }
 
 bool setStructure(const NBTClass& nbt, const BlockPos& pos, int dim, Mirror mir,
@@ -100,7 +100,7 @@ bool setStructure(const NBTClass& nbt, const BlockPos& pos, int dim, Mirror mir,
           }
       }
   }*/
-  return st.toWorld(dim, pos, mir, rot);
+  return st->toWorld(dim, pos, mir, rot);  // TODO: check memory leak
 }
 
 void explode(const Vec3& pos, int dim, float power, bool destroy, float range,

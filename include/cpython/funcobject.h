@@ -1,5 +1,5 @@
-
 /* Function object interface */
+
 #ifndef Py_LIMITED_API
 #ifndef Py_FUNCOBJECT_H
 #define Py_FUNCOBJECT_H
@@ -42,6 +42,14 @@ typedef struct {
     PyObject *func_module;      /* The __module__ attribute, can be anything */
     PyObject *func_annotations; /* Annotations, a dict or NULL */
     vectorcallfunc vectorcall;
+    /* Version number for use by specializer.
+     * Can set to non-zero when we want to specialize.
+     * Will be set to zero if any of these change:
+     *     defaults
+     *     kwdefaults (only if the object changes, not the contents of the dict)
+     *     code
+     *     annotations */
+    uint32_t func_version;
 
     /* Invariant:
      *     func_closure contains the bindings for func_code->co_freevars, so
@@ -68,13 +76,11 @@ PyAPI_FUNC(int) PyFunction_SetClosure(PyObject *, PyObject *);
 PyAPI_FUNC(PyObject *) PyFunction_GetAnnotations(PyObject *);
 PyAPI_FUNC(int) PyFunction_SetAnnotations(PyObject *, PyObject *);
 
-#ifndef Py_LIMITED_API
 PyAPI_FUNC(PyObject *) _PyFunction_Vectorcall(
     PyObject *func,
     PyObject *const *stack,
     size_t nargsf,
     PyObject *kwnames);
-#endif
 
 /* Macros for direct access to these values. Type checks are *not*
    done, so use with care. */
@@ -92,9 +98,6 @@ PyAPI_FUNC(PyObject *) _PyFunction_Vectorcall(
         (((PyFunctionObject *)func) -> func_closure)
 #define PyFunction_GET_ANNOTATIONS(func) \
         (((PyFunctionObject *)func) -> func_annotations)
-
-#define PyFunction_AS_FRAME_CONSTRUCTOR(func) \
-        ((PyFrameConstructor *)&((PyFunctionObject *)(func))->func_globals)
 
 /* The classmethod and staticmethod types lives here, too */
 PyAPI_DATA(PyTypeObject) PyClassMethod_Type;
