@@ -632,13 +632,19 @@ THOOK(onRespawn, void, "?respawn@Player@@UEAAXXZ",
 }
 //聊天，消息title msg w等...
 THOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@000@Z",
-	uintptr_t _this, string& sender, string& target, string& msg, string& style) {
+	uintptr_t _this, string* sender, string* target, string* msg, string* style) {
 	EventCallBackHelper h(EventCode::onChat);
-	h.insert("sender", sender)
-		.insert("target", target)
-		.insert("msg", msg)
-		.insert("style", style);
-	h.call();
+	
+	if(sender) {
+		void* a1 = *(void**)sender;
+		if(a1) {
+			h.insert("sender", *sender)
+				.insert("target", *target)
+				.insert("msg", *msg)
+				.insert("style", *style);
+			h.call();
+		}
+	}
 	original(_this, sender, target, msg, style);
 }
 //玩家输入文本

@@ -270,7 +270,7 @@ Container* Player::getArmorContainer() {
 
 Container* Player::getEnderChestContainer() {
 	//IDA Player::Player Line831: v79 = (EnderChestContainer **)((char *)v14 + 5232);
-	return Dereference<Container*>(this, 5232);
+	return Dereference<Container*>(this, 5328);
 }
 
 //设置一个装备
