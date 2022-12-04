@@ -3,13 +3,17 @@
 
 using namespace std;
 //获取方块源 没这个维度返回空指针
-
 BlockSource* Level::getBlockSource(int did) {
-	void* d = SymCall<void*>("?getDimension@Level@@UEBAPEAVDimension@@V?$AutomaticID@VDimension@@H@@@Z",
-		this, did);
-	if (!d)
+	void* result = malloc(0x18);
+	void* d = SymCall<class WeakRefT<struct SharePtrRefTraits<class Dimension>> *>("?getDimension@Level@@UEBA?AV?$WeakRefT@U?$SharePtrRefTraits@VDimension@@@@@@V?$AutomaticID@VDimension@@H@@@Z",
+		this, result, did)->mHandle.lock().get();
+	if (!d) {
+		free(result);
 		return nullptr;
-	return SymCall<BlockSource*>("?getBlockSourceFromMainChunkSource@Dimension@@QEBAAEAVBlockSource@@XZ", d);
+	}
+	auto ret = SymCall<BlockSource*>("?getBlockSourceFromMainChunkSource@Dimension@@QEBAAEAVBlockSource@@XZ", d);
+	free(result);
+	return ret;
 }
 
 void Level::forEachPlayer(const std::function<bool(Player*)>& fn) {

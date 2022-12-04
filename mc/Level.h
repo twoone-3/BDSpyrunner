@@ -4,6 +4,15 @@
 #include <functional>
 #include "Position.h"
 
+template <typename T>
+struct SharePtrRefTraits {};
+template <typename T>
+class WeakStorageSharePtr {
+public:
+	std::weak_ptr<T> mHandle;
+};
+template <typename T>
+class WeakRefT : public WeakStorageSharePtr<T> {};
 struct Actor;
 struct Player;
 struct BlockSource;
