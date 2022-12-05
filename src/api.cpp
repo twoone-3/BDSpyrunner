@@ -353,6 +353,8 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
       .def("sendModalForm", &PlayerClass::sendModalForm)
       .def("sendCustomForm", &PlayerClass::sendCustomForm)
 
+      .def("sendTitlePacket",&PlayerClass::sendTitlePacket)
+
       .def("setExtraData", &PlayerClass::setExtraData)
       .def("getExtraData", &PlayerClass::getExtraData)
       .def("delExtraData", &PlayerClass::delExtraData)

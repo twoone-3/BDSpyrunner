@@ -1,3 +1,2 @@
-﻿v2.1.3更新
-- 更新 python 3.11.0
-- 适配新版 LL
+﻿v2.1.4更新
+- 新增 Player::sendTitlePacket 函数

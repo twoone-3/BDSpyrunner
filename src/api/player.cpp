@@ -403,6 +403,13 @@ bool PlayerClass::sendModalForm(const string& title, const string& content,
                                    });
 }
 
+bool PlayerClass::sendTitlePacket(const string& text, TitleType type,
+                                  int fade_in_duration, int remain_duration,
+                                  int fade_out_duration) {
+  return thiz->sendTitlePacket(text, type, fade_in_duration, remain_duration,
+                               fade_out_duration);
+}
+
 bool PlayerClass::refreshChunks() {
   if (thiz == nullptr) return {};
   thiz->resendAllChunks();

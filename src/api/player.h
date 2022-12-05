@@ -95,6 +95,9 @@ struct PlayerClass {
                      const string& button1, const string& button2,
                      const py::function& cb);
 
+  bool sendTitlePacket(const string& text, TitleType type, int fade_in_duration,
+                 int remain_duration, int fade_out_duration);
+
   bool setExtraData(string key, const py::object& value);
   py::object getExtraData(string key);
   bool delExtraData(string key);
