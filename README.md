@@ -7,3 +7,7 @@
 ![CodeFactor](https://www.codefactor.io/repository/github/twoone-3/bdspyrunner/badge)
 
 [Wiki](https://github.com/twoone-3/BDSpyrunner/wiki)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=twoone-3/BDSpyrunner&type=Date)](https://star-history.com/#twoone-3/BDSpyrunner&Date)
