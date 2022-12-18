@@ -225,7 +225,7 @@ string Player::getUuid() {//IDA ServerNetworkHandler::_createNewPlayer 222
 	string p;
 	void* v33 = **(void***)(this + 8);
 	int v107 = *(int*)(this + 16);
-	void* v34 = SymCall<void*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@@entt@@QEBA?A_PVEntityId@@@Z", v33, &v107);
+	void* v34 = SymCall<void*>("??$try_get@VUserEntityIdentifierComponent@@@?$basic_registry@VEntityId@@V?$allocator@VEntityId@@@std@@@entt@@QEBA?A_PVEntityId@@@Z", v33, &v107);
 	SymCall<string&>("?asString@UUID@mce@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ",
 		uintptr_t(v34) + 168, &p);
 	return p;
@@ -269,7 +269,7 @@ Container* Player::getArmorContainer() {
 //获取末影箱
 
 Container* Player::getEnderChestContainer() {
-	//IDA Player::Player Line831: v79 = (EnderChestContainer **)((char *)v14 + 5232);
+	//IDA Player::Player Line761: v69 = (EnderChestContainer **)((char *)v15 + 5232);
 	return Dereference<Container*>(this, 5232);
 }
 

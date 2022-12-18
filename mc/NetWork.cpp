@@ -34,6 +34,7 @@ SystemAddress RakPeer::getSystemAddress(NetworkIdentifier* ni) {
 }
 
 Player* ServerNetworkHandler::_getServerPlayer(uintptr_t id, uintptr_t pkt) {
-	return SymCall<Player*>("?_getServerPlayer@ServerNetworkHandler@@AEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@W4SubClientId@@@Z",
-		this, id, Dereference<char>(pkt, 16));
+	auto v3 = (ServerNetworkHandler*)((char*)this - 16);
+	return SymCall<Player*>("?_getServerPlayer@ServerNetworkHandler@@EEAAPEAVServerPlayer@@AEBVNetworkIdentifier@@W4SubClientId@@@Z",
+		v3, id, Dereference<char>(pkt, 16));
 }
