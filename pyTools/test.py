@@ -63,12 +63,14 @@ def testonConsoleOutput(output):
 
 def testonJoin(player): #testonPlayerJoin
 	mc.getPlayerList()[0].sendCustomForm('{"content":[{"type":"label","text":"114514"}], "type":"custom_form","title":"test"}')
-	#printLog("[TEST] Listener onJoin s_player.name = " + str(player.name) + "s_player.xuid = " + str(player.xuid))
+	printLog(f"[TEST] Listener onJoin s_player.uuid = " + player.uuid + " s_player.IP = " + player.IP)
+	mc.removeListener('onJoin', testonJoin)
 mc.setListener('onJoin', testonJoin) #onPlayerJoin -> onJoin
 # status: test
 
 def testonLeft(player): #testonPlayerLeft
-	printLog(f"[TEST] Listener onLeft s_player.uuid = " + player.uuid + "s_player.IP = " + player.IP)
+	printLog("[TEST] Listener onLeft s_player.name = " + str(player.name) + " s_player.xuid = " + str(player.xuid))
+	mc.removeListener('onLeft', testonLeft)
 mc.setListener('onLeft', testonLeft) #onPlayerLeft -> onLeft
 # status: test
 
@@ -187,7 +189,7 @@ def testonUseRespawnAnchor(e): #testonUseRespawnAnchorBlock
 
 def testonScoreChanged(e):
 	printLog(f'[TEST] Listener onScoreChanged i_e["scoreboardid"] = {e["scoreboardid"]}, i_e["playersnum"] = {e["playersnum"]}, s_e["objectivename"] = {e["objectivename"]}, s_e["objectivedisname"] = {e["objectivedisname"]}')
-mc.setListener("onScoreChanged", testonScoreChanged)
+#mc.setListener("onScoreChanged", testonScoreChanged)
 # status: test
 # scripts:
 #/scoreboard objectives add test dummy test

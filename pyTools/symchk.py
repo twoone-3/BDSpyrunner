@@ -183,6 +183,8 @@ if __name__ == "__main__":
     printc("\nSymbol Checker For BDS Projects\n", Fore.LIGHTCYAN_EX)
     downloadCVDUMP()
     if overwrite:
-        print("Generating pdbInfo.txt...")
+        printc("Generating pdbInfo.txt...", Fore.CYAN)
+        time_temp = time.time()
         os.system(f".\cvdump.exe -headers -p {pdb_file_path} > pdbInfo.txt")
+        printc(f"Generated({str(time.time()-time_temp)[:5]}s)!\n", Fore.GREEN)
     compare()

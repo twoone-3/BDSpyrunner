@@ -63,7 +63,7 @@ static PyObject* runCommand(PyObject*, PyObject* args) {
 		global<SPSCQueue>, cmd);
 	Py_RETURN_NONE;
 }
-//…Ë÷√º‡Ã˝
+//…Ë÷√º‡Ã˝∆˜
 static PyObject* setListener(PyObject*, PyObject* args) {
 	const char* name = ""; PyObject* func;
 	Py_PARSE("sO", &name, &func);
@@ -74,6 +74,26 @@ static PyObject* setListener(PyObject*, PyObject* args) {
 		Py_RETURN_ERROR("Invalid Listener key words");
 	g_callback_functions[it->second].push_back(func);
 	Py_RETURN_NONE;
+}
+//…æ≥˝º‡Ã˝∆˜
+static PyObject* removeListener(PyObject*, PyObject* args) {
+	const char* name = ""; PyObject* func;
+	Py_PARSE("sO", &name, &func);
+	auto it = events.find(name);
+	if (!PyFunction_Check(func))
+		Py_RETURN_ERROR("Parameter 2 is not callable");
+	if (it == events.end())
+		Py_RETURN_ERROR("Invalid Listener key words");
+	
+	auto& callbacks = g_callback_functions[it->second];
+	auto iter = std::find(callbacks.begin(), callbacks.end(), func);
+	if (iter != callbacks.end()) {
+		callbacks.erase(iter);
+		Py_RETURN_NONE;
+	}
+	else {
+		Py_RETURN_ERROR("Listener not found");
+	}
 }
 //…Ë÷√÷∏¡ÓÀµ√˜
 static PyObject* setCommandDescription(PyObject*, PyObject* args) {
@@ -353,6 +373,7 @@ static PyMethodDef Methods[]{
 	{ "logout", logout, METH_VARARGS, nullptr },
 	{ "runcmd", runCommand, METH_VARARGS, nullptr },
 	{ "setListener", setListener, METH_VARARGS, nullptr },
+	{ "removeListener", removeListener, METH_VARARGS, nullptr },
 	{ "setCommandDescription", setCommandDescription, METH_VARARGS, nullptr },
 	{ "getPlayerByXuid", getPlayerByXuid, METH_VARARGS, nullptr },
 	{ "getPlayerList", getPlayerList, METH_NOARGS, nullptr },
