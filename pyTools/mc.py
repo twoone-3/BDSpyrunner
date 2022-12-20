@@ -68,7 +68,7 @@ def removeListener(event: str, function: Callable[[object], Optional[bool]]) -> 
 
 
 # API
-def getrBDSVerion() -> str:
+def getBDSVerion() -> str:
     return mco.getBDSVersion()
 
 def logout(message: str) -> None:
@@ -134,7 +134,7 @@ def log(*content, name: str = "Plugin", level: str = "INFO", info: str = ""):
     strs = ""
     for string in content:
         strs += str(string)
-    content = strs[2:-3]
+    content = strs[:-3]
     if __name__ != '__main__':
         if name != "plugin" and content != "Test Message" and level != "INFO" and info != "":
             logger(f"{date} {level} [{name}][{info}] {content}")
