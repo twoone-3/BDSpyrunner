@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <memory>
 #include "Position.h"
 
 template <typename T>
