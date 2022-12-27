@@ -23,11 +23,6 @@ on:
         required: false
         default: false
         type: boolean
-      overwrite_release:
-        description: 'Overwrite Existing Release'
-        required: false
-        default: true
-        type: boolean
       rel_title:
         description: 'Release Description Title'     
         required: false
@@ -94,7 +89,6 @@ jobs:
         with:
           tag_name: ${{ inputs.rel_tag }}
           name: ${{ inputs.rel_title }}
-          overwrite: ${{ inputs.overwrite_release }}
           prerelease: ${{ inputs.pre_release }}
           body: ${{ inputs.rel_desc_body }}
           files: |
