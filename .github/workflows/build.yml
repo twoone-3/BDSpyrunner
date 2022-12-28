@@ -1,4 +1,4 @@
-name: build
+name: Build
 
 on:
   push:
@@ -22,14 +22,14 @@ jobs:
 
       - name: Build Project
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: msbuild /m /p:Configuration=Release ./
+        run: msbuild /m /p:Configuration=Debug ./
 
       - name: Organize dll and pdb files
         run: |
           mkdir ./x64/dllpdb
-          cp ./x64/Release/BDSpyrunner.dll ./x64/dllpdb
-          cp ./x64/Release/BDSpyrunner.pdb ./x64/dllpdb
-
+          cp ./x64/Debug/BDSpyrunner.dll ./x64/dllpdb
+          cp ./x64/Debug/BDSpyrunner.pdb ./x64/dllpdb
+          
       - name: Upload build files
         uses: actions/upload-artifact@v2
         with:

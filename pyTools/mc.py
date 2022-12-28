@@ -32,11 +32,43 @@ def setListener(event: str, function: Callable[[object], Optional[bool]]) -> Non
     if event == "onUseRespawnAnchor":
         event = "onUseRespawnAnchorBlock"
     if notContainer:
-        mco.setListener(event, function)
+        return mco.setListener(event, function)
+
+
+def removeListener(event: str, function: Callable[[object], Optional[bool]]) -> None:
+    notContainer = True
+    if event == "onConsoleCmd":
+        event = "onConsoleInput"
+    if event == "onJoin": #listener name (from py plugin)
+        event = "onPlayerJoin" #pyr provided listener name
+    if event == "onLeft":
+        event = "onPlayerLeft"
+    if event == "onFormSelected":
+        event = "onSelectForm"
+    if event == "onOpenContainer":
+        notContainer = False
+        mco.setListener("onOpenChest", function)
+        mco.setListener("onOpenBarrel", function)
+    if event == "onCloseContainer":
+        notContainer = False
+        mco.setListener("onCloseChest", function)
+        mco.setListener("onCloseBarrel", function)
+    if event == "onChangeDim":
+        event = "onChangeDimension"
+    if event == "onPlayerCmd":
+        event = "onInputCommand"
+    if event == "onCmdBlockExecute":
+        event = "onCommandBlockPerform"
+    if event == "onFarmLandDecay":
+        event = "onFallBlockTransform"
+    if event == "onUseRespawnAnchor":
+        event = "onUseRespawnAnchorBlock"
+    if notContainer:
+        return mco.removeListener(event, function)
 
 
 # API
-def getrBDSVerion() -> str:
+def getBDSVerion() -> str:
     return mco.getBDSVersion()
 
 def logout(message: str) -> None:
@@ -87,6 +119,7 @@ def isSlimeChunk(x:int, y:int) -> bool:
 def setSignBlockMessage(msg:str, x:int, y:int, z:int, did:int) -> None:
     return setSignBlockMessage(msg, x, y, z, did)
 
+
 ######### PRIVATE API ##########
 '''
 log_out_function_inner = __import__("mc").logout
@@ -101,7 +134,7 @@ def log(*content, name: str = "Plugin", level: str = "INFO", info: str = ""):
     strs = ""
     for string in content:
         strs += str(string)
-    content = strs[2:-3]
+    content = strs[:-3]
     if __name__ != '__main__':
         if name != "plugin" and content != "Test Message" and level != "INFO" and info != "":
             logger(f"{date} {level} [{name}][{info}] {content}")

@@ -1,11 +1,47 @@
-name: Build and Release
+name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      solution:
+        description: 'Build Solution'
+        required: true
+        default: 'Release'
+        type: string
+      artifact:
+        description: 'Upload to Artifact'
+        required: false
+        default: true
+        type: boolean
+      release:
+        description: 'Generate a new Release'
+        required: false
+        default: true
+        type: boolean
+      pre_release:
+        description: 'Generate a new Pre Release'
+        required: false
+        default: false
+        type: boolean
+      rel_title:
+        description: 'Release Description Title'     
+        required: false
+        default: 'v1.9.50a'
+        type: string
+      rel_tag:
+        description: 'Release Tag'     
+        required: false
+        default: 'v1.9.50a'
+        type: string
+      rel_desc_body:
+        description: 'Release Description Body'     
+        required: false
+        default: 'Adapt to BDS version: '
+        type: string
 
 jobs:
-  build:
-    runs-on: windows-2022
+  release:
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -14,34 +50,51 @@ jobs:
         uses: microsoft/setup-msbuild@v1.1
         with:
           msbuild-architecture: x64
-
+      
       - name: Build Project
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: msbuild /m /p:Configuration=Release ./
-
+        run: msbuild /m /p:Configuration=${{ inputs.solution }} ./
+            
       - name: Organize dll and pdb files
         run: |
-          mkdir ./release/zip
-          cp ./x64/Release/BDSpyrunner.dll ./release/
-          cp ./x64/Release/BDSpyrunner.pdb ./release/
+          mkdir ./release/
+          mkdir ./x64/dllpdb/
+          cp ./x64/${{ inputs.solution }}/BDSpyrunner.dll ./x64/dllpdb/
+          cp ./x64/${{ inputs.solution }}/BDSpyrunner.pdb ./x64/dllpdb/
+          cp ./x64/${{ inputs.solution }}/BDSpyrunner.dll ./release/
+          cp ./x64/${{ inputs.solution }}/BDSpyrunner.pdb ./release/
           cp ./pyTools/mc.py ./release/
           cp ./pyTools/test.py ./release/
-          cp ./pyTools/symbolChecker.py ./release/
+          cp ./pyTools/symchk.py ./release/
+          ls ./x64/dllpdb/
+          ls ./release/
 
       - name: Zip Release
         uses: TheDoctor0/zip-release@0.6.2
         with:
           filename: all.zip
-          path: ./release/
-          directory: ./release/
+          path: D:\a\BDSpyrunner\BDSpyrunner\release\
+          directory: D:\a\BDSpyrunner\BDSpyrunner\release\
+
+      - name: Upload build files
+        uses: actions/upload-artifact@v2
+        if: inputs.artifact
+        with:
+          name: build
+          path: ./x64/dllpdb
           
       - name: GH Release
         uses: softprops/action-gh-release@v0.1.14
+        if: inputs.release
         with:
+          tag_name: ${{ inputs.rel_tag }}
+          name: ${{ inputs.rel_title }}
+          prerelease: ${{ inputs.pre_release }}
+          body: ${{ inputs.rel_desc_body }}
           files: |
             ./release/BDSpyrunner.dll
             ./release/BDSpyrunner.pdb
             ./release/mc.py
             ./release/test.py
-            ./release/symbolChecker.py
+            ./release/symchk.py
             ./release/all.zip
