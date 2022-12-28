@@ -635,9 +635,10 @@ THOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic
 	uintptr_t _this, string* sender, string* target, string* msg, string* style) {
 	EventCallBackHelper h(EventCode::onChat);
 	
-	if(sender) {
+	if(sender && msg) {
 		void* a1 = *(void**)sender;
-		if(a1) {
+		void* a2 = *(void**)msg;
+		if(a1 && a2) {
 			h.insert("sender", *sender)
 				.insert("target", *target)
 				.insert("msg", *msg)
