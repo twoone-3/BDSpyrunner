@@ -268,7 +268,7 @@ THOOK(BDS_Main, int, "main",
 #endif
 	//如果目录不存在创建目录
 	if (!fs::exists(PLUGIN_PATH))
-		fs::create_directory(PLUGIN_PATH);
+		fs::create_directories(PLUGIN_PATH);
 	//设置模块搜索路径
 	wstring py_path(PLUGIN_PATH L";"
 					PLUGIN_PATH "Dlls;"
@@ -635,9 +635,10 @@ THOOK(onChat, void, "?fireEventPlayerMessage@MinecraftEventing@@AEAAXAEBV?$basic
 	uintptr_t _this, string* sender, string* target, string* msg, string* style) {
 	EventCallBackHelper h(EventCode::onChat);
 	
-	if(sender) {
+	if(sender && msg) {
 		void* a1 = *(void**)sender;
-		if(a1) {
+		void* a2 = *(void**)msg;
+		if(a1 && a2) {
 			h.insert("sender", *sender)
 				.insert("target", *target)
 				.insert("msg", *msg)
