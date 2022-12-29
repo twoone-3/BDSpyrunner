@@ -268,7 +268,7 @@ THOOK(BDS_Main, int, "main",
 #endif
 	//如果目录不存在创建目录
 	if (!fs::exists(PLUGIN_PATH))
-		fs::create_directory(PLUGIN_PATH);
+		fs::create_directories(PLUGIN_PATH);
 	//设置模块搜索路径
 	wstring py_path(PLUGIN_PATH L";"
 					PLUGIN_PATH "Dlls;"
