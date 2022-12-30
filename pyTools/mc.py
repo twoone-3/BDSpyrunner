@@ -47,12 +47,12 @@ def removeListener(event: str, function: Callable[[object], Optional[bool]]) -> 
         event = "onSelectForm"
     if event == "onOpenContainer":
         notContainer = False
-        mco.setListener("onOpenChest", function)
-        mco.setListener("onOpenBarrel", function)
+        mco.removeListener("onOpenChest", function)
+        mco.removeListener("onOpenBarrel", function)
     if event == "onCloseContainer":
         notContainer = False
-        mco.setListener("onCloseChest", function)
-        mco.setListener("onCloseBarrel", function)
+        mco.removeListener("onCloseChest", function)
+        mco.removeListener("onCloseBarrel", function)
     if event == "onChangeDim":
         event = "onChangeDimension"
     if event == "onPlayerCmd":
