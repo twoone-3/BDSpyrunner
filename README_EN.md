@@ -25,7 +25,7 @@ It greatly reduces the threshold for plug-in development and effectively simplif
 
 # Documents
 
-* [Wiki](https://docs.jfishing.love/docs/en/README.md)
+* [Here](https://pyr.jfishing.love/en/)
 
 # Contact us
 

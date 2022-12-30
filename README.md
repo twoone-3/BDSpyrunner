@@ -25,7 +25,7 @@
 
 # 文档
 
-* [Wiki](https://docs.jfishing.love/docs/zh-CN/README.md)
+* [这里](https://pyr.jfishing.love/zh_Hans/)
 
 # 联系我们
 
