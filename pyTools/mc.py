@@ -1,6 +1,8 @@
 import mco
 from typing import Optional, Callable
 import time
+import os
+import json
 
 # Listener
 def setListener(event: str, function: Callable[[object], Optional[bool]]) -> None:
@@ -47,12 +49,12 @@ def removeListener(event: str, function: Callable[[object], Optional[bool]]) -> 
         event = "onSelectForm"
     if event == "onOpenContainer":
         notContainer = False
-        mco.removeListener("onOpenChest", function)
-        mco.removeListener("onOpenBarrel", function)
+        mco.setListener("onOpenChest", function)
+        mco.setListener("onOpenBarrel", function)
     if event == "onCloseContainer":
         notContainer = False
-        mco.removeListener("onCloseChest", function)
-        mco.removeListener("onCloseBarrel", function)
+        mco.setListener("onCloseChest", function)
+        mco.setListener("onCloseBarrel", function)
     if event == "onChangeDim":
         event = "onChangeDimension"
     if event == "onPlayerCmd":
@@ -134,7 +136,10 @@ def log(*content, name: str = "Plugin", level: str = "INFO", info: str = ""):
     strs = ""
     for string in content:
         strs += str(string)
-    content = strs[:-3]
+    if strs[:2] == "('":
+        content = strs[2:-3]
+    else:
+        content = strs
     if __name__ != '__main__':
         if name != "plugin" and content != "Test Message" and level != "INFO" and info != "":
             logger(f"{date} {level} [{name}][{info}] {content}")
@@ -146,3 +151,30 @@ def log(*content, name: str = "Plugin", level: str = "INFO", info: str = ""):
             logger(f"{date} INFO [{name}][{info}] {content}")
         else:
             logger(f"{date} INFO [{name}] {content}")
+
+
+def read_conf(folder:str, filename:str, encoding="utf-8"):
+    if os.path.exists(f"plugins/py/{folder}/{filename}"):
+        try:
+            with open(f"plugins/py/{folder}/{filename}", "r", encoding=encoding) as file:
+                config = json.load(file)
+        except:
+            with open(f"plugins/py/{folder}/{filename}", "r", encoding="gbk") as file:
+                config = json.load(file)
+        return config
+    else:
+        return None
+
+
+def save_conf(folder:str, filename:str, config={}, encoding="utf-8"):
+    with open(f"plugins/py/{folder}/{filename}", 'w+', encoding=encoding) as file:
+        json.dump(config, file, indent='\t', ensure_ascii=False)
+
+
+def make_conf(folder:str, filename:str, config={}, encoding="utf-8"):
+    if not os.path.exists(f"plugins/py/{folder}/{filename}"):
+        os.makedirs(f"plugins/py/{folder}")
+        save_conf(folder, filename, config, encoding)
+        return True
+    else:
+        return False
