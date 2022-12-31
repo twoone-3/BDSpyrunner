@@ -441,10 +441,3 @@ void Player::sendSetScorePacket(char type, const vector<ScorePacketInfo>& slot) 
 	sendNetworkPacket(pkt);
 }
 
-bool IsPlayer(Actor* ptr) {
-	if (ptr == nullptr)
-		return false;
-	if (ptr->getEntityTypeId() != 1)
-		return false;
-	return true;
-}

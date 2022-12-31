@@ -5,6 +5,7 @@
 #include "../mc/NetWork.h"
 #include "../mc/ScoreBoard.h"
 #include "../mc/Tag.h"
+#include <Windows.h>
 
 using namespace std;
 struct PyEntity {
@@ -12,16 +13,25 @@ struct PyEntity {
 	Actor* actor;
 
 	static Actor* asActor(PyObject* self) {
-		if (reinterpret_cast<PyEntity*>(self)->actor)
-			return reinterpret_cast<PyEntity*>(self)->actor;
+		Actor* entity = reinterpret_cast<PyEntity*>(self)->actor;
+		if (entity) {
+			if (IsPlayer(entity)) return asPlayer(self);
+			return entity;
+		}
 		else
 			Py_RETURN_ERROR("This entity pointer is nullptr");
 	}
 	static Player* asPlayer(PyObject* self) {
-		if (IsPlayer(reinterpret_cast<PyEntity*>(self)->actor))
-			return reinterpret_cast<Player*>(reinterpret_cast<PyEntity*>(self)->actor);
-		else
-			Py_RETURN_ERROR("This entity pointer is nullptr or is not player pointer");
+		Actor* entity = reinterpret_cast<PyEntity*>(self)->actor;
+		//ServerPlayer::isPlayerInitialized  !*((_BYTE *)this + 9648)
+		__try {
+			if (IsPlayer(entity) && !*((char*)entity + 9648))
+				return reinterpret_cast<Player*>(reinterpret_cast<PyEntity*>(self)->actor);
+		}
+		__except (EXCEPTION_EXECUTE_HANDLER) {
+			// 内存已回收
+		}
+		Py_RETURN_ERROR("This entity pointer is nullptr or is not player pointer");
 	}
 	static int print(PyObject* self, FILE* file, int) {
 		Actor* a = asActor(self);

@@ -146,4 +146,10 @@ struct Player : Mob {
 	void sendSetScorePacket(char type, const std::vector<ScorePacketInfo>& slot);
 };
 //ÊÇ·ñÎªÍæ¼Ò
-bool IsPlayer(Actor* ptr);
+inline bool IsPlayer(Actor* ptr) {
+	if (ptr == nullptr)
+		return false;
+	if (ptr->getEntityTypeId() != 1)
+		return false;
+	return true;
+}
