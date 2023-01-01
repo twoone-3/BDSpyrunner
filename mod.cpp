@@ -141,7 +141,7 @@ static void CheckPluginVersion() {
 	if (!fs::exists(BAT_PATH))
 		return;
 	cout << "[BDSpyrunner] Checking plugin version..." << endl;
-	Json info = AccessUrlForJson(L"https://api.github.com/repos/twoone-3/BDSpyrunner/releases/latest");
+	Json info = AccessUrlForJson(L"https://api.github.com/repos/WillowSauceR/BDSpyrunner/releases/latest");
 	if (info["tag_name"] == PYR_VERSION) {
 		cout << "[BDSpyrunner] Your plugin version is latest." << endl;
 		return;
