@@ -153,3 +153,10 @@ inline bool IsPlayer(Actor* ptr) {
 		return false;
 	return true;
 }
+//玩家是否已初始化
+inline bool IsPlayerInit(Actor* ptr) {
+	//ServerPlayer::isPlayerInitialized  !*((_BYTE *)this + 9648)
+	if (!*((char*)ptr + 9648))
+		return true;
+	return false;
+}

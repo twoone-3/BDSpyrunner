@@ -783,8 +783,8 @@ THOOK(onCommandBlockPerform, bool, "?_execute@CommandBlock@@AEBAXAEAVBlockSource
 THOOK(onMove, void*, "??0MovePlayerPacket@@QEAA@AEBVPlayer@@W4PositionMode@1@HH@Z",
 	uintptr_t _this, Player* p, char a3, int a4, int a5) {
 	float speed = p->getSpeedInMetersPerSecond();
-	//cout << "getSpeedInMetersPerSecond: " << getSpeedInMetersPerSecond << endl;
-	if (speed > 1) {
+	//cout << "getSpeedInMetersPerSecond: " << speed << endl;
+	if (speed > 1 && IsPlayerInit(p)) {
 		EventCallBackHelper h(EventCode::onMove);
 		h.setArg(ToEntity(p)).call();
 		return original(_this, p, a3, a4, a5);

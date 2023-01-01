@@ -23,9 +23,8 @@ struct PyEntity {
 	}
 	static Player* asPlayer(PyObject* self) {
 		Actor* entity = reinterpret_cast<PyEntity*>(self)->actor;
-		//ServerPlayer::isPlayerInitialized  !*((_BYTE *)this + 9648)
 		__try {
-			if (IsPlayer(entity) && !*((char*)entity + 9648))
+			if (IsPlayer(entity) && IsPlayerInit(entity))
 				return reinterpret_cast<Player*>(reinterpret_cast<PyEntity*>(self)->actor);
 		}
 		__except (EXCEPTION_EXECUTE_HANDLER) {
