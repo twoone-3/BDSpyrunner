@@ -70,8 +70,11 @@ static PyObject* setListener(PyObject*, PyObject* args) {
 	auto it = events.find(name);
 	if (!PyFunction_Check(func))
 		Py_RETURN_ERROR("Parameter 2 is not callable");
-	if (it == events.end())
-		Py_RETURN_ERROR("Invalid Listener key words");
+	if (it == events.end()) {
+		char err_msg[0x30] = "Invalid Listener key words: ";
+		strcat(err_msg, name);
+		Py_RETURN_ERROR(err_msg);
+	}
 	g_callback_functions[it->second].push_back(func);
 	Py_RETURN_NONE;
 }

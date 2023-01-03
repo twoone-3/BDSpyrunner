@@ -303,6 +303,10 @@ def testonUseSignBlock(e):
 	printLog(f'[TEST] Listener onUseSignBlock i_e["player"].platform = {e["player"].platform}, s_e["text"] = {e["text"]}, l_e["position"] = {e["position"]}')
 	mc.removeListener("onUseSignBlock", testonUseSignBlock)
 mc.setListener("onUseSignBlock", testonUseSignBlock)
+
+
+def testonPreJoin(e):
+    printLog(f'[TEST] Listener onPreJoin e.ip = {e.ip}, e.name = {e.name}')
 # status: test
 
 #temple
@@ -376,4 +380,4 @@ def testonCloseBarrel(e):
 #mc.setListener('onCloseChest', testonCloseChest)
 #mc.setListener('onCloseBarrel', testonCloseBarrel)
 #mc.setListener('onChangeDimension', testonChangeDimension)
-
+mc.setListener("onPreJoin", testonPreJoin)

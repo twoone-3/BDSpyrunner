@@ -424,6 +424,14 @@ THOOK(onConsoleInput, bool, "??$inner_enqueue@$0A@AEBV?$basic_string@DU?$char_tr
 		return original(_this, cmd);
 	return false;
 }
+//玩家待加入发包
+THOOK(onPreJoin, void, "?sendLoginMessageLocal@ServerNetworkHandler@@QEAAXAEBVNetworkIdentifier@@AEBVConnectionRequest@@AEAVServerPlayer@@@Z",
+					   ServerNetworkHandler* _this, NetworkIdentifier* ni, void* a3, Player* sp) {
+	EventCallBackHelper h(EventCode::onPreJoin);
+	h.setArg(ToEntity(sp));
+	h.call();
+	original(_this, ni, a3, sp);
+}
 //玩家加入发包
 THOOK(onPlayerJoin, void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVSetLocalPlayerAsInitializedPacket@@@Z",
 	ServerNetworkHandler* _this, uintptr_t id,/*SetLocalPlayerAsInitializedPacket*/ uintptr_t pkt) {
