@@ -12,15 +12,13 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Fetch SDK
-        working-directory: ${{env.GITHUB_WORKSPACE}}
         run: git submodule update --init --recursive
         shell: cmd
 
       - name: Download Server
-        working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           mkdir SDK/tools/Server
           curl -L -o SDK/tools/Server/server.zip https://minecraft.azureedge.net/bin-win/bedrock-server-1.19.51.01.zip
@@ -29,24 +27,20 @@ jobs:
         shell: bash
 
       - name: Build Library
-        working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           cd SDK/tools
           LibraryBuilder.exe -o ../Lib/ ./Server/
         shell: cmd
 
-      - name: Add MSBuild to PATH
+      - name: Setup msbuild
         uses: microsoft/setup-msbuild@v1
 
       - name: Build
-        working-directory: ${{env.GITHUB_WORKSPACE}}
         id: build
-        run: |
-          MSBuild.exe ./BDSpyrunner.sln -property:Configuration=Release
+        run: MSBuild.exe ./BDSpyrunner.sln -property:Configuration=Release
         shell: bash
 
       - name: Pack Release
-        working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           mkdir temp
           mkdir temp/release
@@ -56,17 +50,16 @@ jobs:
         shell: bash
 
       - name: Upload BDSpyrunner
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: BDSpyrunner
           path: ${{ github.workspace }}\temp\release
 
       - name: Prepare for creating Release
-        working-directory: ${{env.GITHUB_WORKSPACE}}
         id: rel
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+          echo name=tag::${GITHUB_REF#refs/*/} >> $GITHUB_OUTPUT
           mv BDSpyrunner.zip BDSpyrunner-${GITHUB_REF#refs/*/}.zip
         shell: bash
 
@@ -75,7 +68,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           body_path: ${{ github.workspace }}\RELEASENOTE.md
-          files: |
-            ${{ github.workspace }}\BDSpyrunner-${{ steps.rel.outputs.tag }}.zip
+          files: ${{ github.workspace }}\BDSpyrunner-${{ steps.rel.outputs.tag }}.zip
         env:
           GITHUB_REPOSITORY: twoone-3/BDSpyrunner
