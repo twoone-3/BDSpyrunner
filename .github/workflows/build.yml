@@ -58,7 +58,7 @@ jobs:
       - name: Prepare for creating Release
         id: rel
         if: startsWith(github.ref, 'refs/tags/')
-        run: mv BDSpyrunner.zip BDSpyrunner-${GITHUB_REF#refs/*/}.zip
+        run: mv BDSpyrunner.zip BDSpyrunner-${{ github.event.inputs.tag }}.zip
         shell: bash
 
       - name: Create New Release
@@ -66,6 +66,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           body_path: ${{ github.workspace }}\RELEASENOTE.md
-          files: ${{ github.workspace }}\BDSpyrunner-${{ steps.rel.outputs.tag }}.zip
+          files: ${{ github.workspace }}\BDSpyrunner-${{ github.event.inputs.tag }}.zip
         env:
           GITHUB_REPOSITORY: twoone-3/BDSpyrunner
