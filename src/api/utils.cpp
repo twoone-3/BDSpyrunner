@@ -153,8 +153,10 @@ PlayerClass spawnSimulatedPlayer(const string& name, BlockPos& pos, int dim) {
 }
 
 bool spawnParticle(const string& type, const Vec3& pos, int dim) {
-  Global<Level>->spawnParticleEffect(type, pos,
-                                     Global<Level>->getDimension(dim));
+  Global<Level>->spawnParticleEffect(
+      type, pos,
+      reinterpret_cast<Dimension*>(
+          Global<Level>->getDimension(dim).mHandle.lock().get()));
   return true;
 }
 

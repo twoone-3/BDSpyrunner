@@ -410,6 +410,11 @@ bool PlayerClass::sendTitlePacket(const string& text, TitleType type,
                                fade_out_duration);
 }
 
+bool PlayerClass::sendPlaySoundPacket(string sound_name, Vec3 position,
+                                      float volume, float pitch) {
+  return thiz->sendPlaySoundPacket(sound_name, position, volume, pitch);
+}
+
 bool PlayerClass::refreshChunks() {
   if (thiz == nullptr) return {};
   thiz->resendAllChunks();

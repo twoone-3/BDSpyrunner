@@ -23,10 +23,7 @@ jobs:
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           mkdir SDK/tools/Server
-          curl -L -o LINK.txt https://raw.githubusercontent.com/LiteLDev/LiteLoaderBDS//develop/scripts/LINK.txt
-          ServerLink=$(cat 'LINK.txt')
-          echo "ServerLink: $ServerLink"
-          curl -L -o SDK/tools/Server/server.zip "$ServerLink"
+          curl -L -o SDK/tools/Server/server.zip https://minecraft.azureedge.net/bin-win/bedrock-server-1.19.51.01.zip
           unzip SDK/tools/Server/server.zip -d SDK/tools/Server/ > /dev/null
           ls SDK/tools/Server
         shell: bash

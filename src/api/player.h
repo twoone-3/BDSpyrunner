@@ -96,7 +96,9 @@ struct PlayerClass {
                      const py::function& cb);
 
   bool sendTitlePacket(const string& text, TitleType type, int fade_in_duration,
-                 int remain_duration, int fade_out_duration);
+                       int remain_duration, int fade_out_duration);
+  bool sendPlaySoundPacket(string sound_name, Vec3 position, float volume,
+                           float pitch);
 
   bool setExtraData(string key, const py::object& value);
   py::object getExtraData(string key);

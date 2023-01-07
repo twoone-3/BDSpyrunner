@@ -162,7 +162,8 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
            py::overload_cast<const string&, DynamicCommand::ParameterType,
                              string, CommandParameterOption>(
                &CommandClass::mandatory),
-           "name"_a, "type"_a, "description"_a = "", "option"_a = CommandParameterOption::None)
+           "name"_a, "type"_a, "description"_a = "",
+           "option"_a = CommandParameterOption::None)
       .def("optional2",
            py::overload_cast<const string&, DynamicCommand::ParameterType,
                              string, string, CommandParameterOption>(
@@ -173,7 +174,8 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
            py::overload_cast<const string&, DynamicCommand::ParameterType,
                              string, CommandParameterOption>(
                &CommandClass::optional),
-           "name"_a, "type"_a, "description"_a = "", "option"_a = CommandParameterOption::None)
+           "name"_a, "type"_a, "description"_a = "",
+           "option"_a = CommandParameterOption::None)
       .def("overload", py::overload_cast<>(&CommandClass::addOverload))
       .def("overload",
            py::overload_cast<const vector<size_t>&>(&CommandClass::addOverload))
@@ -353,7 +355,8 @@ PYBIND11_EMBEDDED_MODULE(mc, mc_module) {
       .def("sendModalForm", &PlayerClass::sendModalForm)
       .def("sendCustomForm", &PlayerClass::sendCustomForm)
 
-      .def("sendTitlePacket",&PlayerClass::sendTitlePacket)
+      .def("sendTitlePacket", &PlayerClass::sendTitlePacket)
+      .def("sendPlaySoundPacket", &PlayerClass::sendPlaySoundPacket)
 
       .def("setExtraData", &PlayerClass::setExtraData)
       .def("getExtraData", &PlayerClass::getExtraData)

@@ -42,9 +42,6 @@
     <ClCompile Include="src\api\item.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\api\utils.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="src\api\nbt.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -61,6 +58,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="src\api.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\api\utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

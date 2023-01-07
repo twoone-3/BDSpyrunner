@@ -54,7 +54,7 @@ bool ItemClass::isNull() {
 
 bool ItemClass::setNull() {
   if (!thiz) throw std::invalid_argument("invalid item");
-  thiz->setNull();
+  thiz->setNull({});
   return true;
 }
 
