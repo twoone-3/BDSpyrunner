@@ -1,2 +1,3 @@
-﻿v2.1.4更新
-- 新增 Player::sendTitlePacket 函数
+﻿v2.1.5更新
+- 修改action
+- 更新SDK
