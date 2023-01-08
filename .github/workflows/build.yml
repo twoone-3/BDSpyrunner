@@ -49,16 +49,24 @@ jobs:
           7z a BDSpyrunner.zip temp/release/** -tzip
         shell: bash
 
+      - name: Set build info
+        id: build_info
+        run: |
+          echo "build_time=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+          echo "tag_name=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+          echo "commit_msg=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+        shell: bash
+
       - name: Upload BDSpyrunner
         uses: actions/upload-artifact@v3
         with:
-          name: BDSpyrunner-${{GITHUB_REF#refs/*/}}
+          name: BDSpyrunner-${{ steps.build_info.outputs.tag_name }}
           path: ${{ github.workspace }}\temp\release
 
       - name: Prepare for creating Release
         id: rel
         if: startsWith(github.ref, 'refs/tags/')
-        run: mv BDSpyrunner.zip BDSpyrunner-${{GITHUB_REF#refs/*/}}.zip
+        run: mv BDSpyrunner.zip BDSpyrunner-${{ steps.build_info.outputs.tag_name }}.zip
         shell: bash
 
       - name: Create New Release
@@ -66,6 +74,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           body_path: ${{ github.workspace }}\RELEASENOTE.md
-          files: ${{ github.workspace }}\BDSpyrunner-${{GITHUB_REF#refs/*/}}.zip
+          files: ${{ github.workspace }}\BDSpyrunner-${{ steps.build_info.outputs.tag_name }}.zip
         env:
           GITHUB_REPOSITORY: twoone-3/BDSpyrunner
