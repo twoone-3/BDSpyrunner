@@ -36,33 +36,26 @@ jobs:
         uses: microsoft/setup-msbuild@v1
 
       - name: Build
-        id: build
         run: MSBuild.exe ./BDSpyrunner.sln -property:Configuration=Release
         shell: bash
 
       - name: Pack Release
-        run: 7z a BDSpyrunner.zip x64/Release/** -tzip
-        shell: bash
-
-      - name: Set build info
-        id: build_info
         run: |
-          echo "build_time=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
-          echo "tag_name=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
-          echo "commit_msg=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+          7z a BDSpyrunner.zip x64/Release/BDSpyrunner.dll -tzip
+          7z a BDSpyrunner.zip x64/Release/BDSpyrunner.pdb -tzip
+          ls
         shell: bash
 
       - name: Upload BDSpyrunner
         uses: actions/upload-artifact@v3
         with:
-          name: BDSpyrunner-${{ steps.build_info.outputs.tag_name }}
-          path: ${{ github.workspace }}\x64\Release
+          name: BDSpyrunner-${{ GITHUB_REF#refs/*/ }}
+          path: BDSpyrunner.zip
 
       - name: Prepare for creating Release
-        working-directory: ${{env.GITHUB_WORKSPACE}}
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          mv BDSpyrunner.zip BDSpyrunner-${{ steps.build_info.outputs.tag_name }}.zip
+          mv BDSpyrunner.zip BDSpyrunner-${{ GITHUB_REF#refs/*/ }}.zip
           ls
         shell: bash
 
@@ -71,6 +64,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           body_path: ${{ github.workspace }}\RELEASENOTE.md
-          files: ${{ github.workspace }}\BDSpyrunner-${{ steps.build_info.outputs.tag_name }}.zip
+          files: BDSpyrunner-${{ GITHUB_REF#refs/*/ }}.zip
         env:
           GITHUB_REPOSITORY: twoone-3/BDSpyrunner
