@@ -56,12 +56,14 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: BDSpyrunner-${{ steps.build_info.outputs.tag_name }}
-          path: ${{ github.workspace }}\temp\release
+          path: ${{ github.workspace }}\x64\Release
 
       - name: Prepare for creating Release
         working-directory: ${{env.GITHUB_WORKSPACE}}
         if: startsWith(github.ref, 'refs/tags/')
-        run: mv BDSpyrunner.zip BDSpyrunner-${{ steps.build_info.outputs.tag_name }}.zip
+        run: |
+          mv BDSpyrunner.zip BDSpyrunner-${{ steps.build_info.outputs.tag_name }}.zip
+          ls
         shell: bash
 
       - name: Create New Release
