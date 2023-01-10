@@ -5,11 +5,6 @@ on:
     tags:
       - "v*.*.*"
 
-env:
-  SOLUTION_FILE_PATH: .
-  BUILD_CONFIGURATION: Release
-  Platform: X64
-  TAG_NAME: ${GITHUB_REF#refs/tags/}
 
 jobs:
   build:
@@ -41,6 +36,10 @@ jobs:
 
       - name: Build
         run: MSBuild.exe BDSpyrunner.sln
+        env:
+          SOLUTION_FILE_PATH: .
+          BUILD_CONFIGURATION: Release
+          Platform: X64
 
       - name: Pack Release
         run: |
@@ -50,16 +49,16 @@ jobs:
       - name: Upload BDSpyrunner
         uses: actions/upload-artifact@v3
         with:
-          name: BDSpyrunner-${TAG_NAME}
+          name: BDSpyrunner-${GITHUB_REF#refs/tags/}
           path: BDSpyrunner.zip
 
       - name: Prepare for creating Release
         run: |
-          mv BDSpyrunner.zip BDSpyrunner-${TAG_NAME}.zip
+          mv BDSpyrunner.zip BDSpyrunner-${GITHUB_REF#refs/tags/}.zip
           ls
 
       - name: Create New Release
         uses: softprops/action-gh-release@v1
         with:
           body_path: RELEASENOTE.md
-          files: BDSpyrunner-${TAG_NAME}.zip
+          files: BDSpyrunner-${GITHUB_REF#refs/tags/}.zip
