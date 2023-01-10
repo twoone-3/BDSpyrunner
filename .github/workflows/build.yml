@@ -1,11 +1,15 @@
 ﻿name: Build BDSpyrunner
 
-on: [ push ]
+on:
+  push:
+    tags:
+      - "v*.*.*"
 
 env:
   SOLUTION_FILE_PATH: .
   BUILD_CONFIGURATION: Release
   Platform: X64
+  TAG_NAME: ${GITHUB_REF#refs/tags/}
 
 jobs:
   build:
@@ -24,7 +28,6 @@ jobs:
           curl -L -o SDK/tools/Server/server.zip https://minecraft.azureedge.net/bin-win/bedrock-server-1.19.51.01.zip
           unzip SDK/tools/Server/server.zip -d SDK/tools/Server/ > /dev/null
           ls SDK/tools/Server
-        shell: bash
 
       - name: Build Library
         run: |
@@ -36,34 +39,26 @@ jobs:
         uses: microsoft/setup-msbuild@v1
 
       - name: Build
-        run: MSBuild.exe ./BDSpyrunner.sln -property:Configuration=Release
-        shell: bash
+        run: MSBuild.exe BDSpyrunner.sln
 
       - name: Pack Release
         run: |
           7z a BDSpyrunner.zip x64/Release/BDSpyrunner.dll -tzip
           7z a BDSpyrunner.zip x64/Release/BDSpyrunner.pdb -tzip
-          ls
-        shell: bash
 
       - name: Upload BDSpyrunner
         uses: actions/upload-artifact@v3
         with:
-          name: BDSpyrunner-${{ GITHUB_REF#refs/*/ }}
+          name: BDSpyrunner-${TAG_NAME}
           path: BDSpyrunner.zip
 
       - name: Prepare for creating Release
-        if: startsWith(github.ref, 'refs/tags/')
         run: |
-          mv BDSpyrunner.zip BDSpyrunner-${{ GITHUB_REF#refs/*/ }}.zip
+          mv BDSpyrunner.zip BDSpyrunner-${TAG_NAME}.zip
           ls
-        shell: bash
 
       - name: Create New Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
-          body_path: ${{ github.workspace }}\RELEASENOTE.md
-          files: BDSpyrunner-${{ GITHUB_REF#refs/*/ }}.zip
-        env:
-          GITHUB_REPOSITORY: twoone-3/BDSpyrunner
+          body_path: RELEASENOTE.md
+          files: BDSpyrunner-${TAG_NAME}.zip
