@@ -2,6 +2,8 @@
 
 #include <llapi/LoggerAPI.h>
 
+#include <llapi/mc/CommandBlockName.hpp>
+#include <llapi/mc/CommandBlockNameResult.hpp>
 #include <llapi/mc/Dimension.hpp>
 #include <llapi/mc/ItemInstance.hpp>
 #include <llapi/mc/ItemStack.hpp>
@@ -69,8 +71,9 @@ py::object CastResult(const DynamicCommand::Result& result) {
                                       .value_or(ItemInstance::EMPTY_ITEM))));
     case DynamicCommand::ParameterType::Block:
       return py::cast(BlockClass(BlockInstance::createBlockInstance(
-          const_cast<Block*>(result.getRaw<Block const*>()), BlockPos::MIN,
-          -1)));
+          const_cast<Block*>(
+              result.getRaw<CommandBlockName>().resolveBlock(0).getBlock()),
+          BlockPos::MIN, -1)));
     case DynamicCommand::ParameterType::Effect:
       return py::str(result.getRaw<MobEffect const*>()->getResourceName());
     case DynamicCommand::ParameterType::Enum:

@@ -67,6 +67,6 @@ enum class EventCode {
   onConsoleCmd,     // done
   onConsoleOutput,  // done
   /* Outdated Events */
-  onMobSpawn,  // done
+  onMobTrySpawn,  // done
 };
 void EnableEventListener(EventCode eventId);

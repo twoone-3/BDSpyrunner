@@ -295,13 +295,13 @@ void EnableEventListener(EventCode event_code) {
       break;
     case EventCode::onMove:
       logger.warn("onMove was invaliable!");
-      //PlayerMoveEvent::subscribe([](const PlayerMoveEvent& ev) {
-      //  EVENT_BEGIN(EventCode::onMove);
-      //  EVENT_INSERT(Player);
-      //  EVENT_INSERT(Pos);
-      //  EVENT_END;
-      //});
-      //break;
+      // PlayerMoveEvent::subscribe([](const PlayerMoveEvent& ev) {
+      //   EVENT_BEGIN(EventCode::onMove);
+      //   EVENT_INSERT(Player);
+      //   EVENT_INSERT(Pos);
+      //   EVENT_END;
+      // });
+      // break;
     case EventCode::onChangeSprinting:
       PlayerSprintEvent::subscribe([](const PlayerSprintEvent& ev) {
         EVENT_BEGIN(EventCode::onChangeSprinting);
@@ -626,9 +626,9 @@ void EnableEventListener(EventCode event_code) {
         EVENT_END;
       });
       break;
-    case EventCode::onMobSpawn:
-      MobSpawnEvent::subscribe([](const MobSpawnEvent& ev) {
-        EVENT_BEGIN(EventCode::onMobSpawn);
+    case EventCode::onMobTrySpawn:
+      MobTrySpawnEvent::subscribe([](const MobTrySpawnEvent& ev) {
+        EVENT_BEGIN(EventCode::onMobTrySpawn);
         EVENT_INSERT(TypeName);
         EVENT_INSERT(Pos);
         EVENT_INSERT(DimensionId);
